@@ -1,0 +1,5 @@
+{
+  "rasters":[
+      {"name":"drivable_area_mask_updated.png", "tl_x":8926, "tl_y":10289, "meters_per_pixel":0.2, "width":100, "height":100}
+  ]
+}
