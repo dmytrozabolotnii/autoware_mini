@@ -9,7 +9,7 @@
     <arg name="tfl_cameras"         default="mako"              doc="mako, nvidia" />
     <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="for carla traffic light detector" />
     <arg name="tracker"             default="ema"               doc="none, ema" />
-    <arg name="predictor"           default="none"              doc="none, naive, map, map_naive" />
+    <arg name="predictor"           default="none"              doc="none, naive, map, map_naive, pedestrian, pedestriansg" />
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
 
