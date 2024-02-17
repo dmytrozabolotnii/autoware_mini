@@ -1,3 +1,5 @@
+# Based on https://github.com/ChuhuaW/SGNet.pytorch
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -203,15 +205,7 @@ def sgnet_iter(dataset, model, device, n=5):
     dataloader = data.DataLoader(
         dataset, batch_size=len(dataset), shuffle=False, num_workers=0)
 
-    # total_goal_loss = 0
-    # total_dec_loss = 0
-    # ADE_08 = 0
-    # ADE_12 = 0
-    # FDE_08 = 0
-    # FDE_12 = 0
-    # count = 0
     model.eval()
-    # loader = tqdm(test_gen, total=len(test_gen))
     with torch.set_grad_enabled(False):
         for batch_idx, traj in enumerate(dataloader):
 
@@ -221,9 +215,7 @@ def sgnet_iter(dataset, model, device, n=5):
             # batch_size = traj['input_x'].shape[0]
             # count += batch_size
             shift = traj[:, -1, :2].to('cpu').numpy()
-            # print(traj[:, :, :2] - traj[:, -1:, :2], (traj[:, :, :2] - traj[:, -1:, :2]).shape)
             input_normalized = torch.cat([traj[:, :, :2] - traj[:, -1:, :2], traj[:, :, 2:]], dim=2)
-            # print(input_normalized, input_normalized.shape)
             input_traj_torch = torch.DoubleTensor(input_normalized).to(device)
             # print(input_traj_torch, input_traj_torch.shape)
             # input_bbox_st = data['input_x_st'].to(device)
@@ -246,28 +238,8 @@ def sgnet_iter(dataset, model, device, n=5):
             # print(all_dec_traj_np)
             for i in range(len(all_dec_traj_np)):
                 all_dec_traj_np[i] = all_dec_traj_np[i] + shift
-            # print(all_dec_traj_np.shape)
-            # print(all_goal_traj, all_goal_traj.shape)
-            # print(all_dec_traj, all_dec_traj.shape)
-            # goal_loss = criterion(all_goal_traj[:, first_history_index[0]:, :, :],
-            #                       target_traj[:, first_history_index[0]:, :, :])
-            # dec_loss = criterion(all_dec_traj[:, first_history_index[0]:, :, :],
-            #                      target_traj[:, first_history_index[0]:, :, :])
-
-            # train_loss = goal_loss + dec_loss
-            #
-            # total_goal_loss += goal_loss.item() * batch_size
-            # total_dec_loss += dec_loss.item() * batch_size
 
 
-            # target_traj_np = target_traj.to('cpu').numpy()
-
-            # Decoder
-            # batch_ADE_08, batch_FDE_08, batch_ADE_12, batch_FDE_12 = \
-            #     eval_ethucy(input_traj_np, target_traj_np, all_dec_traj_np)
-
-
-    # print("ADE_08: %4f;  FDE_08: %4f;  ADE_12: %4f;   FDE_12: %4f\n" % (ADE_08, FDE_08, ADE_12, FDE_12))
 
     return all_dec_traj_np
 

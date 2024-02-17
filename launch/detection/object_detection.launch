@@ -117,17 +117,17 @@
         </node>
     </group>
     <group if="$(eval predictor=='pedestrian')">
-        <node type="PECNet_sub.py" name="PECNetPredictor" pkg="autoware_mini" output="screen" required="true">
+        <node type="pecnet_sub.py" name="pecnet_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
         </node>
     </group>
-    <group if="$(eval predictor=='pedestrianSG')">
-        <node type="SGNet_sub.py" name="SGNetPredictor" pkg="autoware_mini" output="screen" required="true">
+    <group if="$(eval predictor=='pedestriansg')">
+        <node type="sgnet_sub.py" name="sgnet_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
         </node>
     </group>
 
-    <node if="$(eval predictor=='none' or predictor=='pedestrian' or predictor=='pedestrianSG')" pkg="topic_tools" type="relay" args="tracked_objects final_objects" name="tracked_objects_relay" output="screen" required="true" />
+    <node if="$(eval predictor=='none' or predictor=='pedestrian' or predictor=='pedestriansg')" pkg="topic_tools" type="relay" args="tracked_objects final_objects" name="tracked_objects_relay" output="screen" required="true" />
 
     <!-- Final objects visualizer -->
     <node type="detected_objects_visualizer.py" name="final_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
