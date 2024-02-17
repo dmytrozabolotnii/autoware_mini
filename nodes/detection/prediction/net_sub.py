@@ -1,25 +1,26 @@
-import threading
-
 import numpy as np
 import rospy
-from std_msgs.msg import Header
+import threading
+
 from autoware_msgs.msg import Lane, DetectedObjectArray, DetectedObject, Waypoint
 from geometry_msgs.msg import TwistStamped
 from visualization_msgs.msg import MarkerArray, Marker
-from copy import deepcopy
-import datetime, os, pickle
+
+from common_utils import color_points, calculate_danger_value
+
 
 class NetSubscriber:
     def __init__(self):
+        rospy.loginfo(self.__class__.__name__ + " - Initializing")
         self.lock = threading.Lock()
         self.self_traj_sub = rospy.Subscriber("/planning/local_path", Lane, self.self_traj_callback)
         self.velocity_sub = rospy.Subscriber("/localization/current_velocity", TwistStamped, self.velocity_callback)
         self.objects_sub = rospy.Subscriber("tracked_objects",
-                                            DetectedObjectArray, self.sub_callback)
-        self.self_traj_exists = False
+                                            DetectedObjectArray, self.detected_objects_sub_callback)
         self.marker_pub = rospy.Publisher('predicted_behaviours_net', MarkerArray, queue_size=1, tcp_nodelay=True)
         self.objects_pub = rospy.Publisher('predicted_behaviours_net_objects', DetectedObjectArray, queue_size=1,
                                            tcp_nodelay=True)
+        # Caching structure
         self.self_new_traj = []
         self.self_traj_history = []
         self.all_raw_trajectories = {}
@@ -30,10 +31,16 @@ class NetSubscriber:
         self.raw_trajectories = {}
         self.raw_velocities = {}
         self.self_traj = []
+        self.self_traj_exists = False
         self.velocity = 0.0
         self.all_endpoints = {}
         self.current_endpoints = {}
         self.active_keys = set()
+        # Basic inference values
+        self.inference_timer_duration = 0.5
+        self.model = None
+        self.predictions_amount = 1
+
 
     def self_traj_callback(self, lane):
         if len(lane.waypoints) > 3:
@@ -46,9 +53,8 @@ class NetSubscriber:
     def velocity_callback(self, twist):
         self.velocity = (twist.twist.linear.x ** 2 + twist.twist.linear.y ** 2 + twist.twist.linear.z ** 2) ** 0.5
 
-    def sub_callback(self, detectedobjectarray):
-        # cash messages every callback into last element
-        # print('Detected:', detectedobjectarray.header.seq)
+    def detected_objects_sub_callback(self, detectedobjectarray):
+        # cache objects with filter, so we can refer to them at inference time
         active_keys = set()
         for i, detectedobject in enumerate(detectedobjectarray.objects):
             if detectedobject.label == 'pedestrian':
@@ -56,7 +62,6 @@ class NetSubscriber:
                 velocity = np.array([detectedobject.velocity.linear.x, detectedobject.velocity.linear.y])
                 _id = detectedobject.id
                 active_keys.add(_id)
-                # print('Detected object:', i, 'pose:', position)
 
                 if not _id in self.all_raw_trajectories:
                     self.all_raw_trajectories[_id] = [position]
@@ -72,6 +77,32 @@ class NetSubscriber:
         with self.lock:
             self.active_keys = active_keys
 
+    def calculate_danger_values_and_publish(self, inference_dataset, inference_result, temp_active_keys,
+                                            future_horizon=12, past_horizon=8):
+        if self.self_traj_exists:
+            trajectory_length = self.velocity * self.inference_timer_duration * future_horizon
+            self.self_traj = self.self_new_traj.copy()
+            # Calculating the danger value of agent intersecting with ego-vehicle
+            # TODO: decide on how to integrate this with planning module or move out in differrent node
+            inference_colors = (list(map(color_points, inference_result, [self.self_traj] * len(inference_result),
+                                         [trajectory_length] * len(inference_result))))
+            endpoint_colors = color_points(inference_dataset.traj_flat[:, past_horizon - 1],
+                                           self.self_traj, trajectory_length)
+            danger_values = np.zeros((len(endpoint_colors), len(inference_colors)))
+            for i in range(len(endpoint_colors)):
+                for j in range(self.predictions_amount):
+                    danger_values[i, j] = calculate_danger_value(endpoint_colors[i], inference_colors[j][i])
+            avg_danger_values = np.mean(danger_values, axis=1)
+
+            for j, _id in enumerate(temp_active_keys):
+                self.all_predictions_history_danger_value[_id].append(avg_danger_values[j])
+            self.self_traj_history.append(self.self_traj[0])
+
+            self.publish_markers(inference_dataset.traj_flat[:, past_horizon - 1],
+                                 inference_result, inference_colors, endpoint_colors, avg_danger_values,
+                                 self.predictions_amount)
+
+    # TODO: phase out in favour of existing markers visualization
     def publish_markers(self, endpoints, inference_result, inference_colors, endpoint_colors, avg_danger_values, predictions_amount):
         marker_array = MarkerArray()
         marker_array.markers = []
@@ -180,6 +211,7 @@ class NetSubscriber:
         self.marker_pub.publish(marker_array)
 
     def publish_predicted_objects(self):
+        # Construct candidate predictors from saved history of predictions
         msg_array = DetectedObjectArray()
         msg_array.header.frame_id = 'map'
         msg_array.header.stamp = rospy.Time.now()
@@ -187,7 +219,6 @@ class NetSubscriber:
             for _id in self.active_keys:
                 msg = self.last_messages[_id]
                 for predictions in self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 2]:
-                    # print(predictions)
                     lane = Lane()
                     for j in [predictions]:
                         wp = Waypoint()
@@ -195,38 +226,17 @@ class NetSubscriber:
                         lane.waypoints.append(wp)
                     msg.candidate_trajectories.lanes.append(lane)
                 msg_array.objects.append(msg)
-        # Publish predicted objects
+        # Publish objects with predicted candidate trajectories
         self.objects_pub.publish(msg_array)
 
     def move_endpoints(self):
-        # Move end-point
+        # Moves end-point of cached trajectory every inference
         with self.lock:
             for _id in self.active_keys:
                 self.all_endpoints[_id] += 1
                 self.all_raw_trajectories[_id].append(self.all_raw_trajectories[_id][len(self.all_raw_trajectories[_id]) - 1])
                 self.all_raw_velocities[_id].append(self.all_raw_velocities[_id][len(self.all_raw_velocities[_id]) - 1])
 
-    def on_shutdown(self):
-        # Saving things
-        name_test = str(datetime.datetime.now())[:10]
-        folder_test = 'testing/' + name_test + '_' + str(self.__class__.__name__) + '_' + \
-                      os.path.basename(os.path.dirname(rospy.get_param('/scenario_simulator/path'))) + '_run0'
-        i = 0
-        while os.path.exists(folder_test):
-            i = i + 1
-            folder_test = folder_test[:-1] + str(i)
-        os.makedirs(folder_test)
-
-        with open(os.path.join(folder_test, 'all_raw_trajectories.pkl'), 'wb') as f:
-            pickle.dump(self.all_raw_trajectories, f)
-        with open(os.path.join(folder_test, 'all_predictions_history.pkl'), 'wb') as f:
-            pickle.dump(self.all_predictions_history, f)
-        with open(os.path.join(folder_test, 'all_predictions_history_danger_value.pkl'), 'wb') as f:
-            pickle.dump(self.all_predictions_history_danger_value, f)
-        with open(os.path.join(folder_test, 'self_traj_history.pkl'), 'wb') as f:
-            pickle.dump(self.self_traj_history, f)
-
-        print('Trajectories and predictions saved')
-
-
+    def run(self):
+        rospy.spin()
 

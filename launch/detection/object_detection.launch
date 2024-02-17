@@ -123,7 +123,7 @@
         <node if="$(eval predictor=='pedestrian')" type="PECNet_sub.py" name="PECNetPredictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
         </node>
-        <node if="$(eval predictor=='pedestrianSG')" type="SGNet_sub.py" name="SGNetPredictor" pkg="autoware_mini" output="screen" required="true">
+        <node if="$(eval predictor=='pedestriansg')" type="sgnet_sub.py" name="sgnet_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
         </node>
         <node type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
@@ -132,7 +132,7 @@
         </node>
     </group>
 
-    <node if="$(eval predictor=='none' or predictor=='pedestrian' or predictor=='pedestrianSG')" pkg="topic_tools" type="relay" args="tracked_objects final_objects" name="tracked_objects_relay" output="screen" required="true" />
+    <node if="$(eval predictor=='none' or predictor=='pedestrian' or predictor=='pedestriansg')" pkg="topic_tools" type="relay" args="tracked_objects final_objects" name="tracked_objects_relay" output="screen" required="true" />
 
     <group if="$(eval predictor=='none')">
         <node pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />

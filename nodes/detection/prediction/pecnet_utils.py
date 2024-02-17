@@ -1,7 +1,8 @@
+# Based on https://github.com/HarshayuGirase/Human-Path-Prediction/tree/master/PECNet
+
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils import data
 
@@ -70,16 +71,16 @@ class PECNet(nn.Module):
 
         architecture = lambda net: [l.in_features for l in net.layers] + [net.layers[-1].out_features]
 
-        if verbose:
-            print("Past Encoder architecture : {}".format(architecture(self.encoder_past)))
-            print("Dest Encoder architecture : {}".format(architecture(self.encoder_dest)))
-            print("Latent Encoder architecture : {}".format(architecture(self.encoder_latent)))
-            print("Decoder architecture : {}".format(architecture(self.decoder)))
-            print("Predictor architecture : {}".format(architecture(self.predictor)))
-
-            print("Non Local Theta architecture : {}".format(architecture(self.non_local_theta)))
-            print("Non Local Phi architecture : {}".format(architecture(self.non_local_phi)))
-            print("Non Local g architecture : {}".format(architecture(self.non_local_g)))
+        # if verbose:
+        #     print("Past Encoder architecture : {}".format(architecture(self.encoder_past)))
+        #     print("Dest Encoder architecture : {}".format(architecture(self.encoder_dest)))
+        #     print("Latent Encoder architecture : {}".format(architecture(self.encoder_latent)))
+        #     print("Decoder architecture : {}".format(architecture(self.decoder)))
+        #     print("Predictor architecture : {}".format(architecture(self.predictor)))
+        #
+        #     print("Non Local Theta architecture : {}".format(architecture(self.non_local_theta)))
+        #     print("Non Local Phi architecture : {}".format(architecture(self.non_local_phi)))
+        #     print("Non Local g architecture : {}".format(architecture(self.non_local_g)))
 
     def non_local_social_pooling(self, feat, mask):
 
@@ -181,6 +182,7 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5):
         for i, trajx in enumerate(dataloader):
             shift = trajx[:, 0, :].cpu().numpy()
             traj = trajx - trajx[:, :1, :]
+            # TODO: resolve this hardcoded value
             traj *= hyper_params["data_scale"] * 200
             trajx = torch.DoubleTensor(trajx).to(device)
 
@@ -209,6 +211,7 @@ class PECNetDatasetInit(data.Dataset):
     def __init__(self, detected_object_trajs, end_points, pad_past=8, pad_future=12, set_name="train", id=False, verbose=True):
         self.traj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
                                      mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(detected_object_trajs)])
+        self.traj_flat = np.copy(self.traj)
 
     def __len__(self):
         return len(self.traj)

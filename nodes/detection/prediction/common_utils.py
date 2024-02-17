@@ -1,10 +1,7 @@
-import os.path
-
-# import rospy
 import numpy as np
 from shapely import Point, LineString, LinearRing
 from shapely.ops import split
-from PIL import Image
+# from PIL import Image
 
 # drivable_area = np.swapaxes(np.array(Image.open(rospy.get_param('~data_path_prediction') + 'semantic_rasters/drivable_area_mask_updated.png')), 0, 1)
 
@@ -35,6 +32,7 @@ def color_points(points, trajectory, trajectory_length):
                 return '2'
         if distance < 3:
             array.append('r')
+        ## TODO: Implement better agnostic driving area detection
         # elif drivable_area[(int(point[0]) - 8926) * 5, (int(point[1]) - 10289) * -5]:
         #     array.append('y' + side_decision(local_shapely_point, local_car_track))
         else:
