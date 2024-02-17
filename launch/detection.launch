@@ -6,7 +6,7 @@
     <arg name="tfl_detector"        default="none"              doc="carla, mqtt, camera, mqtt_camera_fusion" />
     <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="for carla traffic light detector" />
     <arg name="tracker"             default="ema"               doc="none, ema" />
-    <arg name="predictor"           default="none"              doc="none, naive" />
+    <arg name="predictor"           default="none"              doc="none, naive, pedestrian, pedestriansg" />
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
 

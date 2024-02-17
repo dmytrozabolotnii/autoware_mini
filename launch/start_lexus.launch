@@ -7,7 +7,7 @@
     <arg name="detector"                default="lidar_cluster"     doc="lidar_cluster, sim, carla"/>
     <arg name="tfl_detector"            default="mqtt"              doc="mqtt, camera, mqtt_camera_fusion" />
     <arg name="tracker"                 default="ema"               doc="none, ema" />
-    <arg name="predictor"               default="none"              doc="none, naive" />
+    <arg name="predictor"               default="none"              doc="none, naive, pedestrian, pedestriansg" />
     <arg name="follower"                default="pure_pursuit"      doc="pure_pursuit, stanley" />
     <arg name="global_planner"          default="lanelet2"          doc="waypoints, lanelet2" />
     <arg name="local_planner"           default="velocity"          doc="velocity, none"/>
