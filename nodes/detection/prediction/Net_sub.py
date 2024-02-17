@@ -2,7 +2,8 @@ import threading
 
 import numpy as np
 import rospy
-from autoware_msgs.msg import Lane, DetectedObjectArray
+from std_msgs.msg import Header
+from autoware_msgs.msg import Lane, DetectedObjectArray, DetectedObject, Waypoint
 from geometry_msgs.msg import TwistStamped
 from visualization_msgs.msg import MarkerArray, Marker
 from copy import deepcopy
@@ -17,12 +18,15 @@ class NetSubscriber:
                                             DetectedObjectArray, self.sub_callback)
         self.self_traj_exists = False
         self.marker_pub = rospy.Publisher('predicted_behaviours_net', MarkerArray, queue_size=1, tcp_nodelay=True)
+        self.objects_pub = rospy.Publisher('predicted_behaviours_net_objects', DetectedObjectArray, queue_size=1,
+                                           tcp_nodelay=True)
         self.self_new_traj = []
         self.self_traj_history = []
         self.all_raw_trajectories = {}
         self.all_raw_velocities = {}
         self.all_predictions_history = {}
         self.all_predictions_history_danger_value = {}
+        self.last_messages = {}
         self.raw_trajectories = {}
         self.raw_velocities = {}
         self.self_traj = []
@@ -60,9 +64,11 @@ class NetSubscriber:
                     self.all_endpoints[_id] = 0
                     self.all_predictions_history[_id] = [[]]
                     self.all_predictions_history_danger_value[_id] = []
+                    self.last_messages[_id] = detectedobject
                 else:
                     self.all_raw_trajectories[_id][len(self.all_raw_trajectories[_id]) - 1] = position
                     self.all_raw_velocities[_id][len(self.all_raw_velocities[_id]) - 1] = velocity
+                    self.last_messages[_id] = detectedobject
         with self.lock:
             self.active_keys = active_keys
 
@@ -71,37 +77,39 @@ class NetSubscriber:
         marker_array.markers = []
         # Endpoint markers and danger values
         for i, endpoint in enumerate(endpoints):
-            # Endpoint markers
-            marker = Marker()
-            marker.id = 2 * i
-            marker.header.frame_id = 'map'
-            marker.header.stamp = rospy.Time.now()
-            marker.type = 2
 
-            marker.scale.x = 3.0
-            marker.scale.y = 3.0
-            marker.scale.z = 3.0
-            marker.color.a = 3.0
-            if endpoint_colors[i][0] == 'g':
-                marker.color.g = 1.0
-            elif endpoint_colors[i][0] == 'y':
-                marker.color.r = 1.0
-                marker.color.g = 1.0
-            elif endpoint_colors[i][0] == 'r':
-                marker.color.r = 1.0
-            else:
-                marker.color.b = 1.0
-            marker.text = 'dng: ' + str(avg_danger_values[i])
+            # # Endpoint markers
+            # marker = Marker()
+            # marker.id = 2 * i
+            # marker.header.frame_id = 'map'
+            # marker.header.stamp = rospy.Time.now()
+            # marker.type = 2
+            #
+            # marker.scale.x = 3.0
+            # marker.scale.y = 3.0
+            # marker.scale.z = 3.0
+            # marker.color.a = 3.0
+            # if endpoint_colors[i][0] == 'g':
+            #     marker.color.g = 1.0
+            # elif endpoint_colors[i][0] == 'y':
+            #     marker.color.r = 1.0
+            #     marker.color.g = 1.0
+            # elif endpoint_colors[i][0] == 'r':
+            #     marker.color.r = 1.0
+            # else:
+            #     marker.color.b = 1.0
+            # marker.text = 'dng: ' + str(avg_danger_values[i])
+            #
+            # marker.pose.position.x = endpoint[0]
+            # marker.pose.position.y = endpoint[1]
+            #
+            # marker.pose.orientation.x = 0.0
+            # marker.pose.orientation.y = 0.0
+            # marker.pose.orientation.z = 0.0
+            # marker.pose.orientation.w = 1.0
+            #
+            # marker_array.markers.append(marker)
 
-            marker.pose.position.x = endpoint[0]
-            marker.pose.position.y = endpoint[1]
-
-            marker.pose.orientation.x = 0.0
-            marker.pose.orientation.y = 0.0
-            marker.pose.orientation.z = 0.0
-            marker.pose.orientation.w = 1.0
-
-            marker_array.markers.append(marker)
             # Danger values
             marker_text = Marker()
             marker_text.id = 2 * i + 1
@@ -170,6 +178,25 @@ class NetSubscriber:
                 marker_array.markers.append(marker)
 
         self.marker_pub.publish(marker_array)
+
+    def publish_predicted_objects(self):
+        msg_array = DetectedObjectArray()
+        msg_array.header.frame_id = 'map'
+        msg_array.header.stamp = rospy.Time.now()
+        with self.lock:
+            for _id in self.active_keys:
+                msg = self.last_messages[_id]
+                for predictions in self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 2]:
+                    # print(predictions)
+                    lane = Lane()
+                    for j in [predictions]:
+                        wp = Waypoint()
+                        wp.pose.pose.position.x, wp.pose.pose.position.y = j
+                        lane.waypoints.append(wp)
+                    msg.candidate_trajectories.lanes.append(lane)
+                msg_array.objects.append(msg)
+        # Publish predicted objects
+        self.objects_pub.publish(msg_array)
 
     def move_endpoints(self):
         # Move end-point

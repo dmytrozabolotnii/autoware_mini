@@ -94,6 +94,8 @@ class SGNetSubscriber(NetSubscriber):
                 self.publish_markers(inference_dataset.traj_flat[:, self.pad_past - 1],
                                      inference_result, inference_colors, endpoint_colors, avg_danger_values, self.predictions_amount)
             self.move_endpoints()
+            self.publish_predicted_objects()
+
 
 
 def main(args):
