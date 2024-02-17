@@ -63,6 +63,8 @@ class PECNetSubscriber(NetSubscriber):
                     self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 1]\
                         .append(inference_result[i][j])
                 self.all_predictions_history[_id].append([])
+            # print(self.all_predictions_history)
+            # print(list(self.all_predictions_history.values())[0])
             # print('Timestamp:', event.current_real, 'Results:', inference_result, 'Endpoints:', temp_endpoints)
             # Update trajectory and process points
             if self.self_traj_exists:
@@ -88,6 +90,7 @@ class PECNetSubscriber(NetSubscriber):
                 # print('Danger_values:\n', avg_danger_values)
                 self.publish_markers(inference_dataset.traj[:, self.hyper_params['past_length'] - 1],
                                      inference_result, inference_colors, endpoint_colors, avg_danger_values, self.predictions_amount)
+            self.publish_predicted_objects()
             self.move_endpoints()
 
 
