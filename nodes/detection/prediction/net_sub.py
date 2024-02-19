@@ -17,8 +17,8 @@ class NetSubscriber:
         self.velocity_sub = rospy.Subscriber("/localization/current_velocity", TwistStamped, self.velocity_callback)
         self.objects_sub = rospy.Subscriber("tracked_objects",
                                             DetectedObjectArray, self.detected_objects_sub_callback)
-        self.marker_pub = rospy.Publisher('predicted_behaviours_net', MarkerArray, queue_size=1, tcp_nodelay=True)
-        self.objects_pub = rospy.Publisher('predicted_behaviours_net_objects', DetectedObjectArray, queue_size=1,
+        # self.marker_pub = rospy.Publisher('predicted_behaviours_net', MarkerArray, queue_size=1, tcp_nodelay=True)
+        self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
                                            tcp_nodelay=True)
         # Caching structure
         self.self_new_traj = []
@@ -98,9 +98,9 @@ class NetSubscriber:
                 self.all_predictions_history_danger_value[_id].append(avg_danger_values[j])
             self.self_traj_history.append(self.self_traj[0])
 
-            self.publish_markers(inference_dataset.traj_flat[:, past_horizon - 1],
-                                 inference_result, inference_colors, endpoint_colors, avg_danger_values,
-                                 self.predictions_amount)
+            # self.publish_markers(inference_dataset.traj_flat[:, past_horizon - 1],
+            #                      inference_result, inference_colors, endpoint_colors, avg_danger_values,
+            #                      self.predictions_amount)
 
     # TODO: phase out in favour of existing markers visualization
     def publish_markers(self, endpoints, inference_result, inference_colors, endpoint_colors, avg_danger_values, predictions_amount):
@@ -208,7 +208,7 @@ class NetSubscriber:
 
                 marker_array.markers.append(marker)
 
-        self.marker_pub.publish(marker_array)
+        # self.marker_pub.publish(marker_array)
 
     def publish_predicted_objects(self):
         # Construct candidate predictors from saved history of predictions
@@ -219,10 +219,16 @@ class NetSubscriber:
             for _id in self.active_keys:
                 msg = self.last_messages[_id]
                 for predictions in self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 2]:
-                    lane = Lane()
+                    lane = Lane(header=msg.header)
+                    # Start candidate trajectory from ego vehicle
+                    wp = Waypoint()
+                    wp.pose.pose.position = msg.pose.position
+                    lane.waypoints.append(wp)
+                    # Add prediction (endpoint only for now)
                     for j in [predictions]:
                         wp = Waypoint()
                         wp.pose.pose.position.x, wp.pose.pose.position.y = j
+                        wp.pose.pose.position.z = msg.pose.position.z
                         lane.waypoints.append(wp)
                     msg.candidate_trajectories.lanes.append(lane)
                 msg_array.objects.append(msg)
