@@ -53,7 +53,6 @@ class SGNetSubscriber(NetSubscriber):
             self.calculate_danger_values_and_publish(inference_dataset, inference_result, temp_active_keys,
                                                      self.future_horizon, self.pad_past)
             self.move_endpoints()
-            self.publish_predicted_objects()
 
 
 if __name__ == '__main__':

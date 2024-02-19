@@ -61,7 +61,6 @@ class PECNetSubscriber(NetSubscriber):
             # Update trajectory and process points for danger values
             self.calculate_danger_values_and_publish(inference_dataset, inference_result, temp_active_keys,
                                                      self.hyper_params["future_length"], self.hyper_params['past_length'])
-            self.publish_predicted_objects()
             self.move_endpoints()
 
 
