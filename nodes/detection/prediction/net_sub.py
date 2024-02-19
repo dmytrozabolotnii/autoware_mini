@@ -1,15 +1,16 @@
+from abc import ABCMeta, abstractmethod
+
 import numpy as np
 import rospy
 import threading
 
-from autoware_msgs.msg import Lane, DetectedObjectArray, DetectedObject, Waypoint
+from autoware_msgs.msg import Lane, DetectedObjectArray, Waypoint
 from geometry_msgs.msg import TwistStamped
-from visualization_msgs.msg import MarkerArray, Marker
+from shapely import LineString, Point, LinearRing
+from shapely.ops import split
 
-from common_utils import color_points, calculate_danger_value
 
-
-class NetSubscriber:
+class NetSubscriber(metaclass=ABCMeta):
     def __init__(self):
         rospy.loginfo(self.__class__.__name__ + " - Initializing")
         self.lock = threading.Lock()
@@ -17,7 +18,6 @@ class NetSubscriber:
         self.velocity_sub = rospy.Subscriber("/localization/current_velocity", TwistStamped, self.velocity_callback)
         self.objects_sub = rospy.Subscriber("tracked_objects",
                                             DetectedObjectArray, self.detected_objects_sub_callback)
-        # self.marker_pub = rospy.Publisher('predicted_behaviours_net', MarkerArray, queue_size=1, tcp_nodelay=True)
         self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
                                            tcp_nodelay=True)
         # Caching structure
@@ -40,6 +40,7 @@ class NetSubscriber:
         self.inference_timer_duration = 0.5
         self.model = None
         self.predictions_amount = 1
+        self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback)
 
 
     def self_traj_callback(self, lane):
@@ -79,8 +80,8 @@ class NetSubscriber:
         # Publish objects back retrieving candidate trajectories from history of inferences
         self.publish_predicted_objects(detectedobjectarray)
 
-    def calculate_danger_values_and_publish(self, inference_dataset, inference_result, temp_active_keys,
-                                            future_horizon=12, past_horizon=8):
+    def calculate_danger_values(self, inference_dataset, inference_result, temp_active_keys,
+                                future_horizon=12, past_horizon=8):
         if self.self_traj_exists:
             trajectory_length = self.velocity * self.inference_timer_duration * future_horizon
             self.self_traj = self.self_new_traj.copy()
@@ -100,117 +101,9 @@ class NetSubscriber:
                 self.all_predictions_history_danger_value[_id].append(avg_danger_values[j])
             self.self_traj_history.append(self.self_traj[0])
 
-            # self.publish_markers(inference_dataset.traj_flat[:, past_horizon - 1],
-            #                      inference_result, inference_colors, endpoint_colors, avg_danger_values,
-            #                      self.predictions_amount)
-
-    # TODO: phase out in favour of existing markers visualization
-    def publish_markers(self, endpoints, inference_result, inference_colors, endpoint_colors, avg_danger_values, predictions_amount):
-        marker_array = MarkerArray()
-        marker_array.markers = []
-        # Endpoint markers and danger values
-        for i, endpoint in enumerate(endpoints):
-
-            # # Endpoint markers
-            # marker = Marker()
-            # marker.id = 2 * i
-            # marker.header.frame_id = 'map'
-            # marker.header.stamp = rospy.Time.now()
-            # marker.type = 2
-            #
-            # marker.scale.x = 3.0
-            # marker.scale.y = 3.0
-            # marker.scale.z = 3.0
-            # marker.color.a = 3.0
-            # if endpoint_colors[i][0] == 'g':
-            #     marker.color.g = 1.0
-            # elif endpoint_colors[i][0] == 'y':
-            #     marker.color.r = 1.0
-            #     marker.color.g = 1.0
-            # elif endpoint_colors[i][0] == 'r':
-            #     marker.color.r = 1.0
-            # else:
-            #     marker.color.b = 1.0
-            # marker.text = 'dng: ' + str(avg_danger_values[i])
-            #
-            # marker.pose.position.x = endpoint[0]
-            # marker.pose.position.y = endpoint[1]
-            #
-            # marker.pose.orientation.x = 0.0
-            # marker.pose.orientation.y = 0.0
-            # marker.pose.orientation.z = 0.0
-            # marker.pose.orientation.w = 1.0
-            #
-            # marker_array.markers.append(marker)
-
-            # Danger values
-            marker_text = Marker()
-            marker_text.id = 2 * i + 1
-            marker_text.header.frame_id = 'map'
-            marker_text.header.stamp = rospy.Time.now()
-            marker_text.type = 9
-
-            marker_text.scale.x = 3.0
-            marker_text.scale.y = 3.0
-            marker_text.scale.z = 3.0
-            marker_text.color.a = 3.0
-            if endpoint_colors[i][0] == 'g':
-                marker_text.color.g = 1.0
-            elif endpoint_colors[i][0] == 'y':
-                marker_text.color.r = 1.0
-                marker_text.color.g = 1.0
-            elif endpoint_colors[i][0] == 'r':
-                marker_text.color.r = 1.0
-            else:
-                marker_text.color.b = 1.0
-
-            marker_text.text = 'dng: ' + str(round(avg_danger_values[i], 2))
-
-            marker_text.pose.position.x = endpoint[0] - 5
-            marker_text.pose.position.y = endpoint[1]
-
-            marker_text.pose.orientation.x = 0.0
-            marker_text.pose.orientation.y = 0.0
-            marker_text.pose.orientation.z = 0.0
-            marker_text.pose.orientation.w = 1.0
-
-            marker_array.markers.append(marker_text)
-
-        # Prediction markers
-        for j in range(predictions_amount):
-            for i in range(len(endpoints)):
-                marker = Marker()
-                marker.id = 2 * len(endpoints) + j * len(endpoints) + i + 1
-                marker.header.frame_id = 'map'
-                marker.header.stamp = rospy.Time.now()
-                marker.type = 2
-
-                marker.scale.x = 1.0
-                marker.scale.y = 1.0
-                marker.scale.z = 1.0
-                marker.color.a = 1.0
-                if inference_colors[j][i][0] == 'g':
-                    marker.color.g = 1.0
-                elif inference_colors[j][i][0] == 'y':
-                    marker.color.r = 1.0
-                    marker.color.g = 1.0
-                elif inference_colors[j][i][0] == 'r':
-                    marker.color.r = 1.0
-                else:
-                    marker.color.b = 1.0
-                marker.text = str(inference_colors[j][i])
-
-                marker.pose.position.x = inference_result[j][i][0]
-                marker.pose.position.y = inference_result[j][i][1]
-
-                marker.pose.orientation.x = 0.0
-                marker.pose.orientation.y = 0.0
-                marker.pose.orientation.z = 0.0
-                marker.pose.orientation.w = 1.0
-
-                marker_array.markers.append(marker)
-
-        # self.marker_pub.publish(marker_array)
+    @abstractmethod
+    def inference_callback(self, event):
+        pass
 
     def publish_predicted_objects(self, detectedobjectsarray):
         # Construct candidate predictors from saved history of predictions
@@ -238,24 +131,6 @@ class NetSubscriber:
 
             output_msg_array.objects.append(msg)
 
-        # with self.lock:
-        #     for _id in self.active_keys:
-        #         msg = self.last_messages[_id]
-        #         for predictions in self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 2]:
-        #             lane = Lane(header=msg.header)
-        #             # Start candidate trajectory from ego vehicle
-        #             wp = Waypoint()
-        #             wp.pose.pose.position = msg.pose.position
-        #             lane.waypoints.append(wp)
-        #             # Add prediction (endpoint only for now)
-        #             for j in [predictions]:
-        #                 wp = Waypoint()
-        #                 wp.pose.pose.position.x, wp.pose.pose.position.y = j
-        #                 wp.pose.pose.position.z = msg.pose.position.z
-        #                 lane.waypoints.append(wp)
-        #             msg.candidate_trajectories.lanes.append(lane)
-        #         output_msg_array.objects.append(msg)
-
         # Publish objects with predicted candidate trajectories
         self.objects_pub.publish(output_msg_array)
 
@@ -270,3 +145,63 @@ class NetSubscriber:
     def run(self):
         rospy.spin()
 
+
+def color_points(points, trajectory, trajectory_length):
+    # drivable_area = np.swapaxes(np.array(Image.open(rospy.get_param('~data_path_prediction') + 'semantic_rasters/drivable_area_mask_updated.png')), 0, 1)
+
+    local_car_track = LineString(trajectory)
+    cutoff_point = local_car_track.interpolate(trajectory_length)
+    local_car_track = split(local_car_track, cutoff_point).geoms[0]
+    array = []
+    for point in points:
+        local_shapely_point = Point(point)
+        distance = local_shapely_point.distance(local_car_track)
+
+        def side_decision(point, track):
+            left_buffer = track.buffer(distance + 1, single_sided=True)
+            if left_buffer.contains(point):
+                return '1'
+            else:
+                right_buffer = track.buffer(-1 * distance - 1, single_sided=True)
+                if right_buffer.contains(point):
+                    return '2'
+                else:
+                    return '0'
+        def side_decision_simplified(point, track):
+            if LinearRing(point.coords[:] + track.coords[:]).is_ccw:
+                return '1'
+            else:
+                return '2'
+        if distance < 3:
+            array.append('r')
+        ## TODO: Implement better agnostic driving area detection
+        # elif drivable_area[(int(point[0]) - 8926) * 5, (int(point[1]) - 10289) * -5]:
+        #     array.append('y' + side_decision(local_shapely_point, local_car_track))
+        else:
+            # array.append('g0')
+            array.append('g' + side_decision(local_shapely_point, local_car_track))
+    return array
+
+
+def calculate_danger_value(color1, color2):
+    dict_local = {
+        'g1': 0,
+        'g2': 4,
+        'y1': 1,
+        'y2': 3,
+        'r': 2,
+        'g0': 5,
+        'y0': 5,
+    }
+    table_local = np.array(
+    [
+    [0, 0.05, 1, 0.75, 0.6, 0],
+    [0.1, 0.15, 1, 0.8, 0.65, 0.15],
+    [0.55, 0.75, 1, 0.75, 0.55, 1],
+    [0.65, 0.8, 1, 0.15, 0.1, 0.15],
+    [0.6, 0.75, 1, 0.05, 0, 0],
+    [0, 0.15, 1, 0.15, 0, 0]
+    ]
+    )
+
+    return table_local[dict_local[color1], dict_local[color2]]

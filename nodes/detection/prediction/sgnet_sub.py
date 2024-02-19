@@ -25,8 +25,6 @@ class SGNetSubscriber(NetSubscriber):
             self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + args.checkpoint, map_location=self.device)
             self.model.load_state_dict(self.checkpoint['model_state_dict'])
 
-        self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback)
-
     def inference_callback(self, event):
         if len(self.active_keys):
             # Run inference
@@ -49,9 +47,9 @@ class SGNetSubscriber(NetSubscriber):
                     self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 1]\
                         .append(inference_result[i][j])
                 self.all_predictions_history[_id].append([])
-            # Update trajectory and process points for danger values
-            self.calculate_danger_values_and_publish(inference_dataset, inference_result, temp_active_keys,
-                                                     self.future_horizon, self.pad_past)
+            # Process points for danger values
+            self.calculate_danger_values(inference_dataset, inference_result, temp_active_keys,
+                                         self.future_horizon, self.pad_past)
             self.move_endpoints()
 
 

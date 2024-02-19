@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import rospy
-import numpy as np
 import torch
 from pecnet_utils import PECNet, PECNetDatasetInit, pecnet_iter
 from net_sub import NetSubscriber
@@ -33,8 +32,6 @@ class PECNetSubscriber(NetSubscriber):
         self.model = self.model.double().to(self.device)
         self.model.load_state_dict(self.checkpoint["model_state_dict"])
         self.predictions_amount = 5
-        # initialize the inference timer
-        self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback)
 
     def inference_callback(self, event):
         if len(self.active_keys):
@@ -58,9 +55,9 @@ class PECNetSubscriber(NetSubscriber):
                     self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 1]\
                         .append(inference_result[i][j])
                 self.all_predictions_history[_id].append([])
-            # Update trajectory and process points for danger values
-            self.calculate_danger_values_and_publish(inference_dataset, inference_result, temp_active_keys,
-                                                     self.hyper_params["future_length"], self.hyper_params['past_length'])
+            # Process points for danger values
+            self.calculate_danger_values(inference_dataset, inference_result, temp_active_keys,
+                                         self.hyper_params["future_length"], self.hyper_params['past_length'])
             self.move_endpoints()
 
 
