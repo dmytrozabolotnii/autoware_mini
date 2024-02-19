@@ -76,6 +76,8 @@ class NetSubscriber:
                     self.last_messages[_id] = detectedobject
         with self.lock:
             self.active_keys = active_keys
+        # Publish objects back retrieving candidate trajectories from history of inferences
+        self.publish_predicted_objects(detectedobjectarray)
 
     def calculate_danger_values_and_publish(self, inference_dataset, inference_result, temp_active_keys,
                                             future_horizon=12, past_horizon=8):
@@ -210,15 +212,17 @@ class NetSubscriber:
 
         # self.marker_pub.publish(marker_array)
 
-    def publish_predicted_objects(self):
+    def publish_predicted_objects(self, detectedobjectsarray):
         # Construct candidate predictors from saved history of predictions
-        msg_array = DetectedObjectArray()
-        msg_array.header.frame_id = 'map'
-        msg_array.header.stamp = rospy.Time.now()
-        with self.lock:
-            for _id in self.active_keys:
-                msg = self.last_messages[_id]
-                for predictions in self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 2]:
+        output_msg_array = DetectedObjectArray()
+        output_msg_array.header.frame_id = detectedobjectsarray.header.frame_id
+        output_msg_array.header.stamp = rospy.Time.now()
+
+        for msg in detectedobjectsarray.objects:
+            with self.lock:
+                generate_candidate_trajectories = msg.id in self.active_keys
+            if generate_candidate_trajectories:
+                for predictions in self.all_predictions_history[msg.id][len(self.all_predictions_history[msg.id]) - 2]:
                     lane = Lane(header=msg.header)
                     # Start candidate trajectory from ego vehicle
                     wp = Waypoint()
@@ -231,9 +235,29 @@ class NetSubscriber:
                         wp.pose.pose.position.z = msg.pose.position.z
                         lane.waypoints.append(wp)
                     msg.candidate_trajectories.lanes.append(lane)
-                msg_array.objects.append(msg)
+
+            output_msg_array.objects.append(msg)
+
+        # with self.lock:
+        #     for _id in self.active_keys:
+        #         msg = self.last_messages[_id]
+        #         for predictions in self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 2]:
+        #             lane = Lane(header=msg.header)
+        #             # Start candidate trajectory from ego vehicle
+        #             wp = Waypoint()
+        #             wp.pose.pose.position = msg.pose.position
+        #             lane.waypoints.append(wp)
+        #             # Add prediction (endpoint only for now)
+        #             for j in [predictions]:
+        #                 wp = Waypoint()
+        #                 wp.pose.pose.position.x, wp.pose.pose.position.y = j
+        #                 wp.pose.pose.position.z = msg.pose.position.z
+        #                 lane.waypoints.append(wp)
+        #             msg.candidate_trajectories.lanes.append(lane)
+        #         output_msg_array.objects.append(msg)
+
         # Publish objects with predicted candidate trajectories
-        self.objects_pub.publish(msg_array)
+        self.objects_pub.publish(output_msg_array)
 
     def move_endpoints(self):
         # Moves end-point of cached trajectory every inference
