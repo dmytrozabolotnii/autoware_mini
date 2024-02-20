@@ -150,6 +150,13 @@ class DetectedObjectsVisualizer:
             marker.action = marker.DELETE
             markers.markers.append(marker)
 
+            for i in range(10):
+                marker = Marker(header=header)
+                marker.ns = 'candidate_trajectories_' + str(i)
+                marker.id = id
+                marker.action = marker.DELETE
+                markers.markers.append(marker)
+
             marker = Marker(header=header)
             marker.ns = 'text'
             marker.id = id
