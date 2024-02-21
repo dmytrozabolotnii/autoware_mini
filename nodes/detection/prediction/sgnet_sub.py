@@ -25,16 +25,18 @@ class SGNetSubscriber(NetSubscriber):
             self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + args.checkpoint, map_location=self.device)
             self.model.load_state_dict(self.checkpoint['model_state_dict'])
 
+        rospy.loginfo(rospy.get_name() + " - initialized")
+
     def inference_callback(self, event):
         if len(self.active_keys):
             # Run inference
             with self.lock:
-                temp_raw_trajectories = [self.all_raw_trajectories[key][:] for key in self.all_raw_trajectories if key in self.active_keys]
-                temp_velocities = [self.all_raw_velocities[key][:] for key in self.all_raw_velocities if key in self.active_keys]
-                temp_endpoints = [self.all_endpoints[key] for key in self.all_endpoints if key in self.active_keys]
                 temp_active_keys = set(self.active_keys)
+                temp_raw_trajectories = [self.cache[key].raw_trajectories[:] for key in temp_active_keys]
+                temp_raw_velocities = [self.cache[key].raw_velocities[:] for key in temp_active_keys]
+                temp_endpoints = [self.cache[key].endpoints_count for key in temp_active_keys]
 
-            inference_dataset = SGNetDatasetInit(temp_raw_trajectories, temp_velocities,
+            inference_dataset = SGNetDatasetInit(temp_raw_trajectories, temp_raw_velocities,
                                                  end_points=temp_endpoints,
                                                  pad_past=8,
                                                  pad_future=0,
@@ -43,10 +45,8 @@ class SGNetSubscriber(NetSubscriber):
             inference_result = sgnet_iter(inference_dataset, self.model, self.device, n=self.predictions_amount)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
-                for i in range(len(inference_result)):
-                    self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 1]\
-                        .append(inference_result[i][j])
-                self.all_predictions_history[_id].append([])
+                self.cache[_id].extend_prediction_history(inference_result[i][j] for i in range(len(inference_result)))
+
             # Process points for danger values
             self.calculate_danger_values(inference_dataset, inference_result, temp_active_keys,
                                          self.future_horizon, self.pad_past)

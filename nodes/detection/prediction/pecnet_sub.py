@@ -5,6 +5,7 @@ import torch
 from pecnet_utils import PECNet, PECNetDatasetInit, pecnet_iter
 from net_sub import NetSubscriber
 
+
 class PECNetSubscriber(NetSubscriber):
 
     def __init__(self):
@@ -28,19 +29,19 @@ class PECNetSubscriber(NetSubscriber):
                             self.hyper_params["sigma"],
                             self.hyper_params["past_length"],
                             self.hyper_params["future_length"], verbose=True)
-        # TODO: remove hardcoded values
         self.model = self.model.double().to(self.device)
         self.model.load_state_dict(self.checkpoint["model_state_dict"])
         self.predictions_amount = 5
+
+        rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
         if len(self.active_keys):
             # Run inference
             with self.lock:
-                temp_raw_trajectories = [self.all_raw_trajectories[key][:] for key in self.all_raw_trajectories if key in self.active_keys]
-                temp_endpoints = [self.all_endpoints[key] for key in self.all_endpoints if key in self.active_keys]
                 temp_active_keys = set(self.active_keys)
-
+                temp_raw_trajectories = [self.cache[key].raw_trajectories[:] for key in temp_active_keys]
+                temp_endpoints = [self.cache[key].endpoints_count for key in temp_active_keys]
             inference_dataset = PECNetDatasetInit(temp_raw_trajectories,
                                                   end_points=temp_endpoints,
                                                   pad_past=self.hyper_params["past_length"],
@@ -51,10 +52,7 @@ class PECNetSubscriber(NetSubscriber):
             inference_result = pecnet_iter(inference_dataset, self.model, self.device, self.hyper_params, n=self.predictions_amount)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
-                for i in range(len(inference_result)):
-                    self.all_predictions_history[_id][len(self.all_predictions_history[_id]) - 1]\
-                        .append(inference_result[i][j])
-                self.all_predictions_history[_id].append([])
+                self.cache[_id].extend_prediction_history(inference_result[i][j] for i in range(len(inference_result)))
             # Process points for danger values
             self.calculate_danger_values(inference_dataset, inference_result, temp_active_keys,
                                          self.hyper_params["future_length"], self.hyper_params['past_length'])

@@ -9,10 +9,11 @@ from geometry_msgs.msg import TwistStamped
 from shapely import LineString, Point, LinearRing
 from shapely.ops import split
 
+from message_cache import MessageCache
+
 
 class NetSubscriber(metaclass=ABCMeta):
     def __init__(self):
-        rospy.loginfo(self.__class__.__name__ + " - Initializing")
         self.lock = threading.Lock()
         self.self_traj_sub = rospy.Subscriber("/planning/local_path", Lane, self.self_traj_callback)
         self.velocity_sub = rospy.Subscriber("/localization/current_velocity", TwistStamped, self.velocity_callback)
@@ -23,18 +24,11 @@ class NetSubscriber(metaclass=ABCMeta):
         # Caching structure
         self.self_new_traj = []
         self.self_traj_history = []
-        self.all_raw_trajectories = {}
-        self.all_raw_velocities = {}
-        self.all_predictions_history = {}
-        self.all_predictions_history_danger_value = {}
-        self.last_messages = {}
-        self.raw_trajectories = {}
-        self.raw_velocities = {}
+        # Dict of Message Cache class values
+        self.cache = {}
         self.self_traj = []
         self.self_traj_exists = False
         self.velocity = 0.0
-        self.all_endpoints = {}
-        self.current_endpoints = {}
         self.active_keys = set()
         # Basic inference values
         self.inference_timer_duration = 0.5
@@ -58,35 +52,28 @@ class NetSubscriber(metaclass=ABCMeta):
         # cache objects with filter, so we can refer to them at inference time
         active_keys = set()
         for i, detectedobject in enumerate(detectedobjectarray.objects):
-            if detectedobject.label == 'pedestrian':
+            if detectedobject.label == 'pedestrian' or detectedobject.label == 'unknown':
                 position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
                 velocity = np.array([detectedobject.velocity.linear.x, detectedobject.velocity.linear.y])
                 _id = detectedobject.id
                 active_keys.add(_id)
-
-                if not _id in self.all_raw_trajectories:
-                    self.all_raw_trajectories[_id] = [position]
-                    self.all_raw_velocities[_id] = [velocity]
-                    self.all_endpoints[_id] = 0
-                    self.all_predictions_history[_id] = [[]]
-                    self.all_predictions_history_danger_value[_id] = []
-                    self.last_messages[_id] = detectedobject
-                else:
-                    self.all_raw_trajectories[_id][len(self.all_raw_trajectories[_id]) - 1] = position
-                    self.all_raw_velocities[_id][len(self.all_raw_velocities[_id]) - 1] = velocity
-                    self.last_messages[_id] = detectedobject
+                with self.lock:
+                    if not _id in self.cache:
+                        self.cache[_id] = MessageCache(_id, position, velocity)
+                    else:
+                        self.cache[_id].update_last_trajectory_velocity(position, velocity)
         with self.lock:
             self.active_keys = active_keys
         # Publish objects back retrieving candidate trajectories from history of inferences
         self.publish_predicted_objects(detectedobjectarray)
 
+    # TODO: decide on how to integrate this with planning module or move out in differrent node
     def calculate_danger_values(self, inference_dataset, inference_result, temp_active_keys,
                                 future_horizon=12, past_horizon=8):
         if self.self_traj_exists:
             trajectory_length = self.velocity * self.inference_timer_duration * future_horizon
             self.self_traj = self.self_new_traj.copy()
             # Calculating the danger value of agent intersecting with ego-vehicle
-            # TODO: decide on how to integrate this with planning module or move out in differrent node
             inference_colors = (list(map(color_points, inference_result, [self.self_traj] * len(inference_result),
                                          [trajectory_length] * len(inference_result))))
             endpoint_colors = color_points(inference_dataset.traj_flat[:, past_horizon - 1],
@@ -98,7 +85,7 @@ class NetSubscriber(metaclass=ABCMeta):
             avg_danger_values = np.mean(danger_values, axis=1)
 
             for j, _id in enumerate(temp_active_keys):
-                self.all_predictions_history_danger_value[_id].append(avg_danger_values[j])
+                self.cache[_id].extend_prediction_history_danger_value(avg_danger_values[j])
             self.self_traj_history.append(self.self_traj[0])
 
     @abstractmethod
@@ -115,7 +102,7 @@ class NetSubscriber(metaclass=ABCMeta):
             with self.lock:
                 generate_candidate_trajectories = msg.id in self.active_keys
             if generate_candidate_trajectories:
-                for predictions in self.all_predictions_history[msg.id][len(self.all_predictions_history[msg.id]) - 2]:
+                for predictions in self.cache[msg.id].return_last_prediction():
                     lane = Lane(header=msg.header)
                     # Start candidate trajectory from ego vehicle
                     wp = Waypoint()
@@ -138,9 +125,7 @@ class NetSubscriber(metaclass=ABCMeta):
         # Moves end-point of cached trajectory every inference
         with self.lock:
             for _id in self.active_keys:
-                self.all_endpoints[_id] += 1
-                self.all_raw_trajectories[_id].append(self.all_raw_trajectories[_id][len(self.all_raw_trajectories[_id]) - 1])
-                self.all_raw_velocities[_id].append(self.all_raw_velocities[_id][len(self.all_raw_velocities[_id]) - 1])
+                self.cache[_id].move_endpoints()
 
     def run(self):
         rospy.spin()
