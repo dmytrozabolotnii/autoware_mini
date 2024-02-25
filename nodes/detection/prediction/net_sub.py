@@ -34,7 +34,7 @@ class NetSubscriber(metaclass=ABCMeta):
         self.inference_timer_duration = 0.5
         self.model = None
         self.predictions_amount = 1
-        self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback)
+        self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
 
 
     def self_traj_callback(self, lane):
@@ -63,7 +63,7 @@ class NetSubscriber(metaclass=ABCMeta):
                     else:
                         self.cache[_id].update_last_trajectory_velocity(position, velocity)
         with self.lock:
-            self.active_keys = active_keys
+            self.active_keys = self.active_keys.union(active_keys)
         # Publish objects back retrieving candidate trajectories from history of inferences
         self.publish_predicted_objects(detectedobjectarray)
 
@@ -96,7 +96,7 @@ class NetSubscriber(metaclass=ABCMeta):
         # Construct candidate predictors from saved history of predictions
         output_msg_array = DetectedObjectArray()
         output_msg_array.header.frame_id = detectedobjectsarray.header.frame_id
-        output_msg_array.header.stamp = rospy.Time.now()
+        output_msg_array.header.stamp = detectedobjectsarray.header.stamp
 
         for msg in detectedobjectsarray.objects:
             with self.lock:
@@ -126,6 +126,7 @@ class NetSubscriber(metaclass=ABCMeta):
         with self.lock:
             for _id in self.active_keys:
                 self.cache[_id].move_endpoints()
+            self.active_keys = set()
 
     def run(self):
         rospy.spin()
