@@ -69,27 +69,6 @@ class NetSubscriber(metaclass=ABCMeta):
         # Publish objects back retrieving candidate trajectories from history of inferences
         self.publish_predicted_objects(detectedobjectarray)
 
-    # TODO: decide on how to integrate this with planning module or move out in differrent node
-    def calculate_danger_values(self, inference_dataset, inference_result, temp_active_keys,
-                                future_horizon=12, past_horizon=8):
-        if self.self_traj_exists:
-            trajectory_length = self.velocity * self.inference_timer_duration * future_horizon
-            self.self_traj = self.self_new_traj.copy()
-            # Calculating the danger value of agent intersecting with ego-vehicle
-            inference_colors = (list(map(color_points, inference_result, [self.self_traj] * len(inference_result),
-                                         [trajectory_length] * len(inference_result))))
-            endpoint_colors = color_points(inference_dataset.traj_flat[:, past_horizon - 1],
-                                           self.self_traj, trajectory_length)
-            danger_values = np.zeros((len(endpoint_colors), len(inference_colors)))
-            for i in range(len(endpoint_colors)):
-                for j in range(self.predictions_amount):
-                    danger_values[i, j] = calculate_danger_value(endpoint_colors[i], inference_colors[j][i])
-            avg_danger_values = np.mean(danger_values, axis=1)
-
-            for j, _id in enumerate(temp_active_keys):
-                self.cache[_id].extend_prediction_history_danger_value(avg_danger_values[j])
-            self.self_traj_history.append(self.self_traj[0])
-
     @abstractmethod
     def inference_callback(self, event):
         pass
@@ -131,63 +110,3 @@ class NetSubscriber(metaclass=ABCMeta):
     def run(self):
         rospy.spin()
 
-
-def color_points(points, trajectory, trajectory_length):
-    # drivable_area = np.swapaxes(np.array(Image.open(rospy.get_param('~data_path_prediction') + 'semantic_rasters/drivable_area_mask_updated.png')), 0, 1)
-
-    local_car_track = LineString(trajectory)
-    cutoff_point = local_car_track.interpolate(trajectory_length)
-    local_car_track = split(local_car_track, cutoff_point).geoms[0]
-    array = []
-    for point in points:
-        local_shapely_point = Point(point)
-        distance = local_shapely_point.distance(local_car_track)
-
-        def side_decision(point, track):
-            left_buffer = track.buffer(distance + 1, single_sided=True)
-            if left_buffer.contains(point):
-                return '1'
-            else:
-                right_buffer = track.buffer(-1 * distance - 1, single_sided=True)
-                if right_buffer.contains(point):
-                    return '2'
-                else:
-                    return '0'
-        def side_decision_simplified(point, track):
-            if LinearRing(point.coords[:] + track.coords[:]).is_ccw:
-                return '1'
-            else:
-                return '2'
-        if distance < 3:
-            array.append('r')
-        ## TODO: Implement better agnostic driving area detection
-        # elif drivable_area[(int(point[0]) - 8926) * 5, (int(point[1]) - 10289) * -5]:
-        #     array.append('y' + side_decision(local_shapely_point, local_car_track))
-        else:
-            # array.append('g0')
-            array.append('g' + side_decision(local_shapely_point, local_car_track))
-    return array
-
-
-def calculate_danger_value(color1, color2):
-    dict_local = {
-        'g1': 0,
-        'g2': 4,
-        'y1': 1,
-        'y2': 3,
-        'r': 2,
-        'g0': 5,
-        'y0': 5,
-    }
-    table_local = np.array(
-    [
-    [0, 0.05, 1, 0.75, 0.6, 0],
-    [0.1, 0.15, 1, 0.8, 0.65, 0.15],
-    [0.55, 0.75, 1, 0.75, 0.55, 1],
-    [0.65, 0.8, 1, 0.15, 0.1, 0.15],
-    [0.6, 0.75, 1, 0.05, 0, 0],
-    [0, 0.15, 1, 0.15, 0, 0]
-    ]
-    )
-
-    return table_local[dict_local[color1], dict_local[color2]]

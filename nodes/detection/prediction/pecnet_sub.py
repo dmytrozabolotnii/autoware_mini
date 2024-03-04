@@ -53,9 +53,6 @@ class PECNetSubscriber(NetSubscriber):
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
                 self.cache[_id].extend_prediction_history(inference_result[i][j] for i in range(len(inference_result)))
-            # Process points for danger values
-            self.calculate_danger_values(inference_dataset, inference_result, temp_active_keys,
-                                         self.hyper_params["future_length"], self.hyper_params['past_length'])
             self.move_endpoints()
 
 
