@@ -19,11 +19,11 @@ class SGNetSubscriber(NetSubscriber):
         # TODO: remove hardcoded values
         self.pad_past = 8
         self.future_horizon = 12
-        self.predictions_amount = 1
         self.model = self.model.double().to(self.device)
         if osp.isfile(rospy.get_param('~data_path_prediction') + args.checkpoint):
             self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + args.checkpoint, map_location=self.device)
             self.model.load_state_dict(self.checkpoint['model_state_dict'])
+        self.predictions_amount = 1
 
         rospy.loginfo(rospy.get_name() + " - initialized")
 
@@ -32,6 +32,8 @@ class SGNetSubscriber(NetSubscriber):
             # Run inference
             with self.lock:
                 temp_active_keys = set(self.active_keys)
+                if self.use_backpropagation:
+                    [self.cache[key].backpropagate_trajectories() for key in temp_active_keys if self.cache[key].endpoints_count == 0]
                 temp_raw_trajectories = [self.cache[key].raw_trajectories[:] for key in temp_active_keys]
                 temp_raw_velocities = [self.cache[key].raw_velocities[:] for key in temp_active_keys]
                 temp_endpoints = [self.cache[key].endpoints_count for key in temp_active_keys]
