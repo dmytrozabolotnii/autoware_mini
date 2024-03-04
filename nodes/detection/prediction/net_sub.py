@@ -60,6 +60,7 @@ class NetSubscriber(metaclass=ABCMeta):
                 with self.lock:
                     if not _id in self.cache:
                         self.cache[_id] = MessageCache(_id, position, velocity)
+                        # self.cache[_id].backpropagate_trajectories()
                     else:
                         self.cache[_id].update_last_trajectory_velocity(position, velocity)
         with self.lock:

@@ -8,17 +8,19 @@ class MessageCache:
         self.endpoints_count = 0
         self.raw_trajectories = [initial_trajectory_point]
         self.raw_velocities = [initial_velocity]
-        self.endpoint_history = []
         self.prediction_history = [[]]
         self.predictions_history_danger_value = []
+
+    def backpropagate_trajectories(self, pad_past=8):
+        # Create fake history of movement depending on velocity vector we receive
+        self.raw_trajectories = [self.raw_trajectories[0] + self.raw_velocities[0] * i
+                                 for i in range(-1 * pad_past, 0)] + self.raw_trajectories
+        self.raw_velocities = [self.raw_velocities[0]] * pad_past + self.raw_velocities
+        self.endpoints_count = pad_past + 1
 
     def update_last_trajectory_velocity(self, trajectory, velocity):
         self.raw_trajectories[len(self.raw_trajectories) - 1] = trajectory
         self.raw_velocities[len(self.raw_velocities) - 1] = velocity
-
-    def extend_endpoint_history(self, endpoint):
-        self.endpoint_history.append(endpoint)
-        return
 
     def return_last_prediction(self):
         return self.prediction_history[len(self.prediction_history) - 1]
