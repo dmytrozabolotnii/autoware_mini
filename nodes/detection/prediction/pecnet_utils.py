@@ -183,7 +183,7 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5):
             shift = trajx[:, 0, :].cpu().numpy()
             traj = trajx - trajx[:, :1, :]
             # TODO: resolve this hardcoded value
-            traj *= hyper_params["data_scale"] * 200
+            traj *= hyper_params["data_scale"] * 1000
             trajx = torch.DoubleTensor(trajx).to(device)
 
             x = traj[:, :hyper_params["past_length"], :]
@@ -199,9 +199,9 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5):
             all_l2_errors_dest = []
             all_guesses = []
             for j in range(n):
-                dest_recon = model.forward(x, traj[:, hyper_params["past_length"] - 1, :], device=device)
+                dest_recon = model.forward(x, trajx[:, hyper_params["past_length"] - 1, :] / 1000, device=device)
                 dest_recon = dest_recon.cpu().numpy()
-                dest_recon = dest_recon / hyper_params["data_scale"] / 200 + shift
+                dest_recon = dest_recon / hyper_params["data_scale"] / 1000 + shift
                 all_guesses.append(dest_recon)
 
     return all_guesses
