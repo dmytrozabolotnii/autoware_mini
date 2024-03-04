@@ -3,17 +3,19 @@
 class MessageCache:
     def __init__(self, id,
                  initial_trajectory_point,
-                 initial_velocity, initial_header):
+                 initial_velocity, initial_header, delta_t=0.5):
         self.id = id
         self.endpoints_count = 0
         self.raw_trajectories = [initial_trajectory_point]
         self.raw_velocities = [initial_velocity]
         self.prediction_history = [[]]
         self.predictions_history_headers = [initial_header]
+        # Approximate time between points
+        self.delta_t = delta_t
 
     def backpropagate_trajectories(self, pad_past=8):
         # Create fake history of movement depending on velocity vector we receive
-        self.raw_trajectories = [self.raw_trajectories[0] + self.raw_velocities[0] * i
+        self.raw_trajectories = [self.raw_trajectories[0] + self.raw_velocities[0] * i * self.delta_t
                                  for i in range(-1 * pad_past, 0)] + self.raw_trajectories
         self.raw_velocities = [self.raw_velocities[0]] * pad_past + self.raw_velocities
         self.endpoints_count = pad_past + 1

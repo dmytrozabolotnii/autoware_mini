@@ -34,6 +34,7 @@ class NetSubscriber(metaclass=ABCMeta):
         self.inference_timer_duration = 0.5
         self.model = None
         self.predictions_amount = 1
+        self.use_backpropagation = bool(rospy.get_param('~predictor_backfill'))
         self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
 
 
@@ -59,9 +60,9 @@ class NetSubscriber(metaclass=ABCMeta):
                 _id = detectedobject.id
                 active_keys.add(_id)
                 with self.lock:
-                    if not _id in self.cache:
-                        self.cache[_id] = MessageCache(_id, position, velocity, header)
-                        # self.cache[_id].backpropagate_trajectories()
+                    if _id not in self.cache:
+                        self.cache[_id] = MessageCache(_id, position, velocity, header,
+                                                       delta_t=self.inference_timer_duration)
                     else:
                         self.cache[_id].update_last_trajectory_velocity(position, velocity, header)
         with self.lock:
