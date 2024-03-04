@@ -9,7 +9,6 @@ class MessageCache:
         self.raw_trajectories = [initial_trajectory_point]
         self.raw_velocities = [initial_velocity]
         self.prediction_history = [[]]
-        self.predictions_history_danger_value = []
         self.predictions_history_headers = [initial_header]
 
     def backpropagate_trajectories(self, pad_past=8):
@@ -32,9 +31,6 @@ class MessageCache:
 
     def extend_prediction_history(self, prediction):
         self.prediction_history.append(list(prediction))
-
-    def extend_prediction_history_danger_value(self, danger_value):
-        self.predictions_history_danger_value.append(danger_value)
 
     def move_endpoints(self):
         self.endpoints_count += 1

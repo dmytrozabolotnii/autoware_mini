@@ -47,9 +47,6 @@ class SGNetSubscriber(NetSubscriber):
             for j, _id in enumerate(temp_active_keys):
                 self.cache[_id].extend_prediction_history(inference_result[i][j] for i in range(len(inference_result)))
 
-            # Process points for danger values
-            self.calculate_danger_values(inference_dataset, inference_result, temp_active_keys,
-                                         self.future_horizon, self.pad_past)
             self.move_endpoints()
 
 
