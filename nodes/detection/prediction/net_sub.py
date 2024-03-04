@@ -55,14 +55,15 @@ class NetSubscriber(metaclass=ABCMeta):
             if detectedobject.label == 'pedestrian' or detectedobject.label == 'unknown':
                 position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
                 velocity = np.array([detectedobject.velocity.linear.x, detectedobject.velocity.linear.y])
+                header = detectedobject.header
                 _id = detectedobject.id
                 active_keys.add(_id)
                 with self.lock:
                     if not _id in self.cache:
-                        self.cache[_id] = MessageCache(_id, position, velocity)
+                        self.cache[_id] = MessageCache(_id, position, velocity, header)
                         # self.cache[_id].backpropagate_trajectories()
                     else:
-                        self.cache[_id].update_last_trajectory_velocity(position, velocity)
+                        self.cache[_id].update_last_trajectory_velocity(position, velocity, header)
         with self.lock:
             self.active_keys = self.active_keys.union(active_keys)
         # Publish objects back retrieving candidate trajectories from history of inferences
@@ -95,16 +96,14 @@ class NetSubscriber(metaclass=ABCMeta):
 
     def publish_predicted_objects(self, detectedobjectsarray):
         # Construct candidate predictors from saved history of predictions
-        output_msg_array = DetectedObjectArray()
-        output_msg_array.header.frame_id = detectedobjectsarray.header.frame_id
-        output_msg_array.header.stamp = detectedobjectsarray.header.stamp
+        output_msg_array = DetectedObjectArray(header=detectedobjectsarray.header)
 
         for msg in detectedobjectsarray.objects:
             with self.lock:
                 generate_candidate_trajectories = msg.id in self.active_keys
             if generate_candidate_trajectories:
                 for predictions in self.cache[msg.id].return_last_prediction():
-                    lane = Lane(header=msg.header)
+                    lane = Lane(header=self.cache[msg.id].return_last_header())
                     # Start candidate trajectory from ego vehicle
                     wp = Waypoint()
                     wp.pose.pose.position = msg.pose.position
