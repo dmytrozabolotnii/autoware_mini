@@ -33,7 +33,7 @@ class SGNetSubscriber(NetSubscriber):
             with self.lock:
                 temp_active_keys = set(self.active_keys)
                 if self.use_backpropagation:
-                    [self.cache[key].backpropagate_trajectories() for key in temp_active_keys if self.cache[key].endpoints_count == 0]
+                    [self.cache[key].backpropagate_trajectories(pad_past=self.pad_past) for key in temp_active_keys if self.cache[key].endpoints_count == 0]
                 temp_raw_trajectories = [self.cache[key].raw_trajectories[:] for key in temp_active_keys]
                 temp_raw_velocities = [self.cache[key].raw_velocities[:] for key in temp_active_keys]
                 temp_endpoints = [self.cache[key].endpoints_count for key in temp_active_keys]
