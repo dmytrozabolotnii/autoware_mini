@@ -29,7 +29,11 @@ class NetSubscriber(metaclass=ABCMeta):
         self.velocity = 0.0
         self.active_keys = set()
         # Basic inference values
-        self.inference_timer_duration = 0.25
+        # Inference is run every these seconds:
+        self.inference_timer_duration = 0.1
+        # Effectively means points for trajectories for inference are taken
+        # every inference_timer * (skip_points + 1) seconds:
+        self.skip_points = 4
         self.model = None
         self.predictions_amount = 1
         self.use_backpropagation = bool(rospy.get_param('~predictor_backfill'))
