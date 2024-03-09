@@ -88,8 +88,9 @@ class NetSubscriber(metaclass=ABCMeta):
                     wp = Waypoint()
                     wp.pose.pose.position = msg.pose.position
                     lane.waypoints.append(wp)
-                    # Add prediction (endpoint only for now)
-                    for j in [predictions]:
+                    # Add prediction
+
+                    for j in predictions:
                         wp = Waypoint()
                         wp.pose.pose.position.x, wp.pose.pose.position.y = j
                         wp.pose.pose.position.z = msg.pose.position.z

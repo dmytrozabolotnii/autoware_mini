@@ -1,6 +1,8 @@
 # Based on https://github.com/HarshayuGirase/Human-Path-Prediction/tree/master/PECNet
 
 import numpy as np
+from scipy.spatial.distance import pdist, squareform
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -70,17 +72,6 @@ class PECNet(nn.Module):
         self.predictor = MLP(input_dim = 2*fdim + 2, output_dim = 2*(future_length-1), hidden_size=predictor_size)
 
         architecture = lambda net: [l.in_features for l in net.layers] + [net.layers[-1].out_features]
-
-        # if verbose:
-        #     print("Past Encoder architecture : {}".format(architecture(self.encoder_past)))
-        #     print("Dest Encoder architecture : {}".format(architecture(self.encoder_dest)))
-        #     print("Latent Encoder architecture : {}".format(architecture(self.encoder_latent)))
-        #     print("Decoder architecture : {}".format(architecture(self.decoder)))
-        #     print("Predictor architecture : {}".format(architecture(self.predictor)))
-        #
-        #     print("Non Local Theta architecture : {}".format(architecture(self.non_local_theta)))
-        #     print("Non Local Phi architecture : {}".format(architecture(self.non_local_phi)))
-        #     print("Non Local g architecture : {}".format(architecture(self.non_local_g)))
 
     def non_local_social_pooling(self, feat, mask):
 
@@ -160,61 +151,78 @@ class PECNet(nn.Module):
     def predict(self, past, generated_dest, mask, initial_pos):
         ftraj = self.encoder_past(past)
         generated_dest_features = self.encoder_dest(generated_dest)
-        prediction_features = torch.cat((ftraj, generated_dest_features, initial_pos), dim = 1)
+        prediction_features = torch.cat((ftraj, generated_dest_features, initial_pos), dim=1)
 
         for i in range(self.nonlocal_pools):
             # non local social pooling
             prediction_features = self.non_local_social_pooling(prediction_features, mask)
 
         interpolated_future = self.predictor(prediction_features)
+
         return interpolated_future
 
 
-def pecnet_iter(dataset, model, device, hyper_params, n=5):
+def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
 
     dataloader = data.DataLoader(
         dataset, batch_size=len(dataset), shuffle=False, num_workers=0)
 
     model.eval()
-    all_dest_recons = []
 
     with torch.no_grad():
-        for i, trajx in enumerate(dataloader):
-            shift = trajx[:, 0, :].cpu().numpy()
-            traj = trajx - trajx[:, :1, :]
-            # TODO: resolve this hardcoded value
-            traj *= hyper_params["data_scale"] * 1000
-            trajx = torch.DoubleTensor(trajx).to(device)
+        batch_by_batch_guesses = []
 
+        for i, (trajx, maskx) in enumerate(dataloader):
+            batch_by_batch_guesses.append([])
+
+            trajx = torch.DoubleTensor(trajx).to(device)
+            maskx = torch.DoubleTensor(maskx).to(device)
+
+            shift = trajx[:, :1, :]
+            traj = trajx - shift
+
+            traj = traj * hyper_params["data_scale"] * tuning
+            initial_pos = trajx[:, hyper_params["past_length"] - 1, :] * tuning / 1000
+            initial_pos = initial_pos.to(device)
             x = traj[:, :hyper_params["past_length"], :]
-            y = traj[:, hyper_params["past_length"]:, :]
-            y = y.cpu().numpy()
 
             # reshape the data
             x = x.view(-1, x.shape[1] * x.shape[2])
             x = x.to(device)
 
-            future = y[:, :-1, :]
-            dest = y[:, -1, :]
-            all_l2_errors_dest = []
-            all_guesses = []
-            for j in range(n):
-                dest_recon = model.forward(x, trajx[:, hyper_params["past_length"] - 1, :] / 1000, device=device)
-                dest_recon = dest_recon.cpu().numpy()
-                dest_recon = dest_recon / hyper_params["data_scale"] / 1000 + shift
-                all_guesses.append(dest_recon)
+            shift = shift.cpu().numpy()
 
-    return all_guesses
+            for j in range(n):
+                dest_recon = model.forward(x, initial_pos, device=device)
+                dest_path = model.predict(x, dest_recon, maskx,
+                                          initial_pos)
+                dest_recon = dest_recon.cpu().numpy()
+                dest_path = dest_path.cpu().numpy()
+                dest_path = np.concatenate((dest_path, dest_recon), axis=1)
+                dest_path = np.reshape(dest_path, (-1, hyper_params["future_length"], 2))
+
+                dest_path = dest_path / hyper_params["data_scale"] / tuning + shift
+                batch_by_batch_guesses[len(batch_by_batch_guesses) - 1].append(dest_path)
+
+    true_guesses = [[] * n]
+    for batch_guess in batch_by_batch_guesses:
+        for i in range(n):
+            true_guesses[i].extend(batch_guess[i])
+
+    return true_guesses
 
 
 class PECNetDatasetInit(data.Dataset):
-    def __init__(self, detected_object_trajs, end_points, pad_past=8, pad_future=12, set_name="train", id=False, verbose=True):
+    def __init__(self, detected_object_trajs, end_points, pad_past=8, pad_future=12, dist_thresh=100):
         self.traj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
                                      mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(detected_object_trajs)])
+        distances = squareform(pdist(self.traj[:, pad_past]))
+        self.mask = np.where(distances < dist_thresh, 1.0, 0.0)
+
         self.traj_flat = np.copy(self.traj)
 
     def __len__(self):
         return len(self.traj)
 
     def __getitem__(self, idx):
-        return self.traj[idx]
+        return self.traj[idx], self.mask[idx]
