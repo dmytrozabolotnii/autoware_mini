@@ -2,6 +2,7 @@
 
 import rospy
 import torch
+import time
 from pecnet_utils import PECNet, PECNetDatasetInit, pecnet_iter
 from net_sub import NetSubscriber
 
@@ -41,10 +42,14 @@ class PECNetSubscriber(NetSubscriber):
             with self.lock:
                 temp_active_keys = set(self.active_keys)
                 if self.use_backpropagation:
-                    [self.cache[key].backpropagate_trajectories(pad_past=self.hyper_params["past_length"])
+                    [self.cache[key].backpropagate_trajectories(pad_past=self.hyper_params["past_length"] *
+                                                                         (self.skip_points + 1))
                      for key in temp_active_keys if self.cache[key].endpoints_count == 0]
-                temp_raw_trajectories = [self.cache[key].raw_trajectories[:] for key in temp_active_keys]
-                temp_endpoints = [self.cache[key].endpoints_count for key in temp_active_keys]
+                temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
+                                         for key in temp_active_keys]
+                temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1)
+                                  for key in temp_active_keys]
+            self.move_endpoints()
             inference_dataset = PECNetDatasetInit(temp_raw_trajectories,
                                                   end_points=temp_endpoints,
                                                   pad_past=self.hyper_params["past_length"],
@@ -55,7 +60,6 @@ class PECNetSubscriber(NetSubscriber):
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
                 self.cache[_id].extend_prediction_history(inference_result[i][j] for i in range(len(inference_result)))
-            self.move_endpoints()
 
 
 if __name__ == '__main__':
