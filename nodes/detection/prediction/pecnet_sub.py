@@ -31,7 +31,7 @@ class PECNetSubscriber(NetSubscriber):
                             self.hyper_params["future_length"], verbose=True)
         self.model = self.model.double().to(self.device)
         self.model.load_state_dict(self.checkpoint["model_state_dict"])
-        self.predictions_amount = 5
+        self.predictions_amount = 1
 
         rospy.loginfo(rospy.get_name() + " - initialized")
 
@@ -48,8 +48,7 @@ class PECNetSubscriber(NetSubscriber):
                                                   end_points=temp_endpoints,
                                                   pad_past=self.hyper_params["past_length"],
                                                   pad_future=self.hyper_params["future_length"],
-                                                  set_name="test",
-                                                  verbose=True,
+                                                  dist_thresh=self.hyper_params["dist_thresh"]
                                                       )
             inference_result = pecnet_iter(inference_dataset, self.model, self.device, self.hyper_params, n=self.predictions_amount)
             # Update history of inferences

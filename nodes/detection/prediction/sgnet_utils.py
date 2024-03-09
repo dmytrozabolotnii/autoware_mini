@@ -206,42 +206,29 @@ def sgnet_iter(dataset, model, device, n=5):
         dataset, batch_size=len(dataset), shuffle=False, num_workers=0)
 
     model.eval()
+    batch_by_batch_guesses = []
     with torch.set_grad_enabled(False):
         for batch_idx, traj in enumerate(dataloader):
+            batch_by_batch_guesses.append([])
 
-            # first_history_index = torch.DoubleTensor([0]).to(device)
-            # print(first_history_index)
-            # assert torch.unique(first_history_index).shape[0] == 1
-            # batch_size = traj['input_x'].shape[0]
-            # count += batch_size
-            shift = traj[:, -1, :2].to('cpu').numpy()
+            shift = traj[:, -1:, :2].to('cpu').numpy()
             input_normalized = torch.cat([traj[:, :, :2] - traj[:, -1:, :2], traj[:, :, 2:]], dim=2)
             input_traj_torch = torch.DoubleTensor(input_normalized).to(device)
-            # print(input_traj_torch, input_traj_torch.shape)
-            # input_bbox_st = data['input_x_st'].to(device)
-            # target_traj = traj['target_y'].to(device)
-            # target_bbox_st = data['target_y_st'].to(device)
-            # all_guesses = []
 
-            # for j in range(n):
-            #     all_goal_traj, all_dec_traj = model(input_traj_torch)
-            #     all_dec_traj_np = all_dec_traj.to('cpu').numpy()
-            #     all_dec_traj_np = all_dec_traj_np[:, -1, -1, :]
-            #     # print(all_dec_traj_np)
-            #     all_dec_traj_np = all_dec_traj_np + shift
-            #     all_guesses.append(all_dec_traj_np)
-            # print(all_guesses)
-            all_goal_traj, all_dec_traj = model(input_traj_torch)
-            all_dec_traj_np = all_dec_traj.to('cpu').numpy()
-            all_dec_traj_np = all_dec_traj_np[:, -1:, -1, :]
-            all_dec_traj_np = np.swapaxes(all_dec_traj_np, 0, 1)
-            # print(all_dec_traj_np)
-            for i in range(len(all_dec_traj_np)):
-                all_dec_traj_np[i] = all_dec_traj_np[i] + shift
+            for j in range(n):
+                all_goal_traj, all_dec_traj = model(input_traj_torch)
+                all_dec_traj_np = all_dec_traj.to('cpu').numpy()
+                all_dec_traj_np = all_dec_traj_np[:, -1, :, :]
 
+                all_dec_traj_np = all_dec_traj_np + shift
+                batch_by_batch_guesses[len(batch_by_batch_guesses) - 1].append(all_dec_traj_np)
 
+    true_guesses = [[] * n]
+    for batch_guess in batch_by_batch_guesses:
+        for i in range(n):
+            true_guesses[i].extend(batch_guess[i])
 
-    return all_dec_traj_np
+    return true_guesses
 
 
 class SGNetDatasetInit(data.Dataset):
@@ -249,7 +236,7 @@ class SGNetDatasetInit(data.Dataset):
         self.traj_flat = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
                                      mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(detected_object_trajs)])
         self.velocitytraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='constant')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(velocity_objects)]) / inference_timer_duration
+                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(velocity_objects)]) / inference_timer_duration
         self.acceltraj = np.zeros_like(self.velocitytraj)
 
         self.traj = np.concatenate((self.traj_flat, self.velocitytraj, self.acceltraj), axis=2)
