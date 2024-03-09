@@ -15,8 +15,6 @@ from message_cache import MessageCache
 class NetSubscriber(metaclass=ABCMeta):
     def __init__(self):
         self.lock = threading.Lock()
-        self.self_traj_sub = rospy.Subscriber("/planning/local_path", Lane, self.self_traj_callback)
-        self.velocity_sub = rospy.Subscriber("/localization/current_velocity", TwistStamped, self.velocity_callback)
         self.objects_sub = rospy.Subscriber("tracked_objects",
                                             DetectedObjectArray, self.detected_objects_sub_callback)
         self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
@@ -31,23 +29,11 @@ class NetSubscriber(metaclass=ABCMeta):
         self.velocity = 0.0
         self.active_keys = set()
         # Basic inference values
-        self.inference_timer_duration = 0.5
+        self.inference_timer_duration = 0.25
         self.model = None
         self.predictions_amount = 1
         self.use_backpropagation = bool(rospy.get_param('~predictor_backfill'))
         self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
-
-
-    def self_traj_callback(self, lane):
-        if len(lane.waypoints) > 3:
-            self.self_traj_exists = True
-        new_traj = []
-        for waypoint in lane.waypoints:
-            new_traj.append([waypoint.pose.pose.position.x, waypoint.pose.pose.position.y])
-        self.self_new_traj = new_traj.copy()
-
-    def velocity_callback(self, twist):
-        self.velocity = (twist.twist.linear.x ** 2 + twist.twist.linear.y ** 2 + twist.twist.linear.z ** 2) ** 0.5
 
     def detected_objects_sub_callback(self, detectedobjectarray):
         # cache objects with filter, so we can refer to them at inference time
@@ -107,6 +93,7 @@ class NetSubscriber(metaclass=ABCMeta):
         with self.lock:
             for _id in self.active_keys:
                 self.cache[_id].move_endpoints()
+            # Resets active keys
             self.active_keys = set()
 
     def run(self):
