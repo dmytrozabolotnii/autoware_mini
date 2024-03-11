@@ -15,10 +15,6 @@ from message_cache import MessageCache
 class NetSubscriber(metaclass=ABCMeta):
     def __init__(self):
         self.lock = threading.Lock()
-        self.objects_sub = rospy.Subscriber("tracked_objects",
-                                            DetectedObjectArray, self.detected_objects_sub_callback)
-        self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
-                                           tcp_nodelay=True)
         # Caching structure
         self.self_new_traj = []
         self.self_traj_history = []
@@ -29,6 +25,7 @@ class NetSubscriber(metaclass=ABCMeta):
         self.velocity = 0.0
         self.active_keys = set()
         # Basic inference values
+
         # Inference is run every these seconds:
         self.inference_timer_duration = 0.25
         # Effectively means points for trajectories for inference are taken
@@ -37,7 +34,15 @@ class NetSubscriber(metaclass=ABCMeta):
         self.model = None
         self.predictions_amount = 1
         self.use_backpropagation = bool(rospy.get_param('~predictor_backfill'))
+        self.pad_past = 8
+
+        # ROS timers/pub/sub
         self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
+        self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
+                                           tcp_nodelay=True)
+        self.objects_sub = rospy.Subscriber("tracked_objects",
+                                            DetectedObjectArray, self.detected_objects_sub_callback)
+
 
     def detected_objects_sub_callback(self, detectedobjectarray):
         # cache objects with filter, so we can refer to them at inference time
@@ -54,6 +59,9 @@ class NetSubscriber(metaclass=ABCMeta):
                     if _id not in self.cache:
                         self.cache[_id] = MessageCache(_id, position, velocity, acceleration, header,
                                                        delta_t=self.inference_timer_duration)
+                        if self.use_backpropagation:
+                            self.cache[_id].backpropagate_trajectories(pad_past=self.pad_past * (self.skip_points + 1))
+
                     else:
                         self.cache[_id].update_last_trajectory(position, velocity, acceleration, header)
         with self.lock:

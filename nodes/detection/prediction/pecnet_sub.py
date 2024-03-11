@@ -33,6 +33,7 @@ class PECNetSubscriber(NetSubscriber):
         self.model = self.model.double().to(self.device)
         self.model.load_state_dict(self.checkpoint["model_state_dict"])
         self.predictions_amount = 5
+        self.pad_past = self.hyper_params["past_length"]
 
         rospy.loginfo(rospy.get_name() + " - initialized")
 
@@ -41,10 +42,6 @@ class PECNetSubscriber(NetSubscriber):
             # Run inference
             with self.lock:
                 temp_active_keys = set(self.active_keys)
-                if self.use_backpropagation:
-                    [self.cache[key].backpropagate_trajectories(pad_past=self.hyper_params["past_length"] *
-                                                                         (self.skip_points + 1))
-                     for key in temp_active_keys if self.cache[key].endpoints_count == 0]
                 temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
                                          for key in temp_active_keys]
                 temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1)
@@ -52,8 +49,8 @@ class PECNetSubscriber(NetSubscriber):
             self.move_endpoints()
             inference_dataset = PECNetDatasetInit(temp_raw_trajectories,
                                                   end_points=temp_endpoints,
-                                                  pad_past=self.hyper_params["past_length"],
-                                                  pad_future=self.hyper_params["future_length"],
+                                                  pad_past=self.hyper_params["past_length"] - 1,
+                                                  pad_future=0,
                                                   dist_thresh=self.hyper_params["dist_thresh"] / 2
                                                       )
             inference_result = pecnet_iter(inference_dataset, self.model, self.device, self.hyper_params, n=self.predictions_amount)

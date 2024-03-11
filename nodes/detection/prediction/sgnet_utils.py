@@ -214,6 +214,11 @@ def sgnet_iter(dataset, model, device, n=5):
 
             shift = traj[:, -1:, :2].to('cpu').numpy()
             input_normalized = torch.cat([traj[:, :, :2] - traj[:, -1:, :2], traj[:, :, 2:]], dim=2)
+            # input_normalized = torch.clone(traj).to(device)
+            # reduce = torch.max(torch.abs(torch.min(input_normalized[:, :, :2])), torch.abs(torch.max(input_normalized[:, :, :2])))
+            # for i in range(2):
+            #     input_normalized[:, :, i] = (input_normalized[:, :, i] - torch.mean(input_normalized[:, :, i])) / reduce
+
             input_traj_torch = input_normalized
 
             for j in range(n):
@@ -221,7 +226,8 @@ def sgnet_iter(dataset, model, device, n=5):
                 all_goal_traj_np = all_goal_traj.to('cpu').numpy()
                 all_dec_traj_np = all_dec_traj.to('cpu').numpy()
                 dest_path = all_dec_traj_np[:, -1, :, :]
-                dest_path = dest_path + shift + dataset.initial_shift
+                dest_path = dest_path + shift
+
                 batch_by_batch_guesses[len(batch_by_batch_guesses) - 1].append(dest_path)
 
     true_guesses = [[] for _ in range(n)]
@@ -235,16 +241,15 @@ def sgnet_iter(dataset, model, device, n=5):
 class SGNetDatasetInit(data.Dataset):
     def __init__(self, detected_object_trajs, velocity_objects, acceleration_objects, end_points, pad_past=8, pad_future=0, inference_timer_duration=0.5):
         self.traj_flat = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(detected_object_trajs)])
-        self.initial_shift = np.min(detected_object_trajs)
-
-        traj = self.traj_flat - self.initial_shift
+                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(detected_object_trajs)])
+        traj = np.copy(self.traj_flat)
         self.velocitytraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(velocity_objects)]) / inference_timer_duration
+                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(velocity_objects)]) / inference_timer_duration
         self.acceltraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(acceleration_objects)]) / inference_timer_duration
+                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(acceleration_objects)]) / inference_timer_duration
 
-        self.traj = np.concatenate((traj, self.velocitytraj, self.acceltraj), axis=2)
+        self.traj = np.concatenate((traj, self.velocitytraj,
+                                    self.acceltraj), axis=2)
 
 
     def __len__(self):

@@ -14,6 +14,7 @@
     <arg name="tfl_detector"            default="none"          doc="mqtt" />
     <arg name="tracker"                 default="$(eval 'ema' if scenario_name != '' else 'none')"  doc="none, ema"/>
     <arg name="predictor"               default="none"          doc="none, naive, map, map_naive, pedestrian, pedestriansg"/>
+    <arg name="predictor_backfill"      default="false"         doc="By default don't backfill object trajectories" />
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
 
     <!-- Localization -->
@@ -29,6 +30,7 @@
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
+        <arg name="predictor_backfill"  value="$(arg predictor_backfill)" />
         <arg name="detection_range"     value="$(arg detection_range)" />
         <arg name="map_name"            value="$(arg map_name)" />
         <arg name="use_road_area_filter" value="$(arg use_road_area_filter)" />

@@ -12,7 +12,8 @@
     <arg name="tfl_detector"            default="carla"                 doc="carla, camera, mqtt_camera_fusion" />
     <arg name="tfl_cameras"             default="mako"                  doc="mako, nvidia" />
     <arg name="tracker"                 default="$(eval 'ema' if detector != 'carla' else 'none')" />
-    <arg name="predictor"               default="none"                  doc="none, naive, map, map_naive" />
+    <arg name="predictor"               default="none"                  doc="none, naive, map, map_naive, pedestrian, pedestriansg" />
+    <arg name="predictor_backfill"      default="false"                 doc="By default don't backfill object trajectories" />
     <arg name="follower"                default="pure_pursuit"          doc="pure_pursuit, stanley" />
     <arg name="detection_range"         default=""                      doc="enter a value in meters to enable it" />
     <arg name="use_road_area_filter"    default="false"                 doc="use road area filter"/>
@@ -42,6 +43,7 @@
         <arg name='use_lidar_front'     value='$(arg use_lidar_front)'/>
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
+        <arg name="predictor_backfill"  value="$(arg predictor_backfill)" />
         <arg name="detection_range"     value="$(arg detection_range)" />
         <arg name="map_name"            value="$(arg map_name)" />
         <arg name="use_road_area_filter" value="$(arg use_road_area_filter)" />
