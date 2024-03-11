@@ -213,11 +213,11 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
 
 
 class PECNetDatasetInit(data.Dataset):
-    def __init__(self, detected_object_trajs, end_points, pad_past=8, pad_future=12, dist_thresh=100):
-        self.initial_shift = np.min(detected_object_trajs)
-
+    def __init__(self, detected_object_trajs, end_points, pad_past=7, pad_future=0, dist_thresh=100):
         self.traj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(detected_object_trajs)])
+                                     mode='edge')[end_points[i]:(end_points[i] + pad_past + pad_future + 1)] for i, traj in enumerate(detected_object_trajs)])
+        self.initial_shift = np.min(self.traj)
+
         self.traj_flat = np.copy(self.traj)
 
         self.traj = self.traj - self.initial_shift

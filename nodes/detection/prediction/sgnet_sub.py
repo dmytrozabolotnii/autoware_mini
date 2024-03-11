@@ -15,17 +15,16 @@ class SGNetSubscriber(NetSubscriber):
 
         self.args = args
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        # utl.set_seed(int(args.seed))
         self.model = SGNet(args)
-        # TODO: remove hardcoded values
-        self.pad_past = 8
-        self.future_horizon = 12
+
+        self.past_horizon = args.enc_steps
+        self.future_horizon = args.dec_steps
         self.model = self.model.double().to(self.device)
         if osp.isfile(rospy.get_param('~data_path_prediction') + args.checkpoint):
             self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + args.checkpoint, map_location=self.device)
             self.model.load_state_dict(self.checkpoint['model_state_dict'])
         self.predictions_amount = 1
-
+        self.pad_past = self.past_horizon
         rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
@@ -33,10 +32,6 @@ class SGNetSubscriber(NetSubscriber):
             # Run inference
             with self.lock:
                 temp_active_keys = set(self.active_keys)
-                if self.use_backpropagation:
-                    [self.cache[key].backpropagate_trajectories(pad_past=self.pad_past *
-                                                                         (self.skip_points + 1))
-                     for key in temp_active_keys if self.cache[key].endpoints_count == 0]
                 temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
                                          for key in temp_active_keys]
                 temp_raw_velocities = [self.cache[key].raw_velocities[-1::-1 * (self.skip_points + 1)][::-1]
@@ -49,7 +44,7 @@ class SGNetSubscriber(NetSubscriber):
 
             inference_dataset = SGNetDatasetInit(temp_raw_trajectories, temp_raw_velocities, temp_raw_acceleration,
                                                  end_points=temp_endpoints,
-                                                 pad_past=8,
+                                                 pad_past=self.past_horizon - 1,
                                                  pad_future=0,
                                                  inference_timer_duration=self.inference_timer_duration * (self.skip_points + 1))
 

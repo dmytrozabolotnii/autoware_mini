@@ -1,4 +1,5 @@
 # Class for caching info from messages of type DetectedObject for inference with separate timer
+import numpy as np
 
 class MessageCache:
     def __init__(self, id,
@@ -15,12 +16,14 @@ class MessageCache:
         self.delta_t = delta_t
 
     def backpropagate_trajectories(self, pad_past=8):
-        # Create fake history of movement depending on velocity vector we receive
-        self.raw_trajectories = [self.raw_trajectories[0] + self.raw_velocities[0] * i * self.delta_t
-                                 for i in range(-1 * pad_past, 0)] + self.raw_trajectories
-        self.raw_velocities = [self.raw_velocities[0]] * pad_past + self.raw_velocities
+        # Create fake history of movement depending on velocity and acceleration vector we receive
         self.raw_accelerations = [self.raw_accelerations[0]] * pad_past + self.raw_accelerations
-        self.endpoints_count = pad_past + 1
+        new_velocities = [self.raw_velocities[0] + self.raw_accelerations[0] * i * self.delta_t
+                          for i in range(-1 * pad_past, 0)]
+        self.raw_velocities = new_velocities + self.raw_velocities
+        velocities_cumsum = np.cumsum(new_velocities[::-1], axis=0)[::-1] * self.delta_t
+        self.raw_trajectories = list(self.raw_trajectories[0] - velocities_cumsum) + self.raw_trajectories
+        self.endpoints_count = pad_past
 
     def update_last_trajectory(self, trajectory, velocity, acceleration, header):
         self.raw_trajectories[len(self.raw_trajectories) - 1] = trajectory

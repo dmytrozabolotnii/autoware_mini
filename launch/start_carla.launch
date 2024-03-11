@@ -11,7 +11,8 @@
     <arg name="detector"                default="carla"                 doc="lidar_cluster, lidar_sfa, sim, carla" />
     <arg name="tfl_detector"            default="carla"                 doc="carla, camera, mqtt_camera_fusion" />
     <arg name="tracker"                 default="$(eval 'ema' if detector != 'carla' else 'none')" />
-    <arg name="predictor"               default="none"                  doc="none, naive" />
+    <arg name="predictor"               default="none"                  doc="none, naive, pedestrian, pedestriansg" />
+    <arg name="predictor_backfill"      default="false"                 doc="By default don't backfill object trajectories" />
     <arg name="follower"                default="pure_pursuit"          doc="pure_pursuit, stanley" />
     <arg name="detection_range"         default=""                      doc="enter a value in meters to enable it" />
     <arg name='use_lidar_center'        default='true'/>
@@ -39,6 +40,7 @@
         <arg name="detection_range"     value="$(arg detection_range)" />
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
+        <arg name="predictor_backfill"  value="$(arg predictor_backfill)" />
     </include>
 
     <!-- Planning -->
