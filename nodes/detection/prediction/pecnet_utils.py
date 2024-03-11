@@ -182,12 +182,12 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
             traj = trajx - shift
 
             traj = traj * hyper_params["data_scale"] * tuning
-            initial_pos = trajx[:, hyper_params["past_length"] - 1, :] * tuning / 1000
+            initial_pos = trajx[:, hyper_params["past_length"] - 1, :] / torch.max(trajx[:, hyper_params["past_length"] - 1, :])
             initial_pos = initial_pos.to(device)
             x = traj[:, :hyper_params["past_length"], :]
 
             # reshape the data
-            x = x.view(-1, x.shape[1] * x.shape[2])
+            x = x.contiguous().view(-1, x.shape[1] * x.shape[2])
             x = x.to(device)
 
             shift = shift.cpu().numpy()
@@ -201,10 +201,10 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
                 dest_path = np.concatenate((dest_path, dest_recon), axis=1)
                 dest_path = np.reshape(dest_path, (-1, hyper_params["future_length"], 2))
 
-                dest_path = dest_path / hyper_params["data_scale"] / tuning + shift
+                dest_path = dest_path / hyper_params["data_scale"] / tuning + shift + dataset.initial_shift
                 batch_by_batch_guesses[len(batch_by_batch_guesses) - 1].append(dest_path)
 
-    true_guesses = [[] * n]
+    true_guesses = [[] for _ in range(n)]
     for batch_guess in batch_by_batch_guesses:
         for i in range(n):
             true_guesses[i].extend(batch_guess[i])
@@ -214,12 +214,15 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
 
 class PECNetDatasetInit(data.Dataset):
     def __init__(self, detected_object_trajs, end_points, pad_past=8, pad_future=12, dist_thresh=100):
+        self.initial_shift = np.min(detected_object_trajs)
+
         self.traj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
                                      mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future] for i, traj in enumerate(detected_object_trajs)])
+        self.traj_flat = np.copy(self.traj)
+
+        self.traj = self.traj - self.initial_shift
         distances = squareform(pdist(self.traj[:, pad_past]))
         self.mask = np.where(distances < dist_thresh, 1.0, 0.0)
-
-        self.traj_flat = np.copy(self.traj)
 
     def __len__(self):
         return len(self.traj)
