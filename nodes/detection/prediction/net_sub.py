@@ -30,10 +30,10 @@ class NetSubscriber(metaclass=ABCMeta):
         self.active_keys = set()
         # Basic inference values
         # Inference is run every these seconds:
-        self.inference_timer_duration = 0.1
+        self.inference_timer_duration = 0.25
         # Effectively means points for trajectories for inference are taken
         # every inference_timer * (skip_points + 1) seconds:
-        self.skip_points = 4
+        self.skip_points = 1
         self.model = None
         self.predictions_amount = 1
         self.use_backpropagation = bool(rospy.get_param('~predictor_backfill'))
@@ -46,15 +46,16 @@ class NetSubscriber(metaclass=ABCMeta):
             if detectedobject.label == 'pedestrian' or detectedobject.label == 'unknown':
                 position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
                 velocity = np.array([detectedobject.velocity.linear.x, detectedobject.velocity.linear.y])
+                acceleration = np.array([detectedobject.acceleration.linear.x, detectedobject.acceleration.linear.y])
                 header = detectedobject.header
                 _id = detectedobject.id
                 active_keys.add(_id)
                 with self.lock:
                     if _id not in self.cache:
-                        self.cache[_id] = MessageCache(_id, position, velocity, header,
+                        self.cache[_id] = MessageCache(_id, position, velocity, acceleration, header,
                                                        delta_t=self.inference_timer_duration)
                     else:
-                        self.cache[_id].update_last_trajectory_velocity(position, velocity, header)
+                        self.cache[_id].update_last_trajectory(position, velocity, acceleration, header)
         with self.lock:
             self.active_keys = self.active_keys.union(active_keys)
         # Publish objects back retrieving candidate trajectories from history of inferences
