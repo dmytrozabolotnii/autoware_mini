@@ -220,7 +220,6 @@ def sgnet_iter(dataset, model, device, n=5):
                 all_goal_traj, all_dec_traj = model(input_traj_torch)
                 all_goal_traj_np = all_goal_traj.to('cpu').numpy()
                 all_dec_traj_np = all_dec_traj.to('cpu').numpy()
-                print(all_goal_traj_np.shape)
                 dest_path = all_dec_traj_np[:, -1, :, :]
                 dest_path = dest_path + shift + dataset.initial_shift
                 batch_by_batch_guesses[len(batch_by_batch_guesses) - 1].append(dest_path)
