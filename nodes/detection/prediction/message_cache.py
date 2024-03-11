@@ -3,11 +3,12 @@
 class MessageCache:
     def __init__(self, id,
                  initial_trajectory_point,
-                 initial_velocity, initial_header, delta_t=0.5):
+                 initial_velocity, initial_acceleration, initial_header, delta_t=0.5):
         self.id = id
         self.endpoints_count = 0
         self.raw_trajectories = [initial_trajectory_point]
         self.raw_velocities = [initial_velocity]
+        self.raw_accelerations = [initial_acceleration]
         self.prediction_history = [[]]
         self.predictions_history_headers = [initial_header]
         # Approximate time between points
@@ -18,11 +19,13 @@ class MessageCache:
         self.raw_trajectories = [self.raw_trajectories[0] + self.raw_velocities[0] * i * self.delta_t
                                  for i in range(-1 * pad_past, 0)] + self.raw_trajectories
         self.raw_velocities = [self.raw_velocities[0]] * pad_past + self.raw_velocities
+        self.raw_accelerations = [self.raw_accelerations[0]] * pad_past + self.raw_accelerations
         self.endpoints_count = pad_past + 1
 
-    def update_last_trajectory_velocity(self, trajectory, velocity, header):
+    def update_last_trajectory(self, trajectory, velocity, acceleration, header):
         self.raw_trajectories[len(self.raw_trajectories) - 1] = trajectory
         self.raw_velocities[len(self.raw_velocities) - 1] = velocity
+        self.raw_accelerations[len(self.raw_accelerations) - 1] = acceleration
         self.predictions_history_headers[len(self.predictions_history_headers) - 1] = header
 
     def return_last_prediction(self):
@@ -38,5 +41,6 @@ class MessageCache:
         self.endpoints_count += 1
         self.raw_trajectories.append(self.raw_trajectories[len(self.raw_trajectories) - 1])
         self.raw_velocities.append(self.raw_velocities[len(self.raw_velocities) - 1])
+        self.raw_accelerations.append(self.raw_accelerations[len(self.raw_accelerations) - 1])
         self.predictions_history_headers.append(self.predictions_history_headers
                                                 [len(self.predictions_history_headers) - 1])

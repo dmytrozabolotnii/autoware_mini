@@ -3,6 +3,7 @@
 import rospy
 import torch
 import os.path as osp
+import time
 
 from net_sub import NetSubscriber
 from sgnet_utils import SGNet, parse_sgnet_args, sgnet_iter, SGNetDatasetInit
@@ -33,23 +34,29 @@ class SGNetSubscriber(NetSubscriber):
             with self.lock:
                 temp_active_keys = set(self.active_keys)
                 if self.use_backpropagation:
-                    [self.cache[key].backpropagate_trajectories(pad_past=self.pad_past) for key in temp_active_keys if self.cache[key].endpoints_count == 0]
-                temp_raw_trajectories = [self.cache[key].raw_trajectories[:] for key in temp_active_keys]
-                temp_raw_velocities = [self.cache[key].raw_velocities[:] for key in temp_active_keys]
-                temp_endpoints = [self.cache[key].endpoints_count for key in temp_active_keys]
+                    [self.cache[key].backpropagate_trajectories(pad_past=self.pad_past *
+                                                                         (self.skip_points + 1))
+                     for key in temp_active_keys if self.cache[key].endpoints_count == 0]
+                temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
+                                         for key in temp_active_keys]
+                temp_raw_velocities = [self.cache[key].raw_velocities[-1::-1 * (self.skip_points + 1)][::-1]
+                                       for key in temp_active_keys]
+                temp_raw_acceleration = [self.cache[key].raw_accelerations[-1::-1 * (self.skip_points + 1)][::-1]
+                                         for key in temp_active_keys]
 
-            inference_dataset = SGNetDatasetInit(temp_raw_trajectories, temp_raw_velocities,
+                temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1) for key in temp_active_keys]
+            self.move_endpoints()
+
+            inference_dataset = SGNetDatasetInit(temp_raw_trajectories, temp_raw_velocities, temp_raw_acceleration,
                                                  end_points=temp_endpoints,
                                                  pad_past=8,
                                                  pad_future=0,
-                                                 inference_timer_duration=self.inference_timer_duration)
+                                                 inference_timer_duration=self.inference_timer_duration * (self.skip_points + 1))
 
             inference_result = sgnet_iter(inference_dataset, self.model, self.device, n=self.predictions_amount)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
                 self.cache[_id].extend_prediction_history(inference_result[i][j] for i in range(len(inference_result)))
-
-            self.move_endpoints()
 
 
 if __name__ == '__main__':
