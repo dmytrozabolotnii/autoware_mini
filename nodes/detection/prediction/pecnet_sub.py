@@ -13,7 +13,7 @@ class PECNetSubscriber(NetSubscriber):
         super().__init__()
         # initialize network
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + 'PECNet/PECNET_social_model2.pt', map_location=self.device)
+        self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + 'PECNet/PECNET_social_model1.pt', map_location=self.device)
         self.hyper_params = self.checkpoint["hyper_params"]
         self.model = PECNet(self.hyper_params["enc_past_size"],
                             self.hyper_params["enc_dest_size"],
@@ -32,7 +32,7 @@ class PECNetSubscriber(NetSubscriber):
                             self.hyper_params["future_length"], verbose=True)
         self.model = self.model.double().to(self.device)
         self.model.load_state_dict(self.checkpoint["model_state_dict"])
-        self.predictions_amount = 1
+        self.predictions_amount = 5
 
         rospy.loginfo(rospy.get_name() + " - initialized")
 
@@ -54,7 +54,7 @@ class PECNetSubscriber(NetSubscriber):
                                                   end_points=temp_endpoints,
                                                   pad_past=self.hyper_params["past_length"],
                                                   pad_future=self.hyper_params["future_length"],
-                                                  dist_thresh=self.hyper_params["dist_thresh"]
+                                                  dist_thresh=self.hyper_params["dist_thresh"] / 2
                                                       )
             inference_result = pecnet_iter(inference_dataset, self.model, self.device, self.hyper_params, n=self.predictions_amount)
             # Update history of inferences
