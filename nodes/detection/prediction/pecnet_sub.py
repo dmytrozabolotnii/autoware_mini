@@ -38,10 +38,15 @@ class PECNetSubscriber(NetSubscriber):
         rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
-        if len(self.active_keys):
+        if len(self.active_keys) and self.model is not None and next(self.model.parameters()).is_cuda:
             # Run inference
             with self.lock:
                 temp_active_keys = set(self.active_keys)
+                if self.use_backpropagation:
+                    [self.cache[key].backpropagate_trajectories(pad_past=self.hyper_params["past_length"] *
+                                                                         (self.skip_points + 1))
+                     for key in temp_active_keys if self.cache[key].endpoints_count == 0]
+
                 temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
                                          for key in temp_active_keys]
                 temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1)

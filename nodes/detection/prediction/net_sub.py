@@ -27,10 +27,10 @@ class NetSubscriber(metaclass=ABCMeta):
         # Basic inference values
 
         # Inference is run every these seconds:
-        self.inference_timer_duration = 0.25
+        self.inference_timer_duration = 0.1
         # Effectively means points for trajectories for inference are taken
         # every inference_timer * (skip_points + 1) seconds:
-        self.skip_points = 1
+        self.skip_points = 4
         self.model = None
         self.predictions_amount = 1
         self.use_backpropagation = bool(rospy.get_param('~predictor_backfill'))
@@ -59,8 +59,8 @@ class NetSubscriber(metaclass=ABCMeta):
                     if _id not in self.cache:
                         self.cache[_id] = MessageCache(_id, position, velocity, acceleration, header,
                                                        delta_t=self.inference_timer_duration)
-                        if self.use_backpropagation:
-                            self.cache[_id].backpropagate_trajectories(pad_past=self.pad_past * (self.skip_points + 1))
+                        #if self.use_backpropagation:
+                        #    self.cache[_id].backpropagate_trajectories(pad_past=self.pad_past * (self.skip_points + 1))
 
                     else:
                         self.cache[_id].update_last_trajectory(position, velocity, acceleration, header)

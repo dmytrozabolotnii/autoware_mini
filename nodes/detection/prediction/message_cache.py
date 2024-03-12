@@ -15,14 +15,20 @@ class MessageCache:
         # Approximate time between points
         self.delta_t = delta_t
 
-    def backpropagate_trajectories(self, pad_past=8):
+    def backpropagate_trajectories(self, pad_past=8, ca=False):
         # Create fake history of movement depending on velocity and acceleration vector we receive
-        self.raw_accelerations = [self.raw_accelerations[0]] * pad_past + self.raw_accelerations
+        if ca:
+            # Constance acceleration mode
+            self.raw_accelerations = [self.raw_accelerations[0]] * pad_past + self.raw_accelerations
+        else:
+            # Constance velocity mode
+            self.raw_accelerations = [0] * pad_past + self.raw_accelerations
         new_velocities = [self.raw_velocities[0] + self.raw_accelerations[0] * i * self.delta_t
                           for i in range(-1 * pad_past, 0)]
         self.raw_velocities = new_velocities + self.raw_velocities
         velocities_cumsum = np.cumsum(new_velocities[::-1], axis=0)[::-1] * self.delta_t
         self.raw_trajectories = list(self.raw_trajectories[0] - velocities_cumsum) + self.raw_trajectories
+
         self.endpoints_count = pad_past
 
     def update_last_trajectory(self, trajectory, velocity, acceleration, header):
