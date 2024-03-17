@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import numpy as np
 import rospy
 import torch
 import time
@@ -51,7 +52,8 @@ class PECNetSubscriber(NetSubscriber):
                                          for key in temp_active_keys]
                 temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1)
                                   for key in temp_active_keys]
-            self.move_endpoints()
+                temp_headers = [self.cache[key].return_last_header() for key in temp_active_keys]
+
             inference_dataset = PECNetDatasetInit(temp_raw_trajectories,
                                                   end_points=temp_endpoints,
                                                   pad_past=self.hyper_params["past_length"] - 1,
@@ -61,7 +63,13 @@ class PECNetSubscriber(NetSubscriber):
             inference_result = pecnet_iter(inference_dataset, self.model, self.device, self.hyper_params, n=self.predictions_amount)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
-                self.cache[_id].extend_prediction_history(inference_result[i][j] for i in range(len(inference_result)))
+                with self.lock:
+                    # Append the ego-position and header at start of inference for metrics purpose
+                    self.cache[_id].extend_prediction_history(np.vstack(([temp_raw_trajectories[j][-1]], inference_result[i][j]))
+                                                               for i in range(len(inference_result)))
+                    self.cache[_id].extend_prediction_header_history(temp_headers[j])
+            self.move_endpoints()
+
 
 
 if __name__ == '__main__':
