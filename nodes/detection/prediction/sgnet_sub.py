@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import numpy as np
 import rospy
 import torch
 import os.path as osp
@@ -45,7 +46,8 @@ class SGNetSubscriber(NetSubscriber):
                                          for key in temp_active_keys]
 
                 temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1) for key in temp_active_keys]
-            self.move_endpoints()
+                temp_headers = [self.cache[key].return_last_header() for key in temp_active_keys]
+
 
             inference_dataset = SGNetDatasetInit(temp_raw_trajectories, temp_raw_velocities, temp_raw_acceleration,
                                                  end_points=temp_endpoints,
@@ -56,7 +58,14 @@ class SGNetSubscriber(NetSubscriber):
             inference_result = sgnet_iter(inference_dataset, self.model, self.device, n=self.predictions_amount)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
-                self.cache[_id].extend_prediction_history(inference_result[i][j] for i in range(len(inference_result)))
+                with self.lock:
+                    # Append the ego-position and header at start of inference for metrics purpose
+                    self.cache[_id].extend_prediction_history(np.vstack(([temp_raw_trajectories[j][-1]], inference_result[i][j]))
+                                                               for i in range(len(inference_result)))
+                    self.cache[_id].extend_prediction_header_history(temp_headers[j])
+
+            self.move_endpoints()
+
 
 
 if __name__ == '__main__':

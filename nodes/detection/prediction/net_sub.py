@@ -16,13 +16,8 @@ class NetSubscriber(metaclass=ABCMeta):
     def __init__(self):
         self.lock = threading.Lock()
         # Caching structure
-        self.self_new_traj = []
-        self.self_traj_history = []
         # Dict of Message Cache class values
         self.cache = {}
-        self.self_traj = []
-        self.self_traj_exists = False
-        self.velocity = 0.0
         self.active_keys = set()
         # Basic inference values
 
@@ -77,26 +72,27 @@ class NetSubscriber(metaclass=ABCMeta):
         # Construct candidate predictors from saved history of predictions
         output_msg_array = DetectedObjectArray(header=detectedobjectsarray.header)
 
-        for msg in detectedobjectsarray.objects:
-            with self.lock:
-                generate_candidate_trajectories = msg.id in self.active_keys
-            if generate_candidate_trajectories:
-                for predictions in self.cache[msg.id].return_last_prediction():
-                    lane = Lane(header=self.cache[msg.id].return_last_header())
-                    # Start candidate trajectory from ego vehicle
-                    wp = Waypoint()
-                    wp.pose.pose.position = msg.pose.position
-                    lane.waypoints.append(wp)
+        for detectedobject in detectedobjectsarray.objects:
+            if detectedobject.label == 'pedestrian' or detectedobject.label == 'unknown':
+                with self.lock:
+                    predictions = self.cache[detectedobject.id].return_last_prediction()
+                    predictions_header = self.cache[detectedobject.id].return_last_prediction_header()
+                for prediction in predictions:
+                    lane = Lane(header=predictions_header)
+                    # # Start candidate trajectory from ego vehicle
+                    # wp = Waypoint()
+                    # wp.pose.pose.position = detectedobject.pose.position
+                    # lane.waypoints.append(wp)
                     # Add prediction
 
-                    for j in predictions:
+                    for j in prediction:
                         wp = Waypoint()
                         wp.pose.pose.position.x, wp.pose.pose.position.y = j
-                        wp.pose.pose.position.z = msg.pose.position.z
+                        wp.pose.pose.position.z = detectedobject.pose.position.z
                         lane.waypoints.append(wp)
-                    msg.candidate_trajectories.lanes.append(lane)
+                    detectedobject.candidate_trajectories.lanes.append(lane)
 
-            output_msg_array.objects.append(msg)
+            output_msg_array.objects.append(detectedobject)
 
         # Publish objects with predicted candidate trajectories
         self.objects_pub.publish(output_msg_array)

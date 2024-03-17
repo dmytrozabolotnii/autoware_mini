@@ -10,8 +10,9 @@ class MessageCache:
         self.raw_trajectories = [initial_trajectory_point]
         self.raw_velocities = [initial_velocity]
         self.raw_accelerations = [initial_acceleration]
+        self.headers = [initial_header]
         self.prediction_history = [[]]
-        self.predictions_history_headers = [initial_header]
+        self.predictions_history_headers = [[]]
         # Approximate time between points
         self.delta_t = delta_t
 
@@ -35,21 +36,26 @@ class MessageCache:
         self.raw_trajectories[len(self.raw_trajectories) - 1] = trajectory
         self.raw_velocities[len(self.raw_velocities) - 1] = velocity
         self.raw_accelerations[len(self.raw_accelerations) - 1] = acceleration
-        self.predictions_history_headers[len(self.predictions_history_headers) - 1] = header
+        self.headers[len(self.headers) - 1] = header
+
+    def return_last_header(self):
+        return self.headers[len(self.headers) - 1]
 
     def return_last_prediction(self):
         return self.prediction_history[len(self.prediction_history) - 1]
 
-    def return_last_header(self):
+    def return_last_prediction_header(self):
         return self.predictions_history_headers[len(self.predictions_history_headers) - 1]
 
     def extend_prediction_history(self, prediction):
         self.prediction_history.append(list(prediction))
+
+    def extend_prediction_header_history(self, header):
+        self.predictions_history_headers.append(header)
 
     def move_endpoints(self):
         self.endpoints_count += 1
         self.raw_trajectories.append(self.raw_trajectories[len(self.raw_trajectories) - 1])
         self.raw_velocities.append(self.raw_velocities[len(self.raw_velocities) - 1])
         self.raw_accelerations.append(self.raw_accelerations[len(self.raw_accelerations) - 1])
-        self.predictions_history_headers.append(self.predictions_history_headers
-                                                [len(self.predictions_history_headers) - 1])
+        self.headers.append(self.headers[len(self.headers) - 1])
