@@ -22,10 +22,10 @@ class NetSubscriber(metaclass=ABCMeta):
         # Basic inference values
 
         # Inference is run every these seconds:
-        self.inference_timer_duration = 0.1
+        self.inference_timer_duration = 0.5
         # Effectively means points for trajectories for inference are taken
         # every inference_timer * (skip_points + 1) seconds:
-        self.skip_points = 4
+        self.skip_points = 0
         self.model = None
         self.predictions_amount = 1
         self.use_backpropagation = bool(rospy.get_param('~predictor_backfill'))
@@ -79,11 +79,6 @@ class NetSubscriber(metaclass=ABCMeta):
                     predictions_header = self.cache[detectedobject.id].return_last_prediction_header()
                 for prediction in predictions:
                     lane = Lane(header=predictions_header)
-                    # # Start candidate trajectory from ego vehicle
-                    # wp = Waypoint()
-                    # wp.pose.pose.position = detectedobject.pose.position
-                    # lane.waypoints.append(wp)
-                    # Add prediction
 
                     for j in prediction:
                         wp = Waypoint()

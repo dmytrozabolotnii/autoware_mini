@@ -144,4 +144,9 @@
         <node pkg="topic_tools" type="relay" args="predicted_objects_map predicted_objects" name="predicted_objects_relay" output="screen" required="true" />
     </group>
 
+    <!-- Metrics-->
+    <node type="metrics_visualizer.py" name="metrics_visualizer" pkg="autoware_mini" output="screen" required="true">
+    </node>
+
+
 </launch>
