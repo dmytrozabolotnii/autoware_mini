@@ -144,4 +144,9 @@
         <remap from="detected_objects_markers" to="final_objects_markers" />
     </node>
 
+    <!-- Metrics-->
+    <node type="metrics_visualizer.py" name="metrics_visualizer" pkg="autoware_mini" output="screen" required="true">
+    </node>
+
+
 </launch>

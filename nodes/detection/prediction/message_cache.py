@@ -23,7 +23,7 @@ class MessageCache:
             self.raw_accelerations = [self.raw_accelerations[0]] * pad_past + self.raw_accelerations
         else:
             # Constance velocity mode
-            self.raw_accelerations = [0] * pad_past + self.raw_accelerations
+            self.raw_accelerations = [np.array([0, 0])] * pad_past + self.raw_accelerations
         new_velocities = [self.raw_velocities[0] + self.raw_accelerations[0] * i * self.delta_t
                           for i in range(-1 * pad_past, 0)]
         self.raw_velocities = new_velocities + self.raw_velocities
