@@ -121,6 +121,8 @@
         <node if="$(eval 'naive' in predictor)" type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
             <remap from="tracked_objects" to="predicted_objects_map" />
         </node>
+    </group>
+    <group unless="$(eval predictor=='none')" ns="predictor">
         <node if="$(eval predictor=='pedestrian')" type="pecnet_sub.py" name="pecnet_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
             <remap from="predicted_objects" to="final_objects" />
@@ -145,7 +147,8 @@
     </group>
 
     <!-- Metrics-->
-    <node type="metrics_visualizer.py" name="metrics_visualizer" pkg="autoware_mini" output="screen" required="true">
+    <node type="metrics_visualizer.py" ns="predictor" name="metrics_visualizer" pkg="autoware_mini" output="screen" required="true">
+        <remap from="predicted_objects" to="/detection/final_objects" />
     </node>
 
 

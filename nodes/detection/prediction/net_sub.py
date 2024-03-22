@@ -22,14 +22,13 @@ class NetSubscriber(metaclass=ABCMeta):
         # Basic inference values
 
         # Inference is run every these seconds:
-        self.inference_timer_duration = 0.5
+        self.inference_timer_duration = rospy.get_param('inference_timer')
         # Effectively means points for trajectories for inference are taken
         # every inference_timer * (skip_points + 1) seconds:
-        self.skip_points = 0
+        self.skip_points = int(rospy.get_param('step_length') / rospy.get_param('inference_timer')) - 1
         self.model = None
-        self.predictions_amount = 1
         self.use_backpropagation = bool(rospy.get_param('~predictor_backfill'))
-        self.pad_past = 8
+        self.pad_past = int(rospy.get_param('prediction_history'))
 
         # ROS timers/pub/sub
         self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
@@ -37,7 +36,6 @@ class NetSubscriber(metaclass=ABCMeta):
                                            tcp_nodelay=True)
         self.objects_sub = rospy.Subscriber("tracked_objects",
                                             DetectedObjectArray, self.detected_objects_sub_callback)
-
 
     def detected_objects_sub_callback(self, detectedobjectarray):
         # cache objects with filter, so we can refer to them at inference time

@@ -118,6 +118,20 @@ road_area_filter:
   filtering_method: within          # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
   filtering_extent: 100             # m from ego current location of ego in x and y directions, objects further are removed
 
+predictor:
+  prediction_horizon: 12 # prediction horizon in steps
+  prediction_history: 8 # prediction data history in steps
+  step_length: 0.5 # step length in seconds
+  inference_timer: 0.5 # prediction will run every this seconds,
+                       # previous param divided by this should be positive integer
+
+  pecnet_predictor:
+    predictions_amount: 5
+
+  sgnet_predictor:
+    predictions_amount: 1
+
+
 mqtt_traffic_light_detector:
   mqtt_host: mqtt.cloud.ut.ee
   mqtt_port: 8883
