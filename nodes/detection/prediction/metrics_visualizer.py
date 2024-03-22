@@ -30,14 +30,14 @@ class MetricsVisualizer:
         self.fde_history = {}
         self.cache = {}
 
-        self.metrics_timer_duration = 0.5
-        self.skip_points = 0
-        self.pad_future = 12
+        self.metrics_timer_duration = rospy.get_param('inference_timer')
+        self.skip_points = int(rospy.get_param('step_length') / rospy.get_param('inference_timer')) - 1
+        self.pad_future = int(rospy.get_param('prediction_horizon'))
 
         self.ade = rospy.Publisher('/dashboard/ade', Float32, queue_size=1)
         self.fde = rospy.Publisher('/dashboard/fde', Float32, queue_size=1)
 
-        self.sub = rospy.Subscriber('final_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        self.sub = rospy.Subscriber('predicted_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
@@ -64,7 +64,8 @@ class MetricsVisualizer:
                 # Extend and update only if header stamp time attached to candidate trajectories is different
                 # (means inference happened)
                 else:
-                    if candidate_traj_header.stamp != self.cache[_id].return_last_header().stamp:
+                    if (candidate_traj_header.stamp - self.cache[_id].return_last_header().stamp >=
+                            rospy.Duration(self.metrics_timer_duration)):
                         self.cache[_id].move_endpoints()
                         self.cache[_id].update_last_trajectory(position, velocity, acceleration, candidate_traj_header)
                         predictions = []

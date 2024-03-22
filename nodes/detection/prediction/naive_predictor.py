@@ -8,8 +8,8 @@ from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
 class NaivePredictor:
     def __init__(self):
         # Parameters
-        self.prediction_horizon = rospy.get_param('~prediction_horizon')
-        self.prediction_interval = rospy.get_param('~prediction_interval')
+        self.prediction_horizon = rospy.get_param('prediction_horizon')
+        self.prediction_interval = rospy.get_param('step_length')
 
         # Publishers
         self.predicted_objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -30,7 +30,7 @@ class NaivePredictor:
             tracked_objects_array[i]['acceleration'] = (obj.acceleration.linear.x, obj.acceleration.linear.y)
 
         # Predict future positions and velocities
-        num_timesteps = int(self.prediction_horizon // self.prediction_interval)
+        num_timesteps = self.prediction_horizon + 1
         predicted_objects_array = np.empty((num_timesteps, len(msg.objects)), dtype=[
             ('centroid', np.float32, (2,)),
             ('velocity', np.float32, (2,)),
@@ -42,7 +42,7 @@ class NaivePredictor:
 
         # Create candidate trajectories
         for i, obj in enumerate(msg.objects):
-            lane = Lane()
+            lane = Lane(header=obj.header)
             for j in range(num_timesteps):
                 wp = Waypoint()
                 wp.pose.pose.position.x, wp.pose.pose.position.y = predicted_objects_array[j][i]['centroid']

@@ -33,7 +33,7 @@ class PECNetSubscriber(NetSubscriber):
                             self.hyper_params["future_length"], verbose=True)
         self.model = self.model.double().to(self.device)
         self.model.load_state_dict(self.checkpoint["model_state_dict"])
-        self.predictions_amount = 5
+        self.predictions_amount = rospy.get_param('~predictions_amount')
         self.pad_past = self.hyper_params["past_length"]
 
         rospy.loginfo(rospy.get_name() + " - initialized")

@@ -100,9 +100,19 @@ ema_tracker:
   association_method: iou   # iou, euclidean
   max_euclidean_distance: 2.0
 
-naive_predictor:
-  prediction_horizon: 1.0
-  prediction_interval: 0.1
+predictor:
+  prediction_horizon: 12 # prediction horizon in steps
+  prediction_history: 8 # prediction data history in steps
+  step_length: 0.5 # step length in seconds
+  inference_timer: 0.5 # prediction will run every this seconds,
+                       # previous param divided by this should be positive integer
+
+  pecnet_predictor:
+    predictions_amount: 5
+
+  sgnet_predictor:
+    predictions_amount: 1
+
 
 mqtt_traffic_light_detector:
   mqtt_host: mqtt.cloud.ut.ee
