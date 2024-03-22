@@ -104,14 +104,8 @@ class Lanelet2GlobalPlanner:
             return
 
         path = route.shortestPath()
-        path_no_lane_change = path.getRemainingLane(start_lanelet)
 
-        # check if goal is in path
-        if path_no_lane_change[len(path_no_lane_change)-1].id != goal_lanelet.id:
-            rospy.logwarn("%s - last lanelet in path (%d) is not goal lanelet (%d)", rospy.get_name(), path_no_lane_change[len(path_no_lane_change)-1].id, goal_lanelet.id)
-            return
-
-        waypoints = self.convert_to_waypoints(path_no_lane_change)
+        waypoints = self.convert_to_waypoints(path)
 
         # build KDTree for nearest neighbour search
         waypoints_xy = np.array([(w.pose.pose.position.x, w.pose.pose.position.y) for w in waypoints])
