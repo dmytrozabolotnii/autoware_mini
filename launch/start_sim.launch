@@ -6,7 +6,8 @@
     <arg name="local_planner"           default="velocity"      doc="none, velocity" />
     <arg name="use_path_smoothing"      default="true" />
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
-    <arg name="lanelet2_map_name"       default="tartu_demo_noheight.osm" />
+    <arg name='map_name'                default='tartu_demo_noheight' />
+    <arg name="lanelet2_map_name"       default="$(arg map_name).osm" />
     <arg name="detector"                default="sim"           doc="usually sim" />
     <arg name="tfl_detector"            default="none"          doc="mqtt" />
     <arg name="tracker"                 default="none"          doc="none, ema"/>

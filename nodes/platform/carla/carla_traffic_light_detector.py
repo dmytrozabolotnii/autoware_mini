@@ -33,7 +33,7 @@ class CarlaTrafficLightDetector:
     def __init__(self):
 
         # Node parameters
-        self.use_offset = rospy.get_param("/carla/use_offset")
+        self.use_transformer = rospy.get_param("/carla_localization/use_transformer")
         coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
         use_custom_origin = rospy.get_param("/localization/use_custom_origin")
         utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
@@ -73,7 +73,7 @@ class CarlaTrafficLightDetector:
 
         for tfl in msg.traffic_lights:
             pose = tfl.transform
-            if self.use_offset:
+            if self.use_transformer:
                 pose = self.sim2utm_transformer.transform_pose(pose)
 
             # Transform trigger volume location using the transformation matrix from tfl pose

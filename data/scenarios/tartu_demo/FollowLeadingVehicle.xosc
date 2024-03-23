@@ -1,11 +1,10 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <OpenSCENARIO>
-  <FileHeader revMajor="1" revMinor="0" date="2019-06-25T00:00:00" description="CARLA:FollowLeadingVehicle" author=""/>
+  <FileHeader revMajor="1" revMinor="0" date="2020-03-20T12:00:00" description="CARLA:FollowLeadingVehicle" author=""/>
   <ParameterDeclarations>
-    <ParameterDeclaration name="leadingSpeed" parameterType="double" value="10.0"/>
+    <ParameterDeclaration name="leadingSpeed" parameterType="double" value="3.0"/>
   </ParameterDeclarations>
-  <CatalogLocations>
-  </CatalogLocations>
+  <CatalogLocations/>
   <RoadNetwork>
     <LogicFile filepath="Tartu"/>
     <SceneGraphFile filepath=""/>
@@ -54,7 +53,7 @@
         <GlobalAction>
           <EnvironmentAction>
             <Environment name="Environment1">
-              <TimeOfDay animation="false" dateTime="2019-06-25T12:00:00"/>
+              <TimeOfDay animation="false" dateTime="2020-03-20T12:00:00"/>
               <Weather cloudState="free">
                 <Sun intensity="1.0" azimuth="0.0" elevation="1.31"/>
                 <Fog visualRange="100000.0"/>
@@ -71,26 +70,26 @@
                 <WorldPosition x="4.70" y="-342.07" z="36" h="-80"/>
               </Position>
             </TeleportAction>
-          </PrivateAction>          
+          </PrivateAction>
           <PrivateAction>
             <ControllerAction>
-                <AssignControllerAction>
-                    <Controller name="EgoVehicleAgent">
-                        <Properties>
+              <AssignControllerAction>
+                <Controller name="EgoVehicleAgent">
+                  <Properties>
                             <!-- <Property name="module" value="carla_ros_scenario_runner.ros_vehicle_control" />
                             <Property name="launch" value="carla_ad_agent.launch"/>
                             <Property name="launch-package" value="carla_ad_agent"/> -->
-                        </Properties>
-                    </Controller>
-                </AssignControllerAction>
-                <OverrideControllerValueAction>
+                  </Properties>
+                </Controller>
+              </AssignControllerAction>
+              <OverrideControllerValueAction>
                     <Throttle value="0" active="false" />
                     <Brake value="0" active="false" />
                     <Clutch value="0" active="false" />
                     <ParkingBrake value="0" active="false" />
                     <SteeringWheel value="0" active="false" />
                     <Gear number="0" active="false" />
-                </OverrideControllerValueAction>
+              </OverrideControllerValueAction>
             </ControllerAction>
           </PrivateAction>
           <!-- <PrivateAction>
@@ -118,7 +117,7 @@
     </Init>
     <Story name="MyStory">
       <Act name="Behavior">
-        <ManeuverGroup maximumExecutionCount="1" name="ManeuverSequence">
+        <ManeuverGroup name="ManeuverSequence" maximumExecutionCount="1">
           <Actors selectTriggeringEntities="false">
             <EntityRef entityRef="adversary"/>
           </Actors>
@@ -128,7 +127,7 @@
                 <PrivateAction>
                   <LongitudinalAction>
                     <SpeedAction>
-                      <SpeedActionDynamics dynamicsShape="step" value="100" dynamicsDimension="distance"/>
+                      <SpeedActionDynamics dynamicsShape="step" value="20" dynamicsDimension="distance"/>
                       <SpeedActionTarget>
                         <AbsoluteTargetSpeed value="$leadingSpeed"/>
                       </SpeedActionTarget>
@@ -138,15 +137,38 @@
               </Action>
               <StartTrigger>
                 <ConditionGroup>
-                  <Condition name="StartCondition" delay="0" conditionEdge="rising">
+                  <Condition name="StartConditionLeadingVehicleKeepsVelocity" delay="0" conditionEdge="rising">
                     <ByEntityCondition>
                       <TriggeringEntities triggeringEntitiesRule="any">
                         <EntityRef entityRef="ego_vehicle"/>
                       </TriggeringEntities>
                       <EntityCondition>
-                        <RelativeDistanceCondition entityRef="adversary" relativeDistanceType="cartesianDistance" value="20.0" freespace="false" rule="lessThan"/>
+                        <RelativeDistanceCondition entityRef="adversary" relativeDistanceType="cartesianDistance" value="40.0" freespace="false" rule="lessThan"/>
                       </EntityCondition>
                     </ByEntityCondition>
+                  </Condition>
+                </ConditionGroup>
+              </StartTrigger>
+            </Event>
+            <Event name="LeadingVehicleWaits" priority="overwrite">
+              <Action name="LeadingVehicleWaits">
+                <PrivateAction>
+                  <LongitudinalAction>
+                    <SpeedAction>
+                      <SpeedActionDynamics dynamicsShape="step" value="10" dynamicsDimension="time"/>
+                      <SpeedActionTarget>
+                        <AbsoluteTargetSpeed value="3.0"/>
+                      </SpeedActionTarget>
+                    </SpeedAction>
+                  </LongitudinalAction>
+                </PrivateAction>
+              </Action>
+              <StartTrigger>
+                <ConditionGroup>
+                  <Condition name="AfterLeadingVehicleKeepsVelocity" delay="0" conditionEdge="rising">
+                    <ByValueCondition>
+                      <StoryboardElementStateCondition storyboardElementType="action" storyboardElementRef="LeadingVehicleKeepsVelocity" state="endTransition"/>
+                    </ByValueCondition>
                   </Condition>
                 </ConditionGroup>
               </StartTrigger>
@@ -180,7 +202,7 @@
                   <EntityRef entityRef="ego_vehicle"/>
                 </TriggeringEntities>
                 <EntityCondition>
-                  <TraveledDistanceCondition value="100.0"/>
+                  <TraveledDistanceCondition value="50.0"/>
                 </EntityCondition>
               </ByEntityCondition>
             </Condition>
@@ -212,7 +234,7 @@
         </Condition>
         <Condition name="criteria_KeepLaneTest" delay="0" conditionEdge="rising">
           <ByValueCondition>
-            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
+            <ParameterCondition parameterRef="optional" value="1" rule="equalTo"/>
           </ByValueCondition>
         </Condition>
         <Condition name="criteria_CollisionTest" delay="0" conditionEdge="rising">
@@ -222,7 +244,7 @@
         </Condition>
         <Condition name="criteria_DrivenDistanceTest" delay="0" conditionEdge="rising">
           <ByValueCondition>
-            <ParameterCondition parameterRef="distance_success" value="100" rule="lessThan"/>
+            <ParameterCondition parameterRef="distance_success" value="50" rule="lessThan"/>
           </ByValueCondition>
         </Condition>
       </ConditionGroup>
