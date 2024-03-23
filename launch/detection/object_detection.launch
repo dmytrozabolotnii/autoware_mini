@@ -13,6 +13,11 @@
         <group if="$(eval 'lidar_cluster' in detector)">
             <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" required="true" />
             <group if="$(arg use_lidar_center)" ns="center">
+                <!-- Only functional in Carla simulation -->
+                <node pkg="nodelet" type="nodelet" name="crop_box" args="load pcl/CropBox /detection/lidar/pcl_manager" output="screen" required="true">
+                    <remap from="~input" to="/lidar_center/pointcloud" />
+                    <remap from="~output" to="/lidar_center/points_raw" />
+                </node>
                 <node type="ground_removal.py" name="ground_removal" pkg="autoware_mini" output="screen" required="true">
                     <remap from="points_raw" to="/lidar_center/points_raw" />
                     <remap unless="$(arg use_lidar_front)" from="points_ground" to="/detection/lidar/points_ground" />
@@ -20,7 +25,7 @@
                 </node>
             </group>
             <group if="$(arg use_lidar_front)" ns="front">
-                <node pkg="nodelet" type="nodelet" name="crop_box" args="load pcl/CropBox pcl_manager" output="screen" required="true">
+                <node pkg="nodelet" type="nodelet" name="crop_box" args="load pcl/CropBox /detection/lidar/pcl_manager" output="screen" required="true">
                     <remap from="~input" to="/lidar_front/points" />
                     <remap from="~output" to="/lidar_front/points_cleaned" />
                 </node>

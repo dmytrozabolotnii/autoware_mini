@@ -40,7 +40,6 @@ class MqttTrafficLightDetector:
         self.rate = rospy.Rate(10) # 10hz
         self.id_string = rospy.get_param('~id_string')
 
-        # self.use_offset = rospy.get_param("~use_offset", default=True)  # not necessary? will use lane_id
         coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
         use_custom_origin = rospy.get_param("/localization/use_custom_origin")
         utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")

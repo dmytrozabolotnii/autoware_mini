@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Map to load on startup, ideally this should match with CARLA environments (tartu_demo) is exception-->
+    <arg name="map_name" />
+    <!-- Carla Server parameters -->
+    <arg name='host'                                                default='localhost' />
+    <arg name='port'                                                default='2000' />
+    <arg name='timeout'                                             default='100' />
+    <!-- Scenario Runner args -->
+    <arg name='scenario_name' />
+    <arg name='scenario_file'           default='$(find autoware_mini)/data/scenarios/$(arg map_name)/$(arg scenario_name).xosc'/>
+    <arg name='scenario_path'           default='$(find autoware_mini)/data/scenarios/$(arg map_name)'/>
+    <arg name='scenario_runner_path'    default='$(optenv SCENARIO_RUNNER_ROOT)'/>
+
+    <!--
+    ################################
+    ## Scenario Runner Essentials ##
+    ################################
+    -->
+
+    <remap from="/carla/ego_vehicle/goal" to="/move_base_simple/goal"/>
+    <include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch">
+        <arg name='host'    value='$(arg host)'/>
+        <arg name='port'    value='$(arg port)'/>
+        <arg name='timeout' value='$(arg timeout)'/>
+    </include>
+
+    <include file="$(find carla_ros_scenario_runner)/launch/carla_ros_scenario_runner.launch">
+        <arg name='host'                    value='$(arg host)'/>
+        <arg name='port'                    value='$(arg port)'/>
+        <arg name="scenario_runner_path"    value="$(arg scenario_runner_path)"/>
+        <arg name="wait_for_ego"            value="true"/>
+    </include>
+
+    <!-- Launch one or all map specific scenarios -->
+    <node pkg='autoware_mini' type='carla_scenario_manager.py' name='carla_scenario_manager' output='screen' required="true">
+        <param name="scenario_runner_root"  value="$(arg scenario_runner_path)" />
+        <param name="scenario_name"         value="$(arg scenario_name)" />
+        <param name="scenario_path"         value="$(arg scenario_path)" />
+        <param name="map_name"              value="$(arg map_name)" />
+    </node>
+
+</launch>

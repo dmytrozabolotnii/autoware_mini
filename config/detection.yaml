@@ -2,25 +2,35 @@ output_frame: map
 
 lidar:
   center:
+    crop_box:
+      min_x: -2.0
+      max_x: 3.0
+      min_y: -1.0
+      max_y: 1.0
+      min_z: -2.0
+      max_z: 2.0
+      negative: True
+      input_frame: lidar_center
+      output_frame: lidar_center
     ground_removal:
       min_x: -60.0
       max_x: 60.0
       min_y: -60.0
       max_y: 60.0
       min_z: -2.5
-      max_z: 0.1
+      max_z: 0.05
       cell_size: 0.6
       tolerance: 0.15
       filter: average                    # none, median, average, minimum
       filter_size: 3
   front:
     crop_box:
-      min_x: -1.0
-      max_x: 1.0
+      min_x: -2.0
+      max_x: 3.0
       min_y: -1.0
       max_y: 1.0
-      min_z: -1.0
-      max_z: 1.0
+      min_z: -2.0
+      max_z: 2.0
       negative: True
       input_frame: lidar_center
       output_frame: lidar_center
@@ -30,7 +40,7 @@ lidar:
       min_y: -60.0
       max_y: 60.0
       min_z: -2.0
-      max_z: 0.5
+      max_z: 0.05
       cell_size: 0.6
       tolerance: 0.15
       filter: average                    # none, median, average, minimum

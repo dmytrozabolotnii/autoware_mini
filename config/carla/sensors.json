@@ -79,7 +79,8 @@
                             "points_per_second": 600000,
                             "upper_fov": 15.0,
                             "lower_fov": -25.0,
-                            "rotation_frequency": 10,
+                            "sensor_tick": 0.1,
+                            "rotation_frequency": 20,
                             "noise_stddev": 0.03,
                             "dropoff_general_rate": 0.1,
                             "attached_objects":
@@ -109,7 +110,8 @@
                                     "points_per_second": 2621440,
                                     "upper_fov": 22.5,
                                     "lower_fov": -22.5,
-                                    "rotation_frequency": 10,
+                                    "sensor_tick": 0.1,
+                                    "rotation_frequency": 20,
                                     "noise_stddev": 0.0
                                 }
                             ]
