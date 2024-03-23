@@ -92,10 +92,8 @@ class CameraTrafficLightDetector:
 
     def camera_info_callback(self, camera_info_msg):
         if self.camera_model is None:
-            camera_model = PinholeCameraModel()
-            camera_model.fromCameraInfo(camera_info_msg)
-            # assignment is atomic in python
-            self.camera_model = camera_model
+            self.camera_model = PinholeCameraModel()
+        self.camera_model.fromCameraInfo(camera_info_msg)
 
     def local_path_callback(self, local_path_msg):
 
@@ -194,10 +192,7 @@ class CameraTrafficLightDetector:
                 us = []
                 vs = []
                 for _, _, x, y, z in bulbs:
-                    point_map = Point()
-                    point_map.x = float(x)
-                    point_map.y = float(y)
-                    point_map.z = float(z)
+                    point_map = Point(float(x), float(y), float(z))
 
                     # transform point to camera frame and then to image frame
                     point_camera = transform_point(point_map, transform)
