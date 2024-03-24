@@ -45,9 +45,6 @@
   </group>
 
   <group if="$(eval 'town' in map_name.lower())">
-    <param name="/localization/use_custom_origin" type="boolean" value="true" />
-    <param name="/localization/utm_origin_lat" type="double" value="0.0" />
-    <param name="/localization/utm_origin_lon" type="double" value="0.0" />
     <param name="/carla_localization/use_transformer" type="boolean" value="false" />
   </group>
 

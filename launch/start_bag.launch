@@ -87,6 +87,7 @@
     <!-- Localization -->
     <include if="$(arg use_localization)" file="$(find autoware_mini)/launch/localization.launch">
         <arg name="localizer"       value="$(arg localizer)" />
+        <arg name="map_name"        value="$(arg map_name)" />
     </include>
 
     <!-- Detection -->
