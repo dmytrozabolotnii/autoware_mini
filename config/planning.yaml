@@ -13,6 +13,7 @@ lanelet2_global_planner:
   speed_limit: 50.0                 # max velocity for route (km/h), will be replaced by speed taken from map
   nearest_neighbor_search: kd_tree  # kd_tree. ball_tree, brute, auto
   ego_vehicle_stopped_speed_limit: 0.1
+  lane_change: False
 
 waypoint_loader:
   output_frame: map

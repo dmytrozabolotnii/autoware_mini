@@ -38,6 +38,7 @@ class Lanelet2GlobalPlanner:
         self.speed_limit = rospy.get_param("~speed_limit")
         self.nearest_neighbor_search = rospy.get_param("~nearest_neighbor_search")
         self.ego_vehicle_stopped_speed_limit = rospy.get_param("~ego_vehicle_stopped_speed_limit")
+        self.lane_change = rospy.get_param("~lane_change")
 
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
         coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
@@ -98,7 +99,7 @@ class Lanelet2GlobalPlanner:
         start_lanelet = findNearest(self.lanelet2_map.laneletLayer, start_point, 1)[0][1]
         self.publish_target_lanelets(start_lanelet, goal_lanelet)
 
-        route = self.graph.getRoute(start_lanelet, goal_lanelet, 0, False)        # lanelet2.routing.Route
+        route = self.graph.getRoute(start_lanelet, goal_lanelet, 0, self.lane_change)
         if route == None:
             rospy.logwarn("%s - no route found, try new goal!", rospy.get_name())
             return
