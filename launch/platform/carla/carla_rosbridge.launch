@@ -40,6 +40,7 @@
   <remap from="/carla/ego_vehicle/odometry" to="/carla/odometry" />
   <remap from="/carla/ego_vehicle/objects" to="/carla/ground_truth_objects" />
   <remap from="/carla/ego_vehicle/goal" to="/move_base_simple/goal" />
+  <remap from="/initialpose" to="/initialpose_sim" />
 
   <!-- ====================================================================================================== -->
 
