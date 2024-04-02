@@ -11,11 +11,11 @@ Convert initial pose to simulation pose.
 """
 
 import rospy
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
 from localization.UTMToSimulationTransformer import UTMToSimulationTransformer
 
 
-class CarlaInitialPoseToSimPose:
+class CarlaInitialPose:
 
     def __init__(self):
 
@@ -52,6 +52,6 @@ class CarlaInitialPoseToSimPose:
 
 if __name__ == '__main__':
     # log_level set to errors only
-    rospy.init_node('carla_initialpose_to_simpose', log_level=rospy.INFO)
-    node = CarlaInitialPoseToSimPose()
+    rospy.init_node('carla_initialpose', log_level=rospy.INFO)
+    node = CarlaInitialPose()
     node.run()
