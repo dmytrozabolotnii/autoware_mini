@@ -20,6 +20,7 @@ class CarlaInitialPose:
     def __init__(self):
 
         # parameters
+        self.use_transformer = rospy.get_param("/carla_localization/use_transformer")
         use_custom_origin = rospy.get_param("/localization/use_custom_origin")
         utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
@@ -37,12 +38,14 @@ class CarlaInitialPose:
 
     def initialpose_callback(self, msg):
 
-        # Add dropping height to the z coordinate
-        msg.pose.pose.position.z += self.dropping_height
-
         pose_sim = PoseWithCovarianceStamped()
         pose_sim.header = msg.header
-        pose_sim.pose.pose = self.utm2sim_transformer.transform_pose(msg.pose.pose)
+        if self.use_transformer:
+            # Add dropping height to the z coordinate
+            msg.pose.pose.position.z += self.dropping_height
+            pose_sim.pose.pose = self.utm2sim_transformer.transform_pose(msg.pose.pose)
+        else:
+            pose_sim.pose.pose = msg.pose.pose
 
         self.initialpose_sim_pub.publish(pose_sim)
 
