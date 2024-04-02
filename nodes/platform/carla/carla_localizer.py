@@ -10,9 +10,12 @@ ground truth localization. Publishes the following topics:
     current_pose    (geometry_msgs::PoseStamped)
 """
 import rospy
+import numpy as np
+
+from ros_numpy import numpify, msgify
 from tf2_ros import TransformBroadcaster, TransformListener, Buffer, TransformException
 
-from geometry_msgs.msg import PoseStamped, TwistStamped, TransformStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped, TransformStamped, Pose
 from nav_msgs.msg import Odometry
 from localization.SimulationToUTMTransformer import SimulationToUTMTransformer
 
@@ -39,6 +42,10 @@ class CarlaLocalizer:
         self.tf_broadcaster = TransformBroadcaster()
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
+
+        # Wait for the static transform between base_link and ego_vehicle
+        base_to_ego_static_transform = self.tf_buffer.lookup_transform("ego_vehicle", "base_link", rospy.Time(0), rospy.Duration(10))
+        self.base_link_to_ego_matrix = numpify(base_to_ego_static_transform.transform)
 
         # Subscribers
         rospy.Subscriber('/carla/odometry', Odometry, self.odometry_callback, queue_size=2, tcp_nodelay=True)
@@ -69,27 +76,26 @@ class CarlaLocalizer:
         current_velocity.twist = msg.twist.twist
         self.twist_pub.publish(current_velocity)
 
-        try:
-            transform = self.tf_buffer.lookup_transform('map', 'base_link', rospy.Time(0))
-            current_pose = PoseStamped()
-            current_pose.header.frame_id = "map"
-            current_pose.header.stamp = msg.header.stamp
-            current_pose.pose.position = transform.transform.translation
-            current_pose.pose.orientation = transform.transform.rotation
-            # Publish current pose
-            self.pose_pub.publish(current_pose)
+        # Make it pose of base_link instead of ego_vehicle
+        new_pose_matrix = numpify(new_pose)
+        pose_matrix = np.dot(new_pose_matrix, self.base_link_to_ego_matrix)
+        pose = msgify(Pose, pose_matrix)
 
-            # Publish odometry
-            odom = Odometry()
-            odom.header.stamp = msg.header.stamp
-            odom.header.frame_id = current_pose.header.frame_id
-            odom.child_frame_id = current_velocity.header.frame_id
-            odom.pose.pose = current_pose.pose
-            odom.twist.twist = current_velocity.twist
-            self.odom_pub.publish(odom)
+        # Publish current pose
+        current_pose = PoseStamped()
+        current_pose.header.frame_id = "map"
+        current_pose.header.stamp = msg.header.stamp
+        current_pose.pose = pose
+        self.pose_pub.publish(current_pose)
 
-        except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-            rospy.logerr("%s - %s", rospy.get_name(), str(e))
+        # Publish odometry
+        odom = Odometry()
+        odom.header.stamp = msg.header.stamp
+        odom.header.frame_id = current_pose.header.frame_id
+        odom.child_frame_id = current_velocity.header.frame_id
+        odom.pose.pose = pose
+        odom.twist.twist = current_velocity.twist
+        self.odom_pub.publish(odom)
      
 
     def run(self):
