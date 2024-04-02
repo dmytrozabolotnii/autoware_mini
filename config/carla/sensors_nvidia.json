@@ -91,7 +91,8 @@
                                     "spawn_point": {"x": 1.152, "y": -0.168, "z": -0.747, "roll": -1.378984, "pitch": 0.04415683, "yaw": -1.7793631},
                                     "image_size_x": 2064,
                                     "image_size_y": 1544,
-                                    "fov": 32.8
+                                    "fov": 32.8,
+                                    "sensor_tick": 0.1
                                 },
                                 {
                                     "type": "sensor.camera.rgb",
@@ -99,7 +100,8 @@
                                     "spawn_point": {"x": 1.131, "y": 0.338, "z": -0.747, "roll": -1.4044664, "pitch": -0.00261799, "yaw": -1.422443},
                                     "image_size_x": 2064,
                                     "image_size_y": 1544,
-                                    "fov": 25.3
+                                    "fov": 25.3,
+                                    "sensor_tick": 0.1
                                 },
                                 {
                                     "type": "sensor.camera.rgb",
@@ -107,7 +109,8 @@
                                     "spawn_point": {"x": 0.77, "y": 0.62, "z": -0.49, "roll": -1.576381, "pitch": 0.001396, "yaw": -0.182561},
                                     "image_size_x": 1928,
                                     "image_size_y": 1208,
-                                    "fov": 120
+                                    "fov": 120,
+                                    "sensor_tick": 0.1
                                 },
                                 {
                                     "type": "sensor.camera.rgb",
@@ -115,7 +118,8 @@
                                     "spawn_point": {"x": 0.83, "y": -0.51, "z": -0.49, "roll": -1.63537, "pitch": 0.001919, "yaw": -2.844538},
                                     "image_size_x": 1928,
                                     "image_size_y": 1208,
-                                    "fov": 120
+                                    "fov": 120,
+                                    "sensor_tick": 0.1
                                 },
                                 {
                                     "type": "sensor.camera.rgb",
@@ -123,7 +127,8 @@
                                     "spawn_point": {"x": 0.89, "y": 0.04, "z": -0.49, "roll": -1.601863, "pitch": 0.033684, "yaw": -1.533795},
                                     "image_size_x": 1928,
                                     "image_size_y": 1208,
-                                    "fov": 120
+                                    "fov": 120,
+                                    "sensor_tick": 0.1
                                 },
                                 {
                                     "type": "sensor.camera.rgb",
@@ -131,7 +136,8 @@
                                     "spawn_point": {"x": 0.89, "y": 0.09, "z": -0.49, "roll": -1.58912, "pitch": 0.024434, "yaw": -1.533097},
                                     "image_size_x": 1928,
                                     "image_size_y": 1208,
-                                    "fov": 60
+                                    "fov": 60,
+                                    "sensor_tick": 0.1
                                 },
                                 {
                                     "type": "sensor.other.imu",
