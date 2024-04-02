@@ -43,17 +43,16 @@ class CarlaLocalizer:
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
 
-        self.static_transform = None
-        # Wait for the static transform between ego_vehicle and base_link
-        while self.static_transform is None:
+        base_to_ego_static_transform = None
+        # Wait for the static transform between base_link and ego_vehicle
+        while base_to_ego_static_transform is None:
             try:
-                self.tf_buffer.can_transform("ego_vehicle", "base_link", rospy.Time(0))
-                self.static_transform = self.tf_buffer.lookup_transform("ego_vehicle", "base_link", rospy.Time(0))
+                base_to_ego_static_transform = self.tf_buffer.lookup_transform("ego_vehicle", "base_link", rospy.Time(0))
             except (TransformException) as e:
-                rospy.logerr("%s - %s", rospy.get_name(), str(e))
+                rospy.logwarn("%s - %s", rospy.get_name(), str(e))
             rospy.sleep(0.1)
 
-        self.base_link_to_ego_matrix = ros_numpy.numpify(self.static_transform.transform).astype(np.float32)
+        self.base_link_to_ego_matrix = ros_numpy.numpify(base_to_ego_static_transform.transform)
 
         # Subscribers
         rospy.Subscriber('/carla/odometry', Odometry, self.odometry_callback, queue_size=2, tcp_nodelay=True)
