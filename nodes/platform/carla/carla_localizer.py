@@ -44,7 +44,7 @@ class CarlaLocalizer:
         self.tf_listener = TransformListener(self.tf_buffer)
 
         # Wait for the static transform between base_link and ego_vehicle
-        base_to_ego_static_transform = self.tf_buffer.lookup_transform("ego_vehicle", "base_link", rospy.Time(0), rospy.Duration(10))
+        base_to_ego_static_transform = self.tf_buffer.lookup_transform("ego_vehicle", "base_link", rospy.Time(0), rospy.Duration(20))
         self.base_link_to_ego_matrix = numpify(base_to_ego_static_transform.transform)
 
         # Subscribers

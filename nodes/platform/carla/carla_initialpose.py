@@ -6,12 +6,10 @@
 # For a copy, see <https://opensource.org/licenses/MIT>.
 """
 Convert initial pose to simulation pose.
-    initialpose     (geometry_msgs::PoseWithCovarianceStamped)
-    initialpose_sim (geometry_msgs::PoseWithCovarianceStamped)
 """
 
 import rospy
-from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
 from localization.UTMToSimulationTransformer import UTMToSimulationTransformer
 
 
@@ -27,7 +25,7 @@ class CarlaInitialPose:
 
         self.dropping_height = rospy.get_param("~dropping_height")
 
-        self.initialpose_sim_pub = rospy.Publisher('/initialpose_sim', PoseWithCovarianceStamped, queue_size=1)
+        self.initialpose_sim_pub = rospy.Publisher('/carla/ego_vehicle/control/set_transform', Pose, queue_size=1)
 
         self.initialpose_sub = rospy.Subscriber('/initialpose', PoseWithCovarianceStamped, self.initialpose_callback, queue_size=1)
 
@@ -38,14 +36,13 @@ class CarlaInitialPose:
 
     def initialpose_callback(self, msg):
 
-        pose_sim = PoseWithCovarianceStamped()
-        pose_sim.header = msg.header
         if self.use_transformer:
             # Add dropping height to the z coordinate
-            msg.pose.pose.position.z += self.dropping_height
-            pose_sim.pose.pose = self.utm2sim_transformer.transform_pose(msg.pose.pose)
+            pose_sim = self.utm2sim_transformer.transform_pose(msg.pose.pose)
+            pose_sim.position.z += self.dropping_height
         else:
-            pose_sim.pose.pose = msg.pose.pose
+            pose_sim = msg.pose.pose
+            pose_sim.position.z += 2.0
 
         self.initialpose_sim_pub.publish(pose_sim)
 
