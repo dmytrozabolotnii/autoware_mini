@@ -44,11 +44,11 @@ class CarlaLocalizer:
         self.tf_listener = TransformListener(self.tf_buffer)
 
         # Wait for the static transform between base_link and ego_vehicle
-        base_to_ego_static_transform = self.tf_buffer.lookup_transform("ego_vehicle", "base_link", rospy.Time(0), rospy.Duration(20))
+        base_to_ego_static_transform = self.tf_buffer.lookup_transform("ego_vehicle", "base_link", rospy.Time(0), rospy.Duration(100))
         self.base_link_to_ego_matrix = numpify(base_to_ego_static_transform.transform)
 
         # Subscribers
-        rospy.Subscriber('/carla/odometry', Odometry, self.odometry_callback, queue_size=2, tcp_nodelay=True)
+        rospy.Subscriber('/carla/ego_vehicle/odometry', Odometry, self.odometry_callback, queue_size=2, tcp_nodelay=True)
 
 
     def odometry_callback(self, msg):

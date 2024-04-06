@@ -55,7 +55,7 @@ class CarlaDetector:
             'detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('/carla/ground_truth_objects',
+        rospy.Subscriber('/carla/ego_vehicle/objects',
                          ObjectArray, self.carla_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
     def carla_objects_callback(self, data):

@@ -18,7 +18,6 @@
     ################################
     -->
 
-    <remap from="/carla/ego_vehicle/goal" to="/move_base_simple/goal"/>
     <include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch">
         <arg name='host'    value='$(arg host)'/>
         <arg name='port'    value='$(arg port)'/>

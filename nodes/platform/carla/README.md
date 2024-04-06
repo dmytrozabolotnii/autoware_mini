@@ -16,7 +16,7 @@ ROS node for converting ground truth detections from the CARLA simulator and pub
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/carla/ground_truth_objects` | `derived_object_msgs::ObjectArray` | Subscribes to ground truth object detections from the CARLA simulator. |
+| `/carla/ego_vehicle/objects` | `derived_object_msgs::ObjectArray` | Subscribes to ground truth object detections from the CARLA simulator. |
 
 
 #### Published Topics

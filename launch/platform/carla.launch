@@ -57,7 +57,15 @@
   <include file="$(find autoware_mini)/launch/platform/carla/carla_common.launch">
     <arg name="map_name"            value="$(arg map_name)" />
     <arg name="use_manual_control"  value="$(arg use_manual_control)" />
-    <arg name="generate_traffic"    value="$(arg generate_traffic)" />
   </include>
+
+  <!--
+    #####################
+    ## Traffic Manager ##
+    #####################
+    -->
+
+  <!-- If traffic is enabled then run traffic generator -->
+  <node if="$(arg generate_traffic)" pkg="autoware_mini" type="carla_traffic_generator.sh" name="carla_traffic_generator" output="screen" required="true" />  
 
 </launch>

@@ -26,8 +26,6 @@
     ## Carla topic remaps ##
     ########################
   -->
-  <remap from="/carla/ego_vehicle/base_link/rgb_view/camera_info" to="/carla/rgb_view/camera_info" />
-  <remap from="/carla/ego_vehicle/base_link/rgb_view/image" to="/carla/rgb_view/image_raw" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center" to="/lidar_center/pointcloud" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/lidar_front/os_sensor" to="/lidar_front/points" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/camera_fl/camera_info" to="/camera_fl/camera_info" />
@@ -37,9 +35,6 @@
   <remap from="/carla/ego_vehicle/base_link/gnss_forward" to="/gps/fix_forward" />
   <remap from="/carla/ego_vehicle/base_link/gnss" to="/gps/fix" />
   <remap from="/carla/ego_vehicle/base_link/imu" to="/gps/imu" />
-  <remap from="/carla/ego_vehicle/odometry" to="/carla/odometry" />
-  <remap from="/carla/ego_vehicle/objects" to="/carla/ground_truth_objects" />
-  <remap from="/carla/ego_vehicle/goal" to="/move_base_simple/goal" />
 
   <!-- ====================================================================================================== -->
 

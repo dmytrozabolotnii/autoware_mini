@@ -3,7 +3,6 @@
 
   <arg name='map_name'                  default='town01'/>
   <arg name='use_manual_control'        default='false' /><!-- Toggle manual control -->
-  <arg name='generate_traffic'          default='false' /><!-- Generate Traffic -->
 
   <!--
     ###################
@@ -11,27 +10,20 @@
     ###################
     -->
 
+  <!-- carla ackermann control -->
+  <include file='$(find carla_ackermann_control)/launch/carla_ackermann_control.launch' />
+
+  <!-- For control through RViz -->
+  <remap from="/carla/ego_vehicle/vehicle_control_cmd" to="/carla/ego_vehicle/vehicle_control_cmd_manual" />
+  <include file='$(find carla_twist_to_control)/launch/carla_twist_to_control.launch' />
+
   <group if='$(arg use_manual_control)'>
     <!-- carla manual control -->
     <include file='$(find carla_manual_control)/launch/carla_manual_control.launch' />
   </group>
 
-  <group unless='$(arg use_manual_control)'>
-    <!-- carla ackermann control -->
-    <include file='$(find carla_ackermann_control)/launch/carla_ackermann_control.launch' />
-  </group>
-
   <node pkg='autoware_mini' type='carla_vehicle_interface.py' name='carla_vehicle_interface' output='screen' required="true" />
 
-  <!--
-    #####################
-    ## Traffic Manager ##
-    #####################
-    -->
-
-  <!-- If traffic is enabled then run traffic generator -->
-  <node if="$(arg generate_traffic)" pkg="autoware_mini" type="carla_traffic_generator.sh" name="carla_traffic_generator" output="screen" required="true" />
-  
   <!--
     ####################
     ## Commons Params ##
