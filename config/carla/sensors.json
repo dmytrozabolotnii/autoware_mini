@@ -73,7 +73,7 @@
                         {
                             "type": "sensor.lidar.ray_cast",
                             "id": "lidar_center",
-                            "spawn_point": {"x": 1.02, "y": 0, "z": 1.51, "roll": -0.02879793, "pitch": 0.0003490659, "yaw": -0.055},
+                            "spawn_point": {"x": 1.02, "y": 0, "z": 1.51, "roll": -1.650, "pitch": 0.020, "yaw": -3.151},
                             "range": 200,
                             "channels": 32,
                             "points_per_second": 600000,
@@ -88,7 +88,7 @@
                                 {
                                     "type": "sensor.camera.rgb",
                                     "id": "camera_fr",
-                                    "spawn_point": {"x": 1.152, "y": -0.168, "z": -0.747, "roll": -1.378984, "pitch": 0.04415683, "yaw": -1.7793631},
+                                    "spawn_point": {"x": 1.152, "y": -0.168, "z": -0.747, "roll": -2.5772026, "pitch": -10.9791546, "yaw": -11.4588476},
                                     "image_size_x": 2064,
                                     "image_size_y": 1544,
                                     "fov": 32.8,
@@ -97,7 +97,7 @@
                                 {
                                     "type": "sensor.camera.rgb",
                                     "id": "camera_fl",
-                                    "spawn_point": {"x": 1.131, "y": 0.338, "z": -0.747, "roll": -1.4044664, "pitch": -0.00261799, "yaw": -1.422443},
+                                    "spawn_point": {"x": 1.131, "y": 0.338, "z": -0.747, "roll": -0.1520991, "pitch": -9.5299671, "yaw": 8.5251818},
                                     "image_size_x": 2064,
                                     "image_size_y": 1544,
                                     "fov": 25.3,
@@ -106,7 +106,7 @@
                                 {
                                     "type": "sensor.other.imu",
                                     "id": "lidar_front/os_sensor",
-                                    "spawn_point": {"x": 0.8559, "y": 0.0642, "z": -0.4051, "roll": 0.003995038, "pitch": -0.009182, "yaw": 0.8641542},
+                                    "spawn_point": {"x": 0.8559, "y": 0.0642, "z": -0.4051, "roll": 0.229, "pitch": -0.526, "yaw": 49.512},
                                     "range": 120,
                                     "channels": 128,
                                     "points_per_second": 2621440,
