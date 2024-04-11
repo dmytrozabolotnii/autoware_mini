@@ -7,9 +7,11 @@ from tf.transformations import quaternion_from_euler
 from tf2_ros import TransformBroadcaster
 
 from novatel_oem7_msgs.msg import INSPVA, BESTPOS
-from geometry_msgs.msg import PoseStamped, TwistStamped, Quaternion, TransformStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped, Quaternion, TransformStamped, PoseWithCovarianceStamped, Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu
+from ros_numpy import numpify, msgify
+import numpy as np
 
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
 from localization.WGS84ToLest97Transformer import WGS84ToLest97Transformer
@@ -27,9 +29,12 @@ class NovatelOem7Localizer:
         self.lest97_origin_easting = rospy.get_param("lest97_origin_easting")
         self.use_msl_height = rospy.get_param("~use_msl_height")
         self.child_frame = rospy.get_param("~child_frame")
+        self.enable_setting_initialpose = rospy.get_param("~enable_setting_initialpose")
 
         # variable to store undulation value from bestpos message
         self.undulation = 0.0
+        self.current_pose_msg = None
+        self.relative_pose_matrix = None
 
         # initialize coordinate_transformer
         if self.coordinate_transformer == "utm":
@@ -46,6 +51,7 @@ class NovatelOem7Localizer:
         self.odometry_pub = rospy.Publisher('odometry', Odometry, queue_size=1, tcp_nodelay=True)
         
         # Subscribers
+        rospy.Subscriber('/initialpose', PoseWithCovarianceStamped, self.initialpose_callback, queue_size=1, tcp_nodelay=True)
         if self.use_msl_height:
             self.bestpos_sub = rospy.Subscriber('/novatel/oem7/bestpos', BESTPOS, self.bestpos_callback, queue_size=1, tcp_nodelay=True)
 
@@ -56,6 +62,17 @@ class NovatelOem7Localizer:
         ts.registerCallback(self.synchronized_callback)
         # output information to console
         rospy.loginfo("%s - localizer initialized using %s coordinates", rospy.get_name(), str(self.coordinate_transformer))
+
+
+    def initialpose_callback(self, pose_msg):
+        if self.current_pose_msg is None:
+            return
+        # TODO initialpose gives wroong z value - 0.0
+        pose_msg.pose.pose.position.z = self.current_pose_msg.pose.position.z
+        initialpose_matrix = numpify(pose_msg.pose.pose)
+        current_pose_matrix = numpify(self.current_pose_msg.pose)
+        self.relative_pose_matrix = np.linalg.inv(current_pose_matrix) @ initialpose_matrix
+        print("initialpose\n", initialpose_matrix, "\ncurrent_pose\n", current_pose_matrix, "\nrelative_pose\n", self.relative_pose_matrix)
 
 
     def synchronized_callback(self, inspva_msg, imu_msg):
@@ -77,30 +94,32 @@ class NovatelOem7Localizer:
         if self.use_msl_height:
             height -= self.undulation
 
+        current_pose_msg = PoseStamped()
+        current_pose_msg.header.stamp = stamp
+        current_pose_msg.header.frame_id = "map"
+
+        current_pose_msg.pose.position.x = x
+        current_pose_msg.pose.position.y = y
+        current_pose_msg.pose.position.z = height
+        current_pose_msg.pose.orientation = orientation
+
+        self.current_pose_msg = current_pose_msg
+
+        print("current_pose_msg original\n", current_pose_msg.pose.position.x, current_pose_msg.pose.position.y, current_pose_msg.pose.position.z)
+        if self.enable_setting_initialpose and self.relative_pose_matrix is not None:
+            pose_matrix = numpify(current_pose_msg.pose)
+            current_pose_matrix = self.relative_pose_matrix @ pose_matrix
+            self.current_pose_msg.pose = msgify(Pose, current_pose_matrix)
+            print("current_pose_msg modif\n", current_pose_msg.pose.position.x, current_pose_msg.pose.position.y, current_pose_msg.pose.position.z)
+
         # Publish 
-        self.publish_current_pose(stamp, x, y, height, orientation)
+        self.current_pose_pub.publish(current_pose_msg)
         self.publish_current_velocity(stamp, linear_velocity, angular_velocity)
         self.publish_map_to_baselink_tf(stamp, x, y, height, orientation)
         self.publish_odometry(stamp, linear_velocity, x, y, height, orientation, angular_velocity)
 
     def bestpos_callback(self, bestpos_msg):
         self.undulation = bestpos_msg.undulation
-
-
-    def publish_current_pose(self, stamp, x, y, height, orientation):
-
-        pose_msg = PoseStamped()
-
-        pose_msg.header.stamp = stamp
-        pose_msg.header.frame_id = "map"
-
-        pose_msg.pose.position.x = x
-        pose_msg.pose.position.y = y
-        pose_msg.pose.position.z = height
-        pose_msg.pose.orientation = orientation
-
-        self.current_pose_pub.publish(pose_msg)
-
 
     def publish_current_velocity(self, stamp, linear_velocity, angular_velocity):
         
