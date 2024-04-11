@@ -15,7 +15,6 @@ class LocalPathVisualizer:
         # Parameters
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
         self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
-        self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
 
         # Publishers
