@@ -17,9 +17,9 @@
     <arg name='use_lidar_front'         default='false'/>
     <arg name='rviz'                    default='true'/>
     <!-- Scenario Runner args -->
-    <arg name='scenario_runner_path'    default='$(optenv SCENARIO_RUNNER_ROOT)'/>
+    <arg name='use_scenario_runner'     default='false'/>
     <arg name='scenario_name'           default=""/>
-    <arg name="generate_traffic"        default="$(eval scenario_name == '')" />
+    <arg name="generate_traffic"        default="$(eval not use_scenario_runner)" />
     <arg name="use_manual_control"      default="false"                 doc="use manual control for carla"/>
 
     <!-- Localization -->
@@ -67,7 +67,7 @@
         <arg name="use_cam"                             value="$(eval 'camera' in tfl_detector)" />
         <arg name="use_manual_control"                  value="$(arg use_manual_control)" />
         <arg name="generate_traffic"                    value="$(arg generate_traffic)" />
-        <arg name="scenario_runner_path"                value="$(arg scenario_runner_path)" />
+        <arg name="use_scenario_runner"                 value="$(arg use_scenario_runner)" />
         <arg name="scenario_name"                       value="$(arg scenario_name)" />
     </include>
 

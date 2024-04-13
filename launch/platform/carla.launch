@@ -14,8 +14,8 @@
   <arg name='port'                default='2000' />
   <arg name='timeout'             default='100' />
   <!-- Scenario Runner args -->
-  <arg name='scenario_runner_path'    default='$(optenv SCENARIO_RUNNER_ROOT)'/>
-  <arg name='scenario_name'           default=""/>
+  <arg name='use_scenario_runner' default='false'/>
+  <arg name='scenario_name'       default=""/>
   <!-- Other -->
   <arg name='use_manual_control'  default='false' /><!-- Toggle manual control-->
   <arg name='generate_traffic'    default='false'/><!-- Generate Traffic -->
@@ -43,9 +43,8 @@
     ## Carla Scenario Runner ##
     ###########################
     -->
-  <include if="$(eval scenario_name != '')" file="$(find autoware_mini)/launch/platform/carla/carla_scenario_runner.launch">
+  <include if="$(arg use_scenario_runner)" file="$(find autoware_mini)/launch/platform/carla/carla_scenario_runner.launch">
       <arg name='map_name'                            value='$(arg map_name)'/>
-      <arg name="scenario_runner_path"                value="$(arg scenario_runner_path)" />
       <arg name="scenario_name"                       value="$(arg scenario_name)" />
   </include>
 

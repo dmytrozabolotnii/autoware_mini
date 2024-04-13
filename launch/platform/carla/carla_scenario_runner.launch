@@ -18,11 +18,11 @@
     ################################
     -->
 
-    <include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch">
+    <!--include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch">
         <arg name='host'    value='$(arg host)'/>
         <arg name='port'    value='$(arg port)'/>
         <arg name='timeout' value='$(arg timeout)'/>
-    </include>
+    </include-->
 
     <include file="$(find carla_ros_scenario_runner)/launch/carla_ros_scenario_runner.launch">
         <arg name='host'                    value='$(arg host)'/>
@@ -32,11 +32,11 @@
     </include>
 
     <!-- Launch one or all map specific scenarios -->
-    <node pkg='autoware_mini' type='carla_scenario_manager.py' name='carla_scenario_manager' output='screen' required="true">
-        <param name="scenario_runner_root"  value="$(arg scenario_runner_path)" />
-        <param name="scenario_name"         value="$(arg scenario_name)" />
+    <node pkg='autoware_mini' type='carla_scenario_publisher.py' name='carla_scenario_publisher' output='screen' required="true">
         <param name="scenario_path"         value="$(arg scenario_path)" />
-        <param name="map_name"              value="$(arg map_name)" />
     </node>
+
+    <node if="$(eval scenario_name != '')" pkg="rosservice" type="rosservice" name="execute_scenario" output="screen"
+            args="call --wait /scenario_runner/execute_scenario '{ 'scenario': { 'scenario_file': '$(arg scenario_file)' } }'"/>
 
 </launch>
