@@ -9,6 +9,3 @@ novatel_oem7_localizer:
   use_msl_height: True
   child_frame: base_link
   enable_setting_initialpose: True
-
-carla_initialpose:
-  dropping_height: 40.0
