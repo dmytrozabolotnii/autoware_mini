@@ -190,9 +190,9 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
 
 ### Launching with Scenario Runner
 
-1. Clone [Scenario Runner](https://gitlab.cs.ut.ee/autonomous-driving-lab/simulations/scenario_runner.git) to a directory of your choice
+1. Clone [Scenario Runner](https://github.com/carla-simulator/scenario_runner) to a directory of your choice
    ```
-   git clone git@gitlab.cs.ut.ee:autonomous-driving-lab/simulations/scenario_runner.git
+   git clone https://github.com/carla-simulator/scenario_runner.git
    ```
 2. Install requirements
    ```
@@ -204,9 +204,9 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
    ```
 4. Launch Autoware Mini with:
    ```
-   roslaunch autoware_mini start_carla.launch map_name:=tartu_demo scenario_name:=PedestrianCrossingFront
+   roslaunch autoware_mini start_carla.launch use_scenario_runner:=true
    ```
-   You need pass `scenario_name` argument while launching the file above. Some predefined open-scenario format scenarios are already available under `data/scenarios/<MAP_NAME>/SCENARIO_NAME.xosc`. Additonally, you need to manually set the destination for the ego car when scenario is launched.
+   You can now execute scenarios by choosing them from RViz Carla plugin dropdown and pressing Execute button. You need to manually set the destination for the ego car when scenario is launched. The predefined scenarios are available under `data/scenarios/MAP_NAME/SCENARIO_NAME.xosc`.
 
 ## Launching in Lexus
 
