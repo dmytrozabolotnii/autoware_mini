@@ -67,13 +67,12 @@ class NovatelOem7Localizer:
     def initialpose_callback(self, pose_msg):
         if self.current_pose_msg is None:
             return
-        # TODO initialpose gives wroong z value - 0.0
+        # take the z value for initialpose from current_pose
         pose_msg.pose.pose.position.z = self.current_pose_msg.pose.position.z
         initialpose_matrix = numpify(pose_msg.pose.pose)
         current_pose_matrix = numpify(self.current_pose_msg.pose)
-        self.relative_pose_matrix = np.linalg.inv(current_pose_matrix) @ initialpose_matrix
-        print("initialpose\n", pose_msg.pose.pose, "\n",  initialpose_matrix, "\ncurrent_pose\n", current_pose_matrix, "\nrelative_pose\n", self.relative_pose_matrix)
-
+        # get the difference between initialpose and current_pose
+        self.relative_pose_matrix = initialpose_matrix.dot(np.linalg.inv(current_pose_matrix))
 
     def synchronized_callback(self, inspva_msg, imu_msg):
 
@@ -103,16 +102,12 @@ class NovatelOem7Localizer:
         current_pose_msg.pose.position.z = height
         current_pose_msg.pose.orientation = orientation
 
-        print("current_pose_msg original\n", current_pose_msg.pose.position.x, current_pose_msg.pose.position.y, current_pose_msg.pose.position.z)
-        if self.enable_setting_initialpose and self.relative_pose_matrix is not None:
-            pose_matrix = numpify(current_pose_msg.pose)
-            print("pose_matrix\n", pose_matrix)
-            current_pose_matrix = self.relative_pose_matrix @ pose_matrix
-            print("new current_pose_matrix\n", current_pose_matrix)
-            current_pose_msg.pose = msgify(Pose, current_pose_matrix)
-            print("current_pose_msg modif\n", current_pose_msg.pose.position.x, current_pose_msg.pose.position.y, current_pose_msg.pose.position.z)
-
         self.current_pose_msg = current_pose_msg
+
+        if self.enable_setting_initialpose and self.relative_pose_matrix is not None:
+            current_pose_matrix = numpify(current_pose_msg.pose)
+            new_current_pose_matrix = self.relative_pose_matrix.dot(current_pose_matrix)
+            current_pose_msg.pose = msgify(Pose, new_current_pose_matrix)
 
         # Publish 
         self.current_pose_pub.publish(current_pose_msg)
