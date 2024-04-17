@@ -192,7 +192,7 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
 
 1. Clone [Scenario Runner](https://github.com/carla-simulator/scenario_runner) to a directory of your choice
    ```
-   git clone https://github.com/carla-simulator/scenario_runner.git
+   git clone -b v0.9.13 https://github.com/carla-simulator/scenario_runner.git
    ```
 2. Install requirements
    ```
