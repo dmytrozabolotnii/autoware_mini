@@ -30,7 +30,6 @@ class NovatelOem7Localizer:
         self.lest97_origin_easting = rospy.get_param("lest97_origin_easting")
         self.use_msl_height = rospy.get_param("~use_msl_height")
         self.child_frame = rospy.get_param("~child_frame")
-        self.enable_setting_initialpose = rospy.get_param("~enable_setting_initialpose")
 
         # variable to store undulation value from bestpos message
         self.undulation = 0.0
@@ -114,7 +113,7 @@ class NovatelOem7Localizer:
         self.current_pose = current_pose
 
         # if initalpose is set reposition car
-        if self.enable_setting_initialpose and self.relative_pose_matrix is not None:
+        if self.relative_pose_matrix is not None:
             current_pose_matrix = numpify(self.current_pose)
             new_current_pose_matrix = self.relative_pose_matrix.dot(current_pose_matrix)
             # replace current_pose with new_current_pose
