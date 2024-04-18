@@ -2,7 +2,6 @@
 
 import math
 import rospy
-import threading
 import message_filters
 from tf.transformations import quaternion_from_euler
 from tf2_ros import TransformBroadcaster
@@ -37,7 +36,6 @@ class NovatelOem7Localizer:
         self.undulation = 0.0
         self.current_pose = None
         self.relative_pose_matrix = None
-        self.lock = threading.Lock()
 
         # initialize coordinate_transformer
         if self.coordinate_transformer == "utm":
