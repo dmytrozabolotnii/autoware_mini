@@ -11,6 +11,7 @@ from novatel_oem7_msgs.msg import INSPVA, BESTPOS
 from geometry_msgs.msg import PoseStamped, TwistStamped, Quaternion, TransformStamped, PoseWithCovarianceStamped, Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu
+from std_srvs.srv import Empty, EmptyResponse
 from ros_numpy import numpify, msgify
 import numpy as np
 
@@ -62,6 +63,10 @@ class NovatelOem7Localizer:
 
         ts = message_filters.ApproximateTimeSynchronizer([inspva_sub, imu_sub], queue_size=5, slop=0.03)
         ts.registerCallback(self.synchronized_callback)
+
+        # Services
+        rospy.Service('cancel_pose', Empty, self.cancel_pose_callback)
+
         # output information to console
         rospy.loginfo("%s - localizer initialized using %s coordinates", rospy.get_name(), str(self.coordinate_transformer))
 
@@ -75,6 +80,12 @@ class NovatelOem7Localizer:
         current_pose_matrix = numpify(self.current_pose)
         # get the difference between initialpose and current_pose
         self.relative_pose_matrix = initialpose_matrix.dot(np.linalg.inv(current_pose_matrix))
+
+
+    def cancel_pose_callback(self, req):
+        self.relative_pose_matrix = None
+        return EmptyResponse()
+
 
     def synchronized_callback(self, inspva_msg, imu_msg):
 
