@@ -156,7 +156,7 @@ class NovatelOem7Localizer:
         odom_msg.header.stamp = stamp
         odom_msg.header.frame_id = 'map'
         odom_msg.child_frame_id = 'base_link'
-        odom_msg.pose = current_pose
+        odom_msg.pose.pose = current_pose
         odom_msg.twist.twist.linear.x = velocity
         odom_msg.twist.twist.angular = angular_velocity
 
