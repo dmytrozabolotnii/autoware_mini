@@ -32,7 +32,9 @@ class PurePursuitFollower:
         self.publish_debug_info = rospy.get_param("~publish_debug_info")
         self.nearest_neighbor_search = rospy.get_param("~nearest_neighbor_search")
         self.waypoint_interval = rospy.get_param("/planning/waypoint_interval")
+        self.default_acceleration = rospy.get_param("/planning/default_acceleration")
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
+        self.max_deceleration = rospy.get_param("/planning/max_deceleration")
         self.stopping_speed_limit = rospy.get_param("/planning/stopping_speed_limit")
         self.current_pose_to_car_front = rospy.get_param("/planning/current_pose_to_car_front")
         self.simulate_cmd_delay = rospy.get_param("~simulate_cmd_delay")
@@ -101,7 +103,7 @@ class PurePursuitFollower:
             stamp = current_pose_msg.header.stamp
             if waypoint_tree is None:
                 # if no waypoints received yet or global_path cancelled, stop the vehicle
-                self.publish_vehicle_command(stamp, 0.0, 0.0, 0.0, 0, 0)
+                self.publish_vehicle_command(stamp)
                 return
 
             current_pose = current_pose_msg.pose
@@ -126,7 +128,7 @@ class PurePursuitFollower:
 
             if front_wp_idx == len(waypoints)-1:
                 # stop vehicle - last waypoint is reached
-                self.publish_vehicle_command(stamp, 0.0, 0.0, 0.0, 0, 0)
+                self.publish_vehicle_command(stamp)
                 rospy.logwarn_throttle(10, "%s - last waypoint reached", rospy.get_name())
                 return
 
@@ -153,7 +155,7 @@ class PurePursuitFollower:
 
             if abs(cross_track_error) > self.lateral_error_limit or abs(math.degrees(heading_angle_difference)) > self.heading_angle_limit:
                 # stop vehicle if cross track error or heading angle difference is over limit
-                self.publish_vehicle_command(stamp, 0.0, 0.0, 0.0, 0, 0)
+                self.publish_vehicle_command(stamp)
                 rospy.logerr_throttle(10, "%s - lateral error or heading angle difference over limit", rospy.get_name())
                 return
         
@@ -168,22 +170,29 @@ class PurePursuitFollower:
                 target_velocity = 0.0
 
             # if decelerating because of obstacle then calculate necessary deceleration
-            if stopping_point_distance > 0:
-                # always allow minimum deceleration, to be able to adapt to map speeds
-                acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / (stopping_point_distance - ego_distance_from_path_start - self.current_pose_to_car_front), -self.default_deceleration)
-            # otherwise use vehicle default deceleration limit
+            emergency = 0
+            if stopping_point_distance > 0.0 and target_velocity < current_velocity:
+                # calculate distance from car front to stopping point
+                car_front_to_stopping_point = stopping_point_distance - ego_distance_from_path_start - self.current_pose_to_car_front
+                if car_front_to_stopping_point > 0:
+                    # always allow minimum deceleration, to be able to adapt to map speeds
+                    acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / car_front_to_stopping_point, -self.default_deceleration)
+                else:
+                    # emergency braking - car front over the stopping point
+                    acceleration = -self.max_deceleration
+                    emergency = 1
             else:
-                acceleration = 0.0
-
-            # fix for Carla - acceleration cannot be negative if target velocity is higher than current velocity
-            if acceleration < 0.0 and target_velocity > current_velocity:
-                acceleration = 0.0
+                # use the default acceleration/deceleration limits
+                if target_velocity > current_velocity:
+                    acceleration = self.default_acceleration
+                else:
+                    acceleration = -self.default_deceleration
 
             # blinkers
             left_blinker, right_blinker = get_blinker_state_with_lookahead(waypoints, self.waypoint_interval, front_wp_idx, current_velocity, self.blinker_lookahead_time, self.blinker_lookahead_distance)
 
             # Publish
-            self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker)
+            self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker, emergency)
             if self.publish_debug_info:
                 self.publish_pure_pursuit_markers(stamp, current_pose, lookahead_point, heading_angle_difference)
                 self.follower_debug_pub.publish(Float32MultiArray(data=[1.0 / (rospy.get_time() - start_time), current_heading, lookahead_heading, heading_error, cross_track_error, target_velocity]))
@@ -192,7 +201,7 @@ class PurePursuitFollower:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
 
 
-    def publish_vehicle_command(self, stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker):
+    def publish_vehicle_command(self, stamp, steering_angle=0.0, target_velocity=0.0, acceleration=0.0, left_blinker=0, right_blinker=0, emergency=0):
         vehicle_cmd = VehicleCmd()
         vehicle_cmd.header.stamp = stamp
         vehicle_cmd.header.frame_id =  "base_link"
@@ -203,6 +212,7 @@ class PurePursuitFollower:
         vehicle_cmd.ctrl_cmd.linear_velocity = target_velocity
         vehicle_cmd.ctrl_cmd.linear_acceleration = acceleration
         vehicle_cmd.ctrl_cmd.steering_angle = steering_angle
+        vehicle_cmd.emergency = emergency
         self.vehicle_command_pub.publish(vehicle_cmd)
 
 

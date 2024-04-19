@@ -22,6 +22,8 @@ class BicycleSimulation:
         self.wheel_base = rospy.get_param("wheel_base")
         self.acceleration_limit = rospy.get_param("acceleration_limit")
         self.deceleration_limit = rospy.get_param("deceleration_limit")
+        self.default_acceleration = rospy.get_param("/planning/default_acceleration")
+        self.default_deceleration = rospy.get_param("/planning/default_deceleration")
 
         # internal state of bicycle model
         self.x = 0.0
@@ -67,14 +69,14 @@ class BicycleSimulation:
         # calculate acceleration based on limits
         if self.target_velocity > self.velocity:
             if msg.ctrl_cmd.linear_acceleration > 0.0:
-                self.acceleration = msg.ctrl_cmd.linear_acceleration
+                self.acceleration = min(msg.ctrl_cmd.linear_acceleration, self.acceleration_limit)
             else:
-                self.acceleration = self.acceleration_limit
+                self.acceleration = self.default_acceleration
         elif self.target_velocity < self.velocity:
             if msg.ctrl_cmd.linear_acceleration < 0.0:
-                self.acceleration = msg.ctrl_cmd.linear_acceleration
+                self.acceleration = max(msg.ctrl_cmd.linear_acceleration, -self.deceleration_limit)
             else:
-                self.acceleration = -self.deceleration_limit
+                self.acceleration = -self.default_deceleration
         else:
             self.acceleration = 0.0
 
