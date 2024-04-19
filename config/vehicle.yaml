@@ -1,7 +1,7 @@
 wheel_base: 2.789
 steer_ratio: 16.135
 acceleration_limit: 1.0
-deceleration_limit: 1.0
+deceleration_limit: 5.0
 
 ssc_interface:
   use_adaptive_gear_ratio: True
@@ -11,6 +11,7 @@ ssc_interface:
   agr_coef_a: 15.713
   agr_coef_b: 0.053
   agr_coef_c: 0.042
+  enable_emergency_braking: False
 
 button_panel:
   cooldown: 2.0

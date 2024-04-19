@@ -298,7 +298,7 @@ class VelocityLocalPlanner:
                     if i == 0:
                         closest_object_distance = obstacle_distance - ego_distance_from_path_start
                         closest_object_velocity = obstacles_ahead_speeds[lowest_target_velocity_idx]
-                        stopping_point_distance = obstacles_ahead_dists[lowest_target_velocity_idx] - braking_safety_distances[lowest_target_velocity_idx]
+                        stopping_point_distance = max(0, obstacles_ahead_dists[lowest_target_velocity_idx] - braking_safety_distances[lowest_target_velocity_idx])
 
                         # lowest target velocity obstacle within stopping_lateral_distance - blocking; ignore goal point with braking_safety_distance_goal = 0.0
                         if obstacles_ahead_lateral_dists[lowest_target_velocity_idx] <= self.stopping_lateral_distance and braking_safety_distances[lowest_target_velocity_idx] > 0.0:

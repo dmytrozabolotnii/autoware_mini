@@ -21,6 +21,9 @@ A ROS node which implements the pure pursuit control algorithm. The node subscri
 | `~simulate_cmd_delay`      | double | `0.3`   | Time, (s).  It is used to project ego vehicle to a location where it would be after that time considering current velocity and orientation. The projected location is used as source to calculate steering angle |
 | `~publish_debug_info`      | bool   | `False` | Whether to publish debug information.                                  |
 | `~nearest_neighbor_search` | string | `"kd_tree"` | The algorithm used for nearest neighbor search (see sklearn.neighbors). |
+| `/planning/default_acceleration` | float | `1.0` | Default acceleration (in m/s^2). |
+| `/planning/default_deceleration` | float | `1.0` | Default deceleration (in m/s^2). |
+| `/planning/max_deceleration` | float | `10.0` | Maximum deceleration (in m/s^2). |
 
 #### Subscribed Topics
 
@@ -64,6 +67,9 @@ ROS node that receives a local path (Lane message) and a vehicle status (current
 | `~simulate_cmd_delay`      | double | `0.3`   | Time, (s).  It is used to project ego vehicle to a location where it would be after that time considering current velocity and orientation. The projected location is used as source to calculate steering angle |
 | `~publish_debug_info` | bool | `False` | Whether or not to publish debug information |
 | `~nearest_neighbor_search` | string | `"kd_tree"` | Algorithm for nearest neighbor search. Possible values are `"ball_tree"`, `"kd_tree"`, and `"brute"`.
+| `/planning/default_acceleration` | float | `1.0` | Default acceleration (in m/s^2). |
+| `/planning/default_deceleration` | float | `1.0` | Default deceleration (in m/s^2). |
+| `/planning/max_deceleration` | float | `10.0` | Maximum deceleration (in m/s^2). |
 
 #### Subscribed Topics
 
