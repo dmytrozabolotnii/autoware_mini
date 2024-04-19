@@ -13,6 +13,7 @@
     <arg name="tracker"                 default="$(eval 'ema' if detector != 'carla' else 'none')" />
     <arg name="predictor"               default="none"                  doc="none, naive" />
     <arg name="follower"                default="pure_pursuit"          doc="pure_pursuit, stanley" />
+    <arg name="detection_range"         default=""                      doc="enter a value in meters to enable it" />
     <arg name='use_lidar_center'        default='true'/>
     <arg name='use_lidar_front'         default='false'/>
     <arg name='rviz'                    default='true'/>
@@ -35,6 +36,7 @@
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name='use_lidar_center'    value='$(arg use_lidar_center)'/>
         <arg name='use_lidar_front'     value='$(arg use_lidar_front)'/>
+        <arg name="detection_range"     value="$(arg detection_range)" />
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
     </include>
@@ -60,15 +62,15 @@
 
     <!-- Carla platform -->
     <include file="$(find autoware_mini)/launch/platform/carla.launch">
-        <arg name='map_name'                            value='$(arg map_name)'/>
-        <arg name="use_lidar"                           value="$(eval 'lidar' in detector and detector != 'lidar_vella')" />
-        <arg name="use_radar"                           value="$(eval 'radar' in detector)" />
-        <arg name="use_gnss"                            value="$(eval localizer == 'novatel')" />
-        <arg name="use_cam"                             value="$(eval 'camera' in tfl_detector)" />
-        <arg name="use_manual_control"                  value="$(arg use_manual_control)" />
-        <arg name="generate_traffic"                    value="$(arg generate_traffic)" />
-        <arg name="use_scenario_runner"                 value="$(arg use_scenario_runner)" />
-        <arg name="scenario_name"                       value="$(arg scenario_name)" />
+        <arg name='map_name'            value='$(arg map_name)'/>
+        <arg name="use_lidar"           value="$(eval 'lidar' in detector and detector != 'lidar_vella')" />
+        <arg name="use_radar"           value="$(eval 'radar' in detector)" />
+        <arg name="use_gnss"            value="$(eval localizer == 'novatel')" />
+        <arg name="use_cam"             value="$(eval 'camera' in tfl_detector)" />
+        <arg name="use_manual_control"  value="$(arg use_manual_control)" />
+        <arg name="generate_traffic"    value="$(arg generate_traffic)" />
+        <arg name="use_scenario_runner" value="$(arg use_scenario_runner)" />
+        <arg name="scenario_name"       value="$(arg scenario_name)" />
     </include>
 
     <!-- Rviz -->

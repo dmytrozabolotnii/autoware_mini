@@ -12,6 +12,7 @@
     <arg name="tfl_detector"            default="none"          doc="mqtt" />
     <arg name="tracker"                 default="none"          doc="none, ema"/>
     <arg name="predictor"               default="none"          doc="none, naive"/>
+    <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
 
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -26,6 +27,7 @@
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
+        <arg name="detection_range"     value="$(arg detection_range)" />
     </include>
 
     <!-- Planning -->
@@ -39,7 +41,7 @@
 
     <!-- Control -->
     <include file="$(find autoware_mini)/launch/control.launch">
-        <arg name="follower"        value="$(arg follower)" />
+        <arg name="follower"            value="$(arg follower)" />
     </include>
 
     <!-- Bicycle_model simulator -->
