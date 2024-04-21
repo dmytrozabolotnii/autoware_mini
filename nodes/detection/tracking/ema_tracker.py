@@ -74,7 +74,7 @@ class EMATracker:
         if self.association_method == 'iou':
             # Calculate the IOU between the tracked objects and the detected objects
             iou = calculate_iou(tracked_object_bboxes, detected_objects_array['bbox'])
-            assert iou.shape == (len(self.tracked_objects_array), len(detected_objects_array))
+            assert iou.shape == (len(self.tracked_objects_array), len(detected_objects_array)), str(iou.shape) + ' ' + str((len(self.tracked_objects_array), len(detected_objects_array)))
 
             # Calculate the association between the tracked objects and the detected objects
             matched_track_indices, matched_detection_indicies = linear_sum_assignment(-iou)
