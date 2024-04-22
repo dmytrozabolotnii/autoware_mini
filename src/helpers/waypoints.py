@@ -19,34 +19,23 @@ def get_blinker_state(steering_state):
     else:
         return 0, 0
     
-def get_blinker_state_with_lookahead(waypoints, waypoint_interval, wp_idx, velocity, lookahead_time, lookahead_distance):
+def get_blinker_state_with_lookahead(distance_to_blinker_interpolator, d_ego_from_path_start, blinker_lookahead_d):
     """
-    Get blinker state from current idx and look ahead using time.
-    Blinker state at current location has priority (turn needs to be properly finished)
-    If no blinker in current position then look ahead up to determined time.
-    :param waypoints: list of waypoints
-    :param waypoint_interval: waypoint interval in meters
-    :param wp_idx: current waypoint index
-    :param velocity: current velocity (m/s)
-    :param lookahead_time: time to look ahead (s)
-    :param lookahead_distance: min distance to look ahead (m)
+    Get blinker state. 
+    :param distance_to_blinker_interpolator: interpolator containing autoware_msg/WaypointState
+    :param d_ego_from_path_start: distance from path start (m)
+    :param blinker_lookahead_d: distance to look ahead point for blinkers (m)
     :return: LampCmd (l, r) included in VehicleCmd
     """
 
-    # check blinker state in current position
-    if waypoints[wp_idx].wpstate.steering_state != WaypointState.STR_STRAIGHT:
-        return get_blinker_state(waypoints[wp_idx].wpstate.steering_state)
+    current_pose_blinker_state = int(distance_to_blinker_interpolator(d_ego_from_path_start))
+
+    if current_pose_blinker_state != WaypointState.STR_STRAIGHT:
+        return get_blinker_state(current_pose_blinker_state)
     else:
-        # calc how many waypoints to look ahead
-        wp_lookahead = int(max(velocity * lookahead_time, lookahead_distance) / waypoint_interval)
+        lookahead_blinker_state = int(distance_to_blinker_interpolator(blinker_lookahead_d))
+        return get_blinker_state(lookahead_blinker_state)
 
-        # return first WaypointState that is not straight within the lookahead distance
-        for i in range(wp_idx, min(wp_idx + wp_lookahead, len(waypoints))):
-            if waypoints[i].wpstate.steering_state != WaypointState.STR_STRAIGHT:
-                return get_blinker_state(waypoints[i].wpstate.steering_state)
-
-        # return straight if no turning waypoint found
-        return get_blinker_state(WaypointState.STR_STRAIGHT)
 
 def get_two_nearest_waypoint_idx(waypoint_tree, x, y):
     """
