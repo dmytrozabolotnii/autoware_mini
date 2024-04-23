@@ -51,7 +51,7 @@ def process_rosbags(args):
                 out_bag.write('/initialvelocity', first_velocity, first_pose_time)
 
             # Copy relevant topics from the input bag to the output bag
-            for topic, msg, t in in_bag.read_messages(topics=[args.detected_objects_topic, args.traffic_light_status_topic]):
+            for topic, msg, t in in_bag.read_messages(topics=[args.detected_objects_topic, args.traffic_light_status_topic, '/tf']):
                 if start_time and t < start_time:
                     continue
                 if end_time and t > end_time:
@@ -63,8 +63,12 @@ def process_rosbags(args):
 
                 if topic == args.detected_objects_topic:
                     topic = '/detection/detected_objects'
-                if topic == args.traffic_light_status_topic:
+                elif topic == args.traffic_light_status_topic:
                     topic = '/detection/traffic_light_status'
+                elif topic == '/tf':
+                    for transform in msg.transforms:
+                        if transform.child_frame_id == 'base_link':
+                            transform.child_frame_id = 'lexus_model'
 
                 out_bag.write(topic, msg, t)
 
