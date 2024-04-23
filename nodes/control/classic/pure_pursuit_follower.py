@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
 import rospy
-import math
 import message_filters
 import threading
 import traceback
-
 import numpy as np
 from scipy.interpolate import interp1d
 from tf.transformations import euler_from_quaternion
@@ -95,7 +93,6 @@ class PurePursuitFollower:
             distance_to_blinker_interpolator = interp1d(distances, blinkers, kind='previous', bounds_error=False, fill_value=3)
 
             closest_object_velocity = path_msg.closest_object_velocity
-            # TODO use closest_object_distance instead? stability?
             stopping_point_distance = path_msg.cost
 
         with self.lock:
@@ -108,7 +105,6 @@ class PurePursuitFollower:
     def current_status_callback(self, current_pose_msg, current_velocity_msg):
 
         try:
-
             if self.publish_debug_info:
                 start_time = rospy.get_time()
 
@@ -135,8 +131,8 @@ class PurePursuitFollower:
 
                 # extract heading angle from orientation
                 heading_angle = get_heading_from_orientation(current_orientation)
-                x_dot = current_velocity * math.cos(heading_angle)
-                y_dot = current_velocity * math.sin(heading_angle)
+                x_dot = current_velocity * np.cos(heading_angle)
+                y_dot = current_velocity * np.sin(heading_angle)
 
                 x_new = current_position.x + x_dot * self.simulate_cmd_delay
                 y_new = current_position.y + y_dot * self.simulate_cmd_delay
@@ -146,8 +142,7 @@ class PurePursuitFollower:
 
             d_ego_from_path_start = path_linestring.project(current_position)
 
-            # TODO if waypoint planner and no global planner and ego is close to end of path - it needs to be stopped!
-            # otherwise local/global planner takes care of that!
+            # if "waypoint planner" is used and no global and local planner involved
             if d_ego_from_path_start >= path_linestring.length:
                 # stop vehicle - end of path reached
                 self.publish_vehicle_command(stamp)
@@ -159,8 +154,6 @@ class PurePursuitFollower:
             if lookahead_distance < self.min_lookahead_distance:
                 lookahead_distance = self.min_lookahead_distance
 
-            # TODO at path end no mtter the min limit for lookahead distance it will be shorter
-            # is there option for extending the path at the end? some shapely function?
             # find lookahead_point on path
             lookahead_point = path_linestring.interpolate(d_ego_from_path_start + lookahead_distance)
             d_ego_to_lookahead_point = distance(current_position, lookahead_point)
@@ -169,14 +162,11 @@ class PurePursuitFollower:
             _, _, ego_heading = euler_from_quaternion([current_orientation.x, current_orientation.y, current_orientation.z, current_orientation.w])
             lookahead_heading = np.arctan2(lookahead_point.y - current_position.y, lookahead_point.x - current_position.x)
             heading_differenece = lookahead_heading - ego_heading
-            
-            # TODO for debugging and limits
+
             heading_angle_difference = normalize_heading_error(heading_differenece)
-            # TODO - currently just distance and does not indicate which side of path
-            # previously get_cross_track_error from helpers was used
             cross_track_error = distance(current_position, path_linestring.interpolate(d_ego_from_path_start))
 
-            if cross_track_error > self.lateral_error_limit or abs(math.degrees(heading_angle_difference)) > self.heading_angle_limit:
+            if cross_track_error > self.lateral_error_limit or abs(np.degrees(heading_angle_difference)) > self.heading_angle_limit:
                 # stop vehicle if cross track error or heading angle difference is over limit
                 self.publish_vehicle_command(stamp)
                 rospy.logerr_throttle(10, "%s - lateral error or heading angle difference over limit", rospy.get_name())
@@ -218,7 +208,7 @@ class PurePursuitFollower:
             # Publish
             self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker, emergency)
             if self.publish_debug_info:
-                # convert lookahead_point to Position
+                # convert lookahead_point to geometry_msg/Point
                 lookahead_point = Point3d(x=lookahead_point.x, y=lookahead_point.y, z=current_pose_msg.pose.position.z)
                 self.publish_pure_pursuit_markers(stamp, current_pose_msg.pose, lookahead_point, heading_angle_difference)
                 self.follower_debug_pub.publish(Float32MultiArray(data=[1.0 / (rospy.get_time() - start_time), ego_heading, lookahead_heading, heading_angle_difference, cross_track_error, target_velocity]))
@@ -275,7 +265,7 @@ class PurePursuitFollower:
         marker_text.pose = average_pose
         marker_text.scale.z = 0.6
         marker_text.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
-        marker_text.text = str(round(math.degrees(heading_error),1))
+        marker_text.text = str(round(np.degrees(heading_error),1))
         marker_array.markers.append(marker_text)
 
         self.pure_pursuit_markers_pub.publish(marker_array)
