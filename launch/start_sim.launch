@@ -57,7 +57,7 @@
     <group if="$(eval scenario_name != '')">
         <!-- Play scenario bag -->
         <node pkg="rosbag" type="play" name="player" required="true" output="screen"
-                args="$(find autoware_mini)/data/scenarios/$(arg map_name)/$(arg scenario_name).bag --clock --queue=1 --wait-for-subscribers" />
+                args="$(find autoware_mini)/data/bag_scenarios/$(arg map_name)/$(arg scenario_name).bag --clock --queue=1 --wait-for-subscribers" />
         <!-- Use simulation time from bag -->
         <param name="/use_sim_time" value="true" />
     </group>
