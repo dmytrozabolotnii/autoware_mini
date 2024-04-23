@@ -29,7 +29,7 @@ def process_rosbags(args):
                 if first_pose is None:
                     first_pose = msg
                     first_pose_time = t
-                    goal_time = t + rospy.Duration(0.1)
+                    goal_time = t + rospy.Duration(args.goal_delay)
                 last_pose = msg
             elif topic == '/localization/current_velocity':
                 if first_velocity is None:
