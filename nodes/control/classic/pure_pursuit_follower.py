@@ -32,8 +32,6 @@ class PurePursuitFollower:
         self.blinker_lookahead_time = rospy.get_param("blinker_lookahead_time")
         self.blinker_lookahead_distance = rospy.get_param("blinker_lookahead_distance")
         self.publish_debug_info = rospy.get_param("~publish_debug_info")
-        self.nearest_neighbor_search = rospy.get_param("~nearest_neighbor_search")
-        self.waypoint_interval = rospy.get_param("/planning/waypoint_interval")
         self.default_acceleration = rospy.get_param("/planning/default_acceleration")
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
         self.max_deceleration = rospy.get_param("/planning/max_deceleration")
@@ -126,7 +124,6 @@ class PurePursuitFollower:
             current_velocity = current_velocity_msg.twist.linear.x
 
             # simulate delay in vehicle command. Project car into future location and use it to calculate current steering command
-            # TODO review this part here
             if self.simulate_cmd_delay > 0.0:
 
                 # extract heading angle from orientation
@@ -144,7 +141,6 @@ class PurePursuitFollower:
 
             # if "waypoint planner" is used and no global and local planner involved
             if d_ego_from_path_start >= path_linestring.length:
-                # stop vehicle - end of path reached
                 self.publish_vehicle_command(stamp)
                 rospy.logwarn_throttle(10, "%s - end of path reached", rospy.get_name())
                 return
@@ -178,8 +174,6 @@ class PurePursuitFollower:
 
             # find velocity at current position
             target_velocity = distance_to_velocity_interpolator(d_ego_from_path_start)
-
-            # if target velocity too low, consider it 0
             if target_velocity < self.stopping_speed_limit:
                 target_velocity = 0.0
 
