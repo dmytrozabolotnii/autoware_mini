@@ -52,35 +52,24 @@ def get_two_nearest_waypoint_idx(waypoint_tree, x, y):
     return idx[0][0], idx[0][1]
 
 
-def get_point_and_orientation_on_path_within_distance(waypoints, front_wp_idx, start_point, distance):
+def get_point_and_orientation_on_path_within_distance(waypoints, distance):
     """
-    Get point on path within distance from ego pose
+    Get point and perpendicular orientation within distance along the path
     :param waypoints: waypoints
-    :param front_wp_idx: wp index from where to start calculate the distance
-    :param start_point: starting point for distance calculation
     :param distance: distance where to find the point on the path
     :return: Point, Quaternion
     """
 
-    point = Point()
-    last_idx = len(waypoints) - 1
+    waypoints_xyz = [(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y, waypoint.pose.pose.position.z) for waypoint in waypoints]
+    linestring = LineString(waypoints_xyz)
 
-    i = front_wp_idx
-    d = get_distance_between_two_points_2d(start_point, waypoints[i].pose.pose.position)
-    while d < distance:
-        i += 1
-        d += get_distance_between_two_points_2d(waypoints[i-1].pose.pose.position, waypoints[i].pose.pose.position)
-        if i == last_idx:
-            break
+    # Find the point on the path
+    point_location = linestring.interpolate(distance)
+    point_before = linestring.interpolate(distance - 0.01)
 
-    # Find point orientation and distance difference and correct along path backwards
-    end_orientation =  get_heading_between_two_points(waypoints[i].pose.pose.position, waypoints[i - 1].pose.pose.position)
-    dx = (distance - d) * math.cos(end_orientation)
-    dy = (distance - d) * math.sin(end_orientation)
-    point.x = waypoints[i].pose.pose.position.x - dx
-    point.y = waypoints[i].pose.pose.position.y - dy
-    point.z = waypoints[i].pose.pose.position.z
+    heading = get_heading_between_two_points(point_location, point_before)
+    orientation = get_orientation_from_heading(heading)
 
-    orientation = get_orientation_from_heading(end_orientation)
+    point = Point(x = point_location.x, y = point_location.y, z = point_location.z)
 
     return point, orientation
