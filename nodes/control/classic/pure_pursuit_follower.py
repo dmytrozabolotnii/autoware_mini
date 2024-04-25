@@ -6,9 +6,8 @@ import threading
 import traceback
 import numpy as np
 from scipy.interpolate import interp1d
-from tf.transformations import euler_from_quaternion
 
-from helpers.geometry import get_heading_from_orientation, normalize_heading_error
+from helpers.geometry import get_heading_from_orientation, normalize_heading_error, get_heading_from_orientation, get_cross_track_error
 from helpers.waypoints import get_blinker_state_with_lookahead
 
 from visualization_msgs.msg import MarkerArray, Marker
@@ -43,7 +42,6 @@ class PurePursuitFollower:
         self.path_linestring = None
         self.distance_to_velocity_interpolator = None
         self.distance_to_blinker_interpolator = None
-        self.closest_object_distance = 0.0
         self.closest_object_velocity = 0.0
         self.stopping_point_distance = 0.0
         self.lock = threading.Lock()
@@ -72,7 +70,6 @@ class PurePursuitFollower:
             path_linestring = None
             distance_to_velocity_interpolator = None
             distance_to_blinker_interpolator = None
-            closest_object_distance = 0.0
             closest_object_velocity = 0.0
             stopping_point_distance = 0.0
         else:
@@ -145,24 +142,24 @@ class PurePursuitFollower:
                 rospy.logwarn_throttle(10, "%s - end of path reached", rospy.get_name())
                 return
 
-            # calc lookahead distance (velocity * lookahead_time)
             lookahead_distance = current_velocity * self.lookahead_time
-            if lookahead_distance < self.min_lookahead_distance:
-                lookahead_distance = self.min_lookahead_distance
+            lookahead_distance = max(lookahead_distance, self.min_lookahead_distance)
 
             # find lookahead_point on path
             lookahead_point = path_linestring.interpolate(d_ego_from_path_start + lookahead_distance)
             d_ego_to_lookahead_point = distance(current_position, lookahead_point)
 
             # heading from quaternion in current pose orientation
-            _, _, ego_heading = euler_from_quaternion([current_orientation.x, current_orientation.y, current_orientation.z, current_orientation.w])
+            ego_heading = get_heading_from_orientation(current_orientation)
             lookahead_heading = np.arctan2(lookahead_point.y - current_position.y, lookahead_point.x - current_position.x)
             heading_differenece = lookahead_heading - ego_heading
 
             heading_angle_difference = normalize_heading_error(heading_differenece)
-            cross_track_error = distance(current_position, path_linestring.interpolate(d_ego_from_path_start))
+            cross_track_error = get_cross_track_error(current_position,
+                                                      path_linestring.interpolate(d_ego_from_path_start - 0.1),
+                                                      path_linestring.interpolate(d_ego_from_path_start + 0.1))
 
-            if cross_track_error > self.lateral_error_limit or abs(np.degrees(heading_angle_difference)) > self.heading_angle_limit:
+            if abs(cross_track_error) > self.lateral_error_limit or abs(np.degrees(heading_angle_difference)) > self.heading_angle_limit:
                 # stop vehicle if cross track error or heading angle difference is over limit
                 self.publish_vehicle_command(stamp)
                 rospy.logerr_throttle(10, "%s - lateral error or heading angle difference over limit", rospy.get_name())
@@ -202,7 +199,7 @@ class PurePursuitFollower:
             # Publish
             self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker, emergency)
             if self.publish_debug_info:
-                # convert lookahead_point to geometry_msg/Point
+                # convert lookahead_point from shpely 2d point to geometry_msg/Point
                 lookahead_point = Point3d(x=lookahead_point.x, y=lookahead_point.y, z=current_pose_msg.pose.position.z)
                 self.publish_pure_pursuit_markers(stamp, current_pose_msg.pose, lookahead_point, heading_angle_difference)
                 self.follower_debug_pub.publish(Float32MultiArray(data=[1.0 / (rospy.get_time() - start_time), ego_heading, lookahead_heading, heading_angle_difference, cross_track_error, target_velocity]))
