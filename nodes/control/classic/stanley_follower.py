@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
 
 import rospy
-import math
 import message_filters
 import threading
 import traceback
-from scipy.interpolate import interp1d
 import numpy as np
+from scipy.interpolate import interp1d
+from shapely.geometry import LineString, Point as Point2d
+from shapely import prepare
 
 from helpers.geometry import get_heading_from_orientation, get_heading_between_two_points, normalize_heading_error, get_point_using_heading_and_distance_2d, get_cross_track_error
 from helpers.waypoints import get_blinker_state_with_lookahead
 
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Pose, PoseStamped, TwistStamped
-from geometry_msgs.msg import Point as Point3d
+from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point as Point3d
 from std_msgs.msg import ColorRGBA, Float32MultiArray
 from autoware_msgs.msg import Lane, VehicleCmd
-
-from shapely.geometry import LineString, Point as Point2d
-from shapely import prepare, distance
-
 
 class StanleyFollower:
     def __init__(self):
@@ -43,7 +39,6 @@ class StanleyFollower:
         self.path_linestring = None
         self.distance_to_velocity_interpolator = None
         self.distance_to_blinker_interpolator = None
-        self.closest_object_distance = 0.0
         self.closest_object_velocity = 0.0
         self.stopping_point_distance = 0.0
         self.lock = threading.Lock()
@@ -73,7 +68,6 @@ class StanleyFollower:
             path_linestring = None
             distance_to_velocity_interpolator = None
             distance_to_blinker_interpolator = None
-            closest_object_distance = 0.0
             closest_object_velocity = 0.0
             stopping_point_distance = 0.0
         else:
@@ -123,17 +117,15 @@ class StanleyFollower:
                 return
 
             current_position = Point2d(current_pose_msg.pose.position.x, current_pose_msg.pose.position.y)
-            current_orientation = current_pose_msg.pose.orientation
             current_velocity = current_velocity_msg.twist.linear.x
-            current_heading = get_heading_from_orientation(current_orientation)
+            current_heading = get_heading_from_orientation(current_pose_msg.pose.orientation)
 
             # simulate delay in vehicle command. Project car into future location and use it to calculate current steering command
             if self.simulate_cmd_delay > 0.0:
 
                 # extract heading angle from orientation
-                heading_angle = get_heading_from_orientation(current_orientation)
-                x_dot = current_velocity * np.cos(heading_angle)
-                y_dot = current_velocity * np.sin(heading_angle)
+                x_dot = current_velocity * np.cos(current_heading)
+                y_dot = current_velocity * np.sin(current_heading)
 
                 x_new = current_position.x + x_dot * self.simulate_cmd_delay
                 y_new = current_position.y + y_dot * self.simulate_cmd_delay
@@ -142,33 +134,34 @@ class StanleyFollower:
                 current_position.y = y_new
 
             d_ego_from_path_start = path_linestring.project(current_position)
-            
+
             # if "waypoint planner" is used and no global and local planner involved
             if d_ego_from_path_start >= path_linestring.length:
                 self.publish_vehicle_command(stamp)
                 rospy.logwarn_throttle(10, "%s - end of path reached", rospy.get_name())
                 return
 
-            # Find pose for the front wheel and 2 closest waypoint idx (fw_)
             front_wheel_position = get_point_using_heading_and_distance_2d(current_position, current_heading, self.wheel_base)
             d_front_wheel_from_path_start = path_linestring.project(front_wheel_position)
             front_wheel_on_path = path_linestring.interpolate(d_front_wheel_from_path_start)
 
-            cross_track_error = get_cross_track_error(front_wheel_position, path_linestring.interpolate(d_front_wheel_from_path_start - 0.1), path_linestring.interpolate(d_front_wheel_from_path_start + 0.1))
+            cross_track_error = get_cross_track_error(front_wheel_position,
+                                                      path_linestring.interpolate(d_front_wheel_from_path_start - 0.1),
+                                                      path_linestring.interpolate(d_front_wheel_from_path_start + 0.1))
 
             lookahead_on_path = path_linestring.interpolate(d_front_wheel_from_path_start + self.wheel_base/2)
             lookback_on_path = path_linestring.interpolate(max(0, d_front_wheel_from_path_start - self.wheel_base/2))
             track_heading = get_heading_between_two_points(lookback_on_path, lookahead_on_path)
             heading_error = normalize_heading_error(track_heading - current_heading)
 
-            if cross_track_error > self.lateral_error_limit or abs(math.degrees(heading_error)) > self.heading_angle_limit:
+            if abs(cross_track_error) > self.lateral_error_limit or abs(np.degrees(heading_error)) > self.heading_angle_limit:
                 # stop vehicle if cross track error or heading angle difference is over limit
                 self.publish_vehicle_command(stamp)
                 rospy.logerr_throttle(10, "%s - lateral error or heading angle difference over limit", rospy.get_name())
                 return
 
             # calculate steering angle
-            delta_error = math.atan(self.cte_gain * cross_track_error / (current_velocity + 0.0001))
+            delta_error = np.arctan(self.cte_gain * cross_track_error / (current_velocity + 0.0001))
             steering_angle = heading_error + delta_error
 
             # find velocity at current position
@@ -201,8 +194,9 @@ class StanleyFollower:
             # Publish
             self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker, emergency)
             if self.publish_debug_info:
-                lookahead_on_path_3d = Point3d(x=lookahead_on_path.x, y=lookahead_on_path.y, z=current_pose_msg.pose.position.z)
+                # convert shapely 2d points to geometry_msg/Point
                 lookback_on_path_3d = Point3d(x=lookback_on_path.x, y=lookback_on_path.y, z=current_pose_msg.pose.position.z)
+                lookahead_on_path_3d = Point3d(x=lookahead_on_path.x, y=lookahead_on_path.y, z=current_pose_msg.pose.position.z)
                 front_wheel_on_path_3d = Point3d(x=front_wheel_on_path.x, y=front_wheel_on_path.y, z=current_pose_msg.pose.position.z)
                 front_wheel_position_3d = Point3d(x=front_wheel_position.x, y=front_wheel_position.y, z=current_pose_msg.pose.position.z)
 
@@ -261,7 +255,7 @@ class StanleyFollower:
         marker_text.pose = average_pose
         marker_text.scale.z = 0.6
         marker_text.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
-        marker_text.text = str(round(math.degrees(heading_error),1))
+        marker_text.text = str(round(np.degrees(heading_error),1))
         marker_array.markers.append(marker_text)
 
         self.stanley_markers_pub.publish(marker_array)

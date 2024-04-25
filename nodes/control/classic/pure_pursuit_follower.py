@@ -6,18 +6,17 @@ import threading
 import traceback
 import numpy as np
 from scipy.interpolate import interp1d
+from shapely.geometry import LineString, Point as Point2d
+from shapely import prepare, distance
 
 from helpers.geometry import get_heading_from_orientation, normalize_heading_error, get_heading_from_orientation, get_cross_track_error
 from helpers.waypoints import get_blinker_state_with_lookahead
 
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Pose, PoseStamped, TwistStamped
-from geometry_msgs.msg import Point as Point3d
+from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point as Point3d
 from std_msgs.msg import ColorRGBA, Float32MultiArray
 from autoware_msgs.msg import Lane, VehicleCmd
 
-from shapely.geometry import LineString, Point as Point2d
-from shapely import prepare, distance
 
 class PurePursuitFollower:
     def __init__(self):
