@@ -144,7 +144,7 @@ class PurePursuitFollower:
             cross_track_error = get_cross_track_error(current_pose.position, waypoints[back_wp_idx].pose.pose.position, waypoints[front_wp_idx].pose.pose.position)
 
             # lookahead_point - point on the path within given lookahead distance
-            lookahead_point, _ = get_point_and_orientation_on_path_within_distance(waypoints, front_wp_idx, nearest_point, lookahead_distance)
+            lookahead_point, _ = get_point_and_orientation_on_path_within_distance(waypoints, lookahead_distance)
 
             # find current_heading, lookahead_heading, heading error and cross_track_error
             current_heading = get_heading_from_orientation(current_pose.orientation)
