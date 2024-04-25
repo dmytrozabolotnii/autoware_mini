@@ -93,7 +93,7 @@ class LocalPathVisualizer:
                     break
 
             if stopping_point_distance > 0.0:
-                stop_position, stop_orientation = get_point_and_orientation_on_path_within_distance(lane.waypoints, 1, lane.waypoints[0].pose.pose.position, stopping_point_distance)
+                stop_position, stop_orientation = get_point_and_orientation_on_path_within_distance(lane.waypoints, stopping_point_distance)
 
                 color = ColorRGBA(0.9, 0.9, 0.9, 0.2)           # white - obstcle affecting ego speed in slowdown area
                 if lane.is_blocked:
