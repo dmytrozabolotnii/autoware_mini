@@ -10,7 +10,7 @@ from shapely.geometry import Polygon, LineString, Point as Point2d
 from shapely import prepare
 from scipy.interpolate import interp1d
 
-from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray
+from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray, Waypoint
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 
 from helpers.transform import transform_vector3
@@ -290,10 +290,14 @@ class VelocityLocalPlanner:
             index_end = len(global_path_linestring.coords)
 
         local_path_linestring = LineString(global_path_linestring.coords[index_start:index_end])
-        local_path_waypoints = copy.deepcopy(global_path_waypoints[index_start:index_end])
+        # deepcopy only the necessary part (other parts are not changed and are shared with global path waypoints)
+        local_path_waypoints = []
+        for waypoint in global_path_waypoints[index_start:index_end]:
+            new_waypoint = Waypoint(pose = copy.copy(waypoint.pose), wpstate = copy.copy(waypoint.wpstate))
+            new_waypoint.twist.twist.linear.x = copy.deepcopy(waypoint.twist.twist.linear.x)
+            local_path_waypoints.append(new_waypoint)
 
         return local_path_linestring, local_path_waypoints
-
 
     def run(self):
         rospy.spin()
