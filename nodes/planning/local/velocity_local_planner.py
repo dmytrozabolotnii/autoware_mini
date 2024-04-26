@@ -151,7 +151,7 @@ class VelocityLocalPlanner:
         blinker = int(distance_to_blinker_interpolator(d_ego_from_path_start))
 
         # extract local path, if None is returned publish empty local path
-        local_path_linestring, local_path_waypoints = self.extract_local_path(global_path_linestring, global_path_waypoints, global_path_distances, d_ego_from_path_start, self.local_path_length, target_velocity, blinker)
+        local_path_linestring, local_path_waypoints = self.extract_local_path(global_path_linestring, global_path_waypoints, global_path_distances, d_ego_from_path_start, self.local_path_length)
         prepare(local_path_linestring)
         if local_path_linestring is None:
             self.publish_local_path_wp([], msg.header.stamp, self.output_frame)
@@ -159,7 +159,7 @@ class VelocityLocalPlanner:
 
         # initialize closest object distance and velocity
         closest_object_distance = 0.0
-        closest_object_velocity = 0.0 
+        closest_object_velocity = 0.0
         stopping_point_distance = 0.0
         local_path_blocked = False
         # collect objects (closest point from each object, path end point, stopline points)
@@ -282,17 +282,15 @@ class VelocityLocalPlanner:
         self.local_path_pub.publish(lane)
 
 
-    def extract_local_path(self, global_path_linestring, global_path_waypoints, global_path_distances, d_ego_from_path_start, local_path_length, target_velocity, blinker):
+    def extract_local_path(self, global_path_linestring, global_path_waypoints, global_path_distances, d_ego_from_path_start, local_path_length):
 
         # current position is projected at the end of the global path - goal reached
         if math.isclose(d_ego_from_path_start, global_path_linestring.length):
-            return None
-
-        d_to_local_path_end = d_ego_from_path_start + local_path_length
+            return None, None
 
         # find index where distances are higher than ego_d_on_global_path
         index_start = max(np.argmax(global_path_distances >= d_ego_from_path_start) - 1, 0)
-        index_end = np.argmax(global_path_distances >= d_to_local_path_end)
+        index_end = np.argmax(global_path_distances >= d_ego_from_path_start + local_path_length)
 
         # if end point of local_path is past the end of the global path (returns 0) then take index of last point
         if index_end == 0:
