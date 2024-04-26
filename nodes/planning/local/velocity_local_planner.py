@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
+import copy
 import math
 import threading
 from tf2_ros import Buffer, TransformListener, TransformException
@@ -169,13 +170,13 @@ class VelocityLocalPlanner:
         object_velocities = []
         object_braking_distances = []
 
-#        if len(msg.objects) > 0:
-        # fetch the transform from the object frame to the base_link frame to align the speed with ego vehicle
-        try:
-            transform = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp, rospy.Duration(self.transform_timeout))
-        except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-            rospy.logwarn("%s - unable to transform object speed to base frame, using speed 0: %s", rospy.get_name(), e)
-            transform = None
+        if len(msg.objects) > 0:
+            # fetch the transform from the object frame to the base_link frame to align the speed with ego vehicle
+            try:
+                transform = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp, rospy.Duration(self.transform_timeout))
+            except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
+                rospy.logwarn("%s - unable to transform object speed to base frame, using speed 0: %s", rospy.get_name(), e)
+                transform = None
 
         # create buffer around local path
         local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
@@ -189,7 +190,6 @@ class VelocityLocalPlanner:
             if object_polygon.intersects(local_path_buffer):
                 local_path_blocked = True
                 intersection_points = object_polygon.intersection(local_path_buffer)
-                print(intersection_points)
 
                 # calc distance for all intersection points and take the minimum
                 object_distance = min([local_path_linestring.project(Point2d(coords)) for coords in intersection_points.exterior.coords[:-1]])
@@ -271,7 +271,6 @@ class VelocityLocalPlanner:
                     zero_speeds_onwards = True
 
         self.publish_local_path_wp(local_path_waypoints, msg.header.stamp, output_frame, closest_object_distance, closest_object_velocity, local_path_blocked, stopping_point_distance)
-        # print("Time to process detected objects: ", time.time() - start_time)
 
     def publish_local_path_wp(self, local_path_waypoints, stamp, output_frame, closest_object_distance=0.0, closest_object_velocity=0.0, local_path_blocked=False, stopping_point_distance=0.0):
         # create lane message
@@ -295,24 +294,15 @@ class VelocityLocalPlanner:
         d_to_local_path_end = d_ego_from_path_start + local_path_length
 
         # find index where distances are higher than ego_d_on_global_path
-        index_start = np.argmax(global_path_distances >= d_ego_from_path_start)
+        index_start = max(np.argmax(global_path_distances >= d_ego_from_path_start) - 1, 0)
         index_end = np.argmax(global_path_distances >= d_to_local_path_end)
 
         # if end point of local_path is past the end of the global path (returns 0) then take index of last point
         if index_end == 0:
             index_end = len(global_path_linestring.coords)
 
-        # create local path from global path add interpolated points at start and end, use sliced point coordinates in between
-        start_point_2d = global_path_linestring.interpolate(d_ego_from_path_start)
-        start_point_wp = Waypoint()
-        start_point_wp.pose.pose.position.x = start_point_2d.x
-        start_point_wp.pose.pose.position.y = start_point_2d.y
-        start_point_wp.pose.pose.position.z = start_point_2d.z
-        start_point_wp.twist.twist.linear.x = target_velocity
-        start_point_wp.wpstate.steering_state = blinker
-
-        local_path_linestring = LineString([start_point_2d] + list(global_path_linestring.coords[index_start:index_end]))
-        local_path_waypoints = [start_point_wp] + global_path_waypoints[index_start:index_end]
+        local_path_linestring = LineString(global_path_linestring.coords[index_start:index_end])
+        local_path_waypoints = copy.deepcopy(global_path_waypoints[index_start:index_end])
 
         return local_path_linestring, local_path_waypoints
 
