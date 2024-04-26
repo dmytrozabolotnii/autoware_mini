@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from layers import MLP, social_transformer, st_encoder
+from LED.models.layers import MLP, social_transformer, st_encoder
 
 class LEDInitializer(nn.Module):
 	def __init__(self, t_h: int=8, d_h: int=6, t_f: int=40, d_f: int=2, k_pred: int=20):
