@@ -10,8 +10,8 @@ from shapely.geometry import Polygon, LineString, Point as Point2d
 from shapely import prepare
 from scipy.interpolate import interp1d
 
-from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray, Waypoint
-from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3, Point, Vector3Stamped
+from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray
+from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 
 from helpers.transform import transform_vector3
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines
@@ -47,7 +47,6 @@ class VelocityLocalPlanner:
         self.global_path_waypoints = None
         self.global_path_distances = None
         self.distance_to_velocity_interpolator = None
-        self.distance_to_blinker_interpolator = None
         self.current_speed = None
         self.current_position = None
         self.tf_buffer = Buffer()
@@ -75,7 +74,6 @@ class VelocityLocalPlanner:
             global_path_waypoints = None
             global_path_distances = None
             distance_to_velocity_interpolator = None
-            distance_to_blinker_interpolator = None
             rospy.loginfo("%s - Empty global path received", rospy.get_name())
         else:
             global_path_waypoints = msg.waypoints
@@ -88,11 +86,9 @@ class VelocityLocalPlanner:
             global_path_distances = np.cumsum(np.sqrt(np.sum(np.diff(waypoints_xyz[:,:2], axis=0)**2, axis=1)))
             global_path_distances = np.insert(global_path_distances, 0, 0)
 
-            # extract velocity and blinkers at waypoints and create interpolators
+            # extract velocity at waypoints and create interpolator
             velocities = np.array([w.twist.twist.linear.x for w in msg.waypoints])
             distance_to_velocity_interpolator = interp1d(global_path_distances, velocities, kind='linear', bounds_error=False, fill_value=0.0)
-            blinkers = np.array([w.wpstate.steering_state for w in msg.waypoints])
-            distance_to_blinker_interpolator = interp1d(global_path_distances, blinkers, kind='previous', bounds_error=False, fill_value=3)
 
             rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(msg.waypoints))
 
@@ -102,7 +98,6 @@ class VelocityLocalPlanner:
             self.global_path_waypoints = global_path_waypoints
             self.global_path_distances = global_path_distances
             self.distance_to_velocity_interpolator = distance_to_velocity_interpolator
-            self.distance_to_blinker_interpolator = distance_to_blinker_interpolator
 
 
     def current_velocity_callback(self, msg):
@@ -132,23 +127,21 @@ class VelocityLocalPlanner:
             global_path_waypoints = self.global_path_waypoints
             global_path_distances = self.global_path_distances
             distance_to_velocity_interpolator = self.distance_to_velocity_interpolator
-            distance_to_blinker_interpolator = self.distance_to_blinker_interpolator
 
         red_stoplines = self.red_stoplines
         current_position = self.current_position
         current_speed = self.current_speed
 
         # if global path, current pose or current_speed is None, publish empty local path, which stops the vehicle
-        if global_path_linestring is None or global_path_waypoints is None or global_path_distances is None or distance_to_velocity_interpolator is None or distance_to_blinker_interpolator is None or current_position is None or current_speed is None or output_frame is None:
+        if global_path_linestring is None or global_path_waypoints is None or global_path_distances is None or distance_to_velocity_interpolator is None or current_position is None or current_speed is None or output_frame is None:
             self.publish_local_path_wp([], msg.header.stamp, output_frame)
             return
 
         # TODO how to avoid jumping from one place to another on path - just finding the closest point is dangerous!
         # Example of global path overlapping with itself or ego doing the 90deg turn and cutting the corner!
         d_ego_from_path_start = global_path_linestring.project(current_position)
-        # Calculate the map speed at the current position as target velocity and get blinker state
+        # Calculate the map speed at the current position as target velocity
         target_velocity = float(distance_to_velocity_interpolator(d_ego_from_path_start))
-        blinker = int(distance_to_blinker_interpolator(d_ego_from_path_start))
 
         # extract local path, if None is returned publish empty local path
         local_path_linestring, local_path_waypoints = self.extract_local_path(global_path_linestring, global_path_waypoints, global_path_distances, d_ego_from_path_start, self.local_path_length)
@@ -184,7 +177,7 @@ class VelocityLocalPlanner:
             # get the convex hulls and store as shapely polygons
             object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
             # chek if object polygon intersects with local path buffer
-            if object_polygon.intersects(local_path_buffer):
+            if local_path_buffer.intersects(object_polygon):
                 local_path_blocked = True
                 intersection_points = object_polygon.intersection(local_path_buffer)
 
