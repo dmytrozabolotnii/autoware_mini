@@ -4,7 +4,12 @@ import numpy as np
 import rospy
 import torch
 import time
-from pecnet_utils import PECNet, PECNetDatasetInit, pecnet_iter
+import os.path as osp
+import yaml
+from lednet_utils import make_beta_schedule, lednet_iter, LEDNetDatasetInit
+from LED.models.model_led_initializer import LEDInitializer as InitializationModel
+from LED.models.model_diffusion import TransformerDenoisingModel as CoreDenoisingModel
+
 from net_sub import NetSubscriber
 
 
@@ -12,34 +17,34 @@ class LEDNetSubscriber(NetSubscriber):
 
     def __init__(self):
         super().__init__()
-        # intialize network
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.model_path = './results/checkpoints/led_new.p'
-        self.model_dict = torch.load(model_path, map_location=torch.device('cpu'))['model_initializer_dict']
+        # load config for LED
+        self.cfg = yaml.safe_load(open(osp.join(rospy.get_param('~data_path_prediction'), 'LED', 'led_augment.yaml'), 'r'))
 
-        # initialize network
-        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + 'PECNet/PECNET_social_model1.pt', map_location=self.device)
-        self.hyper_params = self.checkpoint["hyper_params"]
-        self.model = PECNet(self.hyper_params["enc_past_size"],
-                            self.hyper_params["enc_dest_size"],
-                            self.hyper_params["enc_latent_size"],
-                            self.hyper_params["dec_size"],
-                            self.hyper_params["predictor_hidden_size"],
-                            self.hyper_params['non_local_theta_size'],
-                            self.hyper_params['non_local_phi_size'],
-                            self.hyper_params['non_local_g_size'],
-                            self.hyper_params["fdim"],
-                            self.hyper_params["zdim"],
-                            self.hyper_params["nonlocal_pools"],
-                            self.hyper_params['non_local_dim'],
-                            self.hyper_params["sigma"],
-                            self.hyper_params["past_length"],
-                            self.hyper_params["future_length"], verbose=True)
-        self.model = self.model.double().to(self.device)
-        self.model.load_state_dict(self.checkpoint["model_state_dict"])
+        # intialize base denoising network
+        self.model = CoreDenoisingModel().cuda()
+        model_cp = torch.load(osp.join(rospy.get_param('~data_path_prediction'), 'LED', 'base_diffusion_model.p'), map_location='cpu')
+        self.model.load_state_dict(model_cp['model_dict'])
+
+        # initialize initializer network
+        self.model_initializer = InitializationModel(t_h=10, d_h=6, t_f=20, d_f=2, k_pred=20).cuda()
+        model_cp = torch.load(osp.join(rospy.get_param('~data_path_prediction'), 'LED', 'led_new.p'), map_location=torch.device('cpu'))
+        self.model_initializer.load_state_dict(model_cp['model_initializer_dict'])
+
+        # initialize diffusion parameters
+        self.n_steps = self.cfg['diffusion']['steps']  # define total diffusion steps
+
+        # make beta schedule and calculate the parameters used in denoising process.
+        self.betas = make_beta_schedule(
+            schedule=self.cfg['diffusion']['beta_schedule'], n_timesteps=self.n_steps,
+            start=self.cfg['diffusion']['beta_start'], end=self.cfg['diffusion']['beta_end']).cuda()
+
+        self.alphas = 1 - self.betas
+        self.alphas_prod = torch.cumprod(self.alphas, 0)
+        self.alphas_bar_sqrt = torch.sqrt(self.alphas_prod)
+        self.one_minus_alphas_bar_sqrt = torch.sqrt(1 - self.alphas_prod)
+        self.pad_past = self.cfg["past_frames"]
         self.predictions_amount = rospy.get_param('~predictions_amount')
-        self.pad_past = self.hyper_params["past_length"]
 
         rospy.loginfo(rospy.get_name() + " - initialized")
 
@@ -49,7 +54,7 @@ class LEDNetSubscriber(NetSubscriber):
             with self.lock:
                 temp_active_keys = set(self.active_keys)
                 if self.use_backpropagation:
-                    [self.cache[key].backpropagate_trajectories(pad_past=self.hyper_params["past_length"] *
+                    [self.cache[key].backpropagate_trajectories(pad_past=self.pad_past *
                                                                          (self.skip_points + 1))
                      for key in temp_active_keys if self.cache[key].endpoints_count == 0]
 
@@ -59,13 +64,15 @@ class LEDNetSubscriber(NetSubscriber):
                                   for key in temp_active_keys]
                 temp_headers = [self.cache[key].return_last_header() for key in temp_active_keys]
 
-            inference_dataset = PECNetDatasetInit(temp_raw_trajectories,
+            inference_dataset = LEDNetDatasetInit(temp_raw_trajectories,
                                                   end_points=temp_endpoints,
-                                                  pad_past=self.hyper_params["past_length"] - 1,
+                                                  pad_past=self.pad_past - 1,
                                                   pad_future=0,
-                                                  dist_thresh=self.hyper_params["dist_thresh"] / 2
+                                                  inference_timer_duration=self.inference_timer_duration * (self.skip_points + 1)
                                                       )
-            inference_result = pecnet_iter(inference_dataset, self.model, self.device, self.hyper_params, n=self.predictions_amount)
+            t0 = time.time()
+            inference_result = lednet_iter(inference_dataset, self.model_initializer, self.model, self.betas, self.alphas, self.one_minus_alphas_bar_sqrt, n=self.predictions_amount)
+            print('Inference time:', time.time() - t0)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
                 with self.lock:
@@ -80,8 +87,8 @@ class LEDNetSubscriber(NetSubscriber):
 if __name__ == '__main__':
     if not torch.cuda.is_available():
         rospy.logerr("Cuda is not available")
-    rospy.init_node('pecnet_predictor', anonymous=True)
+    rospy.init_node('lednet_predictor', anonymous=True)
 
-    sub = PECNetSubscriber()
+    sub = LEDNetSubscriber()
     sub.run()
 

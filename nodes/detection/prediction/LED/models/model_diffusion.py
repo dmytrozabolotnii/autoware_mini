@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Module, Linear
 
-from layers import PositionalEncoding, ConcatSquashLinear
+from LED.models.layers import PositionalEncoding, ConcatSquashLinear
 
 class st_encoder(nn.Module):
 	def __init__(self):
