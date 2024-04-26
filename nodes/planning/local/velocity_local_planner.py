@@ -246,10 +246,29 @@ class VelocityLocalPlanner:
 
             target_velocity = min(target_velocity, target_velocities[min_value_index])
 
-            # TODO implement target vel overwrite for separate waypoints.
+            # Recalculate target_velocity and overwrite in the waypoints
+            zero_speeds_onwards = False
+            d_between_wp_cumulative = 0.0
             for i, wp in enumerate(local_path_waypoints):
+
+                # once we get zero speed, keep it that way
+                if zero_speeds_onwards:
+                    wp.twist.twist.linear.x = 0.0
+                    continue
+
+                if i > 0:
+                    d_between_wp_cumulative += np.hypot(local_path_waypoints[i].pose.pose.position.x - local_path_waypoints[i-1].pose.pose.position.x, 
+                                                        local_path_waypoints[i].pose.pose.position.y - local_path_waypoints[i-1].pose.pose.position.y)
+                target_distance_obj = closest_object_distance - object_braking_distances[min_value_index] - d_between_wp_cumulative - self.braking_reaction_time * np.abs(closest_object_velocity)
+                target_velocity_obj = np.sqrt(np.maximum(0.0, np.maximum(0.0, closest_object_velocity)**2 + 2 * self.default_deceleration * target_distance_obj))
+                target_velocity_obj = min(target_velocity_obj, target_velocity)
+
                 # overwrite target velocity of wp
-                wp.twist.twist.linear.x = target_velocity
+                wp.twist.twist.linear.x = target_velocity_obj
+
+                # from stop point onwards all speeds are set to zero
+                if math.isclose(wp.twist.twist.linear.x, 0.0):
+                    zero_speeds_onwards = True
 
         self.publish_local_path_wp(local_path_waypoints, msg.header.stamp, output_frame, closest_object_distance, closest_object_velocity, local_path_blocked, stopping_point_distance)
         # print("Time to process detected objects: ", time.time() - start_time)
