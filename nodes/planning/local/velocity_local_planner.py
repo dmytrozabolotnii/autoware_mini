@@ -23,16 +23,13 @@ class VelocityLocalPlanner:
 
         # Parameters
         self.local_path_length = rospy.get_param("~local_path_length")
-#        self.nearest_neighbor_search = rospy.get_param("~nearest_neighbor_search")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.braking_safety_distance_obstacle = rospy.get_param("~braking_safety_distance_obstacle")
         self.braking_safety_distance_stopline = rospy.get_param("~braking_safety_distance_stopline")
         self.braking_safety_distance_goal = rospy.get_param("~braking_safety_distance_goal")
         self.braking_reaction_time = rospy.get_param("braking_reaction_time")
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
-        self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
-        self.waypoint_interval = rospy.get_param("waypoint_interval")
-        self.dense_waypoint_interval = rospy.get_param("~dense_waypoint_interval")
+#        self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
         self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.default_deceleration = rospy.get_param("default_deceleration")
         self.tfl_maximum_deceleration = rospy.get_param("~tfl_maximum_deceleration")
@@ -58,7 +55,7 @@ class VelocityLocalPlanner:
         self.red_stoplines = {}
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
-        self.all_stop_lines = get_stoplines(lanelet2_map)
+        self.all_stoplines = get_stoplines(lanelet2_map)
 
         # Publishers
         self.local_path_pub = rospy.Publisher('local_path', Lane, queue_size=1, tcp_nodelay=True)
@@ -146,8 +143,8 @@ class VelocityLocalPlanner:
             self.publish_local_path_wp([], msg.header.stamp, output_frame)
             return
 
-        # TODO how to avoid jumping very far on the path - just finding the closest point is dangerous!
-        # Example of global path overlapping with itself
+        # TODO how to avoid jumping from one place to another on path - just finding the closest point is dangerous!
+        # Example of global path overlapping with itself or ego doing the 90deg turn and cutting the corner!
         d_ego_from_path_start = global_path_linestring.project(current_position)
         # Calculate the map speed at the current position as target velocity and get blinker state
         target_velocity = float(distance_to_velocity_interpolator(d_ego_from_path_start))

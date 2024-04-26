@@ -35,9 +35,7 @@ path_smoothing:
 
 velocity_local_planner:
   local_path_length: 100
-  nearest_neighbor_search: kd_tree  # kd_tree. ball_tree, brute, auto
   transform_timeout: 0.06
-  dense_waypoint_interval: 0.1
   tfl_maximum_deceleration: 2.8
   braking_safety_distance_obstacle: 4.0
   braking_safety_distance_stopline: 2.0
