@@ -23,13 +23,13 @@ class LEDNetSubscriber(NetSubscriber):
 
         # intialize base denoising network
         self.model = CoreDenoisingModel().cuda()
-        model_cp = torch.load(osp.join(rospy.get_param('~data_path_prediction'), 'LED', 'base_diffusion_model.p'), map_location='cpu')
-        self.model.load_state_dict(model_cp['model_dict'])
+        self.model_cp = torch.load(osp.join(rospy.get_param('~data_path_prediction'), 'LED', 'base_diffusion_model.p'), map_location='cpu')
+        self.model.load_state_dict(self.model_cp['model_dict'])
 
         # initialize initializer network
         self.model_initializer = InitializationModel(t_h=10, d_h=6, t_f=20, d_f=2, k_pred=20).cuda()
-        model_cp = torch.load(osp.join(rospy.get_param('~data_path_prediction'), 'LED', 'led_new.p'), map_location=torch.device('cpu'))
-        self.model_initializer.load_state_dict(model_cp['model_initializer_dict'])
+        self.model_initializer_cp = torch.load(osp.join(rospy.get_param('~data_path_prediction'), 'LED', 'led_new.p'), map_location=torch.device('cpu'))
+        self.model_initializer.load_state_dict(self.model_initializer_cp['model_initializer_dict'])
 
         # initialize diffusion parameters
         self.n_steps = self.cfg['diffusion']['steps']  # define total diffusion steps
@@ -70,6 +70,18 @@ class LEDNetSubscriber(NetSubscriber):
                                                   pad_future=0,
                                                   inference_timer_duration=self.inference_timer_duration * (self.skip_points + 1)
                                                       )
+            print('Dataset length:', len(inference_dataset))
+            t0 = time.time()
+            # make beta schedule and calculate the parameters used in denoising process.
+            self.betas = make_beta_schedule(
+                schedule=self.cfg['diffusion']['beta_schedule'], n_timesteps=self.n_steps,
+                start=self.cfg['diffusion']['beta_start'], end=self.cfg['diffusion']['beta_end']).cuda()
+
+            self.alphas = 1 - self.betas
+            self.alphas_prod = torch.cumprod(self.alphas, 0)
+            self.alphas_bar_sqrt = torch.sqrt(self.alphas_prod)
+            self.one_minus_alphas_bar_sqrt = torch.sqrt(1 - self.alphas_prod)
+            print('Init betas time:', time.time() - t0)
             t0 = time.time()
             inference_result = lednet_iter(inference_dataset, self.model_initializer, self.model, self.betas, self.alphas, self.one_minus_alphas_bar_sqrt, n=self.predictions_amount)
             print('Inference time:', time.time() - t0)

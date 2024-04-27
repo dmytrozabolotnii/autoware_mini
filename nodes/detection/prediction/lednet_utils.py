@@ -5,6 +5,7 @@ import torch
 import numpy as np
 import random
 import yaml
+import time
 
 import os.path as osp
 from torch.utils import data
@@ -100,23 +101,25 @@ def lednet_iter(dataset, model_initializer, model, betas, alphas, one_minus_alph
 
     model.eval()
     model_initializer.eval()
-
+    print(next(model.parameters()).is_cuda, next(model_initializer.parameters()).is_cuda)
     with torch.no_grad():
         batch_by_batch_guesses = []
 
         for past_traj, traj_mask, in dataloader:
             batch_by_batch_guesses.append([])
-
+            t0 = time.time()
             sample_prediction, mean_estimation, variance_estimation = model_initializer(past_traj, traj_mask)
+            print('Init time:', time.time() - t0)
             sample_prediction = torch.exp(variance_estimation / 2)[
                                     ..., None, None] * sample_prediction / sample_prediction.std(dim=1).mean(
                 dim=(1, 2))[:, None, None, None]
             loc = sample_prediction + mean_estimation[:, None]
-
+            t0 = time.time()
             pred_traj = p_sample_loop_accelerate(past_traj, traj_mask, loc, betas, alphas, one_minus_alphas_bar_sqrt, model)
+            print('Sample loop time:', time.time() - t0)
             print(pred_traj.shape)
 
-            pred_traj = pred_traj * dataset.traj_scale + dataset.traj_mean
+            pred_traj = pred_traj * dataset.traj_scale + dataset.initial_pos.permute(1, 0, 2, 3)
             pred_traj = pred_traj.cpu().numpy()
             print(pred_traj.shape)
             for j in range(n):
@@ -164,9 +167,10 @@ class LEDNetDatasetInit(data.Dataset):
         """
         self.trajs = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
                                      mode='edge')[end_points[i]:(end_points[i] + pad_past + pad_future + 1)] for i, traj in enumerate(detected_object_trajs)])
+        traj_scale = 1
+
         traj_mean = np.mean(self.trajs.reshape((-1, 2)), axis=0)
         print(traj_mean)
-        traj_scale = 10
 
         # super(NBADataset, self).__init__()
 
@@ -192,16 +196,15 @@ class LEDNetDatasetInit(data.Dataset):
         # print(self.batch_len)
 
         self.traj_abs = torch.from_numpy(self.trajs).type(torch.float)
-        self.traj_norm = torch.from_numpy(self.trajs - self.trajs[:, self.obs_len - 1:self.obs_len]).type(torch.float)
+        # self.traj_norm = torch.from_numpy(self.trajs - self.trajs[:, self.obs_len - 1:self.obs_len]).type(torch.float)
 
         # self.traj_abs = self.traj_abs.permute(0, 2, 1, 3)
         # self.traj_norm = self.traj_norm.permute(0, 2, 1, 3)
         # self.actor_num = self.traj_abs.shape[1]
 
         self.traj_abs = self.traj_abs.unsqueeze(0)
-        self.traj_norm = self.traj_norm.unsqueeze(0)
+        # self.traj_norm = self.traj_norm.unsqueeze(0)
         self.actor_num = self.traj_abs.shape[1]
-        print(self.traj_abs.shape, self.traj_abs.get_device(), self.traj_abs.cuda().get_device())
         self.traj_mean = torch.FloatTensor(traj_mean).cuda().unsqueeze(0).unsqueeze(0).unsqueeze(0)
         self.traj_scale = traj_scale
 
@@ -213,16 +216,16 @@ class LEDNetDatasetInit(data.Dataset):
         for i in range(batch_size):
             self.traj_mask[i * self.actor_num:(i + 1) * self.actor_num, i * self.actor_num:(i + 1) * self.actor_num] = 1.
 
-        initial_pos = self.traj_abs.cuda()[:, :, -1:]
+        self.initial_pos = self.traj_abs.cuda()[:, :, -1:]
+        print(self.initial_pos.shape)
         # augment input: absolute position, relative position, velocity
-        past_traj_abs = self.traj_abs.cuda() - self.traj_mean
         past_traj_abs = ((self.traj_abs.cuda() - self.traj_mean) / self.traj_scale).contiguous().view(-1, 10, 2)
-        past_traj_rel = ((self.traj_abs.cuda() - initial_pos) / self.traj_scale).contiguous().view(-1, 10, 2)
+        past_traj_rel = ((self.traj_abs.cuda() - self.initial_pos) / self.traj_scale).contiguous().view(-1, 10, 2)
         past_traj_vel = torch.cat(
             (past_traj_rel[:, 1:] - past_traj_rel[:, :-1], torch.zeros_like(past_traj_rel[:, -1:])), dim=1) / inference_timer_duration
         self.past_traj = torch.cat((past_traj_abs, past_traj_rel, past_traj_vel), dim=-1)
 
-        fut_traj = ((self.traj_abs.cuda() - initial_pos) / traj_scale).contiguous().view(-1, 20, 2)
+        fut_traj = ((self.traj_abs.cuda() - self.initial_pos) / traj_scale).contiguous().view(-1, 20, 2)
 
         # return batch_size, traj_mask, past_traj, fut_traj
 
