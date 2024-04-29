@@ -22,15 +22,23 @@
     <arg name="use_control"             default="true"          doc="replace control topics"/>
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
     <arg name="more_visualizations"     default="true"          doc="When debugging a bag, visualize everything by default" />
-    <arg name="benchmark_delay_topic"   default="" />
-    <arg name="loop"                    default="$(eval arg('benchmark_delay_topic') == '')" />
-    <arg name="loop_option"             default="$(eval '--loop' if arg('loop') else '')" />
+    <arg name="record_bag"              default=""              doc="Name of the bag to record" />
+    <arg name="record_topics"           default="(/detection/detected_objects|/detection/traffic_light_status|/localization/current_pose|/localization/current_velocity|/tf)" doc="Regexp of the topics to record, 'all' to record all" />
+    <arg name="record_topics_option"    default="$(eval '--all' if record_topics == 'all' else '--regex ' + record_topics if record_topics != '' else '')" doc="rosbag record parameter" />
+    <arg name="benchmark_delay_topic"   default=""              doc="Name of the topic to benchmark" />
+    <arg name="loop"                    default="$(eval benchmark_delay_topic == '' and record_bag == '')" />
+    <arg name="loop_option"             default="$(eval '--loop' if loop else '')" doc="rosbag play parameter" />
+    <arg name="start"                   default=""              doc="Seconds from the start of the bag" />
+    <arg name="start_option"            default="$(eval '--start ' + str(start) if start != '' else '')" doc="rosbag play parameter" />
+    <arg name="duration"                default=""              doc="Seconds to play from start" />
+    <arg name="duration_option"         default="$(eval '--duration ' + str(duration) if duration != '' else '')" doc="rosbag play parameter" />
 
     <!-- Use simulation time from bag -->
     <param name="/use_sim_time" value="true" />
 
     <!-- Play back bag -->
-    <node pkg="rosbag" type="play" name="player" required="true" args="$(find autoware_mini)/data/bags/$(arg bag_file) --clock --queue=1 $(arg loop_option)">
+    <node pkg="rosbag" type="play" name="player" required="true" output="screen"
+            args="$(find autoware_mini)/data/bags/$(arg bag_file) --clock --queue=1 $(arg loop_option) $(arg start_option) $(arg duration_option)">
         <!-- Rename saved topics that are replaced by current ones -->
         <remap from="/tf" to="/bag/tf" if="$(arg use_tf)"/>
         <remap from="/tf_static" to="/bag/tf_static" if="$(arg use_tf)"/>
@@ -83,7 +91,11 @@
         <remap from="/lidar_0/vlp32/pcl2" to="/lidar_center/points_raw"/>
     </node>
 
-    <node if="$(eval arg('benchmark_delay_topic') != '')" pkg="rostopic" type="rostopic" name="delay" required="true" args="delay $(arg benchmark_delay_topic)" output="screen" />
+    <node if="$(eval benchmark_delay_topic != '')" pkg="rostopic" type="rostopic" name="delay" required="true" output="screen"
+            args="delay $(arg benchmark_delay_topic)" />
+
+    <node if="$(eval record_bag != '')" pkg="rosbag" type="record" name="recorder" required="true" output="screen"
+            args="--output-name $(find autoware_mini)/data/bags/$(arg record_bag) $(arg record_topics_option) --exclude '/bag/(.*)'" />
 
     <!-- Localization -->
     <include if="$(arg use_localization)" file="$(find autoware_mini)/launch/localization.launch">
