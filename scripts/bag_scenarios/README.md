@@ -42,8 +42,18 @@ Or to force the use of camera traffic light status:
 ```
 ./create_scenario_bag.py ../../data/bags/2023-05-25-14-21-10_sensors_Raekoda.bag ../../data/bag_scenarios/tartu_demo/raekoda_camera.bag --traffic_light_status_topic /detection/camera/traffic_light_status
 ```
+## Re-running detection on existing bags
+
+Scenario creation script uses existing detections in the bag file. Sometimes these might be missing or might be inferior to the latest detection stack. To re-record the bag with the latest detection stack you need to run:
+```
+roslaunch autoware_mini start_bag.launch bag_file:=2023-05-25-14-21-10_sensors_Raekoda.bag record_bag:=raekoda_redetect.bag
+```
+By default only the topics necessary for creating bag scenarios are recorded. To record all topics include `record_topics:=all` on the command line. You can specify more complex topic inclusion rules as a regular expression, e.g. `record_topics:=(/detection/.*|/localization/.*)`.
+
+You can control also the starting point and duration of the recording with `start:=<seconds>` and `duration:=<seconds>` parameters. These also work when playing bags, not just for recording.
+
+**NB!** You may get different number of detections than originally in the bag. This is just how ROS works. If you have any suggestions, let me know.
 
 ## TODO
 
-* Re-detect objects from the raw sensor data.
 * Calculate some metrics, e.g. [Carla driving score](https://leaderboard.carla.org/#evaluation-and-metrics) or [RSS](https://carla.readthedocs.io/en/latest/adv_rss/).
