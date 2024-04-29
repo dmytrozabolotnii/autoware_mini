@@ -95,7 +95,7 @@
             args="delay $(arg benchmark_delay_topic)" />
 
     <node if="$(eval record_bag != '')" pkg="rosbag" type="record" name="recorder" required="true" output="screen"
-            args="--output-name $(find autoware_mini)/data/bags/$(arg record_bag) $(arg record_topics_option) --exclude '/bag/(.*)'" />
+            args="--output-name $(find autoware_mini)/data/bags/$(arg record_bag) $(arg record_topics_option) --exclude '(/bag/.*|/clock)'" />
 
     <!-- Localization -->
     <include if="$(arg use_localization)" file="$(find autoware_mini)/launch/localization.launch">
