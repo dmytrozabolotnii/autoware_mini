@@ -6,8 +6,9 @@ import math
 import threading
 from tf2_ros import Buffer, TransformListener, TransformException
 import numpy as np
-from shapely.geometry import Polygon, LineString, Point as Point2d
+from shapely.geometry import Polygon, MultiPolygon, LineString, Point as Point2d
 from shapely import prepare
+from shapely.affinity import rotate
 from scipy.interpolate import interp1d
 
 from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray, Waypoint
@@ -172,10 +173,11 @@ class VelocityLocalPlanner:
         local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
         prepare(local_path_buffer)
 
-        # 1. ADD DETECTED OBJECTS AS OBSTACLES
+        # 1. ADD DETECTED OBJECTS AND CANDIDATE TRAJECTORIES AS OBSTACLES
         for object in msg.objects:
             # get the convex hulls and store as shapely polygons
             object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
+
             # chek if object polygon intersects with local path buffer
             if local_path_buffer.intersects(object_polygon):
                 local_path_blocked = True
@@ -194,6 +196,36 @@ class VelocityLocalPlanner:
                 object_distances.append(object_distance)
                 object_velocities.append(velocity.x)
                 object_braking_distances.append(self.braking_safety_distance_obstacle)
+
+            # check if object candidate trajectory intersects with local path buffer
+            if len(object.candidate_trajectories.lanes) > 0:
+                object_heading = np.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
+                object_width = self.get_polygon_width(object_polygon, object_heading)
+
+                trajectory_linestring = LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in object.candidate_trajectories.lanes[0].waypoints])
+                trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="square")
+                prepare(trajectory_buffer)
+                if local_path_buffer.intersects(trajectory_buffer):
+                    local_path_blocked = True
+                    intersection_area = trajectory_buffer.intersection(local_path_buffer)
+                    if isinstance(intersection_area, MultiPolygon):
+                        polygons = list(intersection_area.geoms)
+                    else:
+                        polygons = [intersection_area]
+
+                    object_distance = np.inf
+                    for polygon in polygons:
+                        min_distance = min([local_path_linestring.project(Point2d(coords)) for coords in polygon.exterior.coords[:-1]])
+                        object_distance = min(object_distance, min_distance)
+
+                    if transform is not None:
+                        velocity = transform_vector3(object.velocity.linear, transform)
+                    else:
+                        velocity = Vector3()
+
+                    object_distances.append(object_distance)
+                    object_velocities.append(velocity.x)
+                    object_braking_distances.append(self.braking_safety_distance_obstacle)
 
         # 2. ADD RED STOPLINES AS OBSTACLES
         red_stoplines_linestrings = [self.all_stoplines[stopline_id] for stopline_id in red_stoplines]
@@ -273,6 +305,14 @@ class VelocityLocalPlanner:
         lane.is_blocked = local_path_blocked
         lane.cost = stopping_point_distance
         self.local_path_pub.publish(lane)
+
+    def get_polygon_width(self, polygon, heading_angle):
+        # rotate polygon to align with y axis, so the width will be in x direction
+        angle = 90 - heading_angle
+        rotated_polygon = rotate(polygon, angle, origin='centroid', use_radians=False)
+        minx, miny, maxx, maxy = rotated_polygon.bounds
+        width = maxx - minx
+        return width
 
 
     def extract_local_path(self, global_path_linestring, global_path_waypoints, global_path_distances, d_ego_from_path_start, local_path_length):
