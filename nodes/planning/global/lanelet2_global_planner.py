@@ -6,8 +6,7 @@ import lanelet2
 import numpy as np
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import to2D, findNearest, distance
-
-from sklearn.neighbors import NearestNeighbors
+from shapely import LineString, Point as ShapelyPoint
 
 from geometry_msgs.msg import PoseStamped, TwistStamped, Point
 from autoware_msgs.msg import Lane, Waypoint, WaypointState
@@ -16,7 +15,6 @@ from std_srvs.srv import Empty, EmptyResponse
 from visualization_msgs.msg import MarkerArray, Marker
 
 from helpers.geometry import get_heading_between_two_points, get_distance_between_two_points_2d, get_orientation_from_heading
-from helpers.waypoints import get_closest_point_on_path
 from helpers.lanelet2 import load_lanelet2_map
 
 LANELET_TURN_DIRECTION_TO_WAYPOINT_STATE_MAP = {
@@ -113,31 +111,40 @@ class Lanelet2GlobalPlanner:
 
         # build KDTree for nearest neighbour search
         waypoints_xy = np.array([(w.pose.pose.position.x, w.pose.pose.position.y) for w in waypoints])
-        waypoint_tree = NearestNeighbors(n_neighbors=1, algorithm=self.nearest_neighbor_search).fit(waypoints_xy)
+        waypoint_distances = np.cumsum(np.sqrt(np.sum(np.diff(waypoints_xy, axis=0)**2, axis=1)))
+        waypoint_distances = np.insert(waypoint_distances, 0, 0)
 
-        # create new start and goal waypoints
-        start_idx = waypoint_tree.kneighbors([(start_point.x, start_point.y)], 1, return_distance=False)
-        start_wp = self.create_waypoint_on_path(waypoints, start_idx[0][0], start_point)
-        d = get_distance_between_two_points_2d(start_wp.pose.pose.position, start_point)
-        if d > self.distance_to_centerline_limit:
-            rospy.logwarn("%s - start point too far (%f) from centerline", rospy.get_name(), d)
-            return
+        waypoints_linestring = LineString(waypoints_xy)
+        # Find distance to start and goal waypoints
+        # TODO z values
+        d_to_start_p = waypoints_linestring.project(ShapelyPoint(start_point.x, start_point.y, 0.0))
+        d_to_goal_p = waypoints_linestring.project(ShapelyPoint(new_goal.x, new_goal.y, 0.0))
+        # interpolate point coordinates
+        start_point = waypoints_linestring.interpolate(d_to_start_p)
+        new_goal = waypoints_linestring.interpolate(d_to_goal_p)
 
-        goal_idx = waypoint_tree.kneighbors([(new_goal.x, new_goal.y)], 1, return_distance=False)
-        goal_wp = self.create_waypoint_on_path(waypoints, goal_idx[0][0], new_goal)
-        d = get_distance_between_two_points_2d(goal_wp.pose.pose.position, new_goal)
-        if d > self.distance_to_centerline_limit:
-            rospy.logwarn("%s - goal point too far (%f) from centerline", rospy.get_name(), d)
-            return
+        index_start = np.argmax(waypoint_distances >= d_to_start_p)
+        index_goal = np.argmax(waypoint_distances >= d_to_goal_p)
 
-        if start_lanelet.id == goal_lanelet.id and start_idx[0][0] > goal_idx[0][0]:
+        if index_goal == 0:
+            index_goal = len(waypoints) - 1
+
+        # create new start and goal waypoints using deepcopy and index
+        # TODO z values
+        start_wp = copy.deepcopy(waypoints[index_start])
+        start_wp.pose.pose.position = Point(start_point.x, start_point.y, 0.0)
+        goal_wp = copy.deepcopy(waypoints[index_goal])
+        goal_wp.pose.pose.position = Point(new_goal.x, new_goal.y, 0.0)
+
+        # put together new global path
+        self.waypoints += [start_wp] + waypoints[index_start : index_goal] + [goal_wp]
+
+        if start_lanelet.id == goal_lanelet.id and index_start > index_goal:
             rospy.logwarn("%s - goal point can't be before the start point on the same lanelet", rospy.get_name())
             return
 
         # update goal point and add new waypoints to the existing ones
         self.goal_point = BasicPoint2d(goal_wp.pose.pose.position.x, goal_wp.pose.pose.position.y)
-        # replace first waypoint with start_wp and last waypoint with goal_wp
-        self.waypoints += [start_wp] + waypoints[start_idx[0][0] + 1 : goal_idx[0][0]] + [goal_wp]
 
         self.publish_waypoints(self.waypoints)
         rospy.loginfo("%s - path published", rospy.get_name())
@@ -163,13 +170,6 @@ class Lanelet2GlobalPlanner:
         self.publish_waypoints(self.waypoints)
         rospy.logwarn("%s - route cancelled!", rospy.get_name())
         return EmptyResponse()
-
-    def create_waypoint_on_path(self, waypoints, closest_idx, origin_point):
-        wp = copy.deepcopy(waypoints[closest_idx])
-        # interpolate point on path
-        point = get_closest_point_on_path(waypoints, closest_idx, origin_point)
-        wp.pose.pose.position = point
-        return wp
 
     def convert_to_waypoints(self, lanelet_sequence):
         waypoints = []
