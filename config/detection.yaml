@@ -94,17 +94,17 @@ ema_tracker:
   enable_initial_acceleration_estimate: True
   enable_missed_detection_propagation: True
   detection_counter_threshold: 2
-  missed_counter_threshold: 2
+  missed_counter_threshold: 8
   velocity_gain: 0.1
   acceleration_gain: 0.1
   association_method: iou   # iou, euclidean
   max_euclidean_distance: 2.0
 
 predictor:
-  prediction_horizon: 20 # prediction horizon in steps
-  prediction_history: 10 # prediction data history in steps
-  step_length: 0.5 # step length in seconds
-  inference_timer: 0.25 # prediction will run every this seconds,
+  prediction_horizon: 12 # prediction horizon in steps
+  prediction_history: 8 # prediction data history in steps
+  step_length: 0.25 # step length in seconds
+  inference_timer: 0.125 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
   pecnet_predictor:

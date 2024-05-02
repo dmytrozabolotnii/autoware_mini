@@ -737,6 +737,8 @@ Visualization Manager:
           Unreliable: false
           Value: false
           Visibility:
+            "": true
+            ADE: true
             Control:
               Current pose: true
               Follower markers: true
@@ -816,6 +818,8 @@ Visualization Manager:
           Unreliable: false
           Value: false
           Visibility:
+            "": true
+            ADE: true
             Control:
               Current pose: true
               Follower markers: true
@@ -1202,6 +1206,11 @@ Visualization Manager:
           Name: Final objects
           Namespaces:
             bounding_box: false
+            candidate_trajectories_0: true
+            candidate_trajectories_1: true
+            candidate_trajectories_2: true
+            candidate_trajectories_3: true
+            candidate_trajectories_4: true
             centroid: true
             convex_hull: true
             speed: true
@@ -1345,6 +1354,8 @@ Visualization Manager:
           Unreliable: false
           Value: false
           Visibility:
+            "": true
+            ADE: true
             Control:
               Current pose: true
               Follower markers: true
@@ -1421,6 +1432,56 @@ Visualization Manager:
           Value: false
       Enabled: true
       Name: Simulation
+    - Buffer length: 100
+      Class: jsk_rviz_plugin/Plotter2D
+      Enabled: true
+      Name: ADE
+      Show Value: true
+      Topic: /dashboard/ade
+      Value: true
+      auto color change: false
+      auto scale: true
+      background color: 0; 0; 0
+      backround alpha: 0
+      border: true
+      foreground alpha: 0.699999988079071
+      foreground color: 25; 255; 240
+      height: 128
+      left: 429
+      linewidth: 2
+      max color: 255; 0; 0
+      max value: 1
+      min value: -1
+      show caption: true
+      text size: 12
+      top: 10
+      update interval: 0.03999999910593033
+      width: 128
+    - Buffer length: 100
+      Class: jsk_rviz_plugin/Plotter2D
+      Enabled: true
+      Name: FDE
+      Show Value: true
+      Topic: /dashboard/fde
+      Value: true
+      auto color change: false
+      auto scale: true
+      background color: 0; 0; 0
+      backround alpha: 0
+      border: true
+      foreground alpha: 0.699999988079071
+      foreground color: 25; 255; 240
+      height: 128
+      left: 572
+      linewidth: 2
+      max color: 255; 0; 0
+      max value: 1
+      min value: -1
+      show caption: true
+      text size: 12
+      top: 10
+      update interval: 0.03999999910593033
+      width: 128
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

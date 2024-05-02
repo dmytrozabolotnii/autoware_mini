@@ -35,11 +35,12 @@ class PECNetSubscriber(NetSubscriber):
         self.model.load_state_dict(self.checkpoint["model_state_dict"])
         self.predictions_amount = rospy.get_param('~predictions_amount')
         self.pad_past = self.hyper_params["past_length"]
+        self.class_init = True
 
         rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
-        if len(self.active_keys) and self.model is not None and next(self.model.parameters()).is_cuda:
+        if len(self.active_keys) and self.model is not None and next(self.model.parameters()).is_cuda and self.class_init:
             # Run inference
             with self.lock:
                 temp_active_keys = set(self.active_keys)
