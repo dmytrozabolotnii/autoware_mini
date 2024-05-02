@@ -27,7 +27,7 @@ RED = ColorRGBA(1.0, 0.0, 0.0, 0.8)
 GREEN = ColorRGBA(0.0, 1.0, 0.0, 0.8)
 
 class Lanelet2GlobalPlanner:
-    
+
     def __init__(self):
 
         # Parameters
@@ -35,7 +35,6 @@ class Lanelet2GlobalPlanner:
         self.distance_to_goal_limit = rospy.get_param("~distance_to_goal_limit")
         self.distance_to_centerline_limit = rospy.get_param("~distance_to_centerline_limit")
         self.speed_limit = rospy.get_param("~speed_limit")
-        self.nearest_neighbor_search = rospy.get_param("~nearest_neighbor_search")
         self.ego_vehicle_stopped_speed_limit = rospy.get_param("~ego_vehicle_stopped_speed_limit")
         self.lane_change = rospy.get_param("~lane_change")
 
@@ -115,19 +114,27 @@ class Lanelet2GlobalPlanner:
 
         # Find distance to start and goal waypoints
         start_point_distance = waypoint_linestring.project(ShapelyPoint(start_point.x, start_point.y))
-        goal_point_distance = waypoint_linestring.project(ShapelyPoint(new_goal.x, new_goal.y))
+        new_goal_point_distance = waypoint_linestring.project(ShapelyPoint(new_goal.x, new_goal.y))
         # interpolate point coordinates
-        start_point = waypoint_linestring.interpolate(start_point_distance)
-        new_goal = waypoint_linestring.interpolate(goal_point_distance)
+        start_on_path = waypoint_linestring.interpolate(start_point_distance)
+        new_goal_on_path = waypoint_linestring.interpolate(new_goal_point_distance)
+
+        if distance(BasicPoint2d(start_on_path.x, start_on_path.y), start_point) > self.distance_to_centerline_limit:
+            rospy.logwarn("%s - start point too far from centerline", rospy.get_name())
+            return
+
+        if distance(BasicPoint2d(new_goal_on_path.x, new_goal_on_path.y), new_goal) > self.distance_to_centerline_limit:
+            rospy.logwarn("%s - goal point too far from centerline", rospy.get_name())
+            return
 
         index_start = np.argmax(waypoint_distances >= start_point_distance)
-        index_goal = np.argmax(waypoint_distances >= goal_point_distance)
+        index_goal = np.argmax(waypoint_distances >= new_goal_point_distance)
 
         # create new start and goal waypoints using deepcopy and index
         start_wp = copy.deepcopy(waypoints[index_start])
-        start_wp.pose.pose.position = Point(start_point.x, start_point.y, start_wp.pose.pose.position.z)
+        start_wp.pose.pose.position = Point(start_on_path.x, start_on_path.y, start_wp.pose.pose.position.z)
         goal_wp = copy.deepcopy(waypoints[index_goal])
-        goal_wp.pose.pose.position = Point(new_goal.x, new_goal.y, goal_wp.pose.pose.position.z)
+        goal_wp.pose.pose.position = Point(new_goal_on_path.x, new_goal_on_path.y, goal_wp.pose.pose.position.z)
 
         # put together new global path
         self.waypoints += [start_wp] + waypoints[index_start : index_goal] + [goal_wp]
