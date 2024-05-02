@@ -130,9 +130,24 @@ class SFADetector:
         front_bev_map = self.make_bev_map(front_points)
 
         if self.only_front:
-            input_bev_maps = np.expand_dims(front_bev_map, axis=0).astype(np.float32)
-            detections = self.do_detection(input_bev_maps)
-            return self.post_processing(detections[0])
+            back_points = self.get_filtered_points(points, is_front=False)
+            back_bev_map = self.make_bev_map(back_points)
+            back_bev_map = np.flip(back_bev_map, (1, 2))
+
+            input_bev_maps_front = np.expand_dims(front_bev_map, axis=0).astype(np.float32)
+            input_bev_maps_back = np.expand_dims(back_bev_map, axis=0).astype(np.float32)
+
+            front_detections = self.do_detection(input_bev_maps_front)
+            back_detections = self.do_detection(input_bev_maps_back)
+            front_detections = self.post_processing(front_detections[0])
+            back_detections = self.post_processing(back_detections[0])
+            back_detections[:, 1:3] *= -1
+
+            return np.concatenate((front_detections, back_detections), axis=0)
+
+            # input_bev_maps = np.expand_dims(front_bev_map, axis=0).astype(np.float32)
+            # detections = self.do_detection(input_bev_maps)
+            # return self.post_processing(detections[0])
         else:
             back_points = self.get_filtered_points(points, is_front=False)
             back_bev_map = self.make_bev_map(back_points)
