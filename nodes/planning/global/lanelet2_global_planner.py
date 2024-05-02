@@ -14,7 +14,7 @@ from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Empty, EmptyResponse
 from visualization_msgs.msg import MarkerArray, Marker
 
-from helpers.geometry import get_heading_between_two_points, get_distance_between_two_points_2d, get_orientation_from_heading
+from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
 from helpers.lanelet2 import load_lanelet2_map
 
 LANELET_TURN_DIRECTION_TO_WAYPOINT_STATE_MAP = {
@@ -108,39 +108,32 @@ class Lanelet2GlobalPlanner:
         path = route.shortestPath()
 
         waypoints = self.convert_to_waypoints(path)
-
-        # build KDTree for nearest neighbour search
         waypoints_xy = np.array([(w.pose.pose.position.x, w.pose.pose.position.y) for w in waypoints])
         waypoint_distances = np.cumsum(np.sqrt(np.sum(np.diff(waypoints_xy, axis=0)**2, axis=1)))
         waypoint_distances = np.insert(waypoint_distances, 0, 0)
+        waypoint_linestring = LineString(waypoints_xy)
 
-        waypoints_linestring = LineString(waypoints_xy)
         # Find distance to start and goal waypoints
-        # TODO z values
-        d_to_start_p = waypoints_linestring.project(ShapelyPoint(start_point.x, start_point.y, 0.0))
-        d_to_goal_p = waypoints_linestring.project(ShapelyPoint(new_goal.x, new_goal.y, 0.0))
+        start_point_distance = waypoint_linestring.project(ShapelyPoint(start_point.x, start_point.y))
+        goal_point_distance = waypoint_linestring.project(ShapelyPoint(new_goal.x, new_goal.y))
         # interpolate point coordinates
-        start_point = waypoints_linestring.interpolate(d_to_start_p)
-        new_goal = waypoints_linestring.interpolate(d_to_goal_p)
+        start_point = waypoint_linestring.interpolate(start_point_distance)
+        new_goal = waypoint_linestring.interpolate(goal_point_distance)
 
-        index_start = np.argmax(waypoint_distances >= d_to_start_p)
-        index_goal = np.argmax(waypoint_distances >= d_to_goal_p)
-
-        if index_goal == 0:
-            index_goal = len(waypoints) - 1
+        index_start = np.argmax(waypoint_distances >= start_point_distance)
+        index_goal = np.argmax(waypoint_distances >= goal_point_distance)
 
         # create new start and goal waypoints using deepcopy and index
-        # TODO z values
         start_wp = copy.deepcopy(waypoints[index_start])
-        start_wp.pose.pose.position = Point(start_point.x, start_point.y, 0.0)
+        start_wp.pose.pose.position = Point(start_point.x, start_point.y, start_wp.pose.pose.position.z)
         goal_wp = copy.deepcopy(waypoints[index_goal])
-        goal_wp.pose.pose.position = Point(new_goal.x, new_goal.y, 0.0)
+        goal_wp.pose.pose.position = Point(new_goal.x, new_goal.y, goal_wp.pose.pose.position.z)
 
         # put together new global path
         self.waypoints += [start_wp] + waypoints[index_start : index_goal] + [goal_wp]
 
         if start_lanelet.id == goal_lanelet.id and index_start > index_goal:
-            rospy.logwarn("%s - goal point can't be before the start point on the same lanelet", rospy.get_name())
+            rospy.logwarn("%s - goal point can't be on the same lanelet before start point", rospy.get_name())
             return
 
         # update goal point and add new waypoints to the existing ones
@@ -154,7 +147,7 @@ class Lanelet2GlobalPlanner:
         self.current_location = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
 
         if self.goal_point != None:
-            d = get_distance_between_two_points_2d(self.current_location, self.goal_point)
+            d = distance(self.current_location, self.goal_point)
             if d < self.distance_to_goal_limit and self.current_speed < self.ego_vehicle_stopped_speed_limit:
                 self.waypoints = []
                 self.goal_point = None
@@ -196,11 +189,6 @@ class Lanelet2GlobalPlanner:
                 if not last_lanelet and idx == len(lanelet.centerline)-1:
                     # skip last point on every lanelet (except last), because it is the same as the first point of the following lanelet
                     break
-                waypoint = Waypoint()
-                waypoint.pose.pose.position.x = point.x
-                waypoint.pose.pose.position.y = point.y
-                waypoint.pose.pose.position.z = point.z
-                waypoint.wpstate.steering_state = blinker
 
                 # calculate quaternion for orientation
                 if last_lanelet and idx == len(lanelet.centerline)-1:
@@ -208,8 +196,13 @@ class Lanelet2GlobalPlanner:
                     heading = get_heading_between_two_points(lanelet.centerline[idx-1], lanelet.centerline[idx])
                 else:
                     heading = get_heading_between_two_points(lanelet.centerline[idx], lanelet.centerline[idx+1])
-                waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
 
+                waypoint = Waypoint()
+                waypoint.pose.pose.position.x = point.x
+                waypoint.pose.pose.position.y = point.y
+                waypoint.pose.pose.position.z = point.z
+                waypoint.wpstate.steering_state = blinker
+                waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
                 waypoint.twist.twist.linear.x = speed
                 waypoint.dtlane.lw = distance(point, lanelet.leftBound)
                 waypoint.dtlane.rw = distance(point, lanelet.rightBound)
