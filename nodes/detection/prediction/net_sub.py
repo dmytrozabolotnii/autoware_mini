@@ -31,6 +31,8 @@ class NetSubscriber(metaclass=ABCMeta):
         self.pad_past = int(rospy.get_param('prediction_history'))
 
         # ROS timers/pub/sub
+        self.class_init = False
+
         self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
         self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
                                            tcp_nodelay=True)
