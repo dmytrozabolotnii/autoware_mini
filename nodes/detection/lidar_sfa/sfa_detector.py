@@ -144,10 +144,6 @@ class SFADetector:
             back_detections[:, 1:3] *= -1
 
             return np.concatenate((front_detections, back_detections), axis=0)
-
-            # input_bev_maps = np.expand_dims(front_bev_map, axis=0).astype(np.float32)
-            # detections = self.do_detection(input_bev_maps)
-            # return self.post_processing(detections[0])
         else:
             back_points = self.get_filtered_points(points, is_front=False)
             back_bev_map = self.make_bev_map(back_points)

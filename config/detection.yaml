@@ -104,7 +104,7 @@ predictor:
   prediction_horizon: 12 # prediction horizon in steps
   prediction_history: 8 # prediction data history in steps
   step_length: 0.25 # step length in seconds
-  inference_timer: 0.125 # prediction will run every this seconds,
+  inference_timer: 0.25 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
   pecnet_predictor:
@@ -114,6 +114,9 @@ predictor:
     predictions_amount: 1
 
   lednet_predictor:
+    predictions_amount: 20
+
+  gatraj_predictor:
     predictions_amount: 20
 
 
