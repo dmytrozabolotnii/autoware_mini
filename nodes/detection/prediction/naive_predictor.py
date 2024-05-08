@@ -4,7 +4,6 @@ import rospy
 import numpy as np
 
 from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
-from geometry_msgs.msg import PoseStamped, TwistStamped
 
 class NaivePredictor:
     def __init__(self):
