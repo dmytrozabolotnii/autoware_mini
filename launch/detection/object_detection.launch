@@ -160,6 +160,16 @@
         </node>
     </group>
 
+    <group if="$(eval predictor=='pedestrianmuse')" ns="predictor">
+        <remap from="tracked_objects" to="/detection/tracked_objects" />
+        <remap from="predicted_objects" to="/detection/final_objects" />
+
+        <node type="musevae_sub.py" name="musevae_predictor" pkg="autoware_mini" output="screen" required="true">
+            <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
+            <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
+        </node>
+    </group>
+
 
     <node if="$(eval predictor=='none')" pkg="topic_tools" type="relay" args="tracked_objects final_objects" name="tracked_objects_relay" output="screen" required="true" />
 
