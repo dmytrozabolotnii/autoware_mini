@@ -148,6 +148,14 @@ class EMATracker:
         self.tracked_objects_array['missed_counter'][missed_track_indices] += 1
         #self.tracked_objects_array['detection_counter'][missed_track_indices] = 0
 
+        # move missed tracks forward
+        assert len(self.tracked_objects) == len(self.tracked_objects_array) == len(tracked_object_centroids) == len(tracked_object_bboxes)
+        self.tracked_objects_array['centroid'][missed_track_indices] = tracked_object_centroids[missed_track_indices]
+        self.tracked_objects_array['bbox'][missed_track_indices] = tracked_object_bboxes[missed_track_indices]
+        for idx in missed_track_indices:
+            obj = self.tracked_objects[idx]
+            obj.pose.position.x, obj.pose.position.y = self.tracked_objects_array['centroid'][idx]
+
         # delete stale tracks
         stale_track_indices = np.where(self.tracked_objects_array['missed_counter'] >= self.missed_counter_threshold)[0]
         for idx in sorted(stale_track_indices, reverse=True):
