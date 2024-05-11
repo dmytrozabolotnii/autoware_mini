@@ -156,21 +156,21 @@ class PECNet(nn.Module):
 
         interpolated_future = self.predictor(prediction_features)
 
-        return interpolated_future
+        return generated_dest, interpolated_future
 
-    # separated for forward to let choose the best destination
-    def predict(self, past, generated_dest, mask, initial_pos):
-        ftraj = self.encoder_past(past)
-        generated_dest_features = self.encoder_dest(generated_dest)
-        prediction_features = torch.cat((ftraj, generated_dest_features, initial_pos), dim=1)
-
-        for i in range(self.nonlocal_pools):
-            # non local social pooling
-            prediction_features = self.non_local_social_pooling(prediction_features, mask)
-
-        interpolated_future = self.predictor(prediction_features)
-
-        return interpolated_future
+    # # separated for forward to let choose the best destination
+    # def predict(self, past, generated_dest, mask, initial_pos):
+    #     ftraj = self.encoder_past(past)
+    #     generated_dest_features = self.encoder_dest(generated_dest)
+    #     prediction_features = torch.cat((ftraj, generated_dest_features, initial_pos), dim=1)
+    #
+    #     for i in range(self.nonlocal_pools):
+    #         # non local social pooling
+    #         prediction_features = self.non_local_social_pooling(prediction_features, mask)
+    #
+    #     interpolated_future = self.predictor(prediction_features)
+    #
+    #     return interpolated_future
 
 
 def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
@@ -180,25 +180,25 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
 
     model.eval()
 
-    input_names = ["x", "initial_pos", "mask_for_predict"]
-
-    output_names = ["interpolated_future"]
-
-    dynamic_axes_dict = {
-        "x": {
-            0: "pedestrians",
-        },
-        "initial_pos": {
-            0: "pedestrians",
-        },
-        "mask_for_predict": {
-            0: "pedestrians",
-            1: "pedestrians"
-        },
-        "interpolated_future": {
-            0: "pedestrians"
-        }
-    }
+    # input_names = ["x", "initial_pos", "mask_for_predict"]
+    #
+    # output_names = ["interpolated_future"]
+    #
+    # dynamic_axes_dict = {
+    #     "x": {
+    #         0: "pedestrians",
+    #     },
+    #     "initial_pos": {
+    #         0: "pedestrians",
+    #     },
+    #     "mask_for_predict": {
+    #         0: "pedestrians",
+    #         1: "pedestrians"
+    #     },
+    #     "interpolated_future": {
+    #         0: "pedestrians"
+    #     }
+    # }
 
     with torch.no_grad():
         batch_by_batch_guesses = []
@@ -223,22 +223,22 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
 
             shift = shift.cpu().numpy()
 
-            if not os.path.isfile("PECNet/PECNET.onnx"):
-                torch.onnx.export(model,
-                                  (x, initial_pos, maskx),
-                                  "PECNet/PECNET.onnx",
-                                  verbose=True,
-                                  input_names=input_names,
-                                  output_names=output_names,
-                                  dynamic_axes=dynamic_axes_dict,
-                                  opset_version=12,
-                                  export_params=True,
-                                  )
+            # if not os.path.isfile("PECNet/PECNET.onnx"):
+            #     torch.onnx.export(model,
+            #                       (x, initial_pos, maskx),
+            #                       "PECNet/PECNET.onnx",
+            #                       verbose=True,
+            #                       input_names=input_names,
+            #                       output_names=output_names,
+            #                       dynamic_axes=dynamic_axes_dict,
+            #                       opset_version=12,
+            #                       export_params=True,
+            #                       )
 
             for j in range(n):
-                dest_recon = model.forward(x, initial_pos, device=device)
-                dest_path = model.predict(x, dest_recon, maskx,
-                                          initial_pos)
+                dest_recon, dest_path = model.forward(x, initial_pos, maskx, device=device)
+                # dest_path = model.predict(x, dest_recon, maskx,
+                #                           initial_pos)
                 dest_recon = dest_recon.cpu().numpy()
                 dest_path = dest_path.cpu().numpy()
                 dest_path = np.concatenate((dest_path, dest_recon), axis=1)

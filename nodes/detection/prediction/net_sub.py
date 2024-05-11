@@ -9,7 +9,7 @@ from geometry_msgs.msg import TwistStamped
 from shapely import LineString, Point, LinearRing
 from shapely.ops import split
 
-from message_cache import MessageCache
+from helpers.message_cache import MessageCache
 
 
 class NetSubscriber(metaclass=ABCMeta):
