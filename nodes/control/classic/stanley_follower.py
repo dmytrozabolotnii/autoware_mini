@@ -12,7 +12,7 @@ from helpers.path import Path
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
 from std_msgs.msg import ColorRGBA, Float32MultiArray
-from autoware_mini.msg import Lane, VehicleCmd
+from autoware_mini.msg import Lane, VehicleCmd, Gear
 
 class StanleyFollower:
     def __init__(self):
@@ -180,6 +180,8 @@ class StanleyFollower:
         # blinkers
         vehicle_cmd.lamp_cmd.l = left_blinker 
         vehicle_cmd.lamp_cmd.r = right_blinker 
+        # gear
+        vehicle_cmd.gear_cmd.gear = Gear.DRIVE
         # velocity and steering
         vehicle_cmd.ctrl_cmd.linear_velocity = target_velocity
         vehicle_cmd.ctrl_cmd.linear_acceleration = acceleration

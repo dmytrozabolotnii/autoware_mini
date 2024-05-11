@@ -12,8 +12,6 @@ catkin_python_setup()
 
 add_message_files(
   FILES
-  AccelCmd.msg
-  BrakeCmd.msg
   ControlCommand.msg
   DetectedObject.msg
   DetectedObjectArray.msg
@@ -22,7 +20,6 @@ add_message_files(
   LampCmd.msg
   Lane.msg
   LaneArray.msg
-  SteerCmd.msg
   TrafficLightResult.msg
   TrafficLightResultArray.msg
   VehicleCmd.msg

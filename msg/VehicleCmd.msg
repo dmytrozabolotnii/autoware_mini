@@ -1,10 +1,6 @@
 Header header
-SteerCmd steer_cmd
-AccelCmd accel_cmd
-BrakeCmd brake_cmd
 LampCmd lamp_cmd
 Gear gear_cmd
 int32 mode
-geometry_msgs/TwistStamped twist_cmd
 ControlCommand ctrl_cmd
 int32 emergency
