@@ -13,7 +13,7 @@ from jsk_rviz_plugins.msg import OverlayText
 from geometry_msgs.msg import TwistStamped
 from std_msgs.msg import Float32
 
-from message_cache import MessageCache
+from helpers.message_cache import MessageCache
 
 
 def calculate_ade(x, y):
@@ -36,9 +36,12 @@ class MetricsVisualizer:
 
         self.ade = rospy.Publisher('/dashboard/ade', Float32, queue_size=1)
         self.fde = rospy.Publisher('/dashboard/fde', Float32, queue_size=1)
+        self.aware_ade = rospy.Publisher('/dashboard/ade', Float32, queue_size=1)
+        self.aware_fde = rospy.Publisher('/dashboard/fde', Float32, queue_size=1)
+
 
         self.sub = rospy.Subscriber('predicted_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
-
+        self.self_sub = rospy.Subscriber('/planning/local_path', Lane, self.local_path_callback, queue_size=1)
         rospy.loginfo("%s - initialized", rospy.get_name())
 
     def objects_callback(self, detectedobjectsarray):
@@ -109,6 +112,9 @@ class MetricsVisualizer:
 
         self.ade.publish(Float32(global_ade))
         self.fde.publish(Float32(global_fde))
+
+    def local_path_callback(self, lane):
+        points = [waypoint.pose.pose.position for waypoint in lane.waypoints]
 
     def run(self):
         rospy.spin()

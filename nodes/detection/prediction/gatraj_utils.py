@@ -310,31 +310,31 @@ class GATraj(nn.Module):
         elif self.args.input_position:
             train_x = batch_norm_gt[:self.args.obs_length, :, :] #[H, N, 2]
         train_x = train_x.permute(1, 2, 0) #[N, 2, H]
-        train_y = batch_norm_gt[self.args.obs_length:, :, :].permute(1, 2, 0) #[N, 2, H]
+        # train_y = batch_norm_gt[self.args.obs_length:, :, :].permute(1, 2, 0) #[N, 2, H]
         self.pre_obs=batch_norm_gt[1:self.args.obs_length]
         self.x_encoded_dense, self.hidden_state_unsplited, cn=self.Temperal_Encoder.forward(train_x)  #[N, D], [N, D]
-        self.hidden_state_global = torch.ones_like(self.hidden_state_unsplited, device=device)
-        cn_global = torch.ones_like(cn, device=device)
-        if self.args.SR:
-            for b in range(len(nei_list_batch)):
-                left, right = batch_split[b][0], batch_split[b][1]
-                element_states = self.hidden_state_unsplited[left: right] #[N, D]
-                cn_state = cn[left: right] #[N, D]
-                if element_states.shape[0] != 1:
-                    corr = batch_abs_gt[self.args.obs_length-1, left: right, :2].repeat(element_states.shape[0], 1, 1) #[N, N, D]
-                    corr_index = corr.transpose(0,1)-corr  #[N, N, D]
-                    nei_num = nei_num_batch[left:right, self.args.obs_length-1] #[N]
-                    nei_index = torch.tensor(nei_list_batch[b][self.args.obs_length-1], device=device) #[N, N]
-                    for i in range(self.args.pass_time):
-                        element_states, cn_state = self.Global_interaction[i](corr_index, nei_index, nei_num, element_states, cn_state)
-                    self.hidden_state_global[left: right] = element_states
-                    cn_global[left: right] = cn_state
-                else:
-                    self.hidden_state_global[left: right] = element_states
-                    cn_global[left: right] = cn_state
-        else:
-            self.hidden_state_global = self.hidden_state_unsplited
-            cn_global = cn
+        # self.hidden_state_global = torch.ones_like(self.hidden_state_unsplited, device=device)
+        # cn_global = torch.ones_like(cn, device=device)
+        # if self.args.SR:
+        #     for b in range(len(nei_list_batch)):
+        #         left, right = batch_split[b][0], batch_split[b][1]
+        #         element_states = self.hidden_state_unsplited[left: right] #[N, D]
+        #         cn_state = cn[left: right] #[N, D]
+        #         if element_states.shape[0] != 1:
+        #             corr = batch_abs_gt[self.args.obs_length-1, left: right, :2].repeat(element_states.shape[0], 1, 1) #[N, N, D]
+        #             corr_index = corr.transpose(0,1)-corr  #[N, N, D]
+        #             nei_num = nei_num_batch[left:right, self.args.obs_length-1] #[N]
+        #             nei_index = torch.tensor(nei_list_batch[b][self.args.obs_length-1], device=device) #[N, N]
+        #             for i in range(self.args.pass_time):
+        #                 element_states, cn_state = self.Global_interaction[i](corr_index, nei_index, nei_num, element_states, cn_state)
+        #             self.hidden_state_global[left: right] = element_states
+        #             cn_global[left: right] = cn_state
+        #         else:
+        #             self.hidden_state_global[left: right] = element_states
+        #             cn_global[left: right] = cn_state
+        # else:
+        self.hidden_state_global = self.hidden_state_unsplited
+        cn_global = cn
         mdn_out = self.Laplacian_Decoder.forward(self.x_encoded_dense, self.hidden_state_global, cn_global, epoch)
         # GATraj_loss, full_pre_tra = self.mdn_loss(train_y.permute(2, 0, 1), mdn_out, 1, iftest)  #[K, H, N, 2]
 
@@ -370,46 +370,46 @@ class GATraj(nn.Module):
 
 def gatraj_iter(dataset, model, device, args, n):
     model.eval()
-    input_names = ["batch_abs_gt", "batch_norm_gt", "nei_lists", "nei_num", "batch_split"]
-
-    output_names = ["out_mu", "out_sigma", "out_pi"]
-
-    dynamic_axes_dict = {
-        "batch_abs_gt": {
-            1: "pedestrians",
-        },
-        "batch_norm_gt": {
-            1: "pedestrians",
-        },
-        "nei_lists": {
-            2: "pedestrians",
-            3: "pedestrians"
-        },
-        "nei_num": {
-            1: "pedestrians"
-        },
-        "out_mu": {
-            1: "pedestrians"
-        },
-        "out_sigma": {
-            1: "pedestrians"
-        },
-        "out_pi": {
-            1: "pedestrians"
-        }
-    }
+    # input_names = ["batch_abs_gt", "batch_norm_gt", "nei_lists", "nei_num", "batch_split"]
+    #
+    # output_names = ["out_mu", "out_sigma", "out_pi"]
+    #
+    # dynamic_axes_dict = {
+    #     "batch_abs_gt": {
+    #         1: "pedestrians",
+    #     },
+    #     "batch_norm_gt": {
+    #         1: "pedestrians",
+    #     },
+    #     "nei_lists": {
+    #         2: "pedestrians",
+    #         3: "pedestrians"
+    #     },
+    #     "nei_num": {
+    #         1: "pedestrians"
+    #     },
+    #     "out_mu": {
+    #         1: "pedestrians"
+    #     },
+    #     "out_sigma": {
+    #         1: "pedestrians"
+    #     },
+    #     "out_pi": {
+    #         1: "pedestrians"
+    #     }
+    # }
     with torch.inference_mode():
         batch_by_batch_guesses = []
         batch_by_batch_guesses.append([])
 
         inputs_gt, batch_split, nei_lists = dataset.get_all()
-        inputs_gt = tuple([torch.Tensor(i) for i in inputs_gt])
-        inputs_gt = tuple([i.cuda() for i in inputs_gt])
-        batch_split_torch = torch.IntTensor(batch_split).cuda()
-        nei_lists_torch = torch.IntTensor(nei_lists).cuda()
+        inputs_gt = tuple([torch.Tensor(i) if i is not None else None for i in inputs_gt ])
+        inputs_gt = tuple([i.cuda() if i is not None else None for i in inputs_gt])
+        # batch_split_torch = torch.IntTensor(batch_split).cuda()
+        # nei_lists_torch = torch.IntTensor(nei_lists).cuda()
         batch_abs_gt, batch_norm_gt, shift_value_gt, seq_list_gt, nei_num = inputs_gt
-        inputs_fw = batch_abs_gt, batch_norm_gt, nei_lists, nei_num, batch_split  # [H, N, 2], [H, N, 2], [B, H, N, N], [N, H]
-        inputs_fw_dummy = batch_abs_gt, batch_norm_gt, nei_lists_torch, nei_num, batch_split_torch
+        # inputs_fw = batch_abs_gt, batch_norm_gt, nei_lists, nei_num, batch_split  # [H, N, 2], [H, N, 2], [B, H, N, N], [N, H]
+        # inputs_fw_dummy = batch_abs_gt, batch_norm_gt, nei_lists_torch, nei_num, batch_split_torch
         # session = None
         # if not os.path.isfile("GATraj/gatraj_1000.onnx"):
         #     torch.onnx.export(model,
@@ -456,7 +456,9 @@ def gatraj_iter(dataset, model, device, args, n):
 
 
 class GATrajDatasetInit(data.Dataset):
-    def __init__(self, detected_object_trajs, end_points, pad_past=7, pad_future=0, dist_thresh=10):
+    def __init__(self, detected_object_trajs, end_points, pad_past=7, pad_future=0, dist_thresh=10, proximity=False):
+        self.proximity = proximity
+
         self.traj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
                                      mode='edge')[end_points[i]:(end_points[i] + pad_past + pad_future + 1)] for i, traj in enumerate(detected_object_trajs)])
         self.traj = np.swapaxes(self.traj, 0, 1)
@@ -467,17 +469,18 @@ class GATrajDatasetInit(data.Dataset):
         self.traj = self.traj - self.initial_shift
         self.shift = self.traj[-1:, :, :]
         self.traj_norm = self.traj - self.shift
-        self.batch_split = np.array([[0, self.traj.shape[1]]])
-        self.masks_ped = np.ones((1, self.traj.shape[0], self.traj.shape[1]))
-        self.masks = np.zeros((1, self.traj.shape[0], self.traj.shape[1], self.traj.shape[1]))
-        for i in range(self.traj.shape[0]):
-            distances = squareform(pdist(self.traj[i, :]))
-            mask = np.where(distances < dist_thresh, 1.0, 0.0)
-            np.fill_diagonal(mask, 0)
-            self.masks[0, i] = mask
-        self.masks_num = np.zeros((self.traj.shape[0], self.traj.shape[1]))
-        for i in range(self.masks.shape[1]):
-            self.masks_num[:, i] = np.sum(self.masks[0, :, i, :], axis=1)
+        if self.proximity:
+            self.batch_split = np.array([[0, self.traj.shape[1]]])
+            self.masks_ped = np.ones((1, self.traj.shape[0], self.traj.shape[1]))
+            self.masks = np.zeros((1, self.traj.shape[0], self.traj.shape[1], self.traj.shape[1]))
+            for i in range(self.traj.shape[0]):
+                distances = squareform(pdist(self.traj[i, :]))
+                mask = np.where(distances < dist_thresh, 1.0, 0.0)
+                np.fill_diagonal(mask, 0)
+                self.masks[0, i] = mask
+            self.masks_num = np.zeros((self.traj.shape[0], self.traj.shape[1]))
+            for i in range(self.masks.shape[1]):
+                self.masks_num[:, i] = np.sum(self.masks[0, :, i, :], axis=1)
 
     def __len__(self):
         return len(self.traj)
@@ -486,8 +489,10 @@ class GATrajDatasetInit(data.Dataset):
         return self.traj[idx], self.masks[idx]
 
     def get_all(self):
-        return (self.traj, self.traj_norm, self.shift, self.masks_ped, self.masks_num), self.batch_split, self.masks
-
+        if self.proximity:
+            return (self.traj, self.traj_norm, self.shift, self.masks_ped, self.masks_num), self.batch_split, self.masks
+        else:
+            return (self.traj, self.traj_norm, self.shift, None, None), None, None
 
 # class DataLoader_bytrajec2():
 #     def __init__(self, args,is_gt=True):
@@ -925,7 +930,7 @@ class GATrajDatasetInit(data.Dataset):
     #     batch_data = self.rotate_shift_batch(batch_data,epoch,idx,ifrotate=False)
     #     return batch_data,batch_split,nei_lists
 
-    def get_test_batch(self,idx,epoch):
-        batch_data, batch_split, nei_lists  = self.testbatch[idx]
-        # batch_data = self.rotate_shift_batch(batch_data,epoch,idx,ifrotate=False)
-        return batch_data, batch_split, nei_lists
+    # def get_test_batch(self,idx,epoch):
+    #     batch_data, batch_split, nei_lists  = self.testbatch[idx]
+    #     # batch_data = self.rotate_shift_batch(batch_data,epoch,idx,ifrotate=False)
+    #     return batch_data, batch_split, nei_lists
