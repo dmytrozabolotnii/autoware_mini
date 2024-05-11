@@ -65,7 +65,7 @@ class DetectedObjectsVisualizer:
             markers.markers.append(marker)
 
             # convex hull
-            if len(object.convex_hull.polygon.points) > 0:
+            if len(object.convex_hull.points) > 0:
                 marker = Marker(header=header)
                 marker.ns = 'convex_hull'
                 marker.id = object.id
@@ -74,7 +74,7 @@ class DetectedObjectsVisualizer:
                 marker.pose.orientation.w = 1.0
                 marker.scale.x = 0.1
                 marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
-                marker.points = [Point(p.x, p.y, p.z) for p in object.convex_hull.polygon.points]
+                marker.points = [Point(p.x, p.y, p.z) for p in object.convex_hull.points]
                 marker.points.append(marker.points[0])
                 markers.markers.append(marker)
 
@@ -85,9 +85,9 @@ class DetectedObjectsVisualizer:
             marker.type = Marker.ARROW
             marker.action = Marker.ADD
             marker.pose.position = object.pose.position
-            yaw = math.atan2(object.velocity.linear.y, object.velocity.linear.x)
+            yaw = math.atan2(object.velocity.y, object.velocity.x)
             marker.pose.orientation = get_orientation_from_heading(yaw)
-            marker.scale.x = max(math.sqrt(object.velocity.linear.x**2 + object.velocity.linear.y**2), 0.01)
+            marker.scale.x = max(math.sqrt(object.velocity.x**2 + object.velocity.y**2), 0.01)
             marker.scale.y = 0.1
             marker.scale.z = 0.1
             marker.color = ColorRGBA(1.0, 1.0, 0.0, 1.0)
@@ -130,7 +130,7 @@ class DetectedObjectsVisualizer:
             marker.pose.position = Point(object.pose.position.x, object.pose.position.y, object.pose.position.z + 1.0)
             marker.scale.z = 0.5
             marker.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
-            marker.text = "%s %d (%d km/h)" % (object.label, object.id, math.sqrt(object.velocity.linear.x**2 + object.velocity.linear.y**2 + object.velocity.linear.z**2) * 3.6)
+            marker.text = "%s %d (%d km/h)" % (object.label, object.id, math.sqrt(object.velocity.x**2 + object.velocity.y**2 + object.velocity.z**2) * 3.6)
             markers.markers.append(marker)
 
             new_published_ids.add(object.id)

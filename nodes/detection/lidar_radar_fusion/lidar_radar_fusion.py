@@ -101,7 +101,7 @@ class LidarRadarFusion:
             for i, radar_detection in enumerate(radar_detections.objects):
                 if i not in matched_radar_indices:
                     # calculate norm of radar detection's speed
-                    radar_speed = get_vector_norm_3d(radar_detection.velocity.linear)
+                    radar_speed = get_vector_norm_3d(radar_detection.velocity)
 
                     # add only moving radar objects
                     if radar_speed >= self.radar_speed_threshold:

@@ -28,8 +28,8 @@ class NaivePredictor:
         ])
         for i, obj in enumerate(msg.objects):
             tracked_objects_array[i]['centroid'] = (obj.pose.position.x, obj.pose.position.y)
-            tracked_objects_array[i]['velocity'] = (obj.velocity.linear.x, obj.velocity.linear.y) 
-            tracked_objects_array[i]['acceleration'] = (obj.acceleration.linear.x, obj.acceleration.linear.y)
+            tracked_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y) 
+            tracked_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
 
         # Predict future positions and velocities - includes also initial step, thus + 1
         num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1

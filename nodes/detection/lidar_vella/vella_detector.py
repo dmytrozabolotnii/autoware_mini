@@ -61,13 +61,13 @@ class VellaDetector:
             if vella_track.confidence < self.confidence_filter or vella_track.track_length < self.track_length_filter:
                 continue
             # if filtering test passed, create the autoware detected object
-            detected_object = self.generate_autoware_object_from_vella_track(vella_track, vella_tracks.header.stamp, transform)
+            detected_object = self.generate_autoware_object_from_vella_track(vella_track, transform)
             detected_objects_array.objects.append(detected_object)
 
         # publish the detected objects array
         self.detected_object_array_pub.publish(detected_objects_array)
 
-    def generate_autoware_object_from_vella_track(self, vella_track, vella_stamp, transform):
+    def generate_autoware_object_from_vella_track(self, vella_track, transform):
 
         """
         Generate Autoware DetectedObject from Vella track
@@ -80,10 +80,6 @@ class VellaDetector:
 
         # Initialize a single Autoware DetectedObject
         detected_object = DetectedObject()
-        # assign frame_id as the output frame
-        detected_object.header.frame_id = self.output_frame
-        # stamp it with vella created stamp
-        detected_object.header.stamp = vella_stamp
         detected_object.id = vella_track.id
         detected_object.label = vella_track.label
         detected_object.color = LIGHT_BLUE
@@ -94,7 +90,7 @@ class VellaDetector:
         detected_object.pose_reliable = True
 
         # transform velocity to output frame using the transformation saved when callback was received
-        detected_object.velocity.linear = transform_vector3(vella_track.velocity.twist.linear, transform)
+        detected_object.velocity = transform_vector3(vella_track.velocity.twist.linear, transform)
         detected_object.velocity_reliable = True
         detected_object.acceleration_reliable = False
 
@@ -104,7 +100,7 @@ class VellaDetector:
         detected_object.dimensions.z = vella_track.height
 
         # produce convex hull
-        detected_object.convex_hull = create_hull(detected_object, self.output_frame, vella_stamp)
+        detected_object.convex_hull = create_hull(detected_object)
 
         return detected_object
 

@@ -2,11 +2,11 @@ import math
 import cv2
 import numpy as np
 
-from geometry_msgs.msg import PolygonStamped, Point
+from geometry_msgs.msg import Polygon, Point
 
 from helpers.geometry import get_heading_from_orientation
 
-def create_hull(obj, output_frame, stamp):
+def create_hull(obj):
 
     """
     Produce convex hull for an object given its pose and dimensions
@@ -15,9 +15,7 @@ def create_hull(obj, output_frame, stamp):
     :param stamp: Time stamp at which the lidar pointcloud was created
     :return: geometry_msgs/PolygonStamped
     """
-    convex_hull = PolygonStamped()
-    convex_hull.header.frame_id = output_frame
-    convex_hull.header.stamp = stamp
+    convex_hull = Polygon()
 
     # compute heading angle from object's orientation
     heading = get_heading_from_orientation(obj.pose.orientation)
@@ -28,7 +26,7 @@ def create_hull(obj, output_frame, stamp):
         (obj.dimensions.x, obj.dimensions.y),
         math.degrees(heading)
     ))
-    convex_hull.polygon.points = [Point(x, y, obj.pose.position.z) for x, y in points]
+    convex_hull.points = [Point(x, y, obj.pose.position.z) for x, y in points]
 
     return convex_hull
 
@@ -71,7 +69,7 @@ def get_axis_oriented_bounding_box(obj):
     :return: tuple of minx, miny, maxx, maxy
     """
     # take all points from the convex hull
-    points = np.array([(p.x, p.y) for p in obj.convex_hull.polygon.points], dtype=np.float32)
+    points = np.array([(p.x, p.y) for p in obj.convex_hull.points], dtype=np.float32)
 
     # find axis-oriented bounding box
     minx, miny = np.min(points, axis=0)
