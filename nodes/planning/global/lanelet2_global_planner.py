@@ -275,15 +275,14 @@ class Lanelet2GlobalPlanner:
                     heading = get_heading_between_two_points(lanelet.centerline[idx], lanelet.centerline[idx+1])
 
                 waypoint = Waypoint()
-                waypoint.pose.pose.position.x = point.x
-                waypoint.pose.pose.position.y = point.y
-                waypoint.pose.pose.position.z = point.z
-                waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
-                waypoint.twist.twist.linear.x = speed
-                waypoint.wpstate.steering_state = steering_state
-                waypoint.wpstate.lanechange_state = lanechange_state
-                waypoint.dtlane.lw = lanelet2_distance(point, lanelet.leftBound)
-                waypoint.dtlane.rw = lanelet2_distance(point, lanelet.rightBound)
+                waypoint.position.x = point.x
+                waypoint.position.y = point.y
+                waypoint.position.z = point.z
+                waypoint.blinker_state = blinker
+                waypoint.heading = heading
+                waypoint.speed = speed
+                waypoint.left_width = lanelet2_distance(point, lanelet.leftBound)
+                waypoint.right_width = lanelet2_distance(point, lanelet.rightBound)
 
                 waypoints.append(waypoint)
 

@@ -4,6 +4,7 @@ import rospy
 from autoware_mini.msg import Lane, WaypointState
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
+from helpers.geometry import get_orientation_from_heading
 
 class GlobalPathVisualizer:
     def __init__(self):
@@ -29,9 +30,9 @@ class GlobalPathVisualizer:
             for i, waypoint in enumerate(lane.waypoints):
 
                 # color the arrows based on the waypoint steering_flag (blinker)
-                if waypoint.wpstate.steering_state == WaypointState.STR_LEFT:
+                if waypoint.blinker_state == WaypointState.STR_LEFT:
                     color = ColorRGBA(1.0, 0.0, 0.0, 1.0)
-                elif waypoint.wpstate.steering_state == WaypointState.STR_RIGHT:
+                elif waypoint.blinker_state == WaypointState.STR_RIGHT:
                     color = ColorRGBA(0.0, 0.0, 1.0, 1.0)
                 else:
                     color = ColorRGBA(0.0, 1.0, 0.0, 1.0)
@@ -43,7 +44,8 @@ class GlobalPathVisualizer:
                 marker.id = i
                 marker.type = marker.ARROW
                 marker.action = marker.ADD
-                marker.pose = waypoint.pose.pose
+                marker.pose.position = waypoint.position
+                marker.pose.orientation = get_orientation_from_heading(waypoint.heading)
                 marker.scale.x = 0.4
                 marker.scale.y = 0.1
                 marker.scale.z = 0.1
@@ -59,10 +61,11 @@ class GlobalPathVisualizer:
                 marker.id = i
                 marker.type = marker.TEXT_VIEW_FACING
                 marker.action = marker.ADD
-                marker.pose = waypoint.pose.pose
+                marker.pose.position = waypoint.position
+                marker.pose.orientation = get_orientation_from_heading(waypoint.heading)
                 marker.scale.z = 0.5
                 marker.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
-                marker.text = str(round(waypoint.twist.twist.linear.x * 3.6, 1))
+                marker.text = str(round(waypoint.speed * 3.6, 1))
                 marker_array.markers.append(marker)
 
             # line strips
@@ -77,7 +80,7 @@ class GlobalPathVisualizer:
             marker.scale.x = 1.5
             marker.color = ColorRGBA(0.9, 0.6, 1.0, 0.6)
             for waypoint in lane.waypoints:
-                marker.points.append(waypoint.pose.pose.position)
+                marker.points.append(waypoint.position)
             marker_array.markers.append(marker)
 
         self.global_path_markers_pub.publish(marker_array)

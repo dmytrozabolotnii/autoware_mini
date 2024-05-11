@@ -15,7 +15,6 @@ add_message_files(
   ControlCommand.msg
   DetectedObject.msg
   DetectedObjectArray.msg
-  DTLane.msg
   Gear.msg
   LampCmd.msg
   Lane.msg
@@ -25,7 +24,6 @@ add_message_files(
   VehicleCmd.msg
   VehicleStatus.msg
   Waypoint.msg
-  WaypointState.msg
 )
 
 generate_messages(

@@ -36,13 +36,13 @@ class PathSmoothing:
 
         # extract all waypoint attributes with one loop
         waypoints_array = np.array([(
-                wp.pose.pose.position.x,
-                wp.pose.pose.position.y,
-                wp.pose.pose.position.z,
-                wp.wpstate.steering_state,
-                wp.twist.twist.linear.x,
-                wp.dtlane.lw,
-                wp.dtlane.rw
+                wp.position.x,
+                wp.position.y,
+                wp.position.z,
+                wp.blinker_state,
+                wp.speed,
+                wp.left_width,
+                wp.right_width
             ) for wp in msg.waypoints])
 
         smoothed_path_array = self.smooth_global_path(waypoints_array)
@@ -151,14 +151,14 @@ class PathSmoothing:
     def create_waypoint(self, x, y, z, blinker, speed, lw, rw, yaw):
         # create waypoint
         waypoint = Waypoint()
-        waypoint.pose.pose.position.x = x
-        waypoint.pose.pose.position.y = y
-        waypoint.pose.pose.position.z = z
-        waypoint.wpstate.steering_state = int(blinker)
-        waypoint.twist.twist.linear.x = speed
-        waypoint.pose.pose.orientation = get_orientation_from_heading(yaw)
-        waypoint.dtlane.lw = lw
-        waypoint.dtlane.rw = rw
+        waypoint.position.x = x
+        waypoint.position.y = y
+        waypoint.position.z = z
+        waypoint.blinker_state = int(blinker)
+        waypoint.speed = speed
+        waypoint.heading = yaw
+        waypoint.left_width = lw
+        waypoint.right_width = rw
 
         return waypoint
 

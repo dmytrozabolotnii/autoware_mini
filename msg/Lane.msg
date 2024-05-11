@@ -1,10 +1,8 @@
 Header header
-int32 increment
-int32 lane_id
 Waypoint[] waypoints
 
-uint32 lane_index
-float32 cost
+#uint32 lane_index
+float32 stopping_point_distance
 float32 closest_object_distance
 float32 closest_object_velocity
 bool is_blocked

@@ -86,15 +86,16 @@ class LocalPathVisualizer:
                 marker.id = i
                 marker.type = marker.TEXT_VIEW_FACING
                 marker.action = marker.ADD
-                marker.pose = waypoint.pose.pose
+                marker.pose.position = waypoint.position
+                marker.pose.orientation = get_orientation_from_heading(waypoint.heading)
                 marker.scale.z = 0.5
                 marker.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
-                marker.text = str(round(waypoint.twist.twist.linear.x * 3.6, 1))
+                marker.text = str(round(waypoint.speed * 3.6, 1))
                 marker_array.markers.append(marker)
 
                 current_waypoints = i
                 # add only up to a first 0.0 velocity label
-                if math.isclose(waypoint.twist.twist.linear.x, 0.0):
+                if math.isclose(waypoint.speed, 0.0):
                     break
 
             # delete all markers if local path length decreased

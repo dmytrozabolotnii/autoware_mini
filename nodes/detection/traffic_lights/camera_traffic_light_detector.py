@@ -96,7 +96,7 @@ class CameraTrafficLightDetector:
 
         # If there is a local path collect allt the stop line id's on the path
         if len(local_path_msg.waypoints) > 0:
-            local_path = shapely.LineString([(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in local_path_msg.waypoints])
+            local_path = shapely.LineString([(wp.position.x, wp.position.y) for wp in local_path_msg.waypoints])
 
             for linkId, stopline in self.stoplines.items():
                 # check if stopline intersects with local path

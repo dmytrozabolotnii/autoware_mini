@@ -65,7 +65,7 @@ class StanleyFollower:
         else:
             path = Path(path_msg.waypoints, velocities=True, blinkers=True)
             closest_object_velocity = path_msg.closest_object_velocity
-            stopping_point_distance = path_msg.cost
+            stopping_point_distance = path_msg.stopping_point_distance
 
         with self.lock:
             self.path = path
