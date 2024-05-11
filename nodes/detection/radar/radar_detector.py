@@ -8,7 +8,7 @@ import message_filters
 from tf2_ros import Buffer, TransformListener, TransformException
 
 from geometry_msgs.msg import TwistStamped
-from autoware_msgs.msg import DetectedObject, DetectedObjectArray
+from autoware_mini.msg import DetectedObject, DetectedObjectArray
 from radar_msgs.msg import RadarTracks
 from std_msgs.msg import ColorRGBA
 

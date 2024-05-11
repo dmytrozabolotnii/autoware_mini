@@ -10,7 +10,7 @@ def create_hull(obj, output_frame, stamp):
 
     """
     Produce convex hull for an object given its pose and dimensions
-    :param obj: autoware_msgs/DetectedObject
+    :param obj: autoware_mini/DetectedObject
     :param output_frame: string frame_id for the convex hull
     :param stamp: Time stamp at which the lidar pointcloud was created
     :return: geometry_msgs/PolygonStamped
@@ -67,7 +67,7 @@ def calculate_iou(boxes1, boxes2):
 def get_axis_oriented_bounding_box(obj):
     """
     Get the axis-oriented bounding box of an object
-    :param obj: autoware_msgs/DetectedObject
+    :param obj: autoware_mini/DetectedObject
     :return: tuple of minx, miny, maxx, maxy
     """
     # take all points from the convex hull

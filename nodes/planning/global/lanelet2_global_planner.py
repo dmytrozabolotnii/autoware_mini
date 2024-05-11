@@ -7,7 +7,7 @@ import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import to2D, findWithin2d, length2d, distance as lanelet2_distance
 from geometry_msgs.msg import PoseStamped, TwistStamped, Point
-from autoware_msgs.msg import Lane, Waypoint, WaypointState
+from autoware_mini.msg import Lane, Waypoint, WaypointState
 from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Empty, EmptyResponse
 from visualization_msgs.msg import MarkerArray, Marker

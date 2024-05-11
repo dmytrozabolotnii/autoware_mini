@@ -4,7 +4,7 @@ import rospy
 import csv
 import math
 
-from autoware_msgs.msg import Lane, Waypoint
+from autoware_mini.msg import Lane, Waypoint
 
 from helpers.geometry import get_orientation_from_heading
 

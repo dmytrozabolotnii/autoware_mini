@@ -3,7 +3,7 @@
 import rospy
 import time
 
-from autoware_msgs.msg import TrafficLightResultArray
+from autoware_mini.msg import TrafficLightResultArray
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point
 from std_msgs.msg import ColorRGBA, Int32

@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
-from autoware_msgs.msg import DetectedObjectArray
+from autoware_mini.msg import DetectedObjectArray
 from helpers.detection import calculate_iou, get_axis_oriented_bounding_box
 
 class EMATracker:

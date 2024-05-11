@@ -4,7 +4,7 @@ import rospy
 import message_filters
 import traceback
 
-from autoware_msgs.msg import TrafficLightResultArray
+from autoware_mini.msg import TrafficLightResultArray
 
 
 class TrafficLightPriorityMerger:

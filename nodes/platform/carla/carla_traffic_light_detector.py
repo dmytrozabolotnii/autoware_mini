@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 
 from carla_msgs.msg import CarlaTrafficLightStatus, CarlaTrafficLightStatusList, CarlaTrafficLightInfoList
-from autoware_msgs.msg import TrafficLightResult, TrafficLightResultArray
+from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
 from localization.SimulationToUTMTransformer import SimulationToUTMTransformer
 from helpers.lanelet2 import get_stoplines_center, load_lanelet2_map

@@ -4,7 +4,7 @@ import rospy
 import threading
 
 from geometry_msgs.msg import PointStamped, Point32
-from autoware_msgs.msg import DetectedObjectArray, DetectedObject
+from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from std_msgs.msg import ColorRGBA
 
 class ObstacleSimulation:

@@ -7,7 +7,7 @@ import rospy
 from tf2_ros import TransformBroadcaster
 
 from geometry_msgs.msg import TransformStamped, PoseStamped, TwistStamped, PoseWithCovarianceStamped, Quaternion, Point
-from autoware_msgs.msg import VehicleCmd, VehicleStatus, Gear
+from autoware_mini.msg import VehicleCmd, VehicleStatus, Gear
 
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA

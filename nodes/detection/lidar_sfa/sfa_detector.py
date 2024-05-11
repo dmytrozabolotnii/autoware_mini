@@ -9,7 +9,7 @@ from ros_numpy import numpify
 
 from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import ColorRGBA
-from autoware_msgs.msg import DetectedObjectArray, DetectedObject
+from autoware_mini.msg import DetectedObjectArray, DetectedObject
 
 import onnxruntime
 

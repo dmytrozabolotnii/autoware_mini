@@ -5,7 +5,7 @@ import message_filters
 import numpy as np
 import traceback
 
-from autoware_msgs.msg import TrafficLightResult, TrafficLightResultArray
+from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
 TRAFFIC_LIGHT_RESULT_TO_STRING = {
     0: "RED",    # and yellow

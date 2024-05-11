@@ -31,4 +31,4 @@ Subscribes to MQTT Service.
 
 | Name                  | Type                                                           | Description                                                            |
 |-----------------------|----------------------------------------------------------------|------------------------------------------------------------------------|
-| `/traffic_light_status` | `autoware_msgs/TrafficLightResultArray` | Array of traffic light results.
+| `/traffic_light_status` | `autoware_mini/TrafficLightResultArray` | Array of traffic light results.

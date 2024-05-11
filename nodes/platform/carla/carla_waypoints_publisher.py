@@ -9,8 +9,8 @@ receive a path from carla_ros_waypoint_publisher and convert it to autoware
 """
 import rospy
 import shapely
-from autoware_msgs.msg import Lane
-from autoware_msgs.msg import Waypoint
+from autoware_mini.msg import Lane
+from autoware_mini.msg import Waypoint
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from std_srvs.srv import Empty, EmptyResponse

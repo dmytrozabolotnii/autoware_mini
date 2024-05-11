@@ -6,7 +6,7 @@ import traceback
 import rospy
 import message_filters
 
-from autoware_msgs.msg import WaypointState, VehicleStatus
+from autoware_mini.msg import WaypointState, VehicleStatus
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import ColorRGBA

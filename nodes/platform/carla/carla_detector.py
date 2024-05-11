@@ -6,13 +6,13 @@
 # For a copy, see <https://opensource.org/licenses/MIT>.
 """
 ground truth detections. Publishes the following topics:
-    receive :derived_object_msgs::ObjectArray and publishes autoware_msgs::DetectedObjectArray
+    receive :derived_object_msgs::ObjectArray and publishes autoware_mini::DetectedObjectArray
 """
 import rospy
 
 from std_msgs.msg import ColorRGBA
 from geometry_msgs.msg import PolygonStamped, Point
-from autoware_msgs.msg import DetectedObjectArray, DetectedObject
+from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from derived_object_msgs.msg import ObjectArray, Object
 from localization.SimulationToUTMTransformer import SimulationToUTMTransformer
 from helpers.detection import create_hull

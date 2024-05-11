@@ -3,8 +3,8 @@
 import rospy
 import numpy as np
 
-from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
 from helpers.geometry import get_vector_norm_3d
+from autoware_mini.msg import DetectedObjectArray, Lane, Waypoint
 
 class NaivePredictor:
     def __init__(self):

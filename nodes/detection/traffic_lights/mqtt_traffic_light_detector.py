@@ -7,7 +7,7 @@ import traceback
 
 import paho.mqtt.client as paho
 
-from autoware_msgs.msg import TrafficLightResult, TrafficLightResultArray
+from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines_api_id
 

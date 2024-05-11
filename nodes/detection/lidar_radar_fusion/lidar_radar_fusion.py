@@ -9,7 +9,7 @@ import traceback
 from scipy.spatial.distance import cdist
 from lapsolver import solve_dense
 
-from autoware_msgs.msg import DetectedObjectArray
+from autoware_mini.msg import DetectedObjectArray
 from std_msgs.msg import ColorRGBA
 
 from helpers.geometry import get_vector_norm_3d

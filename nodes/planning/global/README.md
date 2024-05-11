@@ -31,7 +31,7 @@ A ROS node that implements a global planner for autonomous vehicles based on Lan
 
 | Name | Type | Description |
 |------|------|-------------|
-| `global_path` | `autoware_msgs/Lane` | The generated global path |
+| `global_path` | `autoware_mini/Lane` | The generated global path |
 | `target_lane_markers` | `visualization_msgs/MarkerArray` | The markers for the target lane (mainly for debugging purpose) |
 
 
@@ -60,11 +60,11 @@ A ROS node for smoothing global path using interpolation and optional speed adju
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/global_path` | `autoware_msgs/Lane` | Subscribes to the global path to be smoothed. |
+| `/global_path` | `autoware_mini/Lane` | Subscribes to the global path to be smoothed. |
 
 
 #### Published Topics
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/smoothed_path` | `autoware_msgs/Lane` | Publishes the smoothed path with equal distances between waypoints |
+| `/smoothed_path` | `autoware_mini/Lane` | Publishes the smoothed path with equal distances between waypoints |

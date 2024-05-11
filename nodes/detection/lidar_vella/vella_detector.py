@@ -8,7 +8,7 @@ from tf2_ros import Buffer, TransformListener, TransformException
 
 from std_msgs.msg import ColorRGBA
 from vella_msgs.msg import Track3DArray
-from autoware_msgs.msg import DetectedObjectArray, DetectedObject
+from autoware_mini.msg import DetectedObjectArray, DetectedObject
 
 from helpers.detection import create_hull
 from helpers.transform import transform_pose, transform_vector3

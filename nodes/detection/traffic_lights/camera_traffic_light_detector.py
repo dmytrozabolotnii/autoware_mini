@@ -12,8 +12,8 @@ from image_geometry import PinholeCameraModel
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CameraInfo
-from autoware_msgs.msg import TrafficLightResult, TrafficLightResultArray
-from autoware_msgs.msg import Lane
+from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
+from autoware_mini.msg import Lane
 
 from cv_bridge import CvBridge, CvBridgeError
 

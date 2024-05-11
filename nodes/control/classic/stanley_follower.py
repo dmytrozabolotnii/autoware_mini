@@ -12,7 +12,7 @@ from helpers.path import Path
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
 from std_msgs.msg import ColorRGBA, Float32MultiArray
-from autoware_msgs.msg import Lane, VehicleCmd
+from autoware_mini.msg import Lane, VehicleCmd
 
 class StanleyFollower:
     def __init__(self):

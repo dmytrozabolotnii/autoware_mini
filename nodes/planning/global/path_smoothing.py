@@ -2,7 +2,7 @@
 
 import rospy
 import numpy as np
-from autoware_msgs.msg import Lane, Waypoint
+from autoware_mini.msg import Lane, Waypoint
 from helpers.geometry import get_orientation_from_heading
 
 

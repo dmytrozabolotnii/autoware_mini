@@ -10,7 +10,7 @@ from numpy.lib.recfunctions import structured_to_unstructured
 from ros_numpy import numpify, msgify
 
 from sensor_msgs.msg import PointCloud2
-from autoware_msgs.msg import DetectedObjectArray, DetectedObject
+from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from std_msgs.msg import ColorRGBA, Header
 from geometry_msgs.msg import Point32, Quaternion
 

@@ -4,7 +4,7 @@ import math
 import rospy
 import shapely
 
-from autoware_msgs.msg import DetectedObjectArray
+from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point, Quaternion
 from std_msgs.msg import Header, ColorRGBA

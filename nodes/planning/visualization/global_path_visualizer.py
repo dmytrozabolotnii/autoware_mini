@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from autoware_msgs.msg import Lane, WaypointState
+from autoware_mini.msg import Lane, WaypointState
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 

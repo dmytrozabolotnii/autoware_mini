@@ -2,7 +2,7 @@
 
 import rospy
 import math
-from autoware_msgs.msg import Lane
+from autoware_mini.msg import Lane
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from jsk_rviz_plugins.msg import OverlayText
