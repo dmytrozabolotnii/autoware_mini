@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from autoware_mini.msg import Lane, WaypointState
+from autoware_mini.msg import Lane
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from helpers.geometry import get_orientation_from_heading
@@ -30,9 +30,9 @@ class GlobalPathVisualizer:
             for i, waypoint in enumerate(lane.waypoints):
 
                 # color the arrows based on the waypoint steering_flag (blinker)
-                if waypoint.blinker_state == WaypointState.STR_LEFT:
+                if waypoint.blinker_state == Waypoint.STR_LEFT:
                     color = ColorRGBA(1.0, 0.0, 0.0, 1.0)
-                elif waypoint.blinker_state == WaypointState.STR_RIGHT:
+                elif waypoint.blinker_state == Waypoint.STR_RIGHT:
                     color = ColorRGBA(0.0, 0.0, 1.0, 1.0)
                 else:
                     color = ColorRGBA(0.0, 1.0, 0.0, 1.0)

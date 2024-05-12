@@ -7,7 +7,7 @@ import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import to2D, findWithin2d, length2d, distance as lanelet2_distance
 from geometry_msgs.msg import PoseStamped, TwistStamped, Point
-from autoware_mini.msg import Lane, Waypoint, WaypointState
+from autoware_mini.msg import Lane, Waypoint
 from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Empty, EmptyResponse
 from visualization_msgs.msg import MarkerArray, Marker
@@ -17,9 +17,9 @@ from helpers.lanelet2 import load_lanelet2_map, find_following_lane_change_lanel
 from helpers.path import Path
 
 LANELET_TURN_DIRECTION_TO_WAYPOINT_STATE_MAP = {
-    "straight": WaypointState.STR_STRAIGHT,
-    "left": WaypointState.STR_LEFT,
-    "right": WaypointState.STR_RIGHT
+    "straight": Waypoint.STR_STRAIGHT,
+    "left": Waypoint.STR_LEFT,
+    "right": Waypoint.STR_RIGHT
 }
 
 RED = ColorRGBA(1.0, 0.0, 0.0, 0.8)

@@ -6,7 +6,7 @@ import traceback
 import rospy
 import message_filters
 
-from autoware_mini.msg import WaypointState, VehicleStatus
+from autoware_mini.msg import Waypoint, VehicleStatus
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import ColorRGBA
@@ -14,9 +14,9 @@ from std_msgs.msg import ColorRGBA
 from helpers.geometry import get_heading_from_orientation
 
 VEHICLE_STATUS_LAMP_TO_WAYPOINT_STATE_MAP = {
-    0: WaypointState.STR_STRAIGHT,
-    VehicleStatus.LAMP_LEFT: WaypointState.STR_LEFT,
-    VehicleStatus.LAMP_RIGHT: WaypointState.STR_RIGHT,
+    0: Waypoint.STR_STRAIGHT,
+    VehicleStatus.LAMP_LEFT: Waypoint.STR_LEFT,
+    VehicleStatus.LAMP_RIGHT: Waypoint.STR_RIGHT,
     VehicleStatus.LAMP_HAZARD: 5
 }
 
@@ -95,9 +95,9 @@ class WaypointSaver:
 
     def publish_wp_marker(self, current_pose, v):
 
-        if self.turn_signal == WaypointState.STR_LEFT:
+        if self.turn_signal == Waypoint.STR_LEFT:
             color = ColorRGBA(1.0, 0.0, 0.0, 1.0)
-        elif self.turn_signal == WaypointState.STR_RIGHT:
+        elif self.turn_signal == Waypoint.STR_RIGHT:
             color = ColorRGBA(0.0, 0.0, 1.0, 1.0)
         else:
             color = ColorRGBA(0.0, 1.0, 0.0, 1.0)
