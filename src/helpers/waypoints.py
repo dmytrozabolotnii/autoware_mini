@@ -51,29 +51,6 @@ def get_two_nearest_waypoint_idx(waypoint_tree, x, y):
     idx[0].sort()
     return idx[0][0], idx[0][1]
 
-def interpolate_velocity_between_waypoints(point, backward_wp, forward_wp):
-    """
-    Interpolate velocity between two waypoints.
-    :param point: Point - location where the velocity will be interpolated using backward and forward waypoints.
-    :param bacward_wp: Waypoint
-    :param forward_wp: Waypoint
-    :return: velocity
-    """
-
-    # distance to backward waypoint
-    distance_to_backward_wp = get_distance_between_two_points_2d(point, backward_wp.pose.pose.position)
-    if distance_to_backward_wp < 0.01:
-        return backward_wp.twist.twist.linear.x
-
-    # distance to forward waypoint
-    distance_to_forward_wp = get_distance_between_two_points_2d(point, forward_wp.pose.pose.position)
-    if distance_to_forward_wp < 0.01:
-        return forward_wp.twist.twist.linear.x
-
-    backward_wp_vel = backward_wp.twist.twist.linear.x * distance_to_forward_wp / (distance_to_backward_wp + distance_to_forward_wp)
-    forward_wp_vel = forward_wp.twist.twist.linear.x * distance_to_backward_wp / (distance_to_backward_wp + distance_to_forward_wp)
-
-    return backward_wp_vel + forward_wp_vel
 
 def get_closest_point_on_path(waypoints, closest_idx, origin_point):
     """
