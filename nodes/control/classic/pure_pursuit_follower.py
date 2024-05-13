@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from shapely.geometry import LineString, Point as ShapelyPoint
 from shapely import prepare, distance
 
-from helpers.geometry import get_heading_from_orientation, normalize_heading_error, get_heading_from_orientation, get_cross_track_error
+from helpers.geometry import get_heading_from_orientation, normalize_heading_error, get_cross_track_error
 from helpers.waypoints import get_blinker_state_with_lookahead
 
 from visualization_msgs.msg import MarkerArray, Marker
