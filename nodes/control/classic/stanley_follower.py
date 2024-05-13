@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
+import math
 import message_filters
 import threading
 import traceback
@@ -112,7 +113,7 @@ class StanleyFollower:
 
             stamp = current_pose_msg.header.stamp
 
-            if path_linestring is None or distance_to_velocity_interpolator is None or distance_to_blinker_interpolator is None:
+            if path_linestring is None:
                 self.publish_vehicle_command(stamp)
                 return
 
@@ -124,8 +125,8 @@ class StanleyFollower:
             if self.simulate_cmd_delay > 0.0:
 
                 # extract heading angle from orientation
-                x_dot = current_velocity * np.cos(current_heading)
-                y_dot = current_velocity * np.sin(current_heading)
+                x_dot = current_velocity * math.cos(current_heading)
+                y_dot = current_velocity * math.sin(current_heading)
 
                 x_new = current_position.x + x_dot * self.simulate_cmd_delay
                 y_new = current_position.y + y_dot * self.simulate_cmd_delay
@@ -154,14 +155,14 @@ class StanleyFollower:
             track_heading = get_heading_between_two_points(lookback_on_path, lookahead_on_path)
             heading_error = normalize_heading_error(track_heading - current_heading)
 
-            if abs(cross_track_error) > self.lateral_error_limit or abs(np.degrees(heading_error)) > self.heading_angle_limit:
+            if abs(cross_track_error) > self.lateral_error_limit or abs(math.degrees(heading_error)) > self.heading_angle_limit:
                 # stop vehicle if cross track error or heading angle difference is over limit
                 self.publish_vehicle_command(stamp)
                 rospy.logerr_throttle(10, "%s - lateral error or heading angle difference over limit", rospy.get_name())
                 return
 
             # calculate steering angle
-            delta_error = np.arctan(self.cte_gain * cross_track_error / (current_velocity + 0.0001))
+            delta_error = math.atan(self.cte_gain * cross_track_error / (current_velocity + 0.0001))
             steering_angle = heading_error + delta_error
 
             # find velocity at current position
@@ -255,7 +256,7 @@ class StanleyFollower:
         marker_text.pose = average_pose
         marker_text.scale.z = 0.6
         marker_text.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
-        marker_text.text = str(round(np.degrees(heading_error),1))
+        marker_text.text = str(round(math.degrees(heading_error),1))
         marker_array.markers.append(marker_text)
 
         self.stanley_markers_pub.publish(marker_array)

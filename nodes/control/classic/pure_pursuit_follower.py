@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
+import math
 import message_filters
 import threading
 import traceback
@@ -111,7 +112,7 @@ class PurePursuitFollower:
 
             stamp = current_pose_msg.header.stamp
 
-            if path_linestring is None or distance_to_velocity_interpolator is None or distance_to_blinker_interpolator is None:
+            if path_linestring is None:
                 self.publish_vehicle_command(stamp)
                 return
 
@@ -124,8 +125,8 @@ class PurePursuitFollower:
 
                 # extract heading angle from orientation
                 heading_angle = get_heading_from_orientation(current_orientation)
-                x_dot = current_velocity * np.cos(heading_angle)
-                y_dot = current_velocity * np.sin(heading_angle)
+                x_dot = current_velocity * math.cos(heading_angle)
+                y_dot = current_velocity * math.sin(heading_angle)
 
                 x_new = current_position.x + x_dot * self.simulate_cmd_delay
                 y_new = current_position.y + y_dot * self.simulate_cmd_delay
@@ -158,15 +159,15 @@ class PurePursuitFollower:
                                                       path_linestring.interpolate(d_ego_from_path_start - 0.1),
                                                       path_linestring.interpolate(d_ego_from_path_start + 0.1))
 
-            if abs(cross_track_error) > self.lateral_error_limit or abs(np.degrees(heading_angle_difference)) > self.heading_angle_limit:
+            if abs(cross_track_error) > self.lateral_error_limit or abs(math.degrees(heading_angle_difference)) > self.heading_angle_limit:
                 # stop vehicle if cross track error or heading angle difference is over limit
                 self.publish_vehicle_command(stamp)
                 rospy.logerr_throttle(10, "%s - lateral error or heading angle difference over limit", rospy.get_name())
                 return
 
             # calculate curvature and steering angle
-            curvature = 2 * np.sin(heading_differenece) / d_ego_to_lookahead_point
-            steering_angle = np.arctan(self.wheel_base * curvature)
+            curvature = 2 * math.sin(heading_differenece) / d_ego_to_lookahead_point
+            steering_angle = math.atan(self.wheel_base * curvature)
 
             # find velocity at current position
             target_velocity = distance_to_velocity_interpolator(d_ego_from_path_start)
@@ -255,7 +256,7 @@ class PurePursuitFollower:
         marker_text.pose = average_pose
         marker_text.scale.z = 0.6
         marker_text.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
-        marker_text.text = str(round(np.degrees(heading_error),1))
+        marker_text.text = str(round(math.degrees(heading_error),1))
         marker_array.markers.append(marker_text)
 
         self.pure_pursuit_markers_pub.publish(marker_array)
