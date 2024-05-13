@@ -143,7 +143,7 @@ class StanleyFollower:
                 return
 
             front_wheel_position = get_point_using_heading_and_distance(current_position, current_heading, self.wheel_base)
-            front_wheel_distance_from_path_start = path_linestring.project(front_wheel_position)
+            front_wheel_distance_from_path_start = path_linestring.project(ShapelyPoint(front_wheel_position.x, front_wheel_position.y, front_wheel_position.z))
             front_wheel_on_path = path_linestring.interpolate(front_wheel_distance_from_path_start)
 
             cross_track_error = get_cross_track_error(front_wheel_position,
