@@ -6,14 +6,14 @@ import threading
 import traceback
 import numpy as np
 from scipy.interpolate import interp1d
-from shapely.geometry import LineString, Point as Point2d
+from shapely.geometry import LineString, Point as ShapelyPoint
 from shapely import prepare
 
-from helpers.geometry import get_heading_from_orientation, get_heading_between_two_points, normalize_heading_error, get_point_using_heading_and_distance_2d, get_cross_track_error
+from helpers.geometry import get_heading_from_orientation, get_heading_between_two_points, normalize_heading_error, get_point_using_heading_and_distance, get_cross_track_error
 from helpers.waypoints import get_blinker_state_with_lookahead
 
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point as Point3d
+from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
 from std_msgs.msg import ColorRGBA, Float32MultiArray
 from autoware_msgs.msg import Lane, VehicleCmd
 
@@ -116,7 +116,7 @@ class StanleyFollower:
                 self.publish_vehicle_command(stamp)
                 return
 
-            current_position = Point2d(current_pose_msg.pose.position.x, current_pose_msg.pose.position.y)
+            current_position = Point(current_pose_msg.pose.position.x, current_pose_msg.pose.position.y, current_pose_msg.pose.position.z)
             current_velocity = current_velocity_msg.twist.linear.x
             current_heading = get_heading_from_orientation(current_pose_msg.pose.orientation)
 
@@ -133,7 +133,7 @@ class StanleyFollower:
                 current_position.x = x_new
                 current_position.y = y_new
 
-            d_ego_from_path_start = path_linestring.project(current_position)
+            d_ego_from_path_start = path_linestring.project(ShapelyPoint(current_position.x, current_position.y))
 
             # if "waypoint planner" is used and no global and local planner involved
             if d_ego_from_path_start >= path_linestring.length:
@@ -141,7 +141,7 @@ class StanleyFollower:
                 rospy.logwarn_throttle(10, "%s - end of path reached", rospy.get_name())
                 return
 
-            front_wheel_position = get_point_using_heading_and_distance_2d(current_position, current_heading, self.wheel_base)
+            front_wheel_position = get_point_using_heading_and_distance(current_position, current_heading, self.wheel_base)
             d_front_wheel_from_path_start = path_linestring.project(front_wheel_position)
             front_wheel_on_path = path_linestring.interpolate(d_front_wheel_from_path_start)
 
@@ -195,10 +195,10 @@ class StanleyFollower:
             self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker, emergency)
             if self.publish_debug_info:
                 # convert shapely 2d points to geometry_msg/Point
-                lookback_on_path_3d = Point3d(x=lookback_on_path.x, y=lookback_on_path.y, z=current_pose_msg.pose.position.z)
-                lookahead_on_path_3d = Point3d(x=lookahead_on_path.x, y=lookahead_on_path.y, z=current_pose_msg.pose.position.z)
-                front_wheel_on_path_3d = Point3d(x=front_wheel_on_path.x, y=front_wheel_on_path.y, z=current_pose_msg.pose.position.z)
-                front_wheel_position_3d = Point3d(x=front_wheel_position.x, y=front_wheel_position.y, z=current_pose_msg.pose.position.z)
+                lookback_on_path_3d = Point(x=lookback_on_path.x, y=lookback_on_path.y, z=current_pose_msg.pose.position.z)
+                lookahead_on_path_3d = Point(x=lookahead_on_path.x, y=lookahead_on_path.y, z=current_pose_msg.pose.position.z)
+                front_wheel_on_path_3d = Point(x=front_wheel_on_path.x, y=front_wheel_on_path.y, z=current_pose_msg.pose.position.z)
+                front_wheel_position_3d = Point(x=front_wheel_position.x, y=front_wheel_position.y, z=current_pose_msg.pose.position.z)
 
                 self.publish_stanley_markers(stamp, lookback_on_path_3d, lookahead_on_path_3d, front_wheel_on_path_3d, front_wheel_position_3d, heading_error)
                 self.follower_debug_pub.publish(Float32MultiArray(data=[(rospy.get_time() - start_time), current_heading, track_heading, heading_error, cross_track_error, target_velocity]))

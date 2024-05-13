@@ -6,14 +6,14 @@ import threading
 import traceback
 import numpy as np
 from scipy.interpolate import interp1d
-from shapely.geometry import LineString, Point as Point2d
+from shapely.geometry import LineString, Point as ShapelyPoint
 from shapely import prepare, distance
 
 from helpers.geometry import get_heading_from_orientation, normalize_heading_error, get_heading_from_orientation, get_cross_track_error
 from helpers.waypoints import get_blinker_state_with_lookahead
 
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point as Point3d
+from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
 from std_msgs.msg import ColorRGBA, Float32MultiArray
 from autoware_msgs.msg import Lane, VehicleCmd
 
@@ -115,7 +115,7 @@ class PurePursuitFollower:
                 self.publish_vehicle_command(stamp)
                 return
 
-            current_position = Point2d(current_pose_msg.pose.position.x, current_pose_msg.pose.position.y)
+            current_position = ShapelyPoint(current_pose_msg.pose.position.x, current_pose_msg.pose.position.y)
             current_orientation = current_pose_msg.pose.orientation
             current_velocity = current_velocity_msg.twist.linear.x
 
@@ -199,7 +199,7 @@ class PurePursuitFollower:
             self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker, emergency)
             if self.publish_debug_info:
                 # convert lookahead_point from shpely 2d point to geometry_msg/Point
-                lookahead_point = Point3d(x=lookahead_point.x, y=lookahead_point.y, z=current_pose_msg.pose.position.z)
+                lookahead_point = Point(x=lookahead_point.x, y=lookahead_point.y, z=current_pose_msg.pose.position.z)
                 self.publish_pure_pursuit_markers(stamp, current_pose_msg.pose, lookahead_point, heading_angle_difference)
                 self.follower_debug_pub.publish(Float32MultiArray(data=[1.0 / (rospy.get_time() - start_time), ego_heading, lookahead_heading, heading_angle_difference, cross_track_error, target_velocity]))
 

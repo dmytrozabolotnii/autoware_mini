@@ -1,7 +1,6 @@
 import math
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import Point, Quaternion
-from shapely import Point as Point2d
 
 
 def get_heading_from_orientation(orientation):
@@ -54,19 +53,19 @@ def get_cross_track_error(ego_pos, pos1, pos2):
 
     return numerator / denominator
 
-def get_point_using_heading_and_distance_2d(start_point, heading, distance):
+def get_point_using_heading_and_distance(start_point, heading, distance):
     """
     Get point from given point and extrapolating it using heading and distance
-    :param start_point: Point2d (shapley point)
+    :param start_point: Point
     :param heading: heading in radians
     :param distance: distance in meters
-    :return: Point2d
+    :return: Point
     """
 
     x = start_point.x + distance * math.cos(heading)
     y = start_point.y + distance * math.sin(heading)
 
-    return Point2d(x, y)
+    return Point(x=x, y=y, z=start_point.z)
 
 def normalize_heading_error(err):
     """
