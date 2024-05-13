@@ -10,7 +10,7 @@ from scipy.interpolate import interp1d
 from shapely.geometry import LineString, Point as ShapelyPoint
 from shapely import prepare, distance
 
-from helpers.geometry import get_heading_from_orientation, normalize_heading_error, get_cross_track_error
+from helpers.geometry import get_heading_from_orientation, normalize_heading_error, get_cross_track_error, get_heading_between_two_points
 from helpers.waypoints import get_blinker_state_with_lookahead
 
 from visualization_msgs.msg import MarkerArray, Marker
@@ -117,16 +117,15 @@ class PurePursuitFollower:
                 return
 
             current_position = ShapelyPoint(current_pose_msg.pose.position.x, current_pose_msg.pose.position.y)
-            current_orientation = current_pose_msg.pose.orientation
+            current_heading = get_heading_from_orientation(current_pose_msg.pose.orientation)
             current_velocity = current_velocity_msg.twist.linear.x
 
             # simulate delay in vehicle command. Project car into future location and use it to calculate current steering command
             if self.simulate_cmd_delay > 0.0:
 
                 # extract heading angle from orientation
-                heading_angle = get_heading_from_orientation(current_orientation)
-                x_dot = current_velocity * math.cos(heading_angle)
-                y_dot = current_velocity * math.sin(heading_angle)
+                x_dot = current_velocity * math.cos(current_heading)
+                y_dot = current_velocity * math.sin(current_heading)
 
                 x_new = current_position.x + x_dot * self.simulate_cmd_delay
                 y_new = current_position.y + y_dot * self.simulate_cmd_delay
@@ -134,10 +133,10 @@ class PurePursuitFollower:
                 current_position.x = x_new
                 current_position.y = y_new
 
-            d_ego_from_path_start = path_linestring.project(current_position)
+            ego_distance_from_path_start = path_linestring.project(current_position)
 
             # if "waypoint planner" is used and no global and local planner involved
-            if d_ego_from_path_start >= path_linestring.length:
+            if ego_distance_from_path_start >= path_linestring.length:
                 self.publish_vehicle_command(stamp)
                 rospy.logwarn_throttle(10, "%s - end of path reached", rospy.get_name())
                 return
@@ -146,18 +145,17 @@ class PurePursuitFollower:
             lookahead_distance = max(lookahead_distance, self.min_lookahead_distance)
 
             # find lookahead_point on path
-            lookahead_point = path_linestring.interpolate(d_ego_from_path_start + lookahead_distance)
-            d_ego_to_lookahead_point = distance(current_position, lookahead_point)
+            lookahead_point = path_linestring.interpolate(ego_distance_from_path_start + lookahead_distance)
+            ego_distance_to_lookahead_point = distance(current_position, lookahead_point)
 
             # heading from quaternion in current pose orientation
-            ego_heading = get_heading_from_orientation(current_orientation)
-            lookahead_heading = np.arctan2(lookahead_point.y - current_position.y, lookahead_point.x - current_position.x)
-            heading_differenece = lookahead_heading - ego_heading
+            lookahead_heading = get_heading_between_two_points(current_position, lookahead_point)
+            heading_differenece = lookahead_heading - current_heading
 
             heading_angle_difference = normalize_heading_error(heading_differenece)
             cross_track_error = get_cross_track_error(current_position,
-                                                      path_linestring.interpolate(d_ego_from_path_start - 0.1),
-                                                      path_linestring.interpolate(d_ego_from_path_start + 0.1))
+                                                      path_linestring.interpolate(ego_distance_from_path_start - 0.1),
+                                                      path_linestring.interpolate(ego_distance_from_path_start + 0.1))
 
             if abs(cross_track_error) > self.lateral_error_limit or abs(math.degrees(heading_angle_difference)) > self.heading_angle_limit:
                 # stop vehicle if cross track error or heading angle difference is over limit
@@ -166,11 +164,11 @@ class PurePursuitFollower:
                 return
 
             # calculate curvature and steering angle
-            curvature = 2 * math.sin(heading_differenece) / d_ego_to_lookahead_point
+            curvature = 2 * math.sin(heading_differenece) / ego_distance_to_lookahead_point
             steering_angle = math.atan(self.wheel_base * curvature)
 
             # find velocity at current position
-            target_velocity = distance_to_velocity_interpolator(d_ego_from_path_start)
+            target_velocity = distance_to_velocity_interpolator(ego_distance_from_path_start)
             if target_velocity < self.stopping_speed_limit:
                 target_velocity = 0.0
 
@@ -178,7 +176,7 @@ class PurePursuitFollower:
             emergency = 0
             if stopping_point_distance > 0.0 and target_velocity < current_velocity:
                 # calculate distance from car front to stopping point
-                car_front_to_stopping_point = stopping_point_distance - d_ego_from_path_start - self.current_pose_to_car_front
+                car_front_to_stopping_point = stopping_point_distance - ego_distance_from_path_start - self.current_pose_to_car_front
                 if car_front_to_stopping_point > 0:
                     # always allow minimum deceleration, to be able to adapt to map speeds
                     acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / car_front_to_stopping_point, -self.default_deceleration)
@@ -193,8 +191,8 @@ class PurePursuitFollower:
                 else:
                     acceleration = -self.default_deceleration
 
-            blinker_lookahead_d = max(self.blinker_lookahead_distance, self.blinker_lookahead_time * current_velocity)
-            left_blinker, right_blinker = get_blinker_state_with_lookahead(distance_to_blinker_interpolator, d_ego_from_path_start, blinker_lookahead_d)
+            blinker_lookahead_distance = max(self.blinker_lookahead_distance, self.blinker_lookahead_time * current_velocity)
+            left_blinker, right_blinker = get_blinker_state_with_lookahead(distance_to_blinker_interpolator, ego_distance_from_path_start, blinker_lookahead_distance)
 
             # Publish
             self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker, emergency)
@@ -202,7 +200,7 @@ class PurePursuitFollower:
                 # convert lookahead_point from shpely 2d point to geometry_msg/Point
                 lookahead_point = Point(x=lookahead_point.x, y=lookahead_point.y, z=current_pose_msg.pose.position.z)
                 self.publish_pure_pursuit_markers(stamp, current_pose_msg.pose, lookahead_point, heading_angle_difference)
-                self.follower_debug_pub.publish(Float32MultiArray(data=[1.0 / (rospy.get_time() - start_time), ego_heading, lookahead_heading, heading_angle_difference, cross_track_error, target_velocity]))
+                self.follower_debug_pub.publish(Float32MultiArray(data=[1.0 / (rospy.get_time() - start_time), current_heading, lookahead_heading, heading_angle_difference, cross_track_error, target_velocity]))
 
         except Exception as e:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())

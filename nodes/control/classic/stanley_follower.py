@@ -134,24 +134,24 @@ class StanleyFollower:
                 current_position.x = x_new
                 current_position.y = y_new
 
-            d_ego_from_path_start = path_linestring.project(ShapelyPoint(current_position.x, current_position.y))
+            ego_distance_from_path_start = path_linestring.project(ShapelyPoint(current_position.x, current_position.y))
 
             # if "waypoint planner" is used and no global and local planner involved
-            if d_ego_from_path_start >= path_linestring.length:
+            if ego_distance_from_path_start >= path_linestring.length:
                 self.publish_vehicle_command(stamp)
                 rospy.logwarn_throttle(10, "%s - end of path reached", rospy.get_name())
                 return
 
             front_wheel_position = get_point_using_heading_and_distance(current_position, current_heading, self.wheel_base)
-            d_front_wheel_from_path_start = path_linestring.project(front_wheel_position)
-            front_wheel_on_path = path_linestring.interpolate(d_front_wheel_from_path_start)
+            front_wheel_distance_from_path_start = path_linestring.project(front_wheel_position)
+            front_wheel_on_path = path_linestring.interpolate(front_wheel_distance_from_path_start)
 
             cross_track_error = get_cross_track_error(front_wheel_position,
-                                                      path_linestring.interpolate(d_front_wheel_from_path_start - 0.1),
-                                                      path_linestring.interpolate(d_front_wheel_from_path_start + 0.1))
+                                                      path_linestring.interpolate(front_wheel_distance_from_path_start - 0.1),
+                                                      path_linestring.interpolate(front_wheel_distance_from_path_start + 0.1))
 
-            lookahead_on_path = path_linestring.interpolate(d_front_wheel_from_path_start + self.wheel_base/2)
-            lookback_on_path = path_linestring.interpolate(max(0, d_front_wheel_from_path_start - self.wheel_base/2))
+            lookahead_on_path = path_linestring.interpolate(front_wheel_distance_from_path_start + self.wheel_base/2)
+            lookback_on_path = path_linestring.interpolate(max(0, front_wheel_distance_from_path_start - self.wheel_base/2))
             track_heading = get_heading_between_two_points(lookback_on_path, lookahead_on_path)
             heading_error = normalize_heading_error(track_heading - current_heading)
 
@@ -166,7 +166,7 @@ class StanleyFollower:
             steering_angle = heading_error + delta_error
 
             # find velocity at current position
-            target_velocity = distance_to_velocity_interpolator(d_ego_from_path_start)
+            target_velocity = distance_to_velocity_interpolator(ego_distance_from_path_start)
             if target_velocity < self.stopping_speed_limit:
                 target_velocity = 0.0
 
@@ -174,7 +174,7 @@ class StanleyFollower:
             emergency = 0
             if stopping_point_distance > 0.0 and target_velocity < current_velocity:
                 # calculate distance from car front to stopping point
-                car_front_to_stopping_point = stopping_point_distance - d_ego_from_path_start - self.current_pose_to_car_front
+                car_front_to_stopping_point = stopping_point_distance - ego_distance_from_path_start - self.current_pose_to_car_front
                 if car_front_to_stopping_point > 0:
                     # always allow minimum deceleration, to be able to adapt to map speeds
                     acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / car_front_to_stopping_point, -self.default_deceleration)
@@ -189,8 +189,8 @@ class StanleyFollower:
                 else:
                     acceleration = -self.default_deceleration
 
-            blinker_lookahead_d = max(self.blinker_lookahead_distance, self.blinker_lookahead_time * current_velocity)
-            left_blinker, right_blinker = get_blinker_state_with_lookahead(distance_to_blinker_interpolator, d_ego_from_path_start, blinker_lookahead_d)
+            blinker_lookahead_distance = max(self.blinker_lookahead_distance, self.blinker_lookahead_time * current_velocity)
+            left_blinker, right_blinker = get_blinker_state_with_lookahead(distance_to_blinker_interpolator, ego_distance_from_path_start, blinker_lookahead_distance)
 
             # Publish
             self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker, emergency)
