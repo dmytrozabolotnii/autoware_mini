@@ -86,10 +86,6 @@ class Lanelet2GlobalPlanner:
             rospy.logwarn("%s - current_speed not available", rospy.get_name())
             return
 
-        if self.lanelet2_map == None:
-            rospy.logwarn("%s - lanelet2 map not available", rospy.get_name())
-            return
-
         # if there is already a goal, use it as start point
         start_point = self.goal_point if self.goal_point else self.current_location
         new_goal = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
