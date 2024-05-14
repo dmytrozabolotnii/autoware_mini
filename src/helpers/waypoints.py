@@ -1,7 +1,7 @@
 import math
 from autoware_msgs.msg import WaypointState
 from geometry_msgs.msg import Point
-from helpers.geometry import get_distance_between_two_points_2d, get_angle_three_points_2d, get_heading_between_two_points, get_orientation_from_heading, get_closest_point_on_line
+from helpers.geometry import get_distance_between_two_points_2d, get_heading_between_two_points, get_orientation_from_heading
 
 def get_blinker_state(steering_state):
     """
@@ -85,33 +85,6 @@ def interpolate_velocity_between_waypoints(point, backward_wp, forward_wp):
     forward_wp_vel = forward_wp.twist.twist.linear.x * distance_to_backward_wp / (distance_to_backward_wp + distance_to_forward_wp)
 
     return backward_wp_vel + forward_wp_vel
-
-def get_closest_point_on_path(waypoints, closest_idx, origin_point):
-    """
-    Project origin_point onto the path. First decide weather to use backward or forward waypointand then call
-    get_closest_point_on_line function to get the closest point on path.
-    :param waypoints: list of waypoints
-    :param closest_idx: index of the closest waypoint
-    :param origin_point: Point - origin point
-    :return: Point - closest point on path
-    """
-
-    #initialize angles
-    backward_angle = 0
-    forward_angle = 0
-
-    if closest_idx > 0:
-        backward_angle = abs(get_angle_three_points_2d(waypoints[closest_idx - 1].pose.pose.position, origin_point, waypoints[closest_idx].pose.pose.position))
-    if closest_idx < len(waypoints) - 1:
-        forward_angle = abs(get_angle_three_points_2d(waypoints[closest_idx].pose.pose.position, origin_point, waypoints[closest_idx + 1].pose.pose.position))
-
-    # if backward angle is bigger then project point to the backward section
-    if backward_angle > forward_angle:
-        closest_idx -= 1
-
-    origin_position = Point(x = origin_point.x, y = origin_point.y, z = waypoints[closest_idx].pose.pose.position.z)
-    point = get_closest_point_on_line(origin_position, waypoints[closest_idx].pose.pose.position, waypoints[closest_idx + 1].pose.pose.position)
-    return point
 
 def get_point_and_orientation_on_path_within_distance(waypoints, front_wp_idx, start_point, distance):
     """
