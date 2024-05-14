@@ -97,7 +97,7 @@ class Lanelet2GlobalPlanner:
 
         route = self.graph.getRoute(start_lanelet, goal_lanelet, 0, self.lane_change)
         if route == None:
-            rospy.logwarn("%s - no route found, try new goal!", rospy.get_name())
+            rospy.logerr("%s - no route found, try new goal!", rospy.get_name())
             return
 
         path = route.shortestPath()
@@ -116,15 +116,15 @@ class Lanelet2GlobalPlanner:
         new_goal_on_path = waypoint_linestring.interpolate(new_goal_point_distance)
 
         if distance(BasicPoint2d(start_on_path.x, start_on_path.y), start_point) > self.distance_to_centerline_limit:
-            rospy.logwarn("%s - start point too far from centerline", rospy.get_name())
+            rospy.logerr("%s - start point too far from centerline", rospy.get_name())
             return
 
         if distance(BasicPoint2d(new_goal_on_path.x, new_goal_on_path.y), new_goal) > self.distance_to_centerline_limit:
-            rospy.logwarn("%s - goal point too far from centerline", rospy.get_name())
+            rospy.logerr("%s - goal point too far from centerline", rospy.get_name())
             return
 
-        index_start = np.argmax(waypoint_distances >= start_point_distance)
-        index_goal = np.argmax(waypoint_distances >= new_goal_point_distance)
+        index_start = np.searchsorted(waypoint_distances, start_point_distance, side='right')
+        index_goal = np.searchsorted(waypoint_distances, new_goal_point_distance, side='left')
 
         # create new start and goal waypoints using deepcopy and index
         start_wp = copy.deepcopy(waypoints[index_start])
@@ -155,7 +155,7 @@ class Lanelet2GlobalPlanner:
                 self.waypoints = []
                 self.goal_point = None
                 self.publish_waypoints(self.waypoints)
-                rospy.logwarn("%s - goal reached, clearing path!", rospy.get_name())
+                rospy.loginfo("%s - goal reached, clearing path!", rospy.get_name())
 
     def current_velocity_callback(self, msg):
         self.current_speed = msg.twist.linear.x
@@ -164,7 +164,7 @@ class Lanelet2GlobalPlanner:
         self.waypoints = []
         self.goal_point = None
         self.publish_waypoints(self.waypoints)
-        rospy.logwarn("%s - route cancelled!", rospy.get_name())
+        rospy.loginfo("%s - route cancelled!", rospy.get_name())
         return EmptyResponse()
 
     def convert_to_waypoints(self, lanelet_sequence):
