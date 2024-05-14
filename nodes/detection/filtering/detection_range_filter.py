@@ -42,7 +42,6 @@ class DetectionRangeFilter:
 
         for obj in msg.objects:
             for point in obj.convex_hull.polygon.points:
-                point = Point(point.x, point.y, point.z)
                 distance = get_distance_between_two_points_2d(car_front, point)
                 if distance < self.detection_range:
                     objects.objects.append(obj)
