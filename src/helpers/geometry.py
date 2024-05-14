@@ -147,25 +147,6 @@ def get_distance_between_two_points_2d(p1, p2):
 
     return math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
 
-def get_angle_three_points_2d(point1, point2, point3):
-    """
-    Get angle between three points in 2D, point 2 is the center point.
-    :param point1: Point
-    :param point2: Point
-    :param point3: Point
-    :return: angle
-    """
-
-    v1x = point1.x - point2.x
-    v1y = point1.y - point2.y
-    v2x = point3.x - point2.x
-    v2y = point3.y - point2.y
-    dot = v1x * v2x + v1y * v2y
-    cross = v1x * v2y - v1y * v2x
-    angle = math.atan2(cross, dot)
-
-    return angle
-
 def get_vector_norm_3d(vec):
     """
     Get norm of 3d vector
