@@ -19,7 +19,7 @@ def get_blinker_state(steering_state):
     else:
         return 0, 0
     
-def get_blinker_state_with_lookahead(distance_to_blinker_interpolator, ego_distance_from_path_start, blinker_lookahead_d):
+def get_blinker_state_with_lookahead(distance_to_blinker_interpolator, ego_distance_from_path_start, blinker_lookahead_distance):
     """
     Get blinker state. 
     :param distance_to_blinker_interpolator: interpolator containing autoware_msg/WaypointState
@@ -33,7 +33,7 @@ def get_blinker_state_with_lookahead(distance_to_blinker_interpolator, ego_dista
     if current_pose_blinker_state != WaypointState.STR_STRAIGHT:
         return get_blinker_state(current_pose_blinker_state)
     else:
-        lookahead_blinker_state = int(distance_to_blinker_interpolator(blinker_lookahead_d))
+        lookahead_blinker_state = int(distance_to_blinker_interpolator(blinker_lookahead_distance))
         return get_blinker_state(lookahead_blinker_state)
 
 

@@ -27,7 +27,7 @@ class StanleyFollower:
         self.heading_angle_limit = rospy.get_param("heading_angle_limit")
         self.lateral_error_limit = rospy.get_param("lateral_error_limit")
         self.blinker_lookahead_time = rospy.get_param("blinker_lookahead_time")
-        self.blinker_lookahead_distance = rospy.get_param("blinker_lookahead_distance")
+        self.blinker_min_lookahead_distance = rospy.get_param("blinker_min_lookahead_distance")
         self.publish_debug_info = rospy.get_param("~publish_debug_info")
         self.default_acceleration = rospy.get_param("/planning/default_acceleration")
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
@@ -117,7 +117,7 @@ class StanleyFollower:
                 self.publish_vehicle_command(stamp)
                 return
 
-            current_position = Point(current_pose_msg.pose.position.x, current_pose_msg.pose.position.y, current_pose_msg.pose.position.z)
+            current_position = current_pose_msg.pose.position
             current_velocity = current_velocity_msg.twist.linear.x
             current_heading = get_heading_from_orientation(current_pose_msg.pose.orientation)
 
@@ -150,8 +150,8 @@ class StanleyFollower:
                                                       path_linestring.interpolate(front_wheel_distance_from_path_start - 0.1),
                                                       path_linestring.interpolate(front_wheel_distance_from_path_start + 0.1))
 
-            lookahead_on_path = path_linestring.interpolate(front_wheel_distance_from_path_start + self.wheel_base/2)
-            lookback_on_path = path_linestring.interpolate(max(0, front_wheel_distance_from_path_start - self.wheel_base/2))
+            lookahead_on_path = path_linestring.interpolate(front_wheel_distance_from_path_start + self.wheel_base/10)
+            lookback_on_path = path_linestring.interpolate(max(0, front_wheel_distance_from_path_start - self.wheel_base/10))
             track_heading = get_heading_between_two_points(lookback_on_path, lookahead_on_path)
             heading_error = normalize_heading_error(track_heading - current_heading)
 
@@ -189,7 +189,7 @@ class StanleyFollower:
                 else:
                     acceleration = -self.default_deceleration
 
-            blinker_lookahead_distance = max(self.blinker_lookahead_distance, self.blinker_lookahead_time * current_velocity)
+            blinker_lookahead_distance = max(self.blinker_min_lookahead_distance, self.blinker_lookahead_time * current_velocity)
             left_blinker, right_blinker = get_blinker_state_with_lookahead(distance_to_blinker_interpolator, ego_distance_from_path_start, blinker_lookahead_distance)
 
             # Publish
