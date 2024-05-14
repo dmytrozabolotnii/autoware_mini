@@ -133,8 +133,8 @@ class PurePursuitFollower:
                 current_position.x = x_new
                 current_position.y = y_new
 
-            current_location = ShapelyPoint(current_position.x, current_position.y)
-            ego_distance_from_path_start = path_linestring.project(current_location)
+            current_position_shapely = ShapelyPoint(current_position.x, current_position.y)
+            ego_distance_from_path_start = path_linestring.project(current_position_shapely)
 
             # if "waypoint planner" is used and no global and local planner involved
             if ego_distance_from_path_start >= path_linestring.length:
@@ -147,14 +147,14 @@ class PurePursuitFollower:
 
             # find lookahead_point on path
             lookahead_point = path_linestring.interpolate(ego_distance_from_path_start + lookahead_distance)
-            ego_distance_to_lookahead_point = distance(current_location, lookahead_point)
+            ego_distance_to_lookahead_point = distance(current_position_shapely, lookahead_point)
 
             # heading from quaternion in current pose orientation
-            lookahead_heading = get_heading_between_two_points(current_location, lookahead_point)
+            lookahead_heading = get_heading_between_two_points(current_position, lookahead_point)
             heading_differenece = lookahead_heading - current_heading
 
             heading_angle_difference = normalize_heading_error(heading_differenece)
-            cross_track_error = get_cross_track_error(current_location,
+            cross_track_error = get_cross_track_error(current_position,
                                                       path_linestring.interpolate(ego_distance_from_path_start - 0.1),
                                                       path_linestring.interpolate(ego_distance_from_path_start + 0.1))
 
