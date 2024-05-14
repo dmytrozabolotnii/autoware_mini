@@ -22,6 +22,7 @@
     <arg name="use_control"             default="true"          doc="replace control topics"/>
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
     <arg name="more_visualizations"     default="true"          doc="When debugging a bag, visualize everything by default" />
+    <arg name="bag_delay"               default="6"             doc="Delay before starting to publish messages" />
     <arg name="record_bag"              default=""              doc="Name of the bag to record" />
     <arg name="record_topics"           default="(/detection/detected_objects|/detection/traffic_light_status|/localization/current_pose|/localization/current_velocity|/tf)" doc="Regexp of the topics to record, 'all' to record all" />
     <arg name="record_topics_option"    default="$(eval '--all' if record_topics == 'all' else '--regex ' + record_topics if record_topics != '' else '')" doc="rosbag record parameter" />
@@ -38,7 +39,7 @@
 
     <!-- Play back bag -->
     <node pkg="rosbag" type="play" name="player" required="true" output="screen"
-            args="$(find autoware_mini)/data/bags/$(arg bag_file) --clock --queue=1 $(arg loop_option) $(arg start_option) $(arg duration_option)">
+            args="$(find autoware_mini)/data/bags/$(arg bag_file) --clock --queue=1 --delay $(arg bag_delay) $(arg loop_option) $(arg start_option) $(arg duration_option)">
         <!-- Rename saved topics that are replaced by current ones -->
         <remap from="/tf" to="/bag/tf" if="$(arg use_tf)"/>
         <remap from="/tf_static" to="/bag/tf_static" if="$(arg use_tf)"/>
