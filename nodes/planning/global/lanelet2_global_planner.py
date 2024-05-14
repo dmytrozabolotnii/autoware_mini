@@ -136,7 +136,7 @@ class Lanelet2GlobalPlanner:
         self.waypoints += [start_wp] + waypoints[index_start : index_goal] + [goal_wp]
 
         if start_lanelet.id == goal_lanelet.id and index_start > index_goal:
-            rospy.logwarn("%s - goal point can't be on the same lanelet before start point", rospy.get_name())
+            rospy.logerr("%s - goal point can't be on the same lanelet before start point", rospy.get_name())
             return
 
         # update goal point and add new waypoints to the existing ones
