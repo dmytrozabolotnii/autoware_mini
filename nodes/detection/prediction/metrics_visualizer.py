@@ -4,6 +4,7 @@ import numpy as np
 import rospy
 import threading
 import os, sys
+import os.path as osp
 import bisect
 from scipy.special import softmax
 
@@ -25,7 +26,7 @@ def calculate_fde(x, y):
     return ((x[-1, 0] - y[-1, 0]) ** 2 + (x[-1, 1] - y[-1, 1]) ** 2) ** 0.5
 
 
-def calculate_ade_grad(x, y, danger_zone=20.0):
+def calculate_ade_grad(x, y, danger_zone=5.0):
     distance_between_points = (np.linalg.norm(x - y))
 
     return np.sum(np.interp(distance_between_points, [danger_zone, danger_zone * 2], [1, 0]))
@@ -44,15 +45,22 @@ class MetricsVisualizer:
         self.metrics_timer_duration = rospy.get_param('inference_timer')
         self.skip_points = int(rospy.get_param('step_length') / rospy.get_param('inference_timer')) - 1
         self.pad_future = int(rospy.get_param('prediction_horizon'))
+        self.bagscenarioname = rospy.get_param('~bag_file')[:-4]
+        self.predictorname = rospy.get_param('~predictor')
+        self.csvfilename = osp.join(rospy.get_param('~data_path_prediction'), self.bagscenarioname + '_' + self.predictorname + '.csv')
 
+        self.result_log = []
         self.ade = rospy.Publisher('/dashboard/ade', Float32, queue_size=1)
         self.fde = rospy.Publisher('/dashboard/fde', Float32, queue_size=1)
         self.aware_ade = rospy.Publisher('/dashboard/aware_ade', Float32, queue_size=1)
         self.aware_fde = rospy.Publisher('/dashboard/aware_fde', Float32, queue_size=1)
 
-
         self.sub = rospy.Subscriber('predicted_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         self.local_path_sub = rospy.Subscriber('/planning/local_path', Lane, self.local_path_callback, queue_size=1)
+        rospy.on_shutdown(self.shutdown)
+        with open(self.csvfilename, 'w') as file:
+            file.write('stamp,ade,fde,aware_ade,n_ped')
+            file.write('\n')
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
@@ -61,6 +69,8 @@ class MetricsVisualizer:
             local_planned_local_path_cache = self.planned_local_path_cache
 
         ade_grad_list = []
+        header_stamp = detectedobjectsarray.header.stamp
+        n_ped = 0
         for detectedobject in detectedobjectsarray.objects:
             if detectedobject.label == 'pedestrian' and len(detectedobject.candidate_trajectories.lanes) > 0:
                 position = np.array([detectedobject.candidate_trajectories.lanes[0].waypoints[0].pose.pose.position.x,
@@ -101,6 +111,7 @@ class MetricsVisualizer:
                         prediction_we_can_check = (self.cache[_id].endpoints_count
                                                    - self.pad_future * (self.skip_points + 1) + 1)
                         if prediction_we_can_check > 0:
+                            n_ped += 1
                             # Obtain ground-truth trajectory
                             gt_trajectory = np.array(self.cache[_id].raw_trajectories[-1::-1 * (self.skip_points
                                                                                     + 1)][:self.pad_future][::-1])
@@ -177,6 +188,8 @@ class MetricsVisualizer:
         self.ade.publish(Float32(global_ade))
         self.fde.publish(Float32(global_fde))
         self.aware_ade.publish(Float32(global_aware_ade))
+        self.result_log.append(','.join([str(header_stamp),
+                                         str(global_ade), str(global_fde), str(global_aware_ade), str(n_ped)]))
 
     def local_path_callback(self, lane):
         # Calculate planned local path from the autoware message
@@ -202,6 +215,12 @@ class MetricsVisualizer:
                 self.planned_local_path_cache[lane.header.stamp] = expected_trajectory
 
         # print(self.planned_local_path_cache)
+
+    def shutdown(self):
+        with open(self.csvfilename, 'a') as file:
+            for line in self.result_log:
+                file.write(line)
+                file.write('\n')
 
     def run(self):
         rospy.spin()

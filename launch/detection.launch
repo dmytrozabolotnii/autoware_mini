@@ -10,6 +10,7 @@
     <arg name="predictor_backfill"  default="false"             doc="By default don't backfill object trajectories" />
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
+    <arg name="bag_file"            default=""                  doc="" />
 
     <group ns="detection">
 
@@ -24,6 +25,7 @@
             <arg name="predictor_backfill"  value="$(arg predictor_backfill)" />
             <arg name="more_visualizations" value="$(arg more_visualizations)" />
             <arg name="detection_range"     value="$(arg detection_range)" />
+            <arg name="bag_file"            value="$(arg bag_file)" />
         </include>
 
         <!-- Traffic light detection -->

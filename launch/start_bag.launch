@@ -116,6 +116,7 @@
         <arg name="predictor"           value="$(arg predictor)" />
         <arg name="more_visualizations" value="$(arg more_visualizations)" />
         <arg name="detection_range"     value="$(arg detection_range)" />
+        <arg name="bag_file"            value="$(arg bag_file)" />
     </include>
 
     <!-- Planning -->
