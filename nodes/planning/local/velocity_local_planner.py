@@ -14,7 +14,6 @@ from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3, Point
 from shapely.geometry import LineString, Point as ShapelyPoint
 from shapely import line_locate_point
 
-from helpers.geometry import get_closest_point_on_line, get_distance_between_two_points_2d
 from helpers.waypoints import get_two_nearest_waypoint_idx
 from helpers.transform import transform_vector3
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines

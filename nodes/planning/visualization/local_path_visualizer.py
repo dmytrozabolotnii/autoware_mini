@@ -6,8 +6,6 @@ from autoware_msgs.msg import Lane
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from helpers.waypoints import get_point_and_orientation_on_path_within_distance
-from helpers.geometry import get_distance_between_two_points_2d, get_closest_point_on_line
-from geometry_msgs.msg import PoseStamped
 
 class LocalPathVisualizer:
     def __init__(self):

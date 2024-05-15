@@ -83,60 +83,6 @@ def normalize_heading_error(err):
 
     return err
 
-def clamp(value, minimum, maximum):
-    """
-    Clamp value between minimum and maximum
-    :param value: value to be clamped
-    :param minimum: minimum value
-    :param maximum: maximum value
-    :return: clamped value
-    """
-
-    return max(minimum, min(value, maximum))
-
-def get_closest_point_on_line(ego_point, point1, point2, clamp_output=True):
-    """
-    Calculates closest point on path. Constructs one line that is given by two points and
-    the other line is given by a point and is known to be perpendicular to the first line.
-    Closest point is the intersection of these lines.
-    :param ego_point: Point
-    :param point1: Point
-    :param point2: Point
-    :return: Point 
-    """
-    # ego_pose (front wheel)
-    x_ego = ego_point.x
-    y_ego = ego_point.y
-    z = ego_point.z
-    # extract x and y from poses
-    x1 = point1.x
-    y1 = point1.y
-    x2 = point2.x
-    y2 = point2.y
-
-    # very small slope - almost horizontal line
-    if abs(y2 - y1) < 0.0001:
-        x = x_ego
-        y = y2
-    # infinite slope - almost vertical line
-    elif abs(x2 - x1) < 0.0001:
-        x = x2
-        y = y_ego
-    else:
-        # calculate slopes
-        m = (y2 - y1) / (x2 - x1)
-        m_perp = -1 / m
-        # calculate location on line - intersection point
-        x = (m * x1 - m_perp * x_ego + y_ego - y1) / (m - m_perp)
-        y = m * (x - x1) + y1
-
-    # clip output to be within the line segment
-    if clamp_output:
-        x = clamp(x, min(x1, x2), max(x1, x2))
-        y = clamp(y, min(y1, y2), max(y1, y2))
-
-    return Point(x=x, y=y, z=z)
-
 def get_distance_between_two_points_2d(p1, p2):
     """
     Get distance between two points
