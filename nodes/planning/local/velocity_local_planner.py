@@ -16,6 +16,7 @@ from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 
 from helpers.transform import transform_vector3
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines
+from helpers.geometry import get_distance_between_two_points_2d
 
 
 class VelocityLocalPlanner:
@@ -281,8 +282,7 @@ class VelocityLocalPlanner:
                     continue
 
                 if i > 0:
-                    distance_between_wp_cumulative += np.hypot(local_path_waypoints[i].pose.pose.position.x - local_path_waypoints[i-1].pose.pose.position.x, 
-                                                        local_path_waypoints[i].pose.pose.position.y - local_path_waypoints[i-1].pose.pose.position.y)
+                    distance_between_wp_cumulative += get_distance_between_two_points_2d(local_path_waypoints[i-1].pose.pose.position, local_path_waypoints[i].pose.pose.position)
                 target_distance_obj = closest_object_distance - object_braking_distances[min_value_index] - distance_between_wp_cumulative - self.braking_reaction_time * np.abs(closest_object_velocity)
                 target_velocity_obj = np.sqrt(np.maximum(0.0, np.maximum(0.0, closest_object_velocity)**2 + 2 * self.default_deceleration * target_distance_obj))
                 target_velocity_obj = min(target_velocity_obj, target_velocity)

@@ -91,7 +91,7 @@ def get_distance_between_two_points_2d(p1, p2):
     :return: distance
     """
 
-    return math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
+    return math.hypot(p2.x - p1.x, p2.y - p1.y)
 
 def get_vector_norm_3d(vec):
     """
