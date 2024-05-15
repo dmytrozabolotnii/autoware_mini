@@ -134,18 +134,19 @@ class VelocityLocalPlanner:
         current_speed = self.current_speed
 
         # if global path, current pose or current_speed is None, publish empty local path, which stops the vehicle
-        if global_path_linestring is None or global_path_waypoints is None or global_path_distances is None or distance_to_velocity_interpolator is None or current_position is None or current_speed is None or output_frame is None:
+        if global_path_waypoints is None or current_position is None or current_speed is None:
             self.publish_local_path_wp([], msg.header.stamp, output_frame)
             return
 
         # TODO how to avoid jumping from one place to another on path - just finding the closest point is dangerous!
         # Example of global path overlapping with itself or ego doing the 90deg turn and cutting the corner!
-        d_ego_from_path_start = global_path_linestring.project(current_position)
+        ego_distance_from_path_start = global_path_linestring.project(current_position)
         # Calculate the map speed at the current position as target velocity
-        target_velocity = float(distance_to_velocity_interpolator(d_ego_from_path_start))
+        # TODO possibly the command delay should be considered
+        target_velocity = float(distance_to_velocity_interpolator(ego_distance_from_path_start))
 
         # extract local path, if None is returned publish empty local path
-        local_path_linestring, local_path_waypoints = self.extract_local_path(global_path_linestring, global_path_waypoints, global_path_distances, d_ego_from_path_start, self.local_path_length)
+        local_path_linestring, local_path_waypoints = self.extract_local_path(global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_path_start, self.local_path_length)
         prepare(local_path_linestring)
         if local_path_linestring is None:
             self.publish_local_path_wp([], msg.header.stamp, self.output_frame)
@@ -233,11 +234,11 @@ class VelocityLocalPlanner:
             if stopline_ls.intersects(local_path_linestring):
                 intersection_point = local_path_linestring.intersection(stopline_ls)
                 # calc distance for all intersection points
-                d_to_stopline = local_path_linestring.project(Point2d(intersection_point.x, intersection_point.y))
-                deceleration = (current_speed**2) / (2 * d_to_stopline)
+                distance_to_stopline = local_path_linestring.project(Point2d(intersection_point.x, intersection_point.y))
+                deceleration = (current_speed**2) / (2 * distance_to_stopline)
                 # check if deceleration is within the limits
                 if 0 <= deceleration and deceleration <= self.tfl_maximum_deceleration:
-                    object_distances.append(d_to_stopline)
+                    object_distances.append(distance_to_stopline)
                     object_velocities.append(0)
                     object_braking_distances.append(self.braking_safety_distance_stopline)
                 else:
@@ -270,7 +271,7 @@ class VelocityLocalPlanner:
 
             # Recalculate target_velocity and overwrite in the waypoints
             zero_speeds_onwards = False
-            d_between_wp_cumulative = 0.0
+            distance_between_wp_cumulative = 0.0
             for i, wp in enumerate(local_path_waypoints):
 
                 # once we get zero speed, keep it that way
@@ -279,9 +280,9 @@ class VelocityLocalPlanner:
                     continue
 
                 if i > 0:
-                    d_between_wp_cumulative += np.hypot(local_path_waypoints[i].pose.pose.position.x - local_path_waypoints[i-1].pose.pose.position.x, 
+                    distance_between_wp_cumulative += np.hypot(local_path_waypoints[i].pose.pose.position.x - local_path_waypoints[i-1].pose.pose.position.x, 
                                                         local_path_waypoints[i].pose.pose.position.y - local_path_waypoints[i-1].pose.pose.position.y)
-                target_distance_obj = closest_object_distance - object_braking_distances[min_value_index] - d_between_wp_cumulative - self.braking_reaction_time * np.abs(closest_object_velocity)
+                target_distance_obj = closest_object_distance - object_braking_distances[min_value_index] - distance_between_wp_cumulative - self.braking_reaction_time * np.abs(closest_object_velocity)
                 target_velocity_obj = np.sqrt(np.maximum(0.0, np.maximum(0.0, closest_object_velocity)**2 + 2 * self.default_deceleration * target_distance_obj))
                 target_velocity_obj = min(target_velocity_obj, target_velocity)
 
@@ -315,15 +316,15 @@ class VelocityLocalPlanner:
         return width
 
 
-    def extract_local_path(self, global_path_linestring, global_path_waypoints, global_path_distances, d_ego_from_path_start, local_path_length):
+    def extract_local_path(self, global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_path_start, local_path_length):
 
         # current position is projected at the end of the global path - goal reached
-        if math.isclose(d_ego_from_path_start, global_path_linestring.length):
+        if math.isclose(ego_distance_from_path_start, global_path_linestring.length):
             return None, None
 
-        # find index where distances are higher than ego_d_on_global_path
-        index_start = max(np.argmax(global_path_distances >= d_ego_from_path_start) - 1, 0)
-        index_end = np.argmax(global_path_distances >= d_ego_from_path_start + local_path_length)
+        # find index where distances are higher than ego distance on global_path
+        index_start = max(np.argmax(global_path_distances >= ego_distance_from_path_start) - 1, 0)
+        index_end = np.argmax(global_path_distances >= ego_distance_from_path_start + local_path_length)
 
         # if end point of local_path is past the end of the global path (returns 0) then take index of last point
         if index_end == 0:
