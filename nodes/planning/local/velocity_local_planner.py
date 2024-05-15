@@ -238,7 +238,7 @@ class VelocityLocalPlanner:
                 distance_to_stopline = local_path_linestring.project(intersection_point)
                 deceleration = (current_speed**2) / (2 * distance_to_stopline)
                 # check if deceleration is within the limits
-                if 0 <= deceleration and deceleration <= self.tfl_maximum_deceleration:
+                if 0 <= deceleration <= self.tfl_maximum_deceleration:
                     object_distances.append(distance_to_stopline)
                     object_velocities.append(0)
                     object_braking_distances.append(self.braking_safety_distance_stopline)
