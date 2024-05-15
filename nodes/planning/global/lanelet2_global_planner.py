@@ -5,8 +5,8 @@ import copy
 import lanelet2
 import numpy as np
 from lanelet2.core import BasicPoint2d
-from lanelet2.geometry import to2D, findNearest, distance
-from shapely import LineString, Point as ShapelyPoint
+from lanelet2.geometry import to2D, findNearest, distance as lanelet2_distance
+from shapely import distance, LineString, Point as ShapelyPoint
 
 from geometry_msgs.msg import PoseStamped, TwistStamped, Point
 from autoware_msgs.msg import Lane, Waypoint, WaypointState
@@ -88,11 +88,11 @@ class Lanelet2GlobalPlanner:
 
         # if there is already a goal, use it as start point
         start_point = self.goal_point if self.goal_point else self.current_location
-        new_goal = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
+        new_goal = ShapelyPoint(msg.pose.position.x, msg.pose.position.y)
 
         # Get nearest lanelets
-        goal_lanelet = findNearest(self.lanelet2_map.laneletLayer, new_goal, 1)[0][1]
-        start_lanelet = findNearest(self.lanelet2_map.laneletLayer, start_point, 1)[0][1]
+        goal_lanelet = findNearest(self.lanelet2_map.laneletLayer, BasicPoint2d(new_goal.x, new_goal.y), 1)[0][1]
+        start_lanelet = findNearest(self.lanelet2_map.laneletLayer, BasicPoint2d(start_point.x, start_point.y), 1)[0][1]
         self.publish_target_lanelets(start_lanelet, goal_lanelet)
 
         route = self.graph.getRoute(start_lanelet, goal_lanelet, 0, self.lane_change)
@@ -109,17 +109,17 @@ class Lanelet2GlobalPlanner:
         waypoint_linestring = LineString(waypoints_xy)
 
         # Find distance to start and goal waypoints
-        start_point_distance = waypoint_linestring.project(ShapelyPoint(start_point.x, start_point.y))
-        new_goal_point_distance = waypoint_linestring.project(ShapelyPoint(new_goal.x, new_goal.y))
+        start_point_distance = waypoint_linestring.project(start_point)
+        new_goal_point_distance = waypoint_linestring.project(new_goal)
         # interpolate point coordinates
         start_on_path = waypoint_linestring.interpolate(start_point_distance)
         new_goal_on_path = waypoint_linestring.interpolate(new_goal_point_distance)
 
-        if distance(BasicPoint2d(start_on_path.x, start_on_path.y), start_point) > self.distance_to_centerline_limit:
+        if distance(start_on_path, start_point) > self.distance_to_centerline_limit:
             rospy.logerr("%s - start point too far from centerline", rospy.get_name())
             return
 
-        if distance(BasicPoint2d(new_goal_on_path.x, new_goal_on_path.y), new_goal) > self.distance_to_centerline_limit:
+        if distance(new_goal_on_path, new_goal) > self.distance_to_centerline_limit:
             rospy.logerr("%s - goal point too far from centerline", rospy.get_name())
             return
 
@@ -140,14 +140,14 @@ class Lanelet2GlobalPlanner:
         self.waypoints += [start_wp] + waypoints[index_start : index_goal] + [goal_wp]
 
         # update goal point and add new waypoints to the existing ones
-        self.goal_point = BasicPoint2d(goal_wp.pose.pose.position.x, goal_wp.pose.pose.position.y)
+        self.goal_point = ShapelyPoint(goal_wp.pose.pose.position.x, goal_wp.pose.pose.position.y, goal_wp.pose.pose.position.z)
 
         self.publish_waypoints(self.waypoints)
         rospy.loginfo("%s - path published", rospy.get_name())
 
 
     def current_pose_callback(self, msg):
-        self.current_location = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
+        self.current_location = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
         if self.goal_point != None:
             d = distance(self.current_location, self.goal_point)
@@ -207,8 +207,8 @@ class Lanelet2GlobalPlanner:
                 waypoint.wpstate.steering_state = blinker
                 waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
                 waypoint.twist.twist.linear.x = speed
-                waypoint.dtlane.lw = distance(point, lanelet.leftBound)
-                waypoint.dtlane.rw = distance(point, lanelet.rightBound)
+                waypoint.dtlane.lw = lanelet2_distance(point, lanelet.leftBound)
+                waypoint.dtlane.rw = lanelet2_distance(point, lanelet.rightBound)
 
                 waypoints.append(waypoint)
 
