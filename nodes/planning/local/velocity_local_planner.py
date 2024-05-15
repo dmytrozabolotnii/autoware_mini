@@ -17,6 +17,7 @@ from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from helpers.transform import transform_vector3
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines
 from helpers.geometry import get_distance_between_two_points_2d
+from helpers.shapely import convert_to_shapely_points_list
 
 
 class VelocityLocalPlanner:
@@ -183,10 +184,11 @@ class VelocityLocalPlanner:
             # chek if object polygon intersects with local path buffer
             if local_path_buffer.intersects(object_polygon):
                 local_path_blocked = True
-                intersection_points = object_polygon.intersection(local_path_buffer)
+                intersection_result = object_polygon.intersection(local_path_buffer)
+                intersection_points = convert_to_shapely_points_list(intersection_result)
 
                 # calc distance for all intersection points and take the minimum
-                object_distance = min([local_path_linestring.project(ShapelyPoint(coords)) for coords in intersection_points.exterior.coords[:-1]])
+                object_distance = min([local_path_linestring.project(point) for point in intersection_points])
 
                 # project object velocity to base_link frame to get longitudinal speed
                 # in case there is no transform assume the object is not moving
@@ -209,16 +211,11 @@ class VelocityLocalPlanner:
                 prepare(trajectory_buffer)
                 if local_path_buffer.intersects(trajectory_buffer):
                     local_path_blocked = True
-                    intersection_area = trajectory_buffer.intersection(local_path_buffer)
-                    if isinstance(intersection_area, MultiPolygon):
-                        polygons = list(intersection_area.geoms)
-                    else:
-                        polygons = [intersection_area]
+                    intersection_result = trajectory_buffer.intersection(local_path_buffer)
+                    intersection_points = convert_to_shapely_points_list(intersection_result)
 
-                    object_distance = np.inf
-                    for polygon in polygons:
-                        min_distance = min([local_path_linestring.project(ShapelyPoint(coords)) for coords in polygon.exterior.coords[:-1]])
-                        object_distance = min(object_distance, min_distance)
+                    # calc distance for all intersection points and take the minimum
+                    object_distance = min([local_path_linestring.project(point) for point in intersection_points])
 
                     if transform is not None:
                         velocity = transform_vector3(object.velocity.linear, transform)
