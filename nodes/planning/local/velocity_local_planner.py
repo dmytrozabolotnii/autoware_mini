@@ -312,12 +312,8 @@ class VelocityLocalPlanner:
             return None, None
 
         # find index where distances are higher than ego distance on global_path
-        index_start = max(np.argmax(global_path_distances >= ego_distance_from_path_start) - 1, 0)
-        index_end = np.argmax(global_path_distances >= ego_distance_from_path_start + local_path_length)
-
-        # if end point of local_path is past the end of the global path (returns 0) then take index of last point
-        if index_end == 0:
-            index_end = len(global_path_linestring.coords)
+        index_start = max(np.searchsorted(global_path_distances, ego_distance_from_path_start) - 1, 0)
+        index_end = np.searchsorted(global_path_distances, ego_distance_from_path_start + local_path_length)
 
         local_path_linestring = LineString(global_path_linestring.coords[index_start:index_end])
         # deepcopy only the necessary part (other parts are not changed and are shared with global path waypoints)
