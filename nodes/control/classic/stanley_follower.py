@@ -5,18 +5,18 @@ import math
 import message_filters
 import threading
 import traceback
-
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
+from scipy.interpolate import interp1d
+from shapely.geometry import LineString, Point as ShapelyPoint
+from shapely import prepare
 
-from helpers.geometry import get_heading_from_orientation, get_heading_between_two_points, normalize_heading_error, get_closest_point_on_line, get_cross_track_error, get_point_using_heading_and_distance, get_distance_between_two_points_2d
-from helpers.waypoints import get_blinker_state_with_lookahead, get_point_and_orientation_on_path_within_distance, interpolate_velocity_between_waypoints, get_two_nearest_waypoint_idx
+from helpers.geometry import get_heading_from_orientation, get_heading_between_two_points, normalize_heading_error, get_point_using_heading_and_distance, get_cross_track_error
+from helpers.waypoints import get_blinker_state_with_lookahead
 
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Pose, PoseStamped, TwistStamped
+from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
 from std_msgs.msg import ColorRGBA, Float32MultiArray
 from autoware_msgs.msg import Lane, VehicleCmd
-
 
 class StanleyFollower:
     def __init__(self):
@@ -27,10 +27,8 @@ class StanleyFollower:
         self.heading_angle_limit = rospy.get_param("heading_angle_limit")
         self.lateral_error_limit = rospy.get_param("lateral_error_limit")
         self.blinker_lookahead_time = rospy.get_param("blinker_lookahead_time")
-        self.blinker_lookahead_distance = rospy.get_param("blinker_lookahead_distance")
+        self.blinker_min_lookahead_distance = rospy.get_param("blinker_min_lookahead_distance")
         self.publish_debug_info = rospy.get_param("~publish_debug_info")
-        self.nearest_neighbor_search = rospy.get_param("~nearest_neighbor_search")
-        self.waypoint_interval = rospy.get_param("/planning/waypoint_interval")
         self.default_acceleration = rospy.get_param("/planning/default_acceleration")
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
         self.max_deceleration = rospy.get_param("/planning/max_deceleration")
@@ -39,9 +37,9 @@ class StanleyFollower:
         self.simulate_cmd_delay = rospy.get_param("~simulate_cmd_delay")
 
         # Variables - init
-        self.waypoint_tree = None
-        self.waypoints = None
-        self.closest_object_distance = 0.0
+        self.path_linestring = None
+        self.distance_to_velocity_interpolator = None
+        self.distance_to_blinker_interpolator = None
         self.closest_object_velocity = 0.0
         self.stopping_point_distance = 0.0
         self.lock = threading.Lock()
@@ -65,26 +63,38 @@ class StanleyFollower:
 
     def path_callback(self, path_msg):
 
-        if len(path_msg.waypoints) < 2:
+        if len(path_msg.waypoints) == 0:
             # if path is cancelled and empty waypoints received
             rospy.logwarn_throttle(30, "%s - no waypoints, stopping!", rospy.get_name())
-            with self.lock:
-                self.waypoint_tree = None
-                self.waypoints = None
-                self.closest_object_distance = 0.0
-                self.closest_object_velocity = 0.0
-                self.stopping_point_distance = 0.0
-            return
+            path_linestring = None
+            distance_to_velocity_interpolator = None
+            distance_to_blinker_interpolator = None
+            closest_object_velocity = 0.0
+            stopping_point_distance = 0.0
+        else:
+            waypoints_xy = np.array([(w.pose.pose.position.x, w.pose.pose.position.y) for w in path_msg.waypoints])
+            path_linestring = LineString(waypoints_xy)
+            prepare(path_linestring)
 
-        # prepare waypoints for nearest neighbor search
-        waypoints_xy = np.array([(w.pose.pose.position.x, w.pose.pose.position.y) for w in path_msg.waypoints])
-        waypoint_tree = NearestNeighbors(n_neighbors=1, algorithm=self.nearest_neighbor_search).fit(waypoints_xy)
+            # calculate distances between waypoints
+            distances = np.cumsum(np.sqrt(np.sum(np.diff(waypoints_xy, axis=0)**2, axis=1)))
+            # add 0 distance in the beginning
+            distances = np.insert(distances, 0, 0)
+            # extract velocity values at waypoints and create interpolator
+            velocities = np.array([w.twist.twist.linear.x for w in path_msg.waypoints])
+            distance_to_velocity_interpolator = interp1d(distances, velocities, kind='linear', bounds_error=False, fill_value=0.0)
+            blinkers = np.array([w.wpstate.steering_state for w in path_msg.waypoints])
+            distance_to_blinker_interpolator = interp1d(distances, blinkers, kind='previous', bounds_error=False, fill_value=3)
+
+            closest_object_velocity = path_msg.closest_object_velocity
+            stopping_point_distance = path_msg.cost
+
         with self.lock:
-            self.waypoint_tree = waypoint_tree
-            self.waypoints = path_msg.waypoints
-            self.closest_object_distance = path_msg.closest_object_distance
-            self.closest_object_velocity = path_msg.closest_object_velocity
-            self.stopping_point_distance = path_msg.cost
+            self.path_linestring = path_linestring
+            self.distance_to_velocity_interpolator = distance_to_velocity_interpolator
+            self.distance_to_blinker_interpolator = distance_to_blinker_interpolator
+            self.closest_object_velocity = closest_object_velocity
+            self.stopping_point_distance = stopping_point_distance
 
 
     def current_status_callback(self, current_pose_msg, current_velocity_msg):
@@ -95,55 +105,54 @@ class StanleyFollower:
                 start_time = rospy.get_time()
 
             with self.lock:
-                waypoints = self.waypoints
-                waypoint_tree = self.waypoint_tree
-                closest_object_distance = self.closest_object_distance
+                path_linestring = self.path_linestring
+                distance_to_velocity_interpolator = self.distance_to_velocity_interpolator
+                distance_to_blinker_interpolator = self.distance_to_blinker_interpolator
                 closest_object_velocity = self.closest_object_velocity
                 stopping_point_distance = self.stopping_point_distance
 
             stamp = current_pose_msg.header.stamp
-            if waypoint_tree is None:
-                # if no waypoints received yet or global_path cancelled, stop the vehicle
+
+            if path_linestring is None:
                 self.publish_vehicle_command(stamp)
                 return
 
-            current_pose = current_pose_msg.pose
+            current_position = current_pose_msg.pose.position
             current_velocity = current_velocity_msg.twist.linear.x
-            current_heading = get_heading_from_orientation(current_pose.orientation)
+            current_heading = get_heading_from_orientation(current_pose_msg.pose.orientation)
 
             # simulate delay in vehicle command. Project car into future location and use it to calculate current steering command
             if self.simulate_cmd_delay > 0.0:
 
                 # extract heading angle from orientation
-                heading_angle = get_heading_from_orientation(current_pose.orientation)
-                x_dot = current_velocity * math.cos(heading_angle)
-                y_dot = current_velocity * math.sin(heading_angle)
+                x_dot = current_velocity * math.cos(current_heading)
+                y_dot = current_velocity * math.sin(current_heading)
 
-                x_new = current_pose.position.x + x_dot * self.simulate_cmd_delay
-                y_new = current_pose.position.y + y_dot * self.simulate_cmd_delay
+                x_new = current_position.x + x_dot * self.simulate_cmd_delay
+                y_new = current_position.y + y_dot * self.simulate_cmd_delay
 
-                current_pose.position.x = x_new
-                current_pose.position.y = y_new
+                current_position.x = x_new
+                current_position.y = y_new
 
-            # Find pose for the front wheel and 2 closest waypoint idx (fw_)
-            front_wheel_position = get_point_using_heading_and_distance(current_pose.position, current_heading, self.wheel_base)
-            fw_back_wp_idx, fw_front_wp_idx = get_two_nearest_waypoint_idx(waypoint_tree, front_wheel_position.x, front_wheel_position.y)
-            cross_track_error = get_cross_track_error(front_wheel_position, waypoints[fw_back_wp_idx].pose.pose.position, waypoints[fw_front_wp_idx].pose.pose.position)
+            ego_distance_from_path_start = path_linestring.project(ShapelyPoint(current_position.x, current_position.y))
 
-            # get closest point to base_link on path (line defined by 2 closest waypoints) - (bl_)
-            bl_back_wp_idx, bl_front_wp_idx = get_two_nearest_waypoint_idx(waypoint_tree, current_pose.position.x, current_pose.position.y)
-
-            if bl_front_wp_idx == len(waypoints)-1:
-                # stop vehicle if last waypoint is reached
+            # if "waypoint planner" is used and no global and local planner involved
+            if ego_distance_from_path_start >= path_linestring.length:
                 self.publish_vehicle_command(stamp)
-                rospy.logwarn_throttle(10, "%s - last waypoint reached", rospy.get_name())
+                rospy.logwarn_throttle(10, "%s - end of path reached", rospy.get_name())
                 return
-        
-            bl_nearest_point = get_closest_point_on_line(current_pose.position, waypoints[bl_back_wp_idx].pose.pose.position, waypoints[bl_front_wp_idx].pose.pose.position)
-            ego_distance_from_path_start = get_distance_between_two_points_2d(waypoints[0].pose.pose.position, bl_nearest_point)
-            lookahead_point, _ = get_point_and_orientation_on_path_within_distance(waypoints, bl_front_wp_idx, bl_nearest_point, self.wheel_base)
 
-            track_heading = get_heading_between_two_points(bl_nearest_point, lookahead_point)
+            front_wheel_position = get_point_using_heading_and_distance(current_position, current_heading, self.wheel_base)
+            front_wheel_distance_from_path_start = path_linestring.project(ShapelyPoint(front_wheel_position.x, front_wheel_position.y, front_wheel_position.z))
+            front_wheel_on_path = path_linestring.interpolate(front_wheel_distance_from_path_start)
+
+            cross_track_error = get_cross_track_error(front_wheel_position,
+                                                      path_linestring.interpolate(front_wheel_distance_from_path_start - 0.1),
+                                                      path_linestring.interpolate(front_wheel_distance_from_path_start + 0.1))
+
+            lookahead_on_path = path_linestring.interpolate(front_wheel_distance_from_path_start + self.wheel_base/10)
+            lookback_on_path = path_linestring.interpolate(max(0, front_wheel_distance_from_path_start - self.wheel_base/10))
+            track_heading = get_heading_between_two_points(lookback_on_path, lookahead_on_path)
             heading_error = normalize_heading_error(track_heading - current_heading)
 
             if abs(cross_track_error) > self.lateral_error_limit or abs(math.degrees(heading_error)) > self.heading_angle_limit:
@@ -156,9 +165,8 @@ class StanleyFollower:
             delta_error = math.atan(self.cte_gain * cross_track_error / (current_velocity + 0.0001))
             steering_angle = heading_error + delta_error
 
-            # target_velocity from map and based on closest object
-            target_velocity = interpolate_velocity_between_waypoints(bl_nearest_point, waypoints[bl_back_wp_idx], waypoints[bl_front_wp_idx])
-            # if target velocity too low, consider it 0
+            # find velocity at current position
+            target_velocity = distance_to_velocity_interpolator(ego_distance_from_path_start)
             if target_velocity < self.stopping_speed_limit:
                 target_velocity = 0.0
 
@@ -181,13 +189,19 @@ class StanleyFollower:
                 else:
                     acceleration = -self.default_deceleration
 
-            # blinkers
-            left_blinker, right_blinker = get_blinker_state_with_lookahead(waypoints, self.waypoint_interval, bl_front_wp_idx, current_velocity, self.blinker_lookahead_time, self.blinker_lookahead_distance)
+            blinker_lookahead_distance = max(self.blinker_min_lookahead_distance, self.blinker_lookahead_time * current_velocity)
+            left_blinker, right_blinker = get_blinker_state_with_lookahead(distance_to_blinker_interpolator, ego_distance_from_path_start, blinker_lookahead_distance)
 
             # Publish
             self.publish_vehicle_command(stamp, steering_angle, target_velocity, acceleration, left_blinker, right_blinker, emergency)
             if self.publish_debug_info:
-                self.publish_stanley_markers(stamp, bl_nearest_point, lookahead_point, front_wheel_position, heading_error)
+                # convert shapely 2d points to geometry_msg/Point
+                lookback_on_path_3d = Point(x=lookback_on_path.x, y=lookback_on_path.y, z=current_pose_msg.pose.position.z)
+                lookahead_on_path_3d = Point(x=lookahead_on_path.x, y=lookahead_on_path.y, z=current_pose_msg.pose.position.z)
+                front_wheel_on_path_3d = Point(x=front_wheel_on_path.x, y=front_wheel_on_path.y, z=current_pose_msg.pose.position.z)
+                front_wheel_position_3d = Point(x=front_wheel_position.x, y=front_wheel_position.y, z=current_pose_msg.pose.position.z)
+
+                self.publish_stanley_markers(stamp, lookback_on_path_3d, lookahead_on_path_3d, front_wheel_on_path_3d, front_wheel_position_3d, heading_error)
                 self.follower_debug_pub.publish(Float32MultiArray(data=[(rospy.get_time() - start_time), current_heading, track_heading, heading_error, cross_track_error, target_velocity]))
 
         except Exception as e:
@@ -209,7 +223,7 @@ class StanleyFollower:
         self.vehicle_command_pub.publish(vehicle_cmd)
 
 
-    def publish_stanley_markers(self, stamp, nearest_point, lookahead_point, front_position, heading_error):
+    def publish_stanley_markers(self, stamp, lookback_on_path_3d, lookahead_on_path_3d, front_wheel_on_path_3d, front_wheel_position_3d, heading_error):
 
         marker_array = MarkerArray()
 
@@ -219,18 +233,18 @@ class StanleyFollower:
         marker.header.stamp = stamp
         marker.ns = "Line"
         marker.id = 0
-        marker.type = Marker.LINE_STRIP
+        marker.type = Marker.LINE_LIST
         marker.action = Marker.ADD
         marker.scale.x = 0.1
         marker.color = ColorRGBA(1.0, 0.0, 1.0, 1.0)
-        marker.points = ([nearest_point, lookahead_point, front_position])
+        marker.points = ([lookback_on_path_3d, lookahead_on_path_3d, front_wheel_on_path_3d, front_wheel_position_3d])
         marker_array.markers.append(marker)
 
         # label of angle alpha
         average_pose = Pose()
-        average_pose.position.x = (front_position.x + nearest_point.x) / 2
-        average_pose.position.y = (front_position.y + nearest_point.y) / 2
-        average_pose.position.z = (front_position.z + nearest_point.z) / 2
+        average_pose.position.x = (lookahead_on_path_3d.x + front_wheel_position_3d.x) / 2
+        average_pose.position.y = (lookahead_on_path_3d.y + front_wheel_position_3d.y) / 2
+        average_pose.position.z = (lookahead_on_path_3d.z + front_wheel_position_3d.z) / 2
 
         marker_text = Marker()
         marker_text.header.frame_id = "map"

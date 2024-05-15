@@ -55,20 +55,17 @@ def get_cross_track_error(ego_pos, pos1, pos2):
 
 def get_point_using_heading_and_distance(start_point, heading, distance):
     """
-    Get pose from given pose and extrapolating it using heading and distance
+    Get point from given point and extrapolating it using heading and distance
     :param start_point: Point
     :param heading: heading in radians
     :param distance: distance in meters
-    :return: new point - z and orientation is the same as start_pose
-    :rtype: Point
+    :return: Point
     """
 
-    point = Point()
-    point.x = start_point.x + distance * math.cos(heading)
-    point.y = start_point.y + distance * math.sin(heading)
-    point.z = start_point.z
+    x = start_point.x + distance * math.cos(heading)
+    y = start_point.y + distance * math.sin(heading)
 
-    return point
+    return Point(x=x, y=y, z=start_point.z)
 
 def normalize_heading_error(err):
     """
