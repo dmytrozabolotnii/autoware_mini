@@ -6,9 +6,8 @@ import math
 import threading
 from tf2_ros import Buffer, TransformListener, TransformException
 import numpy as np
-from shapely.geometry import Polygon, MultiPolygon, LineString, Point as ShapelyPoint
+from shapely.geometry import Polygon, LineString, Point as ShapelyPoint
 from shapely import prepare
-from shapely.affinity import rotate
 from scipy.interpolate import interp1d
 
 from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray, Waypoint
@@ -17,7 +16,7 @@ from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from helpers.transform import transform_vector3
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines
 from helpers.geometry import get_distance_between_two_points_2d
-from helpers.shapely import convert_to_shapely_points_list
+from helpers.shapely import convert_to_shapely_points_list, get_polygon_width
 
 
 class VelocityLocalPlanner:
@@ -204,7 +203,7 @@ class VelocityLocalPlanner:
             # check if object candidate trajectory intersects with local path buffer
             if len(object.candidate_trajectories.lanes) > 0:
                 object_heading = np.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
-                object_width = self.get_polygon_width(object_polygon, object_heading)
+                object_width = get_polygon_width(object_polygon, object_heading)
 
                 trajectory_linestring = LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in object.candidate_trajectories.lanes[0].waypoints])
                 trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="square")
@@ -304,14 +303,6 @@ class VelocityLocalPlanner:
         lane.is_blocked = local_path_blocked
         lane.cost = stopping_point_distance
         self.local_path_pub.publish(lane)
-
-    def get_polygon_width(self, polygon, heading_angle):
-        # rotate polygon to align with y axis, so the width will be in x direction
-        angle = 90 - heading_angle
-        rotated_polygon = rotate(polygon, angle, origin='centroid', use_radians=False)
-        minx, miny, maxx, maxy = rotated_polygon.bounds
-        width = maxx - minx
-        return width
 
 
     def extract_local_path(self, global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_path_start, local_path_length):
