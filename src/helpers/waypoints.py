@@ -129,7 +129,7 @@ def get_point_and_orientation_on_path_within_distance(waypoints, distance):
     point_location = linestring.interpolate(distance)
     point_before = linestring.interpolate(distance - 0.01)
 
-    heading = get_heading_between_two_points(point_location, point_before)
+    heading = get_heading_between_two_points(point_before, point_location)
     orientation = get_orientation_from_heading(heading)
 
     point = Point(x = point_location.x, y = point_location.y, z = point_location.z)
