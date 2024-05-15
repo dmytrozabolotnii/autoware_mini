@@ -6,7 +6,7 @@ import math
 import threading
 from tf2_ros import Buffer, TransformListener, TransformException
 import numpy as np
-from shapely.geometry import Polygon, MultiPolygon, LineString, Point as Point2d
+from shapely.geometry import Polygon, MultiPolygon, LineString, Point as ShapelyPoint
 from shapely import prepare
 from shapely.affinity import rotate
 from scipy.interpolate import interp1d
@@ -108,7 +108,7 @@ class VelocityLocalPlanner:
 
     def current_pose_callback(self, msg):
         # save current pose
-        self.current_position = Point2d(msg.pose.position.x, msg.pose.position.y)
+        self.current_position = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
 
     def traffic_light_status_callback(self, msg):
@@ -185,7 +185,7 @@ class VelocityLocalPlanner:
                 intersection_points = object_polygon.intersection(local_path_buffer)
 
                 # calc distance for all intersection points and take the minimum
-                object_distance = min([local_path_linestring.project(Point2d(coords)) for coords in intersection_points.exterior.coords[:-1]])
+                object_distance = min([local_path_linestring.project(ShapelyPoint(coords)) for coords in intersection_points.exterior.coords[:-1]])
 
                 # project object velocity to base_link frame to get longitudinal speed
                 # in case there is no transform assume the object is not moving
@@ -216,7 +216,7 @@ class VelocityLocalPlanner:
 
                     object_distance = np.inf
                     for polygon in polygons:
-                        min_distance = min([local_path_linestring.project(Point2d(coords)) for coords in polygon.exterior.coords[:-1]])
+                        min_distance = min([local_path_linestring.project(ShapelyPoint(coords)) for coords in polygon.exterior.coords[:-1]])
                         object_distance = min(object_distance, min_distance)
 
                     if transform is not None:
@@ -233,8 +233,9 @@ class VelocityLocalPlanner:
         for stopline_ls in red_stoplines_linestrings:
             if stopline_ls.intersects(local_path_linestring):
                 intersection_point = local_path_linestring.intersection(stopline_ls)
+                assert isinstance(intersection_point, ShapelyPoint), "Stop line and local path intersection point is not a ShapelyPoint"
                 # calc distance for all intersection points
-                distance_to_stopline = local_path_linestring.project(Point2d(intersection_point.x, intersection_point.y))
+                distance_to_stopline = local_path_linestring.project(intersection_point)
                 deceleration = (current_speed**2) / (2 * distance_to_stopline)
                 # check if deceleration is within the limits
                 if 0 <= deceleration and deceleration <= self.tfl_maximum_deceleration:
