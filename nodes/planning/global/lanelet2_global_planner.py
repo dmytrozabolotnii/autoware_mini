@@ -126,6 +126,10 @@ class Lanelet2GlobalPlanner:
         index_start = np.searchsorted(waypoint_distances, start_point_distance, side='right')
         index_goal = np.searchsorted(waypoint_distances, new_goal_point_distance, side='left')
 
+        if start_lanelet.id == goal_lanelet.id and index_start > index_goal:
+            rospy.logerr("%s - goal point can't be on the same lanelet before start point", rospy.get_name())
+            return
+
         # create new start and goal waypoints using deepcopy and index
         start_wp = copy.deepcopy(waypoints[index_start])
         start_wp.pose.pose.position = Point(start_on_path.x, start_on_path.y, start_wp.pose.pose.position.z)
@@ -134,10 +138,6 @@ class Lanelet2GlobalPlanner:
 
         # put together new global path
         self.waypoints += [start_wp] + waypoints[index_start : index_goal] + [goal_wp]
-
-        if start_lanelet.id == goal_lanelet.id and index_start > index_goal:
-            rospy.logerr("%s - goal point can't be on the same lanelet before start point", rospy.get_name())
-            return
 
         # update goal point and add new waypoints to the existing ones
         self.goal_point = BasicPoint2d(goal_wp.pose.pose.position.x, goal_wp.pose.pose.position.y)
