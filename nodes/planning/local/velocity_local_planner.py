@@ -139,6 +139,10 @@ class VelocityLocalPlanner:
             self.publish_local_path_wp([], msg.header.stamp, output_frame)
             return
 
+        #################################
+        # Extract local path
+        #################################
+
         # TODO how to avoid jumping from one place to another on path - just finding the closest point is dangerous!
         # Example of global path overlapping with itself or ego doing the 90deg turn and cutting the corner!
         ego_distance_from_path_start = global_path_linestring.project(current_position)
@@ -153,10 +157,11 @@ class VelocityLocalPlanner:
             self.publish_local_path_wp([], msg.header.stamp, self.output_frame)
             return
 
-        # initialize closest object distance and velocity
-        closest_object_distance = 0.0
-        closest_object_velocity = 0.0
-        stopping_point_distance = 0.0
+        #################################
+        # Create collision points
+        #################################
+
+        # TODO move below to target vel calc part
         local_path_blocked = False
         # collect objects (closest point from each object, path end point, stopline points)
         object_distances = []
@@ -249,6 +254,14 @@ class VelocityLocalPlanner:
             object_velocities.append(0)
             object_braking_distances.append(self.braking_safety_distance_goal)
 
+        #################################
+        # Calculate target velocity
+        #################################
+
+        # initialize closest object distance and velocity
+        closest_object_distance = 0.0
+        closest_object_velocity = 0.0
+        stopping_point_distance = 0.0
 
         if len(object_distances) > 0:
             object_distances = np.array(object_distances)
