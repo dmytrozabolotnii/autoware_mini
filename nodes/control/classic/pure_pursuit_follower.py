@@ -35,7 +35,6 @@ class PurePursuitFollower:
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
         self.max_deceleration = rospy.get_param("/planning/max_deceleration")
         self.stopping_speed_limit = rospy.get_param("/planning/stopping_speed_limit")
-        self.current_pose_to_car_front = rospy.get_param("/planning/current_pose_to_car_front")
         self.simulate_cmd_delay = rospy.get_param("~simulate_cmd_delay")
 
         # Variables - init
@@ -43,6 +42,7 @@ class PurePursuitFollower:
         self.distance_to_velocity_interpolator = None
         self.distance_to_blinker_interpolator = None
         self.closest_object_velocity = 0.0
+        self.closest_object_distance = 0.0
         self.stopping_point_distance = 0.0
         self.lock = threading.Lock()
 
@@ -71,6 +71,7 @@ class PurePursuitFollower:
             distance_to_velocity_interpolator = None
             distance_to_blinker_interpolator = None
             closest_object_velocity = 0.0
+            closest_object_distance = 0.0
             stopping_point_distance = 0.0
         else:
             waypoints_xy = np.array([(w.pose.pose.position.x, w.pose.pose.position.y) for w in path_msg.waypoints])
@@ -88,6 +89,7 @@ class PurePursuitFollower:
             distance_to_blinker_interpolator = interp1d(distances, blinkers, kind='previous', bounds_error=False, fill_value=3)
 
             closest_object_velocity = path_msg.closest_object_velocity
+            closest_object_distance = path_msg.closest_object_distance
             stopping_point_distance = path_msg.cost
 
         with self.lock:
@@ -95,6 +97,7 @@ class PurePursuitFollower:
             self.distance_to_velocity_interpolator = distance_to_velocity_interpolator
             self.distance_to_blinker_interpolator = distance_to_blinker_interpolator
             self.closest_object_velocity = closest_object_velocity
+            self.closest_object_distance = closest_object_distance
             self.stopping_point_distance = stopping_point_distance
 
     def current_status_callback(self, current_pose_msg, current_velocity_msg):
@@ -108,6 +111,7 @@ class PurePursuitFollower:
                 distance_to_velocity_interpolator = self.distance_to_velocity_interpolator
                 distance_to_blinker_interpolator = self.distance_to_blinker_interpolator
                 closest_object_velocity = self.closest_object_velocity
+                closest_object_distance = self.closest_object_distance
                 stopping_point_distance = self.stopping_point_distance
 
             stamp = current_pose_msg.header.stamp
@@ -177,7 +181,7 @@ class PurePursuitFollower:
             emergency = 0
             if stopping_point_distance > 0.0 and target_velocity < current_velocity:
                 # calculate distance from car front to stopping point
-                car_front_to_stopping_point = stopping_point_distance - ego_distance_from_path_start - self.current_pose_to_car_front
+                car_front_to_stopping_point = closest_object_distance - stopping_point_distance
                 if car_front_to_stopping_point > 0:
                     # always allow minimum deceleration, to be able to adapt to map speeds
                     acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / car_front_to_stopping_point, -self.default_deceleration)

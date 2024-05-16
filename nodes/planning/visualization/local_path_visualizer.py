@@ -3,7 +3,9 @@
 import rospy
 import math
 from autoware_msgs.msg import Lane
+from geometry_msgs.msg import PoseStamped
 from visualization_msgs.msg import MarkerArray, Marker
+from shapely.geometry import Point as ShapelyPoint, LineString
 from std_msgs.msg import ColorRGBA
 from helpers.waypoints import get_point_and_orientation_on_path_within_distance
 
@@ -13,16 +15,25 @@ class LocalPathVisualizer:
         # Parameters
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
         self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
+        self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
+
+        self.current_pose = None
 
         # Publishers
         self.local_path_markers_pub = rospy.Publisher('local_path_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('local_path', Lane, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
+    def current_pose_callback(self, msg):
+        self.current_pose = msg.pose
 
     def local_path_callback(self, lane):
+
+        if self.current_pose is None:
+            return
 
         # lane.cost is used to determine the stopping point distance from path start
         stopping_point_distance = lane.cost
@@ -91,7 +102,13 @@ class LocalPathVisualizer:
                     break
 
             if stopping_point_distance > 0.0:
-                stop_position, stop_orientation = get_point_and_orientation_on_path_within_distance(lane.waypoints, stopping_point_distance)
+                # find ego distance from path start
+                waypoints_xy = [(w.pose.pose.position.x, w.pose.pose.position.y) for w in lane.waypoints]
+                local_path = LineString(waypoints_xy)
+                ego_distance_on_local_path = local_path.project(ShapelyPoint(self.current_pose.position.x, self.current_pose.position.y))
+                stopping_point_distance_from_path_start = ego_distance_on_local_path + self.current_pose_to_car_front + lane.closest_object_distance - stopping_point_distance
+
+                stop_position, stop_orientation = get_point_and_orientation_on_path_within_distance(lane.waypoints, stopping_point_distance_from_path_start)
 
                 color = ColorRGBA(0.9, 0.9, 0.9, 0.2)           # white - obstcle affecting ego speed in slowdown area
                 if lane.is_blocked:

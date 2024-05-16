@@ -39,4 +39,4 @@ velocity_local_planner:
   tfl_maximum_deceleration: 2.8
   braking_safety_distance_obstacle: 4.0
   braking_safety_distance_stopline: 2.0
-  braking_safety_distance_goal: 0.0
+  braking_safety_distance_goal: 0.1
