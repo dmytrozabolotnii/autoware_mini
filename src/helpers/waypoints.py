@@ -19,7 +19,7 @@ def get_blinker_state(steering_state):
         return 0, 0
     else:
         return 0, 0
-    
+
 def get_blinker_state_with_lookahead(distance_to_blinker_interpolator, ego_distance_from_path_start, blinker_lookahead_distance):
     """
     Get blinker state. 
@@ -36,22 +36,6 @@ def get_blinker_state_with_lookahead(distance_to_blinker_interpolator, ego_dista
     else:
         lookahead_blinker_state = int(distance_to_blinker_interpolator(blinker_lookahead_distance))
         return get_blinker_state(lookahead_blinker_state)
-
-
-def get_two_nearest_waypoint_idx(waypoint_tree, x, y):
-    """
-    Find 2 cloest waypoint index values from the waypoint_tree
-    :param waypoint_tree:
-    :param x
-    :param y
-    """
-
-    idx = waypoint_tree.kneighbors([(x, y)], 2, return_distance=False)
-
-    # sort to get them in ascending order - follow along path
-    idx[0].sort()
-    return idx[0][0], idx[0][1]
-
 
 def get_point_and_orientation_on_path_within_distance(waypoints, distance):
     """
