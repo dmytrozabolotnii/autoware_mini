@@ -1,4 +1,3 @@
-import math
 from autoware_msgs.msg import WaypointState
 from geometry_msgs.msg import Point
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
@@ -50,7 +49,7 @@ def get_point_and_orientation_on_path_within_distance(waypoints, distance):
 
     # Find the point on the path
     point_location = linestring.interpolate(distance)
-    point_before = linestring.interpolate(distance - 0.01)
+    point_before = linestring.interpolate(distance - 0.1)
 
     heading = get_heading_between_two_points(point_before, point_location)
     orientation = get_orientation_from_heading(heading)

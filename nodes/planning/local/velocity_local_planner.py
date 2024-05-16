@@ -161,8 +161,6 @@ class VelocityLocalPlanner:
         # Create collision points
         #################################
 
-        # TODO move below to target vel calc part
-        local_path_blocked = False
         # collect objects (closest point from each object, path end point, stopline points)
         object_distances = []
         object_velocities = []
@@ -187,7 +185,6 @@ class VelocityLocalPlanner:
 
             # chek if object polygon intersects with local path buffer
             if local_path_buffer.intersects(object_polygon):
-                local_path_blocked = True
                 intersection_result = object_polygon.intersection(local_path_buffer)
                 intersection_points = convert_to_shapely_points_list(intersection_result)
 
@@ -214,7 +211,6 @@ class VelocityLocalPlanner:
                 trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="square")
                 prepare(trajectory_buffer)
                 if local_path_buffer.intersects(trajectory_buffer):
-                    local_path_blocked = True
                     intersection_result = trajectory_buffer.intersection(local_path_buffer)
                     intersection_points = convert_to_shapely_points_list(intersection_result)
 
@@ -262,6 +258,7 @@ class VelocityLocalPlanner:
         closest_object_distance = 0.0
         closest_object_velocity = 0.0
         stopping_point_distance = 0.0
+        local_path_blocked = False
 
         if len(object_distances) > 0:
             # object distances are calculated from local path start, correct with ego distance on local path
@@ -278,6 +275,10 @@ class VelocityLocalPlanner:
             closest_object_distance = object_distances[min_value_index] - self.current_pose_to_car_front
             closest_object_velocity = object_velocities[min_value_index]
             stopping_point_distance = object_braking_distances[min_value_index]
+
+            # don't set it blocked in case of goal point
+            if stopping_point_distance > self.braking_safety_distance_goal:
+                local_path_blocked = True
 
             target_velocity = min(target_velocity, target_velocities[min_value_index])
 
