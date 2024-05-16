@@ -202,7 +202,7 @@ class VelocityLocalPlanner:
 
             # check if object candidate trajectory intersects with local path buffer
             if len(object.candidate_trajectories.lanes) > 0:
-                object_heading = np.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
+                object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
                 object_width = get_polygon_width(object_polygon, object_heading)
 
                 trajectory_linestring = LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in object.candidate_trajectories.lanes[0].waypoints])
@@ -320,7 +320,7 @@ class VelocityLocalPlanner:
         local_path_waypoints = []
         for waypoint in global_path_waypoints[index_start:index_end]:
             new_waypoint = Waypoint(pose = copy.copy(waypoint.pose), wpstate = copy.copy(waypoint.wpstate))
-            new_waypoint.twist.twist.linear.x = copy.deepcopy(waypoint.twist.twist.linear.x)
+            new_waypoint.twist.twist.linear.x = waypoint.twist.twist.linear.x
             local_path_waypoints.append(new_waypoint)
 
         return local_path_linestring, local_path_waypoints
