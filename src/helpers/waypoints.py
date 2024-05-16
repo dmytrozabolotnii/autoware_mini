@@ -1,7 +1,8 @@
 import math
 from autoware_msgs.msg import WaypointState
 from geometry_msgs.msg import Point
-from helpers.geometry import get_distance_between_two_points_2d, get_heading_between_two_points, get_orientation_from_heading
+from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
+from shapely.geometry import LineString
 
 def get_blinker_state(steering_state):
     """
