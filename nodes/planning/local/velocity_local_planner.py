@@ -8,7 +8,6 @@ from tf2_ros import Buffer, TransformListener, TransformException
 import numpy as np
 from shapely.geometry import Polygon, LineString, Point as ShapelyPoint
 from shapely import prepare
-from scipy.interpolate import interp1d
 
 from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray, Waypoint
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
@@ -48,7 +47,6 @@ class VelocityLocalPlanner:
         self.global_path_linestring = None
         self.global_path_waypoints = None
         self.global_path_distances = None
-        self.distance_to_velocity_interpolator = None
         self.current_speed = None
         self.current_position = None
         self.tf_buffer = Buffer()
@@ -75,7 +73,6 @@ class VelocityLocalPlanner:
             global_path_linestring = None
             global_path_waypoints = None
             global_path_distances = None
-            distance_to_velocity_interpolator = None
             rospy.loginfo("%s - Empty global path received", rospy.get_name())
         else:
             global_path_waypoints = msg.waypoints
@@ -88,10 +85,6 @@ class VelocityLocalPlanner:
             global_path_distances = np.cumsum(np.sqrt(np.sum(np.diff(waypoints_xyz[:,:2], axis=0)**2, axis=1)))
             global_path_distances = np.insert(global_path_distances, 0, 0)
 
-            # extract velocity at waypoints and create interpolator
-            velocities = np.array([w.twist.twist.linear.x for w in msg.waypoints])
-            distance_to_velocity_interpolator = interp1d(global_path_distances, velocities, kind='linear', bounds_error=False, fill_value=0.0)
-
             rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(msg.waypoints))
 
         with self.lock:
@@ -99,7 +92,6 @@ class VelocityLocalPlanner:
             self.global_path_linestring = global_path_linestring
             self.global_path_waypoints = global_path_waypoints
             self.global_path_distances = global_path_distances
-            self.distance_to_velocity_interpolator = distance_to_velocity_interpolator
 
 
     def current_velocity_callback(self, msg):
@@ -128,7 +120,6 @@ class VelocityLocalPlanner:
             global_path_linestring = self.global_path_linestring
             global_path_waypoints = self.global_path_waypoints
             global_path_distances = self.global_path_distances
-            distance_to_velocity_interpolator = self.distance_to_velocity_interpolator
 
         red_stoplines = self.red_stoplines
         current_position = self.current_position
