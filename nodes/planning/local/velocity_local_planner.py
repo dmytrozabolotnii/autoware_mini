@@ -146,9 +146,6 @@ class VelocityLocalPlanner:
         # TODO how to avoid jumping from one place to another on path - just finding the closest point is dangerous!
         # Example of global path overlapping with itself or ego doing the 90deg turn and cutting the corner!
         ego_distance_from_global_path_start = global_path_linestring.project(current_position)
-        # Calculate the map speed at the current position as target velocity
-        # TODO possibly the command delay should be considered
-        target_velocity = float(distance_to_velocity_interpolator(ego_distance_from_global_path_start))
 
         # extract local path, if None is returned publish empty local path
         local_path_linestring, local_path_waypoints, ego_distance_from_local_path_start = self.extract_local_path(global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_global_path_start, self.local_path_length)
@@ -280,12 +277,13 @@ class VelocityLocalPlanner:
             if object_braking_distance > self.braking_safety_distance_goal:
                 local_path_blocked = True
 
-            target_velocity = min(target_velocity, target_velocities[min_value_index])
-
             # Recalculate target_velocity and overwrite in the waypoints
             zero_speeds_onwards = False
             distance_between_wp_cumulative = 0.0
             for i, wp in enumerate(local_path_waypoints):
+
+                # store map based target velocity of a waypoint
+                target_velocity_wp = wp.twist.twist.linear.x
 
                 # once we get zero speed, keep it that way
                 if zero_speeds_onwards:
@@ -296,10 +294,9 @@ class VelocityLocalPlanner:
                     distance_between_wp_cumulative += get_distance_between_two_points_2d(local_path_waypoints[i-1].pose.pose.position, local_path_waypoints[i].pose.pose.position)
                 target_distance_obj = closest_object_distance - object_braking_distances[min_value_index] - distance_between_wp_cumulative - self.braking_reaction_time * np.abs(closest_object_velocity)
                 target_velocity_obj = np.sqrt(np.maximum(0.0, np.maximum(0.0, closest_object_velocity)**2 + 2 * self.default_deceleration * target_distance_obj))
-                target_velocity_obj = min(target_velocity_obj, target_velocity)
 
                 # overwrite target velocity of wp
-                wp.twist.twist.linear.x = target_velocity_obj
+                wp.twist.twist.linear.x = min(target_velocity_obj, target_velocity_wp)
 
                 # from stop point onwards all speeds are set to zero
                 if math.isclose(wp.twist.twist.linear.x, 0.0):
