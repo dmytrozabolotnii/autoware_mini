@@ -285,9 +285,6 @@ class VelocityLocalPlanner:
             target_distance_obj = stopping_point_distance - self.current_pose_to_car_front - self.braking_reaction_time * np.abs(closest_object_velocity)
             for i, wp in enumerate(local_path_waypoints):
 
-                # store map based target velocity of a waypoint
-                target_velocity_wp = wp.twist.twist.linear.x
-
                 # once we get zero speed, keep it that way
                 if zero_speeds_onwards:
                     wp.twist.twist.linear.x = 0.0
@@ -298,7 +295,7 @@ class VelocityLocalPlanner:
                 target_velocity_obj = np.sqrt(np.maximum(0.0, np.maximum(0.0, closest_object_velocity)**2 + 2 * self.default_deceleration * target_distance_obj))
 
                 # overwrite target velocity of wp
-                wp.twist.twist.linear.x = min(target_velocity_obj, target_velocity_wp)
+                wp.twist.twist.linear.x = min(target_velocity_obj, wp.twist.twist.linear.x)
 
                 # from stop point onwards all speeds are set to zero
                 if math.isclose(wp.twist.twist.linear.x, 0.0):
