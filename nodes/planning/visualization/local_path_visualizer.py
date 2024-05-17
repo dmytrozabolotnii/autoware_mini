@@ -36,7 +36,7 @@ class LocalPathVisualizer:
             return
 
         # lane.cost is used to determine the stopping point distance from path start
-        stopping_point_distance = lane.cost
+        object_braking_distance = lane.cost
 
         marker_array = MarkerArray()
 
@@ -101,12 +101,12 @@ class LocalPathVisualizer:
                 if math.isclose(waypoint.twist.twist.linear.x, 0.0):
                     break
 
-            if stopping_point_distance > 0.0:
+            if object_braking_distance > 0.0:
                 # find ego distance from path start
                 waypoints_xy = [(w.pose.pose.position.x, w.pose.pose.position.y) for w in lane.waypoints]
                 local_path = LineString(waypoints_xy)
-                ego_distance_on_local_path = local_path.project(ShapelyPoint(self.current_pose.position.x, self.current_pose.position.y))
-                stopping_point_distance_from_path_start = ego_distance_on_local_path + self.current_pose_to_car_front + lane.closest_object_distance - stopping_point_distance
+                ego_distance_from_local_path_start = local_path.project(ShapelyPoint(self.current_pose.position.x, self.current_pose.position.y))
+                stopping_point_distance_from_path_start = ego_distance_from_local_path_start + self.current_pose_to_car_front + lane.closest_object_distance - object_braking_distance
 
                 stop_position, stop_orientation = get_point_and_orientation_on_path_within_distance(lane.waypoints, stopping_point_distance_from_path_start)
 

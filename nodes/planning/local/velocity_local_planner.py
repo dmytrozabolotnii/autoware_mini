@@ -145,13 +145,13 @@ class VelocityLocalPlanner:
 
         # TODO how to avoid jumping from one place to another on path - just finding the closest point is dangerous!
         # Example of global path overlapping with itself or ego doing the 90deg turn and cutting the corner!
-        ego_distance_from_path_start = global_path_linestring.project(current_position)
+        ego_distance_from_global_path_start = global_path_linestring.project(current_position)
         # Calculate the map speed at the current position as target velocity
         # TODO possibly the command delay should be considered
-        target_velocity = float(distance_to_velocity_interpolator(ego_distance_from_path_start))
+        target_velocity = float(distance_to_velocity_interpolator(ego_distance_from_global_path_start))
 
         # extract local path, if None is returned publish empty local path
-        local_path_linestring, local_path_waypoints, ego_distance_on_local_path = self.extract_local_path(global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_path_start, self.local_path_length)
+        local_path_linestring, local_path_waypoints, ego_distance_from_local_path_start = self.extract_local_path(global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_global_path_start, self.local_path_length)
         prepare(local_path_linestring)
         if local_path_linestring is None:
             self.publish_local_path_wp([], msg.header.stamp, self.output_frame)
@@ -257,12 +257,12 @@ class VelocityLocalPlanner:
         # initialize closest object distance and velocity
         closest_object_distance = 0.0
         closest_object_velocity = 0.0
-        stopping_point_distance = 0.0
+        object_braking_distance = 0.0
         local_path_blocked = False
 
         if len(object_distances) > 0:
             # object distances are calculated from local path start, correct with ego distance on local path
-            object_distances = np.array(object_distances) - ego_distance_on_local_path
+            object_distances = np.array(object_distances) - ego_distance_from_local_path_start
             object_velocities = np.array(object_velocities)
             object_braking_distances = np.array(object_braking_distances)
 
@@ -274,10 +274,10 @@ class VelocityLocalPlanner:
 
             closest_object_distance = object_distances[min_value_index] - self.current_pose_to_car_front
             closest_object_velocity = object_velocities[min_value_index]
-            stopping_point_distance = object_braking_distances[min_value_index]
+            object_braking_distance = object_braking_distances[min_value_index]
 
             # don't set it blocked in case of goal point
-            if stopping_point_distance > self.braking_safety_distance_goal:
+            if object_braking_distance > self.braking_safety_distance_goal:
                 local_path_blocked = True
 
             target_velocity = min(target_velocity, target_velocities[min_value_index])
@@ -305,9 +305,9 @@ class VelocityLocalPlanner:
                 if math.isclose(wp.twist.twist.linear.x, 0.0):
                     zero_speeds_onwards = True
 
-        self.publish_local_path_wp(local_path_waypoints, msg.header.stamp, output_frame, closest_object_distance, closest_object_velocity, local_path_blocked, stopping_point_distance)
+        self.publish_local_path_wp(local_path_waypoints, msg.header.stamp, output_frame, closest_object_distance, closest_object_velocity, local_path_blocked, object_braking_distance)
 
-    def publish_local_path_wp(self, local_path_waypoints, stamp, output_frame, closest_object_distance=0.0, closest_object_velocity=0.0, local_path_blocked=False, stopping_point_distance=0.0):
+    def publish_local_path_wp(self, local_path_waypoints, stamp, output_frame, closest_object_distance=0.0, closest_object_velocity=0.0, local_path_blocked=False, object_braking_distance=0.0):
         # create lane message
         lane = Lane()
         lane.header.frame_id = output_frame
@@ -316,20 +316,20 @@ class VelocityLocalPlanner:
         lane.closest_object_distance = closest_object_distance
         lane.closest_object_velocity = closest_object_velocity
         lane.is_blocked = local_path_blocked
-        lane.cost = stopping_point_distance
+        lane.cost = object_braking_distance
         self.local_path_pub.publish(lane)
 
 
-    def extract_local_path(self, global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_path_start, local_path_length):
+    def extract_local_path(self, global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_global_path_start, local_path_length):
 
         # current position is projected at the end of the global path - goal reached
-        if math.isclose(ego_distance_from_path_start, global_path_linestring.length):
+        if math.isclose(ego_distance_from_global_path_start, global_path_linestring.length):
             return None, None, None
 
         # find index where distances are higher than ego distance on global_path
-        index_start = max(np.searchsorted(global_path_distances, ego_distance_from_path_start) - 1, 0)
-        index_end = np.searchsorted(global_path_distances, ego_distance_from_path_start + local_path_length)
-        ego_distance_on_local_path = ego_distance_from_path_start - global_path_distances[index_start]
+        index_start = max(np.searchsorted(global_path_distances, ego_distance_from_global_path_start) - 1, 0)
+        index_end = np.searchsorted(global_path_distances, ego_distance_from_global_path_start + local_path_length)
+        ego_distance_from_local_path_start = ego_distance_from_global_path_start - global_path_distances[index_start]
 
         local_path_linestring = LineString(global_path_linestring.coords[index_start:index_end])
         # deepcopy only the necessary part (other parts are not changed and are shared with global path waypoints)
@@ -339,7 +339,7 @@ class VelocityLocalPlanner:
             new_waypoint.twist.twist.linear.x = waypoint.twist.twist.linear.x
             local_path_waypoints.append(new_waypoint)
 
-        return local_path_linestring, local_path_waypoints, ego_distance_on_local_path
+        return local_path_linestring, local_path_waypoints, ego_distance_from_local_path_start
 
     def run(self):
         rospy.spin()

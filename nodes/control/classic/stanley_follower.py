@@ -41,7 +41,7 @@ class StanleyFollower:
         self.distance_to_blinker_interpolator = None
         self.closest_object_velocity = 0.0
         self.closest_object_distance = 0.0
-        self.stopping_point_distance = 0.0
+        self.object_braking_distance = 0.0
         self.lock = threading.Lock()
 
         # Publishers
@@ -71,7 +71,7 @@ class StanleyFollower:
             distance_to_blinker_interpolator = None
             closest_object_velocity = 0.0
             closest_object_distance = 0.0
-            stopping_point_distance = 0.0
+            object_braking_distance = 0.0
         else:
             waypoints_xy = np.array([(w.pose.pose.position.x, w.pose.pose.position.y) for w in path_msg.waypoints])
             path_linestring = LineString(waypoints_xy)
@@ -89,7 +89,7 @@ class StanleyFollower:
 
             closest_object_velocity = path_msg.closest_object_velocity
             closest_object_distance = path_msg.closest_object_distance
-            stopping_point_distance = path_msg.cost
+            object_braking_distance = path_msg.cost
 
         with self.lock:
             self.path_linestring = path_linestring
@@ -97,7 +97,7 @@ class StanleyFollower:
             self.distance_to_blinker_interpolator = distance_to_blinker_interpolator
             self.closest_object_velocity = closest_object_velocity
             self.closest_object_distance = closest_object_distance
-            self.stopping_point_distance = stopping_point_distance
+            self.object_braking_distance = object_braking_distance
 
 
     def current_status_callback(self, current_pose_msg, current_velocity_msg):
@@ -113,7 +113,7 @@ class StanleyFollower:
                 distance_to_blinker_interpolator = self.distance_to_blinker_interpolator
                 closest_object_velocity = self.closest_object_velocity
                 closest_object_distance = self.closest_object_distance
-                stopping_point_distance = self.stopping_point_distance
+                object_braking_distance = self.object_braking_distance
 
             stamp = current_pose_msg.header.stamp
 
@@ -176,9 +176,9 @@ class StanleyFollower:
 
             # if decelerating because of obstacle then calculate necessary deceleration
             emergency = 0
-            if stopping_point_distance > 0.0 and target_velocity < current_velocity:
+            if object_braking_distance > 0.0 and target_velocity < current_velocity:
                 # calculate distance from car front to stopping point
-                car_front_to_stopping_point = closest_object_distance - stopping_point_distance
+                car_front_to_stopping_point = closest_object_distance - object_braking_distance
                 if car_front_to_stopping_point > 0:
                     # always allow minimum deceleration, to be able to adapt to map speeds
                     acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / car_front_to_stopping_point, -self.default_deceleration)
