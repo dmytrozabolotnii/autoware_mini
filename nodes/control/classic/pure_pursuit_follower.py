@@ -181,10 +181,10 @@ class PurePursuitFollower:
             emergency = 0
             if object_braking_distance > 0.0 and target_velocity < current_velocity:
                 # calculate distance from car front to stopping point
-                car_front_to_stopping_point = closest_object_distance - object_braking_distance
-                if car_front_to_stopping_point > 0:
+                stopping_point_distance = closest_object_distance - object_braking_distance
+                if stopping_point_distance > 0:
                     # always allow minimum deceleration, to be able to adapt to map speeds
-                    acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / car_front_to_stopping_point, -self.default_deceleration)
+                    acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / stopping_point_distance, -self.default_deceleration)
                 else:
                     # emergency braking - car front over the stopping point
                     acceleration = -self.max_deceleration

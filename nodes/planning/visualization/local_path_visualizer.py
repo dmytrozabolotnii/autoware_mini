@@ -106,9 +106,9 @@ class LocalPathVisualizer:
                 waypoints_xy = [(w.pose.pose.position.x, w.pose.pose.position.y) for w in lane.waypoints]
                 local_path = LineString(waypoints_xy)
                 ego_distance_from_local_path_start = local_path.project(ShapelyPoint(self.current_pose.position.x, self.current_pose.position.y))
-                stopping_point_distance_from_path_start = ego_distance_from_local_path_start + self.current_pose_to_car_front + lane.closest_object_distance - object_braking_distance
+                stopping_point_distance_from_local_path_start = lane.closest_object_distance - object_braking_distance + ego_distance_from_local_path_start + self.current_pose_to_car_front
 
-                stop_position, stop_orientation = get_point_and_orientation_on_path_within_distance(lane.waypoints, stopping_point_distance_from_path_start)
+                stop_position, stop_orientation = get_point_and_orientation_on_path_within_distance(lane.waypoints, stopping_point_distance_from_local_path_start)
 
                 color = ColorRGBA(0.9, 0.9, 0.9, 0.2)           # white - obstcle affecting ego speed in slowdown area
                 if lane.is_blocked:
