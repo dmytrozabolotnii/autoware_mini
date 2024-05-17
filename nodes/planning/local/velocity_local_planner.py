@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import rospy
-import copy
 import math
 import threading
 from tf2_ros import Buffer, TransformListener, TransformException
@@ -154,7 +153,7 @@ class VelocityLocalPlanner:
         local_path_waypoints = []
         # for each new waypoint copy only the necessary parts
         for waypoint in global_path_waypoints[index_start:index_end]:
-            new_waypoint = Waypoint(pose = copy.copy(waypoint.pose), wpstate = copy.copy(waypoint.wpstate))
+            new_waypoint = Waypoint(pose = waypoint.pose, wpstate = waypoint.wpstate)
             new_waypoint.twist.twist.linear.x = waypoint.twist.twist.linear.x
             local_path_waypoints.append(new_waypoint)
 
@@ -234,7 +233,7 @@ class VelocityLocalPlanner:
                 intersection_point = local_path_linestring.intersection(stopline_ls)
                 assert isinstance(intersection_point, ShapelyPoint), "Stop line and local path intersection point is not a ShapelyPoint"
                 # calc distance for all intersection points
-                distance_to_stopline = local_path_linestring.project(intersection_point) - ego_distance_from_global_path_start - self.current_pose_to_car_front
+                distance_to_stopline = local_path_linestring.project(intersection_point) - ego_distance_from_local_path_start - self.current_pose_to_car_front
                 deceleration = (current_speed**2) / (2 * distance_to_stopline)
                 # check if deceleration is within the limits
                 if 0 <= deceleration <= self.tfl_maximum_deceleration:
@@ -242,7 +241,7 @@ class VelocityLocalPlanner:
                     object_velocities.append(0)
                     object_braking_distances.append(self.braking_safety_distance_stopline)
                 else:
-                    rospy.logwarn_throttle(3, "%s - ignore red traffic light, deceleration: %f", rospy.get_name(), deceleration)
+                    rospy.logwarn_throttle(3, "%s - ignore red traffic light, deceleration: %f, distance: %f", rospy.get_name(), deceleration, distance_to_stopline)
 
         # 3. ADD GOAL POINT AS OBSTACLE
         # Add last wp as goal point to stop the car before it
