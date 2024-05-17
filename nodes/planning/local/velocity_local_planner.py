@@ -138,12 +138,25 @@ class VelocityLocalPlanner:
         # Example of global path overlapping with itself or ego doing the 90deg turn and cutting the corner!
         ego_distance_from_global_path_start = global_path_linestring.project(current_position)
 
-        # extract local path, if None is returned publish empty local path
-        local_path_linestring, local_path_waypoints, ego_distance_from_local_path_start = self.extract_local_path(global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_global_path_start, self.local_path_length)
-        prepare(local_path_linestring)
-        if local_path_linestring is None:
+        # if current position is projected at the end of the global path - goal reached
+        if math.isclose(ego_distance_from_global_path_start, global_path_linestring.length):
             self.publish_local_path_wp([], msg.header.stamp, self.output_frame)
             return
+
+        # find index where distances are higher than ego distance on global_path
+        index_start = max(np.searchsorted(global_path_distances, ego_distance_from_global_path_start) - 1, 0)
+        index_end = np.searchsorted(global_path_distances, ego_distance_from_global_path_start + self.local_path_length)
+
+        local_path_linestring = LineString(global_path_linestring.coords[index_start:index_end])
+        prepare(local_path_linestring)
+        ego_distance_from_local_path_start = local_path_linestring.project(current_position)
+
+        local_path_waypoints = []
+        # for each new waypoint copy only the necessary parts
+        for waypoint in global_path_waypoints[index_start:index_end]:
+            new_waypoint = Waypoint(pose = copy.copy(waypoint.pose), wpstate = copy.copy(waypoint.wpstate))
+            new_waypoint.twist.twist.linear.x = waypoint.twist.twist.linear.x
+            local_path_waypoints.append(new_waypoint)
 
         #################################
         # Create collision points
@@ -307,27 +320,6 @@ class VelocityLocalPlanner:
         lane.cost = object_braking_distance
         self.local_path_pub.publish(lane)
 
-
-    def extract_local_path(self, global_path_linestring, global_path_waypoints, global_path_distances, ego_distance_from_global_path_start, local_path_length):
-
-        # current position is projected at the end of the global path - goal reached
-        if math.isclose(ego_distance_from_global_path_start, global_path_linestring.length):
-            return None, None, None
-
-        # find index where distances are higher than ego distance on global_path
-        index_start = max(np.searchsorted(global_path_distances, ego_distance_from_global_path_start) - 1, 0)
-        index_end = np.searchsorted(global_path_distances, ego_distance_from_global_path_start + local_path_length)
-        ego_distance_from_local_path_start = ego_distance_from_global_path_start - global_path_distances[index_start]
-
-        local_path_linestring = LineString(global_path_linestring.coords[index_start:index_end])
-        # deepcopy only the necessary part (other parts are not changed and are shared with global path waypoints)
-        local_path_waypoints = []
-        for waypoint in global_path_waypoints[index_start:index_end]:
-            new_waypoint = Waypoint(pose = copy.copy(waypoint.pose), wpstate = copy.copy(waypoint.wpstate))
-            new_waypoint.twist.twist.linear.x = waypoint.twist.twist.linear.x
-            local_path_waypoints.append(new_waypoint)
-
-        return local_path_linestring, local_path_waypoints, ego_distance_from_local_path_start
 
     def run(self):
         rospy.spin()
