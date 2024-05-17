@@ -2,12 +2,14 @@
 
 import math
 import rospy
+from shapely.geometry import Polygon
 
 from autoware_msgs.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point, Quaternion
 from std_msgs.msg import Header, ColorRGBA
 
+from helpers.shapely import get_polygon_width
 from helpers.geometry import get_orientation_from_heading
 
 class DetectedObjectsVisualizer:
@@ -91,14 +93,18 @@ class DetectedObjectsVisualizer:
 
             # candidate trajectories
             if len(object.candidate_trajectories.lanes) > 0:
+                # extract and visualize object width - used in object detection
+                object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
+                object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
+                object_width = get_polygon_width(object_polygon, object_heading)
                 marker = Marker(header=header)
                 marker.ns = 'candidate_trajectories'
                 marker.id = object.id
                 marker.type = marker.LINE_STRIP
                 marker.action = marker.ADD
                 marker.pose.orientation.w = 1.0
-                marker.scale.x = 0.1
-                marker.color = ColorRGBA(1.0, 1.0, 0.0, 1.0)
+                marker.scale.x = object_width
+                marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
                 marker.points = [Point(wp.pose.pose.position.x, wp.pose.pose.position.y, wp.pose.pose.position.z) for wp in object.candidate_trajectories.lanes[0].waypoints]
                 markers.markers.append(marker)
 
