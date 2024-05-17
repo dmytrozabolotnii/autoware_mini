@@ -233,15 +233,16 @@ class VelocityLocalPlanner:
                 intersection_point = local_path_linestring.intersection(stopline_ls)
                 assert isinstance(intersection_point, ShapelyPoint), "Stop line and local path intersection point is not a ShapelyPoint"
                 # calc distance for all intersection points
-                distance_to_stopline = local_path_linestring.project(intersection_point) - ego_distance_from_local_path_start - self.current_pose_to_car_front
-                deceleration = (current_speed**2) / (2 * distance_to_stopline)
+                distance_to_stopline = local_path_linestring.project(intersection_point)
+                distance_for_deceleration = distance_to_stopline - ego_distance_from_local_path_start - self.current_pose_to_car_front
+                deceleration = (current_speed**2) / (2 * distance_for_deceleration)
                 # check if deceleration is within the limits
                 if 0 <= deceleration <= self.tfl_maximum_deceleration:
                     object_distances.append(distance_to_stopline)
                     object_velocities.append(0)
                     object_braking_distances.append(self.braking_safety_distance_stopline)
                 else:
-                    rospy.logwarn_throttle(3, "%s - ignore red traffic light, deceleration: %f, distance: %f", rospy.get_name(), deceleration, distance_to_stopline)
+                    rospy.logwarn_throttle(3, "%s - ignore red traffic light, deceleration: %f, distance: %f", rospy.get_name(), deceleration, distance_for_deceleration)
 
         # 3. ADD GOAL POINT AS OBSTACLE
         # Add last wp as goal point to stop the car before it
