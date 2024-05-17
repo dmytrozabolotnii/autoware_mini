@@ -283,8 +283,7 @@ class VelocityLocalPlanner:
 
             # Recalculate target_velocity and overwrite in the waypoints
             zero_speeds_onwards = False
-            distance_between_wp_cumulative = 0.0
-
+            target_distance_obj = stopping_point_distance - self.current_pose_to_car_front - self.braking_reaction_time * np.abs(closest_object_velocity)
             for i, wp in enumerate(local_path_waypoints):
 
                 # store map based target velocity of a waypoint
@@ -296,8 +295,7 @@ class VelocityLocalPlanner:
                     continue
 
                 if i > 0:
-                    distance_between_wp_cumulative += get_distance_between_two_points_2d(local_path_waypoints[i-1].pose.pose.position, local_path_waypoints[i].pose.pose.position)
-                target_distance_obj = stopping_point_distance - self.current_pose_to_car_front - distance_between_wp_cumulative - self.braking_reaction_time * np.abs(closest_object_velocity)
+                    target_distance_obj -= get_distance_between_two_points_2d(local_path_waypoints[i-1].pose.pose.position, local_path_waypoints[i].pose.pose.position)
                 target_velocity_obj = np.sqrt(np.maximum(0.0, np.maximum(0.0, closest_object_velocity)**2 + 2 * self.default_deceleration * target_distance_obj))
 
                 # overwrite target velocity of wp
