@@ -234,7 +234,7 @@ class VelocityLocalPlanner:
                 intersection_point = local_path_linestring.intersection(stopline_ls)
                 assert isinstance(intersection_point, ShapelyPoint), "Stop line and local path intersection point is not a ShapelyPoint"
                 # calc distance for all intersection points
-                distance_to_stopline = local_path_linestring.project(intersection_point)
+                distance_to_stopline = local_path_linestring.project(intersection_point) - ego_distance_from_global_path_start - self.current_pose_to_car_front
                 deceleration = (current_speed**2) / (2 * distance_to_stopline)
                 # check if deceleration is within the limits
                 if 0 <= deceleration <= self.tfl_maximum_deceleration:
@@ -258,32 +258,33 @@ class VelocityLocalPlanner:
         # initialize closest object distance and velocity
         closest_object_distance = 0.0
         closest_object_velocity = 0.0
-        object_braking_distance = 0.0
+        stopping_point_distance = 0.0
         local_path_blocked = False
 
         if len(object_distances) > 0:
-            # object distances are calculated from local path start, correct with ego distance on local path
-            object_distances = np.array(object_distances) - ego_distance_from_local_path_start
+            object_distances = np.array(object_distances)
             object_velocities = np.array(object_velocities)
             object_braking_distances = np.array(object_braking_distances)
 
-            target_distances = object_distances - self.current_pose_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
+            # calculate target velocity for every object to select min target velocity object
+            target_distances = object_distances - ego_distance_from_local_path_start - self.current_pose_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
             target_velocities = np.sqrt(np.maximum(0.0, np.maximum(0.0, object_velocities)**2 + 2 * self.default_deceleration * target_distances))
 
             # index of min target velocity object
             min_value_index = np.argmin(target_velocities)
 
-            closest_object_distance = object_distances[min_value_index] - self.current_pose_to_car_front
+            closest_object_distance = object_distances[min_value_index] - ego_distance_from_local_path_start - self.current_pose_to_car_front
             closest_object_velocity = object_velocities[min_value_index]
-            object_braking_distance = object_braking_distances[min_value_index]
+            stopping_point_distance = object_distances[min_value_index] - object_braking_distances[min_value_index]
 
-            # don't set it blocked in case of goal point
-            if object_braking_distance > self.braking_safety_distance_goal:
+            # don't set it blocked in case of goal point otherwise blocked
+            if object_braking_distances[min_value_index] > self.braking_safety_distance_goal:
                 local_path_blocked = True
 
             # Recalculate target_velocity and overwrite in the waypoints
             zero_speeds_onwards = False
             distance_between_wp_cumulative = 0.0
+
             for i, wp in enumerate(local_path_waypoints):
 
                 # store map based target velocity of a waypoint
@@ -296,7 +297,7 @@ class VelocityLocalPlanner:
 
                 if i > 0:
                     distance_between_wp_cumulative += get_distance_between_two_points_2d(local_path_waypoints[i-1].pose.pose.position, local_path_waypoints[i].pose.pose.position)
-                target_distance_obj = closest_object_distance - object_braking_distances[min_value_index] - distance_between_wp_cumulative - self.braking_reaction_time * np.abs(closest_object_velocity)
+                target_distance_obj = stopping_point_distance - self.current_pose_to_car_front - distance_between_wp_cumulative - self.braking_reaction_time * np.abs(closest_object_velocity)
                 target_velocity_obj = np.sqrt(np.maximum(0.0, np.maximum(0.0, closest_object_velocity)**2 + 2 * self.default_deceleration * target_distance_obj))
 
                 # overwrite target velocity of wp
@@ -306,9 +307,9 @@ class VelocityLocalPlanner:
                 if math.isclose(wp.twist.twist.linear.x, 0.0):
                     zero_speeds_onwards = True
 
-        self.publish_local_path_wp(local_path_waypoints, msg.header.stamp, output_frame, closest_object_distance, closest_object_velocity, local_path_blocked, object_braking_distance)
+        self.publish_local_path_wp(local_path_waypoints, msg.header.stamp, output_frame, closest_object_distance, closest_object_velocity, local_path_blocked, stopping_point_distance)
 
-    def publish_local_path_wp(self, local_path_waypoints, stamp, output_frame, closest_object_distance=0.0, closest_object_velocity=0.0, local_path_blocked=False, object_braking_distance=0.0):
+    def publish_local_path_wp(self, local_path_waypoints, stamp, output_frame, closest_object_distance=0.0, closest_object_velocity=0.0, local_path_blocked=False, stopping_point_distance=0.0):
         # create lane message
         lane = Lane()
         lane.header.frame_id = output_frame
@@ -317,7 +318,7 @@ class VelocityLocalPlanner:
         lane.closest_object_distance = closest_object_distance
         lane.closest_object_velocity = closest_object_velocity
         lane.is_blocked = local_path_blocked
-        lane.cost = object_braking_distance
+        lane.cost = stopping_point_distance
         self.local_path_pub.publish(lane)
 
 
