@@ -59,18 +59,18 @@ class LocalPathVisualizer:
             marker_array.markers.append(marker)
 
             # local path with slowdown_lateral_distance
-            marker = Marker()
-            marker.header.frame_id = lane.header.frame_id
-            marker.header.stamp = stamp
-            marker.ns = "Slowdown lateral distance"
-            marker.type = marker.LINE_STRIP
-            marker.action = marker.ADD
-            marker.id = 1
-            marker.pose.orientation.w = 1.0
-            marker.scale.x = 2*self.slowdown_lateral_distance
-            marker.color = color
-            marker.points = points
-            marker_array.markers.append(marker)
+            #marker = Marker()
+            #marker.header.frame_id = lane.header.frame_id
+            #marker.header.stamp = stamp
+            #marker.ns = "Slowdown lateral distance"
+            #marker.type = marker.LINE_STRIP
+            #marker.action = marker.ADD
+            #marker.id = 1
+            #marker.pose.orientation.w = 1.0
+            #marker.scale.x = 2*self.slowdown_lateral_distance
+            #marker.color = color
+            #marker.points = points
+            #marker_array.markers.append(marker)
 
             # velocity labels
             for i, waypoint in enumerate(lane.waypoints):
