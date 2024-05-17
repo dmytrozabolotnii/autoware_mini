@@ -1,4 +1,4 @@
-from shapely import Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon
+from shapely import Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, GeometryCollection
 from shapely.affinity import rotate
 
 
@@ -19,17 +19,11 @@ def convert_to_shapely_points_list(geometry):
         intersection_points = [geometry]
     elif isinstance(geometry, LineString):
         intersection_points = [Point(coord) for coord in geometry.coords]
-    elif isinstance(geometry, MultiPolygon):
+    # in case of MultiPoint, MultiLineString, MultiPolygon, GeometryCollection
+    else:
         intersection_points = []
-        for polygon in geometry.geoms:
-            # skip last points of each polygon because it is the same as the first
-            intersection_points.extend([Point(coord) for coord in polygon.exterior.coords[:-1]])
-    elif isinstance(geometry, MultiPoint):
-        intersection_points = [point for point in geometry.geoms]
-    elif isinstance(geometry, MultiLineString):
-        intersection_points = []
-        for line in geometry.geoms:
-            intersection_points.extend([Point(coord) for coord in line.coords])
+        for geom in geometry.geoms:
+            intersection_points.extend(convert_to_shapely_points_list(geom))
 
     return intersection_points
 
