@@ -14,7 +14,6 @@ A ROS node that implements a global planner for autonomous vehicles based on Lan
 | `distance_to_goal_limit` | `float` | `2.0` | The minimum distance from the last waypoint to the goal position for the generated path |
 | `distance_to_centerline_limit` | `float` | `5.0` | The maximum distance from the centerline for a waypoint on the generated path |
 | `speed_limit` | `float` | `40.0` | The speed limit for the generated path |
-| `nearest_neighbor_search` | `string` | `"kd_tree"` | The type of the nearest neighbor search algorithm used by the planner |
 | `ego_vehicle_stopped_speed_limit` | `float` | `"0.1"` | Below this speed limit ego vehicle is considered as stopped |
 
 
