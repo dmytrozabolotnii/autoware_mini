@@ -4,7 +4,7 @@ import rospy
 import math
 from autoware_msgs.msg import Lane
 from visualization_msgs.msg import MarkerArray, Marker
-from std_msgs.msg import ColorRGBA
+from std_msgs.msg import ColorRGBA, Header
 from helpers.waypoints import get_point_and_orientation_on_path_within_distance
 
 class LocalPathVisualizer:
@@ -16,6 +16,8 @@ class LocalPathVisualizer:
         self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
 
+        self.published_local_path_len = 0
+
         # Publishers
         self.local_path_markers_pub = rospy.Publisher('local_path_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
 
@@ -24,30 +26,22 @@ class LocalPathVisualizer:
 
     def local_path_callback(self, lane):
 
+        local_path_len = len(lane.waypoints)
         # lane.cost is used to determine the stopping point distance from path start
         stopping_point_distance = lane.cost
 
+        header = Header()
+        header.stamp = rospy.Time.now()
+        header.frame_id = lane.header.frame_id
+
         marker_array = MarkerArray()
 
-        # create marker_array to delete previous visualization
-        marker = Marker()
-        marker.header.frame_id = lane.header.frame_id
-        marker.action = Marker.DELETEALL
-        marker_array.markers.append(marker)
-
-        stamp = rospy.Time.now()
-
-        if len(lane.waypoints) > 1:
-
+        if local_path_len > 1:
             points = [waypoint.pose.pose.position for waypoint in lane.waypoints]
-
-            # Color of the local path
             color = ColorRGBA(0.2, 1.0, 0.2, 0.3)
 
             # local path with stopping_lateral_distance
-            marker = Marker()
-            marker.header.frame_id = lane.header.frame_id
-            marker.header.stamp = stamp
+            marker = Marker(header=header)
             marker.ns = "Stopping lateral distance"
             marker.type = marker.LINE_STRIP
             marker.action = marker.ADD
@@ -59,13 +53,11 @@ class LocalPathVisualizer:
             marker_array.markers.append(marker)
 
             # local path with slowdown_lateral_distance
-            #marker = Marker()
-            #marker.header.frame_id = lane.header.frame_id
-            #marker.header.stamp = stamp
+            #marker = Marker(header=header)
             #marker.ns = "Slowdown lateral distance"
             #marker.type = marker.LINE_STRIP
             #marker.action = marker.ADD
-            #marker.id = 1
+            #marker.id = 0
             #marker.pose.orientation.w = 1.0
             #marker.scale.x = 2*self.slowdown_lateral_distance
             #marker.color = color
@@ -74,9 +66,7 @@ class LocalPathVisualizer:
 
             # velocity labels
             for i, waypoint in enumerate(lane.waypoints):
-                marker = Marker()
-                marker.header.frame_id = lane.header.frame_id
-                marker.header.stamp = stamp
+                marker = Marker(header=header)
                 marker.ns = "Velocity label"
                 marker.id = i
                 marker.type = marker.TEXT_VIEW_FACING
@@ -101,9 +91,7 @@ class LocalPathVisualizer:
                         color = ColorRGBA(1.0, 0.0, 0.0, 0.5)   # red - obstacle in front and very slow
 
                 # "Stopping point" - obstacle that currently causes the smallest target velocity
-                marker = Marker()
-                marker.header.frame_id = lane.header.frame_id
-                marker.header.stamp = stamp
+                marker = Marker(header=header)
                 marker.ns = "Stopping point"
                 marker.id = 0
                 marker.type = marker.CUBE
@@ -117,9 +105,46 @@ class LocalPathVisualizer:
                 marker.scale.z = 2.5
                 marker.color = color
                 marker_array.markers.append(marker)
+            else:
+                marker = Marker(header=header)
+                marker.ns = "Stopping point"
+                marker.id = 0
+                marker.action = marker.DELETE
+                marker_array.markers.append(marker)
+
+        # delete markers if local path not created
+        if local_path_len == 0 and self.published_local_path_len > 0:
+            print("deleting markers")
+            marker = Marker(header=header)
+            marker.ns = "Stopping lateral distance"
+            marker.id = 0
+            marker.action = marker.DELETE
+            marker_array.markers.append(marker)
+
+            #marker = Marker(header=header)
+            #marker.ns = "Slowdown lateral distance"
+            #marker.id = 0
+            #marker.action = marker.DELETE
+            #marker_array.markers.append(marker)
+
+            marker = Marker(header=header)
+            marker.ns = "Stopping point"
+            marker.id = 0
+            marker.action = marker.DELETE
+            marker_array.markers.append(marker)
+
+        if self.published_local_path_len > local_path_len:
+            # delete all markers if local path length decreased
+            for i in range(local_path_len, self.published_local_path_len):
+                marker = Marker(header=header)
+                marker.ns = "Velocity label"
+                marker.id = i
+                marker.action = marker.DELETE
+                marker_array.markers.append(marker)
+
+        self.published_local_path_len = local_path_len
 
         self.local_path_markers_pub.publish(marker_array)
-
 
     def run(self):
         rospy.spin()
