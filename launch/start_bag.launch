@@ -39,7 +39,7 @@
 
     <!-- Play back bag -->
     <node pkg="rosbag" type="play" name="player" required="true" output="screen"
-            args="$(find autoware_mini)/data/bags/$(arg bag_file) --clock --queue=1 --delay $(arg bag_delay) $(arg loop_option) $(arg start_option) $(arg duration_option)">
+            args="$(find autoware_mini)/data/bags/$(arg bag_file) --clock --quiet --queue=1 --delay $(arg bag_delay) $(arg loop_option) $(arg start_option) $(arg duration_option)">
         <!-- Rename saved topics that are replaced by current ones -->
         <remap from="/tf" to="/bag/tf" if="$(arg use_tf)"/>
         <remap from="/tf_static" to="/bag/tf_static" if="$(arg use_tf)"/>

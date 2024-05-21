@@ -13,6 +13,7 @@ class LocalPathVisualizer:
         # Parameters
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
         self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
+        self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
 
         # Publishers
@@ -20,7 +21,6 @@ class LocalPathVisualizer:
 
         # Subscribers
         rospy.Subscriber('local_path', Lane, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
-
 
     def local_path_callback(self, lane):
 
@@ -59,18 +59,18 @@ class LocalPathVisualizer:
             marker_array.markers.append(marker)
 
             # local path with slowdown_lateral_distance
-            marker = Marker()
-            marker.header.frame_id = lane.header.frame_id
-            marker.header.stamp = stamp
-            marker.ns = "Slowdown lateral distance"
-            marker.type = marker.LINE_STRIP
-            marker.action = marker.ADD
-            marker.id = 1
-            marker.pose.orientation.w = 1.0
-            marker.scale.x = 2*self.slowdown_lateral_distance
-            marker.color = color
-            marker.points = points
-            marker_array.markers.append(marker)
+            #marker = Marker()
+            #marker.header.frame_id = lane.header.frame_id
+            #marker.header.stamp = stamp
+            #marker.ns = "Slowdown lateral distance"
+            #marker.type = marker.LINE_STRIP
+            #marker.action = marker.ADD
+            #marker.id = 1
+            #marker.pose.orientation.w = 1.0
+            #marker.scale.x = 2*self.slowdown_lateral_distance
+            #marker.color = color
+            #marker.points = points
+            #marker_array.markers.append(marker)
 
             # velocity labels
             for i, waypoint in enumerate(lane.waypoints):
@@ -91,7 +91,8 @@ class LocalPathVisualizer:
                     break
 
             if stopping_point_distance > 0.0:
-                stop_position, stop_orientation = get_point_and_orientation_on_path_within_distance(lane.waypoints, 1, lane.waypoints[0].pose.pose.position, stopping_point_distance)
+
+                stop_position, stop_orientation = get_point_and_orientation_on_path_within_distance(lane.waypoints, stopping_point_distance)
 
                 color = ColorRGBA(0.9, 0.9, 0.9, 0.2)           # white - obstcle affecting ego speed in slowdown area
                 if lane.is_blocked:

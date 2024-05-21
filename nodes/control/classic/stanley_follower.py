@@ -28,12 +28,12 @@ class StanleyFollower:
         self.lateral_error_limit = rospy.get_param("lateral_error_limit")
         self.blinker_lookahead_time = rospy.get_param("blinker_lookahead_time")
         self.blinker_min_lookahead_distance = rospy.get_param("blinker_min_lookahead_distance")
+        self.current_pose_to_car_front = rospy.get_param("/planning/current_pose_to_car_front")
         self.publish_debug_info = rospy.get_param("~publish_debug_info")
         self.default_acceleration = rospy.get_param("/planning/default_acceleration")
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
         self.max_deceleration = rospy.get_param("/planning/max_deceleration")
         self.stopping_speed_limit = rospy.get_param("/planning/stopping_speed_limit")
-        self.current_pose_to_car_front = rospy.get_param("/planning/current_pose_to_car_front")
         self.simulate_cmd_delay = rospy.get_param("~simulate_cmd_delay")
 
         # Variables - init
@@ -174,10 +174,10 @@ class StanleyFollower:
             emergency = 0
             if stopping_point_distance > 0.0 and target_velocity < current_velocity:
                 # calculate distance from car front to stopping point
-                car_front_to_stopping_point = stopping_point_distance - ego_distance_from_path_start - self.current_pose_to_car_front
-                if car_front_to_stopping_point > 0:
+                car_front_to_stopping_point_distance = stopping_point_distance - ego_distance_from_path_start - self.current_pose_to_car_front
+                if car_front_to_stopping_point_distance > 0:
                     # always allow minimum deceleration, to be able to adapt to map speeds
-                    acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / car_front_to_stopping_point, -self.default_deceleration)
+                    acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / car_front_to_stopping_point_distance, -self.default_deceleration)
                 else:
                     # emergency braking - car front over the stopping point
                     acceleration = -self.max_deceleration

@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 
 import rospy
-import copy
 import math
 import threading
 from tf2_ros import Buffer, TransformListener, TransformException
-
 import numpy as np
-from sklearn.neighbors import NearestNeighbors
+from shapely.geometry import Polygon, LineString, Point as ShapelyPoint
+from shapely import prepare
 
-from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray
-from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3, Point
-from shapely.geometry import LineString, Point as ShapelyPoint
-from shapely import line_locate_point
+from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray, Waypoint
+from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 
-from helpers.waypoints import get_two_nearest_waypoint_idx
 from helpers.transform import transform_vector3
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines
+from helpers.geometry import get_distance_between_two_points_2d
+from helpers.shapely import convert_to_shapely_points_list, get_polygon_width
 
 
 class VelocityLocalPlanner:
@@ -25,16 +23,13 @@ class VelocityLocalPlanner:
 
         # Parameters
         self.local_path_length = rospy.get_param("~local_path_length")
-        self.nearest_neighbor_search = rospy.get_param("~nearest_neighbor_search")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.braking_safety_distance_obstacle = rospy.get_param("~braking_safety_distance_obstacle")
         self.braking_safety_distance_stopline = rospy.get_param("~braking_safety_distance_stopline")
         self.braking_safety_distance_goal = rospy.get_param("~braking_safety_distance_goal")
         self.braking_reaction_time = rospy.get_param("braking_reaction_time")
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
-        self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
-        self.waypoint_interval = rospy.get_param("waypoint_interval")
-        self.dense_waypoint_interval = rospy.get_param("~dense_waypoint_interval")
+#        self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
         self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.default_deceleration = rospy.get_param("default_deceleration")
         self.tfl_maximum_deceleration = rospy.get_param("~tfl_maximum_deceleration")
@@ -48,18 +43,17 @@ class VelocityLocalPlanner:
         # Internal variables
         self.lock = threading.Lock()
         self.output_frame = None
-        self.global_path_array = None
+        self.global_path_linestring = None
         self.global_path_waypoints = None
-        self.global_path_tree = None
-        self.current_position = None
+        self.global_path_distances = None
         self.current_speed = None
-        self.red_stop_lines = {}
+        self.current_position = None
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
-        self.waypoint_lookup_radius = np.sqrt(self.slowdown_lateral_distance**2 + self.dense_waypoint_interval**2)
+        self.red_stoplines = {}
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
-        self.all_stop_lines = get_stoplines(lanelet2_map)
+        self.all_stoplines = get_stoplines(lanelet2_map)
 
         # Publishers
         self.local_path_pub = rospy.Publisher('local_path', Lane, queue_size=1, tcp_nodelay=True)
@@ -75,29 +69,28 @@ class VelocityLocalPlanner:
     def path_callback(self, msg):
 
         if len(msg.waypoints) == 0:
-            with self.lock:
-                self.output_frame = msg.header.frame_id
-                self.global_path_array = None
-                self.global_path_waypoints = None
-                self.global_path_tree = None
-            return
+            global_path_linestring = None
+            global_path_waypoints = None
+            global_path_distances = None
+            rospy.loginfo("%s - Empty global path received", rospy.get_name())
+        else:
+            global_path_waypoints = msg.waypoints
+            waypoints_xyz = np.array([(w.pose.pose.position.x, w.pose.pose.position.y, w.pose.pose.position.z) for w in global_path_waypoints])
+            # convert waypoints to shapely linestring
+            global_path_linestring = LineString(waypoints_xyz)
+            prepare(global_path_linestring)
 
-        # extract all waypoint attributes
-        global_path_waypoints = msg.waypoints
-        global_path_array = np.array([(
-                wp.pose.pose.position.x,
-                wp.pose.pose.position.y
-            ) for wp in msg.waypoints])
+            # calculate distances between points, use only xy, and insert 0 at start of distances array
+            global_path_distances = np.cumsum(np.sqrt(np.sum(np.diff(waypoints_xyz[:,:2], axis=0)**2, axis=1)))
+            global_path_distances = np.insert(global_path_distances, 0, 0)
 
-        # create global_wp_tree
-        global_path_tree = NearestNeighbors(n_neighbors=1, algorithm=self.nearest_neighbor_search)
-        global_path_tree.fit(global_path_array[:,:2])
+            rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(msg.waypoints))
 
         with self.lock:
             self.output_frame = msg.header.frame_id
-            self.global_path_array = global_path_array
+            self.global_path_linestring = global_path_linestring
             self.global_path_waypoints = global_path_waypoints
-            self.global_path_tree = global_path_tree
+            self.global_path_distances = global_path_distances
 
 
     def current_velocity_callback(self, msg):
@@ -107,208 +100,207 @@ class VelocityLocalPlanner:
 
     def current_pose_callback(self, msg):
         # save current pose
-        self.current_position = msg.pose.position
+        self.current_position = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
 
     def traffic_light_status_callback(self, msg):
 
-        red_stop_lines = {}
+        red_stoplines = {}
         for result in msg.results:
             if result.recognition_result == 0:
-                red_stop_lines[result.lane_id] = result.recognition_result
+                red_stoplines[result.lane_id] = result.recognition_result
 
-        self.red_stop_lines = red_stop_lines
+        self.red_stoplines = red_stoplines
 
 
     def detected_objects_callback(self, msg):
-
-        # get global path
         with self.lock:
             output_frame = self.output_frame
-            global_path_array = self.global_path_array
+            global_path_linestring = self.global_path_linestring
             global_path_waypoints = self.global_path_waypoints
-            global_path_tree = self.global_path_tree
+            global_path_distances = self.global_path_distances
 
-        # no need for lock because assignment is atomic in Python
-        red_stop_lines = self.red_stop_lines
+        red_stoplines = self.red_stoplines
         current_position = self.current_position
         current_speed = self.current_speed
 
         # if global path, current pose or current_speed is None, publish empty local path, which stops the vehicle
-        if global_path_array is None or current_position is None or current_speed is None:
+        if global_path_waypoints is None or current_position is None or current_speed is None:
             self.publish_local_path_wp([], msg.header.stamp, output_frame)
             return
 
-        # extract local path points from global path
-        wp_backward, _ = get_two_nearest_waypoint_idx(global_path_tree, current_position.x, current_position.y)
-        end_index = min(wp_backward + int(self.local_path_length / self.waypoint_interval), len(global_path_array))
+        #################################
+        # Extract local path
+        #################################
 
-        # create local_path_array and extract waypoints
-        local_path_array = global_path_array[wp_backward:end_index, :].copy()
-        local_path_waypoints = copy.deepcopy(global_path_waypoints[wp_backward:end_index])
+        # TODO how to avoid jumping from one place to another on path - just finding the closest point is dangerous!
+        # Example of global path overlapping with itself or ego doing the 90deg turn and cutting the corner!
+        ego_distance_from_global_path_start = global_path_linestring.project(current_position)
 
-        # project current_position to path
-        local_path_linestring = LineString(local_path_array.tolist())
-        ego_distance_from_path_start = line_locate_point(local_path_linestring, ShapelyPoint(current_position.x, current_position.y))
+        # if current position is projected at the end of the global path - goal reached
+        if math.isclose(ego_distance_from_global_path_start, global_path_linestring.length):
+            self.publish_local_path_wp([], msg.header.stamp, self.output_frame)
+            return
 
-        # calculate distances up to each waypoint
-        local_path_dists = np.cumsum(np.sqrt(np.sum(np.diff(local_path_array[:,:2], axis=0)**2, axis=1)))
-        local_path_dists = np.insert(local_path_dists, 0, 0.0)
+        # find index where distances are higher than ego distance on global_path
+        index_start = max(np.searchsorted(global_path_distances, ego_distance_from_global_path_start) - 1, 0)
+        index_end = np.searchsorted(global_path_distances, ego_distance_from_global_path_start + self.local_path_length)
 
-        # interpolate dense local path and use it to calculate the closest object distance and velocity
-        local_path_dense_dists = np.linspace(0, local_path_dists[-1], num=int(local_path_dists[-1] / self.dense_waypoint_interval))
-        x_new = np.interp(local_path_dense_dists, local_path_dists, local_path_array[:,0])
-        y_new = np.interp(local_path_dense_dists, local_path_dists, local_path_array[:,1])
-        local_path_dense = np.stack((x_new, y_new), axis=1)
+        local_path_linestring = LineString(global_path_linestring.coords[index_start:index_end])
+        prepare(local_path_linestring)
+        ego_distance_from_local_path_start = local_path_linestring.project(current_position)
 
-        # initialize closest object distance and velocity
-        closest_object_distance = 0.0
-        closest_object_velocity = 0.0 
-        local_path_blocked = False
-        stopping_point_distance = 0.0
+        local_path_waypoints = []
+        # for each new waypoint copy only the necessary parts
+        for waypoint in global_path_waypoints[index_start:index_end]:
+            new_waypoint = Waypoint(pose = waypoint.pose, wpstate = waypoint.wpstate)
+            new_waypoint.twist.twist.linear.x = waypoint.twist.twist.linear.x
+            local_path_waypoints.append(new_waypoint)
 
-        # fetch the transform from the object frame to the base_link frame to align the speed with ego vehicle
-        try:
-            transform = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp, rospy.Duration(self.transform_timeout))
-        except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-            rospy.logwarn("%s - unable to transform object speed to base frame, using speed 0: %s", rospy.get_name(), e)
-            transform = None
+        #################################
+        # Create collision points
+        #################################
 
-        # 1. ADD DETECTED OBJECTS AS OBSTACLES
-        # extract object points from detected objects
-        points_list = []
-        for obj in msg.objects:
-            # project object velocity to base_link frame to get longitudinal speed
-            # TODO: project velocity to the path
-            # in case there is no transform assume the object is not moving
-            if transform is not None:
-                velocity = transform_vector3(obj.velocity.linear, transform)
-            else:
-                velocity = Vector3()
-            # add object center point and convex hull points to the points list
-            points_list.append([obj.pose.position.x, obj.pose.position.y, obj.pose.position.z, velocity.x, self.braking_safety_distance_obstacle])
-            for point in obj.convex_hull.polygon.points:
-                points_list.append([point.x, point.y, point.z, velocity.x, self.braking_safety_distance_obstacle])
-            # add predicted path points to the points list, if they exist
-            # TODO: move convex hull points to the predicted position and add them to the points list
-            if len(obj.candidate_trajectories.lanes) > 0:
-                for wp in obj.candidate_trajectories.lanes[0].waypoints:
-                    points_list.append([wp.pose.pose.position.x, wp.pose.pose.position.y, wp.pose.pose.position.z, velocity.x, self.braking_safety_distance_obstacle])
+        # collect objects (closest point from each object, path end point, stopline points)
+        object_distances = []
+        object_velocities = []
+        object_braking_distances = []
+
+        if len(msg.objects) > 0:
+            # fetch the transform from the object frame to the base_link frame to align the speed with ego vehicle
+            try:
+                transform = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp, rospy.Duration(self.transform_timeout))
+            except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
+                rospy.logwarn("%s - unable to transform object speed to base frame, using speed 0: %s", rospy.get_name(), e)
+                transform = None
+
+        # create buffer around local path
+        local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
+        prepare(local_path_buffer)
+
+        # 1. ADD DETECTED OBJECTS AND CANDIDATE TRAJECTORIES AS OBSTACLES
+        for object in msg.objects:
+            # get the convex hulls and store as shapely polygons
+            object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
+
+            # chek if object polygon intersects with local path buffer
+            if local_path_buffer.intersects(object_polygon):
+                intersection_result = object_polygon.intersection(local_path_buffer)
+                intersection_points = convert_to_shapely_points_list(intersection_result)
+
+                # calc distance for all intersection points and take the minimum
+                object_distance = min([local_path_linestring.project(point) for point in intersection_points])
+
+                # project object velocity to base_link frame to get longitudinal speed
+                # in case there is no transform assume the object is not moving
+                if transform is not None:
+                    velocity = transform_vector3(object.velocity.linear, transform)
+                else:
+                    velocity = Vector3()
+
+                object_distances.append(object_distance)
+                object_velocities.append(velocity.x)
+                object_braking_distances.append(self.braking_safety_distance_obstacle)
+
+            # check if object candidate trajectory intersects with local path buffer
+            if len(object.candidate_trajectories.lanes) > 0:
+                object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
+                object_width = get_polygon_width(object_polygon, object_heading)
+
+                trajectory_linestring = LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in object.candidate_trajectories.lanes[0].waypoints])
+                trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="square")
+                prepare(trajectory_buffer)
+                if local_path_buffer.intersects(trajectory_buffer):
+                    intersection_result = trajectory_buffer.intersection(local_path_buffer)
+                    intersection_points = convert_to_shapely_points_list(intersection_result)
+
+                    # calc distance for all intersection points and take the minimum
+                    object_distance = min([local_path_linestring.project(point) for point in intersection_points])
+
+                    if transform is not None:
+                        velocity = transform_vector3(object.velocity.linear, transform)
+                    else:
+                        velocity = Vector3()
+
+                    object_distances.append(object_distance)
+                    object_velocities.append(velocity.x)
+                    object_braking_distances.append(self.braking_safety_distance_obstacle)
 
         # 2. ADD RED STOPLINES AS OBSTACLES
-        # collect red stopline geometries into one array
-        red_stoplines_linestrings = [self.all_stop_lines[stopline_id] for stopline_id in red_stop_lines]
-        # find intersection points between local path and red stoplines
-        intersection_points = local_path_linestring.intersection(red_stoplines_linestrings)
-        # add all intersection points as obstacles
-        for intersection_point in intersection_points:
-            # if intersection_point is ShapelyPoint the stopline intersects with local path
-            if isinstance(intersection_point, ShapelyPoint):
-                # ignore red traffic light if deceleration is too high or stop line behind us
-                distance_from_current_position_on_path = line_locate_point(local_path_linestring, intersection_point) - ego_distance_from_path_start - self.current_pose_to_car_front
-                deceleration = (current_speed**2) / (2 * distance_from_current_position_on_path)
+        red_stoplines_linestrings = [self.all_stoplines[stopline_id] for stopline_id in red_stoplines]
+        for stopline_ls in red_stoplines_linestrings:
+            if stopline_ls.intersects(local_path_linestring):
+                intersection_point = local_path_linestring.intersection(stopline_ls)
+                assert isinstance(intersection_point, ShapelyPoint), "Stop line and local path intersection point is not a ShapelyPoint"
+                # calc distance for all intersection points
+                distance_to_stopline = local_path_linestring.project(intersection_point)
+                distance_for_deceleration = distance_to_stopline - ego_distance_from_local_path_start - self.current_pose_to_car_front
+                deceleration = (current_speed**2) / (2 * distance_for_deceleration)
+                # check if deceleration is within the limits
                 if 0 <= deceleration <= self.tfl_maximum_deceleration:
-                    # don't have z coordinate for stopline (intersection in 3d is unreliable) - use current_position.z
-                    points_list.append([intersection_point.x, intersection_point.y, current_position.z, 0.0, self.braking_safety_distance_stopline])
+                    object_distances.append(distance_to_stopline)
+                    object_velocities.append(0)
+                    object_braking_distances.append(self.braking_safety_distance_stopline)
                 else:
-                    rospy.logwarn_throttle(3, "%s - ignore red traffic light, deceleration: %f", rospy.get_name(), deceleration)
+                    rospy.logwarn_throttle(3, "%s - ignore red traffic light, deceleration: %f, distance: %f", rospy.get_name(), deceleration, distance_for_deceleration)
 
         # 3. ADD GOAL POINT AS OBSTACLE
         # Add last wp as goal point to stop the car before it
-        goal_point = global_path_waypoints[-1].pose.pose.position
-        points_list.append([goal_point.x, goal_point.y, goal_point.z, 0.0, self.braking_safety_distance_goal])
+        if global_path_linestring.coords[-1] == local_path_linestring.coords[-1]:
+            object_distances.append(local_path_linestring.length)
+            object_velocities.append(0)
+            object_braking_distances.append(self.braking_safety_distance_goal)
 
-        if len(points_list) > 0:
-            # convert the points list to a numpy array
-            obstacle_array = np.array(points_list)
-            # create spatial index over obstacles for quick search
-            obstacle_tree = NearestNeighbors(n_neighbors=1, algorithm=self.nearest_neighbor_search).fit(obstacle_array[:,:2])
-            # find closest local_path points to obstacles - lateral dist from path
-            obstacle_d, obstacle_idx = obstacle_tree.radius_neighbors(local_path_dense[:,:2], self.waypoint_lookup_radius, return_distance=True)
+        #################################
+        # Calculate target velocity
+        #################################
 
-            # create indexes for obstacles with respect to local_path_dense
-            wp_idx = np.repeat(np.arange(len(obstacle_idx)), [len(i) for i in obstacle_idx])
-            obstacles_dense_path = np.column_stack((wp_idx, np.concatenate(obstacle_idx), np.concatenate(obstacle_d)))
+        # initialize closest object distance and velocity
+        closest_object_distance = 0.0
+        closest_object_velocity = 0.0
+        stopping_point_distance = 0.0
+        local_path_blocked = False
 
-            # filter with self.slowdown_lateral_distance (since nearest neighbor search is a "circle" some points might be slightly over the limit)
-            obstacles_dense_path = obstacles_dense_path[obstacles_dense_path[:,2] <= self.slowdown_lateral_distance]
+        if len(object_distances) > 0:
+            object_distances = np.array(object_distances)
+            object_velocities = np.array(object_velocities)
+            object_braking_distances = np.array(object_braking_distances)
 
-            if len(obstacles_dense_path) > 0:
+            # calculate target velocity for every object to select min target velocity object
+            target_distances = object_distances - ego_distance_from_local_path_start - self.current_pose_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
+            target_velocities = np.sqrt(np.maximum(0.0, np.maximum(0.0, object_velocities)**2 + 2 * self.default_deceleration * target_distances))
 
-                # sort and for all obstacle points keep only the one with min lateral distance - closest to being perpendicular with path
-                obstacles_dense_path = obstacles_dense_path[obstacles_dense_path[:,2].argsort()]
-                _, unique_indices = np.unique(obstacles_dense_path[:, 1], return_index=True)
-                obstacles_dense_path = obstacles_dense_path[unique_indices]
+            # index of min target velocity object
+            min_value_index = np.argmin(target_velocities)
 
-                # Extract necessary arrays
-                obstacles_ahead_speeds = obstacle_array[obstacles_dense_path[:,1].astype(int),3]
-                obstacles_ahead_dists = local_path_dense_dists[obstacles_dense_path[:,0].astype(int)]
-                obstacles_ahead_lateral_dists = obstacles_dense_path[:,2]
-                braking_safety_distances = obstacle_array[obstacles_dense_path[:,1].astype(int),4]
+            closest_object_distance = object_distances[min_value_index] - ego_distance_from_local_path_start - self.current_pose_to_car_front
+            closest_object_velocity = object_velocities[min_value_index]
+            stopping_point_distance = object_distances[min_value_index] - object_braking_distances[min_value_index]
 
-                # ALL OBSTACLES
-                # subtract braking_safety_distance and additionally reaction_time and obstacle_speed based distance for larger longitudinal distance when driving faster
-                target_distances = obstacles_ahead_dists - self.current_pose_to_car_front - braking_safety_distances - self.braking_reaction_time * abs(obstacles_ahead_speeds)
-                # use target_distance and if sqrt is negative use 0 - we do not want to drive!
-                target_velocities = np.sqrt(np.maximum(0, np.maximum(0, obstacles_ahead_speeds)**2 + 2 * self.default_deceleration * target_distances))
+            # don't set it blocked in case of goal point otherwise blocked
+            if object_braking_distances[min_value_index] > self.braking_safety_distance_goal:
+                local_path_blocked = True
 
-                # OBSTACLES ONLY WITHIN SLOWDOWN LATERAL DISTANCE
-                # create mask to select obstacles within slowdown_lateral_distance and outside stopping_lateral_distance
-                obstacles_in_slowdown_area_mask = obstacles_ahead_lateral_dists > self.stopping_lateral_distance
-                target_velocities_slowdown = target_velocities[obstacles_in_slowdown_area_mask]
-                # calculate scaling coefficient to transform lateral distance between 0 to 1
-                scale = np.zeros_like(target_velocities)
-                scale[obstacles_in_slowdown_area_mask] = (obstacles_ahead_lateral_dists[obstacles_in_slowdown_area_mask] - self.stopping_lateral_distance) / (self.slowdown_lateral_distance - self.stopping_lateral_distance)
-                # calculate target velocity: scale possible max and min velocity difference and add to min velocity
-                target_velocities_slowdown = scale[obstacles_in_slowdown_area_mask] * np.maximum((local_path_waypoints[0].twist.twist.linear.x - target_velocities_slowdown), 0) + target_velocities_slowdown
+            # Recalculate target_velocity and overwrite in the waypoints
+            zero_speeds_onwards = False
+            target_distance_obj = stopping_point_distance - self.current_pose_to_car_front - self.braking_reaction_time * np.abs(closest_object_velocity)
+            for i, wp in enumerate(local_path_waypoints):
 
-                # Update target_velocities with obstacles only within slowdown_lateral_distance
-                target_velocities[obstacles_in_slowdown_area_mask] = target_velocities_slowdown
+                # once we get zero speed, keep it that way
+                if zero_speeds_onwards:
+                    wp.twist.twist.linear.x = 0.0
+                    continue
 
-                # Find obstacle causing smallest target velocity at ego car location
-                lowest_target_velocity_idx = np.argmin(target_velocities)
+                if i > 0:
+                    target_distance_obj -= get_distance_between_two_points_2d(local_path_waypoints[i-1].pose.pose.position, local_path_waypoints[i].pose.pose.position)
+                target_velocity_obj = np.sqrt(np.maximum(0.0, np.maximum(0.0, closest_object_velocity)**2 + 2 * self.default_deceleration * target_distance_obj))
 
-                # If any calculated target_vel drops close to 0 then use this boolean to set all following wp speeds to 0
-                zero_speeds_onwards = False
+                # overwrite target velocity of wp
+                wp.twist.twist.linear.x = min(target_velocity_obj, wp.twist.twist.linear.x)
 
-                # calculate target velocity for each waypoint - only one obstacle (causing lowest target velocity) is considered inside for loop 
-                for i, wp in enumerate(local_path_waypoints):
-
-                    # once we get zero speed, keep it that way
-                    if zero_speeds_onwards:
-                        wp.twist.twist.linear.x = 0.0
-                        continue
-
-                    # obstacle distance from car front
-                    obstacle_distance = obstacles_ahead_dists[lowest_target_velocity_idx] - local_path_dists[i] - self.current_pose_to_car_front
-
-                    # calculate target velocity as if it is blocking the lane (inside stopping_lateral_distance)
-                    target_distance = obstacle_distance - braking_safety_distances[lowest_target_velocity_idx]- self.braking_reaction_time * abs(obstacles_ahead_speeds[lowest_target_velocity_idx])
-                    target_velocity = np.sqrt(np.maximum(0, np.maximum(0, obstacles_ahead_speeds[lowest_target_velocity_idx])**2 + 2 * self.default_deceleration * target_distance))
-
-                    # calculate target velocity in case of obstacle in slowdown_lateral_distance
-                    if obstacles_ahead_lateral_dists[lowest_target_velocity_idx] > self.stopping_lateral_distance:
-                        target_velocity = scale[lowest_target_velocity_idx] * np.maximum((wp.twist.twist.linear.x - target_velocity), 0) + target_velocity
-
-                    # target velocity cannot be higher than the map based speed
-                    target_velocity = min(target_velocity, wp.twist.twist.linear.x)
-
-                    #  Assign variables with respect to first waypoint (ego vehicle location)
-                    if i == 0:
-                        closest_object_distance = obstacle_distance - ego_distance_from_path_start
-                        closest_object_velocity = obstacles_ahead_speeds[lowest_target_velocity_idx]
-                        stopping_point_distance = max(0, obstacles_ahead_dists[lowest_target_velocity_idx] - braking_safety_distances[lowest_target_velocity_idx])
-
-                        # lowest target velocity obstacle within stopping_lateral_distance - blocking; ignore goal point with braking_safety_distance_goal = 0.0
-                        if obstacles_ahead_lateral_dists[lowest_target_velocity_idx] <= self.stopping_lateral_distance and braking_safety_distances[lowest_target_velocity_idx] > 0.0:
-                            local_path_blocked = True
-
-                    # overwrite target velocity of wp
-                    wp.twist.twist.linear.x = target_velocity
-
-                    # from stop point onwards all speeds are set to zero
-                    if math.isclose(wp.twist.twist.linear.x, 0.0):
-                        zero_speeds_onwards = True
+                # from stop point onwards all speeds are set to zero
+                if math.isclose(wp.twist.twist.linear.x, 0.0):
+                    zero_speeds_onwards = True
 
         self.publish_local_path_wp(local_path_waypoints, msg.header.stamp, output_frame, closest_object_distance, closest_object_velocity, local_path_blocked, stopping_point_distance)
 
