@@ -234,10 +234,11 @@ class VelocityLocalPlanner:
                 assert isinstance(intersection_point, ShapelyPoint), "Stop line and local path intersection point is not a ShapelyPoint"
                 # calc distance for all intersection points
                 distance_to_stopline = local_path_linestring.project(intersection_point)
-                distance_for_deceleration = distance_to_stopline - ego_distance_from_local_path_start - self.current_pose_to_car_front
+                ego_distance_from_stopline = distance_to_stopline - ego_distance_from_local_path_start
+                distance_for_deceleration = ego_distance_from_stopline - self.current_pose_to_car_front
                 deceleration = (current_speed**2) / (2 * distance_for_deceleration)
-                # check if deceleration is within the limits
-                if 0 <= deceleration <= self.tfl_maximum_deceleration:
+                # base_link has not crossed the stopline and velocity < 5km/h or deceleration is less than maximum deceleration
+                if ego_distance_from_stopline > 0 and current_speed < 5 / 3.6 or 0 <= deceleration <= self.tfl_maximum_deceleration:
                     object_distances.append(distance_to_stopline)
                     object_velocities.append(0)
                     object_braking_distances.append(self.braking_safety_distance_stopline)
