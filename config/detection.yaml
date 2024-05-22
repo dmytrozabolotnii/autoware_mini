@@ -13,10 +13,10 @@ lidar:
       input_frame: lidar_center
       output_frame: lidar_center
     ground_removal:
-      min_x: -60.0
-      max_x: 60.0
-      min_y: -60.0
-      max_y: 60.0
+      min_x: -30.0
+      max_x: 70.0
+      min_y: -30.0
+      max_y: 30.0
       min_z: -2.5
       max_z: 0.05
       cell_size: 0.6
