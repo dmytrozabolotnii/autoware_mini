@@ -91,12 +91,12 @@ class Lanelet2MapVisualizer:
         states = {}
         for result in msg.results:
             # check if we have already outputted the status of this stopline
-            if result.lane_id in states:
-                assert states[result.lane_id] == result.recognition_result_str, "Multiple traffic lights with different states on the same stop line"
+            if result.stopline_id in states and states[result.stopline_id] != result.recognition_result_str:
+                rospy.logwarn("%s - multiple traffic lights with different states on the same stop line %d: %s != %s", rospy.get_name(), result.stopline_id, states[result.stopline_id], result.recognition_result_str)
                 continue
 
             # fetch the stop line data
-            stop_line = self.lanelet2_map.lineStringLayer.get(result.lane_id)
+            stop_line = self.lanelet2_map.lineStringLayer.get(result.stopline_id)
             points = [Point(x=p.x, y=p.y, z=p.z + 0.01) for p in stop_line]
 
             # choose the color of stopline based on the traffic light state
@@ -120,7 +120,7 @@ class Lanelet2MapVisualizer:
             marker_array.markers.append(text_marker)
 
             # record the state of this stop line
-            states[result.lane_id] = result.recognition_result_str
+            states[result.stopline_id] = result.recognition_result_str
 
         self.tfl_stop_line_markers_pub.publish(marker_array)
 

@@ -15,5 +15,5 @@ string recognition_result_str
 
 # LaneId to which this traffic light result belongs to
 # this Id is defined by the ADAS MAP
-int32 lane_id
+int32 stopline_id
 

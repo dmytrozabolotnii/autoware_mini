@@ -116,7 +116,7 @@ class CarlaTrafficLightDetector:
 
                 tfl_result = TrafficLightResult()
                 tfl_result.light_id = light_id
-                tfl_result.lane_id = stopline_id
+                tfl_result.stopline_id = stopline_id
                 tfl_result.recognition_result = CARLA_TO_AUTOWARE_TFL_MAP[light.state]
                 tfl_result.recognition_result_str = CARLA_TO_AUTOWARE_TFL_STR[light.state]
                 tfl_status.results.append(tfl_result)

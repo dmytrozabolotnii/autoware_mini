@@ -88,7 +88,7 @@ class MqttTrafficLightDetector:
             tfl_status = TrafficLightResultArray()
             tfl_status.header.stamp = rospy.Time.now()
 
-            for lane_id, api_id in self.stop_line_ids.items():
+            for stopline_id, api_id in self.stop_line_ids.items():
 
                 result_str = "UNKNOWN"
                 result = MQTT_TO_AUTOWARE_TFL_MAP[result_str]
@@ -106,7 +106,7 @@ class MqttTrafficLightDetector:
 
                 tfl_result = TrafficLightResult()
                 tfl_result.light_id = 0
-                tfl_result.lane_id = lane_id
+                tfl_result.stopline_id = stopline_id
                 tfl_result.recognition_result = result
                 tfl_result.recognition_result_str = result_str + self.id_string
                 tfl_status.results.append(tfl_result)

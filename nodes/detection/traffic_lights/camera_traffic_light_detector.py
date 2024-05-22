@@ -98,10 +98,10 @@ class CameraTrafficLightDetector:
         if len(local_path_msg.waypoints) > 0:
             local_path = shapely.LineString([(wp.position.x, wp.position.y) for wp in local_path_msg.waypoints])
 
-            for linkId, stopline in self.stoplines.items():
+            for stopline_id, stopline in self.stoplines.items():
                 # check if stopline intersects with local path
                 if local_path.intersects(stopline):
-                    stoplines_on_path.append(linkId)
+                    stoplines_on_path.append(stopline_id)
 
         with self.lock:
             self.stoplines_on_path = stoplines_on_path
@@ -160,11 +160,11 @@ class CameraTrafficLightDetector:
                 scores = np.max(predictions, axis=1)
                 
                 # extract results in sync with rois
-                for cl, (linkId, plId, _, _, _, _) in zip(classes, rois):
+                for cl, (stopline_id, tfl_id, _, _, _, _) in zip(classes, rois):
 
                     tfl_result = TrafficLightResult()
-                    tfl_result.light_id = plId
-                    tfl_result.lane_id = linkId
+                    tfl_result.light_id = tfl_id
+                    tfl_result.stopline_id = stopline_id
                     tfl_result.recognition_result = CLASSIFIER_RESULT_TO_TLRESULT[cl]
                     tfl_result.recognition_result_str = CLASSIFIER_RESULT_TO_STRING[cl]
 

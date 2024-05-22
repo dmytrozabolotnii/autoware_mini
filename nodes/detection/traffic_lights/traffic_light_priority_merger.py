@@ -32,10 +32,10 @@ class TrafficLightPriorityMerger:
             topic_2_tfl_results = {}
 
             for result in topic_2_msg.results:
-                if result.lane_id not in topic_2_tfl_results:
-                    topic_2_tfl_results[result.lane_id] = result
+                if result.stopline_id not in topic_2_tfl_results:
+                    topic_2_tfl_results[result.stopline_id] = result
                 else:
-                    rospy.logwarn("%s - Duplicate lane_id (%s) in tfl_status_topic_2, keeping first", rospy.get_name(), result.lane_id)
+                    rospy.logwarn("%s - Duplicate stopline_id (%s) in tfl_status_topic_2, keeping first", rospy.get_name(), result.stopline_id)
 
             # iterate over priority topic (MQTT)
             for result in topic_1_msg.results:
@@ -43,13 +43,13 @@ class TrafficLightPriorityMerger:
                 if result.recognition_result != 2:
                     merged_tfl_status_msg.results.append(result)
                     # delete result from topic 2 if it exists there
-                    if result.lane_id in topic_2_tfl_results.keys():
-                        del topic_2_tfl_results[result.lane_id]
+                    if result.stopline_id in topic_2_tfl_results.keys():
+                        del topic_2_tfl_results[result.stopline_id]
                 else:
-                    if result.lane_id in topic_2_tfl_results.keys():
+                    if result.stopline_id in topic_2_tfl_results.keys():
                         # if result is unknown and there is a result in topic 2, use topic 2 result
-                        merged_tfl_status_msg.results.append(topic_2_tfl_results[result.lane_id])
-                        del topic_2_tfl_results[result.lane_id]
+                        merged_tfl_status_msg.results.append(topic_2_tfl_results[result.stopline_id])
+                        del topic_2_tfl_results[result.stopline_id]
                     else:
                         # if result is unknown and there is no result in topic 2, use topic 1 result
                         merged_tfl_status_msg.results.append(result)
