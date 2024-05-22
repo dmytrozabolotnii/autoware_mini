@@ -1,3 +1,5 @@
+import math
+import numpy as np
 from shapely import Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, GeometryCollection
 from shapely.affinity import rotate
 
@@ -42,3 +44,29 @@ def get_polygon_width(polygon, heading_angle):
     minx, miny, maxx, maxy = rotated_polygon.bounds
     width = maxx - minx
     return width
+
+def transform_velocity_with_respect_to_path(path, object_distance, object_velocity):
+    """
+    Transform object velocity with respect to closest point on path
+    :param path: shapely LineString
+    :param object_distance: distance of object from the path
+    :param object_velocity: velocity of object (Vector3)
+    :return: transformed velocity
+    """
+
+    object_location = path.interpolate(object_distance)
+    track_point = path.interpolate(object_distance - 1.0)
+
+    # get heading between two points
+    path_heading = math.atan2(object_location.y - track_point.y, object_location.x - track_point.x)
+
+    # create rotation matrix from heading
+    rotation_matrix = np.array([[math.cos(path_heading), math.sin(path_heading)],
+                                [-math.sin(path_heading), math.cos(path_heading)]])
+
+    object_velocity = np.array([object_velocity.x, object_velocity.y])
+
+    # Rotate velocity vetor
+    transformed_velocity = rotation_matrix.dot(object_velocity)
+
+    return transformed_velocity[0]

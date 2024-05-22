@@ -3,18 +3,16 @@
 import rospy
 import math
 import threading
-from tf2_ros import Buffer, TransformListener, TransformException
 import numpy as np
 from shapely.geometry import Polygon, LineString, Point as ShapelyPoint
 from shapely import prepare
 
 from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray, Waypoint
-from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
+from geometry_msgs.msg import PoseStamped, TwistStamped
 
-from helpers.transform import transform_vector3
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines
 from helpers.geometry import get_distance_between_two_points_2d
-from helpers.shapely import convert_to_shapely_points_list, get_polygon_width
+from helpers.shapely import convert_to_shapely_points_list, get_polygon_width, transform_velocity_with_respect_to_path
 
 
 class VelocityLocalPlanner:
@@ -48,8 +46,6 @@ class VelocityLocalPlanner:
         self.global_path_distances = None
         self.current_speed = None
         self.current_position = None
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer)
         self.red_stoplines = {}
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
@@ -166,14 +162,6 @@ class VelocityLocalPlanner:
         object_velocities = []
         object_braking_distances = []
 
-        if len(msg.objects) > 0:
-            # fetch the transform from the object frame to the base_link frame to align the speed with ego vehicle
-            try:
-                transform = self.tf_buffer.lookup_transform("base_link", msg.header.frame_id, msg.header.stamp, rospy.Duration(self.transform_timeout))
-            except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-                rospy.logwarn("%s - unable to transform object speed to base frame, using speed 0: %s", rospy.get_name(), e)
-                transform = None
-
         # create buffer around local path
         local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
         prepare(local_path_buffer)
@@ -191,15 +179,11 @@ class VelocityLocalPlanner:
                 # calc distance for all intersection points and take the minimum
                 object_distance = min([local_path_linestring.project(point) for point in intersection_points])
 
-                # project object velocity to base_link frame to get longitudinal speed
-                # in case there is no transform assume the object is not moving
-                if transform is not None:
-                    velocity = transform_vector3(object.velocity.linear, transform)
-                else:
-                    velocity = Vector3()
+                # transform object velocity with respect to closest point on path
+                transformed_velocity = transform_velocity_with_respect_to_path(local_path_linestring, object_distance, object.velocity.linear)
 
                 object_distances.append(object_distance)
-                object_velocities.append(velocity.x)
+                object_velocities.append(transformed_velocity)
                 object_braking_distances.append(self.braking_safety_distance_obstacle)
 
             # check if object candidate trajectory intersects with local path buffer
@@ -217,13 +201,11 @@ class VelocityLocalPlanner:
                     # calc distance for all intersection points and take the minimum
                     object_distance = min([local_path_linestring.project(point) for point in intersection_points])
 
-                    if transform is not None:
-                        velocity = transform_vector3(object.velocity.linear, transform)
-                    else:
-                        velocity = Vector3()
+                    # transform object velocity with respect to closest point on path
+                    transformed_velocity = transform_velocity_with_respect_to_path(local_path_linestring, object_distance, object.velocity.linear)
 
                     object_distances.append(object_distance)
-                    object_velocities.append(velocity.x)
+                    object_velocities.append(transformed_velocity)
                     object_braking_distances.append(self.braking_safety_distance_obstacle)
 
         # 2. ADD RED STOPLINES AS OBSTACLES
