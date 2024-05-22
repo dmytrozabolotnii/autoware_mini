@@ -33,7 +33,7 @@ class VelocityLocalPlanner:
         self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.default_deceleration = rospy.get_param("default_deceleration")
         self.tfl_maximum_deceleration = rospy.get_param("~tfl_maximum_deceleration")
-
+        self.tfl_force_stop_speed_limit = rospy.get_param("~tfl_force_stop_speed_limit")
         coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
         use_custom_origin = rospy.get_param("/localization/use_custom_origin")
         utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
@@ -237,8 +237,8 @@ class VelocityLocalPlanner:
                 ego_distance_from_stopline = distance_to_stopline - ego_distance_from_local_path_start
                 distance_for_deceleration = ego_distance_from_stopline - self.current_pose_to_car_front
                 deceleration = (current_speed**2) / (2 * distance_for_deceleration)
-                # base_link has not crossed the stopline and velocity < 5km/h or deceleration is less than maximum deceleration
-                if ego_distance_from_stopline > 0 and current_speed < 5 / 3.6 or 0 <= deceleration <= self.tfl_maximum_deceleration:
+                # base_link has not crossed the stopline and velocity is below tfl_force_stop_speed_limit or deceleration is less than maximum allowed deceleration
+                if ego_distance_from_stopline > 0 and current_speed < self.tfl_force_stop_speed_limit / 3.6 or 0 <= deceleration <= self.tfl_maximum_deceleration:
                     object_distances.append(distance_to_stopline)
                     object_velocities.append(0)
                     object_braking_distances.append(self.braking_safety_distance_stopline)

@@ -114,7 +114,6 @@ class LocalPathVisualizer:
 
         # delete markers if local path not created
         if local_path_len == 0 and self.published_local_path_len > 0:
-            print("deleting markers")
             marker = Marker(header=header)
             marker.ns = "Stopping lateral distance"
             marker.id = 0

@@ -37,6 +37,7 @@ velocity_local_planner:
   local_path_length: 100
   transform_timeout: 0.06
   tfl_maximum_deceleration: 2.8
+  tfl_force_stop_speed_limit: 5.0         # km/h
   braking_safety_distance_obstacle: 4.0
   braking_safety_distance_stopline: 2.0
   braking_safety_distance_goal: 0.1
