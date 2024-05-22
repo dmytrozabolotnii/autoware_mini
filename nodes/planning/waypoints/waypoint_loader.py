@@ -4,9 +4,7 @@ import rospy
 import csv
 import math
 
-from autoware_mini.msg import Lane, Waypoint
-
-from helpers.geometry import get_orientation_from_heading
+from autoware_mini.msg import Path, Waypoint
 
 class WaypointLoader:
     def __init__(self):
@@ -18,7 +16,7 @@ class WaypointLoader:
         self.wp_right_width = rospy.get_param("~wp_right_width")
 
         # Publishers
-        self.waypoints_pub = rospy.Publisher('global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
+        self.waypoints_pub = rospy.Publisher('global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
 
         self.waypoints = self.load_waypoints(self.waypoints_file)
         self.publish_waypoints()  
@@ -40,7 +38,7 @@ class WaypointLoader:
             waypoints = []
 
             for row in reader:
-                # skip empty rows, if no data at all - no waypoints are returned and empty lane is published
+                # skip empty rows, if no data at all - no waypoints are returned and empty path is published
                 if not row:
                     continue
                 # create waypoint
@@ -76,13 +74,13 @@ class WaypointLoader:
         return waypoints
 
     def publish_waypoints(self):
-        lane = Lane()
+        path = Path()
         
-        lane.header.frame_id = self.output_frame
-        lane.header.stamp = rospy.Time.now()
-        lane.waypoints = self.waypoints
+        path.header.frame_id = self.output_frame
+        path.header.stamp = rospy.Time.now()
+        path.waypoints = self.waypoints
         
-        self.waypoints_pub.publish(lane)
+        self.waypoints_pub.publish(path)
 
 
     def run(self):

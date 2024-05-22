@@ -27,7 +27,7 @@ None.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/global_path` | `autoware_mini/Lane` | The lane message containing the loaded waypoints. |
+| `/global_path` | `autoware_mini/Path` | The path message containing the loaded waypoints. |
 
 
 

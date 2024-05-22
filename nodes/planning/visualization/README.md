@@ -15,7 +15,7 @@ No parameters.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `/global_path` | `autoware_mini/Lane` | The global path to be visualized. |
+| `/global_path` | `autoware_mini/Path` | The global path to be visualized. |
 
 
 #### Published Topics
@@ -78,7 +78,7 @@ A ROS node that visualizes the local path and other relevant information.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/local_path` | `autoware_mini/Lane` | The local path to visualize |
+| `/local_path` | `autoware_mini/Path` | The local path to visualize |
 
 
 #### Published Topics
@@ -103,7 +103,7 @@ No parameters.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/planning/local_path` | `autoware_mini/Lane` | Local path published by the planning module |
+| `/planning/local_path` | `autoware_mini/Path` | Local path published by the planning module |
 | `/control/vehicle_cmd` | `autoware_mini/VehicleCmd` | Vehicle command published by the control module |
 | `/localization/current_velocity` | `geometry_msgs/TwistStamped` | Current velocity published by the localization module |
 

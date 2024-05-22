@@ -59,7 +59,7 @@ class CarlaWaypointsPublisher():
         """
         Callback for path. Convert it to Autoware LaneArray and publish it
         """
-        msg = Lane()
+        msg = Path()
         msg.header = data.header
 
         waypoints = []

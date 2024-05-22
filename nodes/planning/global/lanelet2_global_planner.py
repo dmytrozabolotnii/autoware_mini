@@ -7,7 +7,7 @@ import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import to2D, findWithin2d, length2d, distance as lanelet2_distance
 from geometry_msgs.msg import PoseStamped, TwistStamped, Point
-from autoware_mini.msg import Lane, Waypoint
+from autoware_mini.msg import Path, Waypoint
 from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Empty, EmptyResponse
 from visualization_msgs.msg import MarkerArray, Marker
@@ -58,7 +58,7 @@ class Lanelet2GlobalPlanner:
         self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
 
         # Publishers
-        self.waypoints_pub = rospy.Publisher('lanelet2_global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
+        self.waypoints_pub = rospy.Publisher('lanelet2_global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
         self.target_lane_pub = rospy.Publisher('target_lane_markers', MarkerArray, queue_size=10, latch=True, tcp_nodelay=True)
 
         # Subscribers
@@ -290,12 +290,12 @@ class Lanelet2GlobalPlanner:
     
     def publish_waypoints(self, waypoints):
 
-        lane = Lane()        
-        lane.header.frame_id = self.output_frame
-        lane.header.stamp = rospy.Time.now()
-        lane.waypoints = waypoints
+        path = Path()
+        path.header.frame_id = self.output_frame
+        path.header.stamp = rospy.Time.now()
+        path.waypoints = waypoints
         
-        self.waypoints_pub.publish(lane)
+        self.waypoints_pub.publish(path)
 
     def publish_target_lanelets(self, start_lanelet, goal_lanelet):
         

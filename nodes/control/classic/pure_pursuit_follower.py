@@ -13,7 +13,7 @@ from helpers.path import Path
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
 from std_msgs.msg import ColorRGBA, Float32MultiArray
-from autoware_mini.msg import Lane, VehicleCmd, Gear
+from autoware_mini.msg import Path, VehicleCmd, Gear
 
 
 class PurePursuitFollower:
@@ -48,7 +48,7 @@ class PurePursuitFollower:
             self.follower_debug_pub = rospy.Publisher('follower_debug', Float32MultiArray, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('/planning/local_path', Lane, self.path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/planning/local_path', Path, self.path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         current_pose_sub = message_filters.Subscriber('/localization/current_pose', PoseStamped, queue_size=1, tcp_nodelay=True)
         current_velocity_sub = message_filters.Subscriber('/localization/current_velocity', TwistStamped, queue_size=1, tcp_nodelay=True)
         ts = message_filters.TimeSynchronizer([current_pose_sub, current_velocity_sub], queue_size=2)

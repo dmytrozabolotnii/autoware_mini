@@ -17,8 +17,8 @@ add_message_files(
   DetectedObjectArray.msg
   Gear.msg
   LampCmd.msg
-  Lane.msg
-  LaneArray.msg
+  Path.msg
+  PathArray.msg
   TrafficLightResult.msg
   TrafficLightResultArray.msg
   VehicleCmd.msg

@@ -2,7 +2,7 @@
 
 import rospy
 import math
-from autoware_mini.msg import Lane
+from autoware_mini.msg import Path
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from jsk_rviz_plugins.msg import OverlayText
@@ -38,9 +38,9 @@ class LocalPathVisualizer:
         self.planner_status_pub = rospy.Publisher('/dashboard/planner_status', OverlayText, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('local_path', Lane, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('local_path', Path, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
-    def local_path_callback(self, lane):
+    def local_path_callback(self, path):
 
         # lane.cost is used to determine the stopping point distance from path start
         stopping_point_distance = max(lane.cost, 0.0)

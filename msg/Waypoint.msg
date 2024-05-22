@@ -2,7 +2,7 @@ geometry_msgs/Point32 position
 float32 heading
 float32 speed
 
-# lane width
+# path width
 float32 left_width
 float32 right_width
 
