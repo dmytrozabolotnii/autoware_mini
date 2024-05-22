@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from autoware_mini.msg import Lane
+from autoware_mini.msg import Lane, Waypoint
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from helpers.geometry import get_orientation_from_heading

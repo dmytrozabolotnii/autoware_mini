@@ -6,7 +6,7 @@ import shapely
 
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Point, Quaternion
+from geometry_msgs.msg import Point
 from std_msgs.msg import Header, ColorRGBA
 
 from helpers.shapely import get_polygon_width
