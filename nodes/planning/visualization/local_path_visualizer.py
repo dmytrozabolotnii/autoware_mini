@@ -16,7 +16,7 @@ class LocalPathVisualizer:
         self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
 
-        self.published_local_path_len = 0
+        self.published_waypoints = 0
 
         # Publishers
         self.local_path_markers_pub = rospy.Publisher('local_path_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
@@ -27,6 +27,7 @@ class LocalPathVisualizer:
     def local_path_callback(self, lane):
 
         local_path_len = len(lane.waypoints)
+        current_waypoints = 0
         # lane.cost is used to determine the stopping point distance from path start
         stopping_point_distance = lane.cost
 
@@ -76,6 +77,8 @@ class LocalPathVisualizer:
                 marker.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
                 marker.text = str(round(waypoint.twist.twist.linear.x * 3.6, 1))
                 marker_array.markers.append(marker)
+
+                current_waypoints = i
                 # add only up to a first 0.0 velocity label
                 if math.isclose(waypoint.twist.twist.linear.x, 0.0):
                     break
@@ -113,7 +116,7 @@ class LocalPathVisualizer:
                 marker_array.markers.append(marker)
 
         # delete markers if local path not created
-        if local_path_len == 0 and self.published_local_path_len > 0:
+        if local_path_len == 0 and self.published_waypoints > 0:
             marker = Marker(header=header)
             marker.ns = "Stopping lateral distance"
             marker.id = 0
@@ -132,16 +135,16 @@ class LocalPathVisualizer:
             marker.action = marker.DELETE
             marker_array.markers.append(marker)
 
-        if self.published_local_path_len > local_path_len:
+        if self.published_waypoints > current_waypoints:
             # delete all markers if local path length decreased
-            for i in range(local_path_len, self.published_local_path_len):
+            for i in range(current_waypoints + 1, self.published_waypoints + 1):
                 marker = Marker(header=header)
                 marker.ns = "Velocity label"
                 marker.id = i
                 marker.action = marker.DELETE
                 marker_array.markers.append(marker)
 
-        self.published_local_path_len = local_path_len
+        self.published_waypoints = current_waypoints
 
         self.local_path_markers_pub.publish(marker_array)
 
