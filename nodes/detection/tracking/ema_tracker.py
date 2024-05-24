@@ -160,8 +160,8 @@ class EMATracker:
         #self.tracked_objects_array['detection_counter'][missed_track_indices] = 0
 
         # move missed tracks forward
-        assert len(self.tracked_objects) == len(self.tracked_objects_array) == len(tracked_object_centroids) == len(tracked_object_bboxes)
         if self.enable_missed_detection_propagation:
+            assert len(self.tracked_objects) == len(self.tracked_objects_array) == len(tracked_object_centroids) == len(tracked_object_bboxes)
             self.tracked_objects_array['centroid'][missed_track_indices] = tracked_object_centroids[missed_track_indices]
             self.tracked_objects_array['bbox'][missed_track_indices] = tracked_object_bboxes[missed_track_indices]
             for idx in missed_track_indices:
