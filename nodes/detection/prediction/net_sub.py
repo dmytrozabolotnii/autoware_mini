@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import rospy
 import threading
+import time
 
 from autoware_msgs.msg import Lane, DetectedObjectArray, Waypoint
 from geometry_msgs.msg import TwistStamped
@@ -32,6 +33,8 @@ class NetSubscriber(metaclass=ABCMeta):
 
         # ROS timers/pub/sub
         self.class_init = False
+        self.timer = time.time()
+        self.timer2 = time.time()
 
         self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
         self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
@@ -93,6 +96,8 @@ class NetSubscriber(metaclass=ABCMeta):
         self.objects_pub.publish(output_msg_array)
 
     def move_endpoints(self):
+        print('Time of moving endpoints ', time.time() - self.timer2)
+        self.timer2 = time.time()
         # Moves end-point of cached trajectory every inference
         with self.lock:
             for _id in self.active_keys:

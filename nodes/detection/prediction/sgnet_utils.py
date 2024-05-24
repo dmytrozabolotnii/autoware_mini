@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import argparse
 from torch.utils import data
+from typing import List
 
 def parse_base_args():
     parser = argparse.ArgumentParser()
@@ -141,7 +142,7 @@ class SGNet(nn.Module):
         goal_for_enc = torch.bmm(enc_attn, goal_for_enc).squeeze(1)
         return goal_for_dec, goal_for_enc, goal_traj
 
-    def decoder(self, dec_hidden, goal_for_dec):
+    def decoder(self, dec_hidden, goal_for_dec: List[torch.Tensor]):
         # initial trajectory tensor
         dec_traj = dec_hidden.new_zeros(dec_hidden.size(0), self.dec_steps, self.pred_dim)
         for dec_step in range(self.dec_steps):
@@ -160,7 +161,7 @@ class SGNet(nn.Module):
             dec_traj[:, dec_step, :] = self.regressor(dec_hidden)
         return dec_traj
 
-    def encoder(self, traj_input, flow_input=None, start_index=0):
+    def encoder(self, traj_input):
         # initial output tensor
         all_goal_traj = traj_input.new_zeros(traj_input.size(0), self.enc_steps, self.dec_steps, self.pred_dim)
         all_dec_traj = traj_input.new_zeros(traj_input.size(0), self.enc_steps, self.dec_steps, self.pred_dim)
@@ -168,12 +169,13 @@ class SGNet(nn.Module):
         goal_for_enc = traj_input.new_zeros((traj_input.size(0), self.hidden_size // 4))
         # initial encoder hidden with zeros
         traj_enc_hidden = traj_input.new_zeros((traj_input.size(0), self.hidden_size))
-        for enc_step in range(start_index, self.enc_steps):
+        for enc_step in range(0, self.enc_steps):
 
             traj_enc_hidden = self.traj_enc_cell(
                 self.enc_drop(torch.cat((traj_input[:, enc_step, :], goal_for_enc), 1)), traj_enc_hidden)
-            if self.dataset in ['JAAD', 'PIE', 'ETH', 'HOTEL', 'UNIV', 'ZARA1', 'ZARA2']:
-                enc_hidden = traj_enc_hidden
+            # if self.dataset in ['JAAD', 'PIE', 'ETH', 'HOTEL', 'UNIV', 'ZARA1', 'ZARA2']:
+            #     enc_hidden = traj_enc_hidden
+            enc_hidden = traj_enc_hidden
             # generate hidden states for goal and decoder
             goal_hidden = self.enc_to_goal_hidden(enc_hidden)
             dec_hidden = self.enc_to_dec_hidden(enc_hidden)
@@ -187,16 +189,16 @@ class SGNet(nn.Module):
 
         return all_goal_traj, all_dec_traj
 
-    def forward(self, inputs, start_index=0):
+    def forward(self, inputs):
         if self.dataset in ['JAAD', 'PIE']:
             traj_input = self.feature_extractor(inputs)
             all_goal_traj, all_dec_traj = self.encoder(traj_input)
             return all_goal_traj, all_dec_traj
         elif self.dataset in ['ETH', 'HOTEL', 'UNIV', 'ZARA1', 'ZARA2']:
-            traj_input_temp = self.feature_extractor(inputs[:, start_index:, :])
+            traj_input_temp = self.feature_extractor(inputs[:, 0:, :])
             traj_input = traj_input_temp.new_zeros((inputs.size(0), inputs.size(1), traj_input_temp.size(-1)))
-            traj_input[:, start_index:, :] = traj_input_temp
-            all_goal_traj, all_dec_traj = self.encoder(traj_input, None, start_index)
+            traj_input[:, 0:, :] = traj_input_temp
+            all_goal_traj, all_dec_traj = self.encoder(traj_input)
             return all_goal_traj, all_dec_traj
 
 

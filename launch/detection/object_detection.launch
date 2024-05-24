@@ -183,7 +183,7 @@
     <!-- Metrics-->
     <node type="metrics_visualizer.py" ns="predictor" name="metrics_visualizer" pkg="autoware_mini" output="screen" required="true">
         <remap from="predicted_objects" to="/detection/final_objects" />
-        <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
+        <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
         <param name="predictor" type="string" value="$(arg predictor)"/>
         <param name="bag_file" type="string" value="$(arg bag_file)"/>
     </node>

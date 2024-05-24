@@ -25,10 +25,14 @@ class GATrajSubscriber(NetSubscriber):
         self.model.load_state_dict(self.checkpoint["state_dict"])
         self.predictions_amount = rospy.get_param('~predictions_amount')
         self.pad_past = self.args.min_obs
+        self.timer = time.time()
 
         rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
+        print('Time of callback', time.time() - self.timer)
+        self.timer = time.time()
+
         if len(self.active_keys) and self.model is not None and next(self.model.parameters()).is_cuda:
             # Run inference
             with self.lock:
@@ -53,7 +57,7 @@ class GATrajSubscriber(NetSubscriber):
             t0 = time.time()
 
             inference_result = gatraj_iter(inference_dataset, self.model, self.device, self.args, n=self.predictions_amount)
-            print('Inference time:', time.time() - t0)
+            # print('Inference time:', time.time() - t0)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
                 with self.lock:

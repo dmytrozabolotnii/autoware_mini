@@ -3,7 +3,7 @@
 import numpy as np
 import rospy
 import threading
-import os, sys
+import os, sys, time
 import os.path as osp
 import bisect
 from scipy.special import softmax
@@ -47,7 +47,9 @@ class MetricsVisualizer:
         self.pad_future = int(rospy.get_param('prediction_horizon'))
         self.bagscenarioname = rospy.get_param('~bag_file')[:-4]
         self.predictorname = rospy.get_param('~predictor')
-        self.csvfilename = osp.join(rospy.get_param('~data_path_prediction'), self.bagscenarioname + '_' + self.predictorname + '.csv')
+        self.csvfilename = osp.join(rospy.get_param('~csv_file_result'), self.bagscenarioname, self.bagscenarioname + '_' + self.predictorname + '_' + str(time.time()) + '.csv')
+        if not osp.exists(osp.join(rospy.get_param('~csv_file_result'), self.bagscenarioname)):
+            os.makedirs(osp.join(rospy.get_param('~csv_file_result'), self.bagscenarioname))
 
         self.result_log = []
         self.ade = rospy.Publisher('/dashboard/ade', Float32, queue_size=1)
@@ -99,6 +101,10 @@ class MetricsVisualizer:
                 else:
                     if (candidate_traj_header.stamp - self.cache[_id].return_last_header().stamp >=
                             rospy.Duration(self.metrics_timer_duration)):
+                        if (candidate_traj_header.stamp - self.cache[_id].return_last_header().stamp >=
+                              4 * rospy.Duration(self.metrics_timer_duration)):
+                            rospy.logwarn_throttle(3, "%s - Predictions lagging behind messages",
+                                                   rospy.get_name())
                         self.cache[_id].move_endpoints()
                         self.cache[_id].update_last_trajectory(position, velocity, acceleration, candidate_traj_header)
                         predictions = []
@@ -156,7 +162,7 @@ class MetricsVisualizer:
                             ade_grad_list.append(self.ade_grad_history[_id][-1])
         if len(ade_grad_list) > 0:
             ade_grad_list_softmax = softmax(ade_grad_list)
-            print(ade_grad_list_softmax)
+            # print(ade_grad_list_softmax)
             # Find task-aware ade after we calculated grad softmax for every agent's predictions
             for detectedobject in detectedobjectsarray.objects:
                 if detectedobject.label == 'pedestrian' and len(detectedobject.candidate_trajectories.lanes) > 0:
