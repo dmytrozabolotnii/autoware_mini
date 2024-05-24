@@ -90,6 +90,9 @@ obstacle_simulation:
   publish_rate: 10
 
 ema_tracker:
+  enable_initial_velocity_estimate: True
+  enable_initial_acceleration_estimate: True
+  enable_missed_detection_propagation: True
   detection_counter_threshold: 2
   missed_counter_threshold: 2
   velocity_gain: 0.1
