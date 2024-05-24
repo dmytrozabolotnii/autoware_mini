@@ -1,7 +1,8 @@
 import math
 import numpy as np
-from shapely import Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, GeometryCollection
+from shapely import Point, LineString, Polygon
 from shapely.affinity import rotate
+from helpers.geometry import project_vector
 
 
 def convert_to_shapely_points_list(geometry):
@@ -45,6 +46,23 @@ def get_polygon_width(polygon, heading_angle):
     width = maxx - minx
     return width
 
+def get_path_heading(path, distance):
+    """
+    Get heading of the path at a given distance
+    :param path: shapely LineString
+    :param distance: distance along the path
+    :return: heading angle in radians
+    """
+
+    object_location = path.interpolate(distance)
+    track_point = path.interpolate(distance - 1.0)
+
+    # get heading between two points
+    path_heading = math.atan2(object_location.y - track_point.y, object_location.x - track_point.x)
+
+    return path_heading
+
+
 def transform_velocity_with_respect_to_path(path, object_distance, object_velocity):
     """
     Transform object velocity with respect to closest point on path
@@ -54,19 +72,7 @@ def transform_velocity_with_respect_to_path(path, object_distance, object_veloci
     :return: transformed velocity
     """
 
-    object_location = path.interpolate(object_distance)
-    track_point = path.interpolate(object_distance - 1.0)
+    path_heading = get_path_heading(path, object_distance)
+    speed = project_vector(path_heading, (object_velocity.x, object_velocity.y))
 
-    # get heading between two points
-    path_heading = math.atan2(object_location.y - track_point.y, object_location.x - track_point.x)
-
-    # create rotation matrix from heading
-    rotation_matrix = np.array([[math.cos(path_heading), math.sin(path_heading)],
-                                [-math.sin(path_heading), math.cos(path_heading)]])
-
-    object_velocity = np.array([object_velocity.x, object_velocity.y])
-
-    # Rotate velocity vetor
-    transformed_velocity = rotation_matrix.dot(object_velocity)
-
-    return transformed_velocity[0]
+    return speed

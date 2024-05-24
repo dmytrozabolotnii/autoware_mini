@@ -101,3 +101,13 @@ def get_vector_norm_3d(vec):
     """
 
     return math.sqrt(vec.x ** 2 + vec.y ** 2 + vec.z ** 2)
+
+def project_vector(heading_angle, vector):
+    """
+    Project vector on the heading direction
+    :param heading_angle: heading angle in radians
+    :param vector: vector
+    :return: projected vector
+    """
+
+    return vector[0] * math.cos(heading_angle) + vector[1] * math.sin(heading_angle)
