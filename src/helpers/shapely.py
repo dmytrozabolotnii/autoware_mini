@@ -2,7 +2,7 @@ import math
 import numpy as np
 from shapely import Point, LineString, Polygon
 from shapely.affinity import rotate
-from helpers.geometry import project_vector
+from helpers.geometry import project_vector_to_heading
 
 
 def convert_to_shapely_points_list(geometry):
@@ -46,7 +46,7 @@ def get_polygon_width(polygon, heading_angle):
     width = maxx - minx
     return width
 
-def get_path_heading(path, distance):
+def get_path_heading_at_distance(path, distance):
     """
     Get heading of the path at a given distance
     :param path: shapely LineString
@@ -54,25 +54,10 @@ def get_path_heading(path, distance):
     :return: heading angle in radians
     """
 
-    object_location = path.interpolate(distance)
-    track_point = path.interpolate(distance - 1.0)
+    point_after_object = path.interpolate(distance + 0.1)
+    point_before_object = path.interpolate(distance - 0.1)
 
     # get heading between two points
-    path_heading = math.atan2(object_location.y - track_point.y, object_location.x - track_point.x)
+    path_heading = math.atan2(point_after_object.y - point_before_object.y, point_after_object.x - point_before_object.x)
 
     return path_heading
-
-
-def transform_velocity_with_respect_to_path(path, object_distance, object_velocity):
-    """
-    Transform object velocity with respect to closest point on path
-    :param path: shapely LineString
-    :param object_distance: distance of object from the path
-    :param object_velocity: velocity of object (Vector3)
-    :return: transformed velocity
-    """
-
-    path_heading = get_path_heading(path, object_distance)
-    speed = project_vector(path_heading, (object_velocity.x, object_velocity.y))
-
-    return speed

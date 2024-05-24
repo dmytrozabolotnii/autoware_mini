@@ -11,8 +11,8 @@ from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray
 from geometry_msgs.msg import PoseStamped, TwistStamped
 
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines
-from helpers.geometry import get_distance_between_two_points_2d
-from helpers.shapely import convert_to_shapely_points_list, get_polygon_width, transform_velocity_with_respect_to_path
+from helpers.geometry import get_distance_between_two_points_2d, project_vector_to_heading
+from helpers.shapely import convert_to_shapely_points_list, get_polygon_width, get_path_heading_at_distance
 
 
 class VelocityLocalPlanner:
@@ -180,10 +180,11 @@ class VelocityLocalPlanner:
                 object_distance = min([local_path_linestring.project(point) for point in intersection_points])
 
                 # transform object velocity with respect to closest point on path
-                transformed_velocity = transform_velocity_with_respect_to_path(local_path_linestring, object_distance, object.velocity.linear)
+                path_heading = get_path_heading_at_distance(local_path_linestring, object_distance)
+                speed = project_vector_to_heading(path_heading, object.velocity.linear)
 
                 object_distances.append(object_distance)
-                object_velocities.append(transformed_velocity)
+                object_velocities.append(speed)
                 object_braking_distances.append(self.braking_safety_distance_obstacle)
 
             # check if object candidate trajectory intersects with local path buffer
@@ -202,10 +203,11 @@ class VelocityLocalPlanner:
                     object_distance = min([local_path_linestring.project(point) for point in intersection_points])
 
                     # transform object velocity with respect to closest point on path
-                    transformed_velocity = transform_velocity_with_respect_to_path(local_path_linestring, object_distance, object.velocity.linear)
+                    path_heading = get_path_heading_at_distance(local_path_linestring, object_distance)
+                    speed = project_vector_to_heading(path_heading, object.velocity.linear)
 
                     object_distances.append(object_distance)
-                    object_velocities.append(transformed_velocity)
+                    object_velocities.append(speed)
                     object_braking_distances.append(self.braking_safety_distance_obstacle)
 
         # 2. ADD RED STOPLINES AS OBSTACLES
