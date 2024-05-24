@@ -437,7 +437,7 @@ def gatraj_iter(dataset, model, device, args, n):
         # print('Session forward time', time.time() - t0)
         t0 = time.time()
         out_mu, out_sigma, out_pi = model.forward(batch_abs_gt, batch_norm_gt, nei_lists, nei_num, batch_split)
-        print('Model forward time', time.time() - t0)
+        # print('Model forward time', time.time() - t0)
         # pred_traj = torch.cat((out_mu, out_sigma), dim=-1)
         pred_traj = out_mu
         pred_traj = pred_traj.cpu().numpy()
