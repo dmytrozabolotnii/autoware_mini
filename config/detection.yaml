@@ -103,8 +103,8 @@ ema_tracker:
 predictor:
   prediction_horizon: 12 # prediction horizon in steps
   prediction_history: 8 # prediction data history in steps
-  step_length: 0.25 # step length in seconds
-  inference_timer: 0.25 # prediction will run every this seconds,
+  step_length: 0.4 # step length in seconds
+  inference_timer: 0.4 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
   pecnet_predictor:
