@@ -369,7 +369,7 @@ class GATraj(nn.Module):
 
 
 def gatraj_iter(dataset, model, device, args, n):
-    model.eval()
+    # model.eval()
     # input_names = ["batch_abs_gt", "batch_norm_gt", "nei_lists", "nei_num", "batch_split"]
     #
     # output_names = ["out_mu", "out_sigma", "out_pi"]

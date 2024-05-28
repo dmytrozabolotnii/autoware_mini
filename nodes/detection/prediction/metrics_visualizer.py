@@ -26,7 +26,7 @@ def calculate_fde(x, y):
     return ((x[-1, 0] - y[-1, 0]) ** 2 + (x[-1, 1] - y[-1, 1]) ** 2) ** 0.5
 
 
-def calculate_ade_grad(x, y, danger_zone=5.0):
+def calculate_ade_grad(x, y, danger_zone=10.0):
     distance_between_points = (np.linalg.norm(x - y))
 
     return np.sum(np.interp(distance_between_points, [danger_zone, danger_zone * 2], [1, 0]))
@@ -46,10 +46,11 @@ class MetricsVisualizer:
         self.skip_points = int(rospy.get_param('step_length') / rospy.get_param('inference_timer')) - 1
         self.pad_future = int(rospy.get_param('prediction_horizon'))
         self.bagscenarioname = rospy.get_param('~bag_file')[:-4]
+        self.dir_name = self.bagscenarioname
         self.predictorname = rospy.get_param('~predictor')
-        self.csvfilename = osp.join(rospy.get_param('~csv_file_result'), self.bagscenarioname, self.bagscenarioname + '_' + self.predictorname + '_' + str(time.time()) + '.csv')
-        if not osp.exists(osp.join(rospy.get_param('~csv_file_result'), self.bagscenarioname)):
-            os.makedirs(osp.join(rospy.get_param('~csv_file_result'), self.bagscenarioname))
+        self.csvfilename = osp.join(rospy.get_param('~csv_file_result'), self.dir_name, self.dir_name + '_' + self.predictorname + '_' + str(time.time()) + '.csv')
+        if not osp.exists(osp.join(rospy.get_param('~csv_file_result'), self.dir_name)):
+            os.makedirs(osp.join(rospy.get_param('~csv_file_result'), self.dir_name))
 
         self.result_log = []
         self.ade = rospy.Publisher('/dashboard/ade', Float32, queue_size=1)
@@ -70,7 +71,7 @@ class MetricsVisualizer:
         with self.lock:
             local_planned_local_path_cache = self.planned_local_path_cache
 
-        ade_grad_list = []
+        ade_grad_dict = {}
         header_stamp = detectedobjectsarray.header.stamp
         n_ped = 0
         for detectedobject in detectedobjectsarray.objects:
@@ -157,22 +158,18 @@ class MetricsVisualizer:
                             if planned_local_path_at_stamp is not None:
                                 self.ade_grad_history[_id].append(np.sum(temp_ade_grad))
                             else:
-                                self.ade_grad_history[_id].append(0)
+                                self.ade_grad_history[_id].append(0.0)
 
-                            ade_grad_list.append(self.ade_grad_history[_id][-1])
-        if len(ade_grad_list) > 0:
-            ade_grad_list_softmax = softmax(ade_grad_list)
-            # print(ade_grad_list_softmax)
+                            ade_grad_dict[_id] = (self.ade_grad_history[_id][-1])
+        if len(ade_grad_dict) > 0:
+            ade_grad_normalized_values = np.array(list(ade_grad_dict.values()))
+            ade_grad_normalized_values = ade_grad_normalized_values / np.sum(ade_grad_normalized_values) \
+                if np.sum(ade_grad_normalized_values) > 0 else np.zeros_like(ade_grad_normalized_values)
+            ade_grad_list_softmax_dict = {_id: ade_grad_normalized_values[i] for i, _id in enumerate(ade_grad_dict)}
             # Find task-aware ade after we calculated grad softmax for every agent's predictions
-            for detectedobject in detectedobjectsarray.objects:
-                if detectedobject.label == 'pedestrian' and len(detectedobject.candidate_trajectories.lanes) > 0:
-                    _id = detectedobject.id
-                    # Check if we have task-aware ade to create
-                    prediction_we_can_check = (self.cache[_id].endpoints_count
-                                               - self.pad_future * (self.skip_points + 1) + 1)
-                    if prediction_we_can_check > 0:
-                        self.aware_ade_history[_id].append(self.ade_history[_id][-1] *
-                                                           (1 + ade_grad_list_softmax[ade_grad_list.index(self.ade_grad_history[_id][-1])]))
+            for _id, softmax_value in ade_grad_list_softmax_dict.items():
+                self.aware_ade_history[_id].append(self.ade_history[_id][-1] *
+                                                   (1 + ade_grad_list_softmax_dict[_id]))
 
         non_empty_ade = [self.ade_history[agent_id] for agent_id in self.ade_history
                          if len(self.ade_history[agent_id]) > 0]
