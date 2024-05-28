@@ -96,7 +96,7 @@ class NetSubscriber(metaclass=ABCMeta):
         self.objects_pub.publish(output_msg_array)
 
     def move_endpoints(self):
-        print('Time of moving endpoints ', time.time() - self.timer2)
+        # print('Time of moving endpoints ', time.time() - self.timer2)
         self.timer2 = time.time()
         # Moves end-point of cached trajectory every inference
         with self.lock:

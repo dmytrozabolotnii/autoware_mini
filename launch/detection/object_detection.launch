@@ -114,12 +114,28 @@
         <remap from="tracked_objects" to="/detection/tracked_objects" />
         <remap from="predicted_objects" to="/detection/final_objects" />
 
-        <node type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true" />
+        <node type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
+            <param name="constant_velocity" value="false" />
+        </node>
         <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
             <remap from="detected_objects" to="predicted_objects" />
             <remap from="detected_objects_markers" to="predicted_objects_markers" />
         </node>
     </group>
+
+    <group if="$(eval predictor=='naivecv')" ns="predictor">
+        <remap from="tracked_objects" to="/detection/tracked_objects" />
+        <remap from="predicted_objects" to="/detection/final_objects" />
+
+        <node type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
+            <param name="constant_velocity" value="true" />
+        </node>
+        <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
+            <remap from="detected_objects" to="predicted_objects" />
+            <remap from="detected_objects_markers" to="predicted_objects_markers" />
+        </node>
+    </group>
+
 
     <group if="$(eval predictor=='pedestrian')" ns="predictor">
         <remap from="tracked_objects" to="/detection/tracked_objects" />

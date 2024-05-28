@@ -10,6 +10,7 @@ class NaivePredictor:
         # Parameters
         self.prediction_horizon = rospy.get_param('prediction_horizon')
         self.prediction_interval = rospy.get_param('step_length')
+        self.constant_velocity_mode = bool(rospy.get_param('~constant_velocity'))
 
         # Publishers
         self.predicted_objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -26,8 +27,11 @@ class NaivePredictor:
         ])
         for i, obj in enumerate(msg.objects):
             tracked_objects_array[i]['centroid'] = (obj.pose.position.x, obj.pose.position.y)
-            tracked_objects_array[i]['velocity'] = (obj.velocity.linear.x, obj.velocity.linear.y) 
-            tracked_objects_array[i]['acceleration'] = (obj.acceleration.linear.x, obj.acceleration.linear.y)
+            tracked_objects_array[i]['velocity'] = (obj.velocity.linear.x, obj.velocity.linear.y)
+            if self.constant_velocity_mode:
+                tracked_objects_array[i]['acceleration'] = 0
+            else:
+                tracked_objects_array[i]['acceleration'] = (obj.acceleration.linear.x, obj.acceleration.linear.y)
 
         # Predict future positions and velocities
         num_timesteps = self.prediction_horizon + 1

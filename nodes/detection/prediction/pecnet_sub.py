@@ -41,7 +41,7 @@ class PECNetSubscriber(NetSubscriber):
         rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
-        print('Time of callback', time.time() - self.timer)
+        # print('Time of callback', time.time() - self.timer)
         self.timer = time.time()
 
         if len(self.active_keys) and self.model is not None and next(self.model.parameters()).is_cuda and self.class_init:

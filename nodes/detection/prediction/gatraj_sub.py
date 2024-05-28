@@ -30,7 +30,7 @@ class GATrajSubscriber(NetSubscriber):
         rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
-        print('Time of callback', time.time() - self.timer)
+        # print('Time of callback', time.time() - self.timer)
         self.timer = time.time()
 
         if len(self.active_keys) and self.model is not None and next(self.model.parameters()).is_cuda:
@@ -57,6 +57,7 @@ class GATrajSubscriber(NetSubscriber):
             t0 = time.time()
 
             inference_result = gatraj_iter(inference_dataset, self.model, self.device, self.args, n=self.predictions_amount)
+            torch.cuda.synchronize()
             # print('Inference time:', time.time() - t0)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
