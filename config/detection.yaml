@@ -94,7 +94,7 @@ ema_tracker:
   enable_initial_acceleration_estimate: True
   enable_missed_detection_propagation: True
   detection_counter_threshold: 2
-  missed_counter_threshold: 8
+  missed_counter_threshold: 2
   velocity_gain: 0.1
   acceleration_gain: 0.1
   association_method: iou   # iou, euclidean
