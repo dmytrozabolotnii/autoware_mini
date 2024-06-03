@@ -46,9 +46,10 @@ class MetricsVisualizer:
         self.skip_points = int(rospy.get_param('step_length') / rospy.get_param('inference_timer')) - 1
         self.pad_future = int(rospy.get_param('prediction_horizon'))
         self.bagscenarioname = rospy.get_param('~bag_file')[:-4]
-        self.dir_name = self.bagscenarioname
+        self.category_name = '_new_fixed_tracker'
+        self.dir_name = self.bagscenarioname + self.category_name
         self.predictorname = rospy.get_param('~predictor')
-        self.csvfilename = osp.join(rospy.get_param('~csv_file_result'), self.dir_name, self.dir_name + '_' + self.predictorname + '_' + str(time.time()) + '.csv')
+        self.csvfilename = osp.join(rospy.get_param('~csv_file_result'), self.category_name, self.dir_name, self.dir_name + '_' + self.predictorname + '_' + str(time.time()) + '.csv')
         if not osp.exists(osp.join(rospy.get_param('~csv_file_result'), self.dir_name)):
             os.makedirs(osp.join(rospy.get_param('~csv_file_result'), self.dir_name))
 
@@ -118,11 +119,16 @@ class MetricsVisualizer:
                         prediction_we_can_check = (self.cache[_id].endpoints_count
                                                    - self.pad_future * (self.skip_points + 1) + 1)
                         if prediction_we_can_check > 0:
-                            n_ped += 1
                             # Obtain ground-truth trajectory
                             gt_trajectory = np.array(self.cache[_id].raw_trajectories[-1::-1 * (self.skip_points
                                                                                     + 1)][:self.pad_future][::-1])
                             num_of_predictions = len(self.cache[_id].prediction_history[prediction_we_can_check])
+                            # gt_trajectory_linestring = LineString(gt_trajectory)
+                            # minx, miny, maxx, maxy = gt_trajectory_linestring.bounds
+                            # if (maxx - minx < 2.0) and (maxy - miny < 2.0):
+                            #     print('Bounding box of ground truth movement of pedestrian', _id, 'too small, skipping')
+                            #     continue
+                            n_ped += 1
                             # print('Ground truth traj:')
                             # print(gt_trajectory)
                             # Obtain closest planned local path according to stamp
