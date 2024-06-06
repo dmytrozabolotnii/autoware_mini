@@ -46,12 +46,12 @@ class MetricsVisualizer:
         self.skip_points = int(rospy.get_param('step_length') / rospy.get_param('inference_timer')) - 1
         self.pad_future = int(rospy.get_param('prediction_horizon'))
         self.bagscenarioname = rospy.get_param('~bag_file')[:-4]
-        self.category_name = '_new_fixed_tracker'
+        self.category_name = '_fixed_tracker_threshold_4'
         self.dir_name = self.bagscenarioname + self.category_name
         self.predictorname = rospy.get_param('~predictor')
         self.csvfilename = osp.join(rospy.get_param('~csv_file_result'), self.category_name, self.dir_name, self.dir_name + '_' + self.predictorname + '_' + str(time.time()) + '.csv')
-        if not osp.exists(osp.join(rospy.get_param('~csv_file_result'), self.dir_name)):
-            os.makedirs(osp.join(rospy.get_param('~csv_file_result'), self.dir_name))
+        if not osp.exists(osp.join(rospy.get_param('~csv_file_result'), self.category_name, self.dir_name)):
+            os.makedirs(osp.join(rospy.get_param('~csv_file_result'), self.category_name, self.dir_name))
 
         self.result_log = []
         self.ade = rospy.Publisher('/dashboard/ade', Float32, queue_size=1)
