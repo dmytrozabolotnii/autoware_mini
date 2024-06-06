@@ -45,19 +45,3 @@ def get_polygon_width(polygon, heading_angle):
     minx, miny, maxx, maxy = rotated_polygon.bounds
     width = maxx - minx
     return width
-
-def get_path_heading_at_distance(path, distance):
-    """
-    Get heading of the path at a given distance
-    :param path: shapely LineString
-    :param distance: distance along the path
-    :return: heading angle in radians
-    """
-
-    point_after_object = path.interpolate(distance + 0.1)
-    point_before_object = path.interpolate(distance - 0.1)
-
-    # get heading between two points
-    path_heading = math.atan2(point_after_object.y - point_before_object.y, point_after_object.x - point_before_object.x)
-
-    return path_heading

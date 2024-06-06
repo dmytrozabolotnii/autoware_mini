@@ -36,23 +36,6 @@ def get_heading_between_two_points(back_p, forward_p):
 
     return math.atan2(forward_p.y - back_p.y, forward_p.x - back_p.x)
 
-def get_cross_track_error(ego_pos, pos1, pos2):
-    """
-    Get cross track error from ego pose and two poses
-    # calc distance from track
-    # https://robotics.stackexchange.com/questions/22989/what-is-wrong-with-my-stanley-controller-for-car-steering-control
-
-    :param ego_pose: Point
-    :param pose1: Point
-    :param pose2: Point
-    :return: cross track error
-    """
-
-    numerator = (pos2.x - pos1.x) * (pos1.y - ego_pos.y) - (pos1.x - ego_pos.x) * (pos2.y - pos1.y)
-    denominator = math.sqrt((pos2.x - pos1.x) ** 2 + (pos2.y - pos1.y) ** 2)
-
-    return numerator / denominator
-
 def get_point_using_heading_and_distance(start_point, heading, distance):
     """
     Get point from given point and extrapolating it using heading and distance
