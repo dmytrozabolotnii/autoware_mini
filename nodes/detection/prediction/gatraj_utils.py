@@ -441,8 +441,13 @@ def gatraj_iter(dataset, model, device, args, n):
         # pred_traj = torch.cat((out_mu, out_sigma), dim=-1)
         pred_traj = out_mu
         pred_traj = pred_traj.cpu().numpy()
+        out_pi = out_pi.cpu().numpy()
+        argsort_pi = np.argsort(out_pi, axis=1)
         for j in range(n):
-            candidate_traj = np.swapaxes(pred_traj[j], 0, 1)
+            candidate_traj = np.zeros((pred_traj.shape[1], pred_traj.shape[2], pred_traj.shape[3]))
+            for i in range(pred_traj.shape[1]):
+                candidate_traj[i] = pred_traj[np.argwhere(argsort_pi[i] == j)[0][0], i]
+            candidate_traj = np.swapaxes(candidate_traj, 0, 1)
             candidate_traj = candidate_traj + dataset.shift + dataset.initial_shift
             candidate_traj = np.swapaxes(candidate_traj, 0, 1)
             batch_by_batch_guesses[len(batch_by_batch_guesses) - 1].append(candidate_traj)
