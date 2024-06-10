@@ -144,6 +144,9 @@
         <node type="pecnet_sub.py" name="pecnet_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
             <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
+            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
+            <param name="predictor" type="string" value="$(arg predictor)"/>
+            <param name="bag_file" type="string" value="$(arg bag_file)"/>
         </node>
     </group>
 
@@ -154,6 +157,9 @@
         <node type="sgnet_sub.py" name="sgnet_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
             <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
+            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
+            <param name="predictor" type="string" value="$(arg predictor)"/>
+            <param name="bag_file" type="string" value="$(arg bag_file)"/>
         </node>
     </group>
 
@@ -164,6 +170,9 @@
         <node type="lednet_sub.py" name="lednet_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
             <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
+            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
+            <param name="predictor" type="string" value="$(arg predictor)"/>
+            <param name="bag_file" type="string" value="$(arg bag_file)"/>
         </node>
     </group>
 
@@ -174,6 +183,9 @@
         <node type="gatraj_sub.py" name="gatraj_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
             <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
+            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
+            <param name="predictor" type="string" value="$(arg predictor)"/>
+            <param name="bag_file" type="string" value="$(arg bag_file)"/>
         </node>
     </group>
 
@@ -184,6 +196,9 @@
         <node type="musevae_sub.py" name="musevae_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
             <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
+            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
+            <param name="predictor" type="string" value="$(arg predictor)"/>
+            <param name="bag_file" type="string" value="$(arg bag_file)"/>
         </node>
     </group>
 
@@ -197,12 +212,12 @@
     </node>
 
     <!-- Metrics-->
-    <node type="metrics_visualizer.py" ns="predictor" name="metrics_visualizer" pkg="autoware_mini" output="screen" required="true">
-        <remap from="predicted_objects" to="/detection/final_objects" />
-        <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
-        <param name="predictor" type="string" value="$(arg predictor)"/>
-        <param name="bag_file" type="string" value="$(arg bag_file)"/>
-    </node>
+<!--     <node type="metrics_visualizer.py" ns="predictor" name="metrics_visualizer" pkg="autoware_mini" output="screen" required="true"> -->
+<!--         <remap from="predicted_objects" to="/detection/final_objects" /> -->
+<!--         <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/> -->
+<!--         <param name="predictor" type="string" value="$(arg predictor)"/> -->
+<!--         <param name="bag_file" type="string" value="$(arg bag_file)"/> -->
+<!--     </node> -->
 
 
 </launch>

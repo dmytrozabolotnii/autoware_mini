@@ -117,7 +117,7 @@ predictor:
     predictions_amount: 20
 
   gatraj_predictor:
-    predictions_amount: 20
+    predictions_amount: 5
 
 
 mqtt_traffic_light_detector:
