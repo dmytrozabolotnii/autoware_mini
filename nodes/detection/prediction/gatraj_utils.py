@@ -464,8 +464,9 @@ class GATrajDatasetInit(data.Dataset):
     def __init__(self, detected_object_trajs, end_points, pad_past=7, pad_future=0, dist_thresh=10, proximity=False):
         self.proximity = proximity
 
-        self.traj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:(end_points[i] + pad_past + pad_future + 1)] for i, traj in enumerate(detected_object_trajs)])
+        # self.traj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
+        #                              mode='edge')[end_points[i]:(end_points[i] + pad_past + pad_future + 1)] for i, traj in enumerate(detected_object_trajs)])
+        self.traj = detected_object_trajs
         self.traj = np.swapaxes(self.traj, 0, 1)
         self.initial_shift = np.min(self.traj)
 

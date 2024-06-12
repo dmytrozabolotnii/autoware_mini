@@ -1,5 +1,7 @@
 # Class for caching info from messages of type DetectedObject for inference with separate timer
 import numpy as np
+from shapely import LineString, Point, LinearRing, prepare
+import time
 
 class MessageCache:
     def __init__(self, id,
@@ -12,7 +14,7 @@ class MessageCache:
         self.raw_accelerations = [initial_acceleration]
         self.headers = [initial_header]
         self.prediction_history = [[]]
-        self.predictions_history_headers = [[]]
+        self.predictions_history_headers = [None]
         # Approximate time between points
         self.delta_t = delta_t
 
@@ -59,3 +61,36 @@ class MessageCache:
         self.raw_velocities.append(self.raw_velocities[len(self.raw_velocities) - 1])
         self.raw_accelerations.append(self.raw_accelerations[len(self.raw_accelerations) - 1])
         self.headers.append(self.headers[len(self.headers) - 1])
+
+    def return_last_interpolated_trajectory(self, length=8, delta=0.4):
+        if self.endpoints_count == 0:
+            return np.array([self.raw_trajectories[-1]] * length)
+
+        cum_time = 0
+        past_horizon = length * delta
+        popped_points = 0
+        points = []
+        dist_between_points = [0]
+        time_between_points = [0]
+        while cum_time < past_horizon and popped_points < self.endpoints_count:
+            points.append(self.raw_trajectories[-1 - popped_points])
+            dist_between_points.append(np.linalg.norm(self.raw_trajectories[-1 - popped_points] - self.raw_trajectories[-1 - popped_points - 1]))
+            time_between_points.append((self.headers[-1 - popped_points].stamp - self.headers[-1 - popped_points - 1].stamp).to_sec())
+            cum_time += time_between_points[-1]
+            popped_points += 1
+        points.append(self.raw_trajectories[-1 - popped_points])
+        linepoints = LineString([(point[0], point[1]) for point in points])
+        prepare(linepoints)
+        dist_between_points_cumsum = np.cumsum(dist_between_points)
+        time_between_points_cumsum = np.cumsum(time_between_points)
+        past_trajectory_normalized_times = np.arange(0, delta * length, delta)
+        distance_interpolated_values = np.interp(past_trajectory_normalized_times, time_between_points_cumsum, dist_between_points_cumsum)
+        past_trajectory = LineString([linepoints.interpolate(distance_interpolated_values[i]) for i in range(length)])
+
+        return np.flip(np.asarray(past_trajectory.coords), axis=0)
+
+    def return_last_interpolated_velocities(self, trajectory, delta=0.4):
+        return np.gradient(trajectory, delta)
+
+    def return_last_interpolated_acceleration(self, velocities, delta=0.4):
+        return np.gradient(velocities, delta)
