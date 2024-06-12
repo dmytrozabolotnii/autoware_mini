@@ -18,7 +18,7 @@ class GATrajSubscriber(NetSubscriber):
         self.args = get_args()
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.model = GATraj(self.args)
-        self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + 'GATraj/GATraj_1000.tar', map_location=self.device)
+        self.checkpoint = torch.load(rospy.get_param('data_path_prediction') + 'GATraj/GATraj_1000.tar', map_location=self.device)
 
         self.model = self.model.to(self.device)
         self.model.eval()
@@ -42,8 +42,9 @@ class GATrajSubscriber(NetSubscriber):
                                                                          (self.skip_points + 1))
                      for key in temp_active_keys if self.cache[key].endpoints_count == 0]
 
-                temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
-                                         for key in temp_active_keys]
+                # temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
+                #                          for key in temp_active_keys]
+                temp_raw_trajectories = [self.cache[key].return_last_interpolated_trajectory(self.pad_past, self.inference_timer_duration) for key in temp_active_keys]
                 temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1)
                                   for key in temp_active_keys]
                 temp_headers = [self.cache[key].return_last_header() for key in temp_active_keys]

@@ -242,13 +242,17 @@ def sgnet_iter(dataset, model, device, n=5):
 
 class SGNetDatasetInit(data.Dataset):
     def __init__(self, detected_object_trajs, velocity_objects, acceleration_objects, end_points, pad_past=8, pad_future=0, inference_timer_duration=0.5):
-        self.traj_flat = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(detected_object_trajs)])
+        # self.traj_flat = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
+        #                              mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(detected_object_trajs)])
+        self.traj_flat = detected_object_trajs
         traj = np.copy(self.traj_flat)
-        self.velocitytraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(velocity_objects)]) / inference_timer_duration
-        self.acceltraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(acceleration_objects)]) / inference_timer_duration
+        # self.velocitytraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
+        #                              mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(velocity_objects)]) / inference_timer_duration
+        # self.acceltraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
+        #                              mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(acceleration_objects)]) / inference_timer_duration
+
+        self.velocitytraj = velocity_objects
+        self.acceltraj = acceleration_objects
 
         self.traj = np.concatenate((traj, self.velocitytraj,
                                     self.acceltraj), axis=2)

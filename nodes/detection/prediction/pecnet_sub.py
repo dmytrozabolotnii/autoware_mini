@@ -14,7 +14,7 @@ class PECNetSubscriber(NetSubscriber):
         super().__init__()
         # initialize network
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + 'PECNet/PECNET_social_model1.pt', map_location=self.device)
+        self.checkpoint = torch.load(rospy.get_param('data_path_prediction') + 'PECNet/PECNET_social_model1.pt', map_location=self.device)
         self.hyper_params = self.checkpoint["hyper_params"]
         self.model = PECNet(self.hyper_params["enc_past_size"],
                             self.hyper_params["enc_dest_size"],
@@ -53,8 +53,9 @@ class PECNetSubscriber(NetSubscriber):
                                                                          (self.skip_points + 1))
                      for key in temp_active_keys if self.cache[key].endpoints_count == 0]
 
-                temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
-                                         for key in temp_active_keys]
+                # temp_temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
+                #                          for key in temp_active_keys]
+                temp_raw_trajectories = [self.cache[key].return_last_interpolated_trajectory(self.pad_past, self.inference_timer_duration) for key in temp_active_keys]
                 temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1)
                                   for key in temp_active_keys]
                 temp_headers = [self.cache[key].return_last_header() for key in temp_active_keys]

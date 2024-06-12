@@ -110,98 +110,40 @@
     </group>
     <node if="$(eval tracker=='none')" pkg="topic_tools" type="relay" args="detected_objects tracked_objects" name="detected_objects_relay" output="screen" required="true" />
 
-    <group if="$(eval predictor=='naive')" ns="predictor">
+    <group if="$(eval predictor!='none')" ns="predictor">
         <remap from="tracked_objects" to="/detection/tracked_objects" />
         <remap from="predicted_objects" to="/detection/final_objects" />
 
-        <node type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
+        <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
+        <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
+        <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
+        <param name="predictor" type="string" value="$(arg predictor)"/>
+        <param name="bag_file" type="string" value="$(arg bag_file)"/>
+
+        <node if="$(eval predictor=='naive')" type="naive_predictor_2.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="constant_velocity" value="false" />
         </node>
-        <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
-            <remap from="detected_objects" to="predicted_objects" />
-            <remap from="detected_objects_markers" to="predicted_objects_markers" />
-        </node>
-    </group>
 
-    <group if="$(eval predictor=='naivecv')" ns="predictor">
-        <remap from="tracked_objects" to="/detection/tracked_objects" />
-        <remap from="predicted_objects" to="/detection/final_objects" />
-
-        <node type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
+        <node if="$(eval predictor=='naivecv')" type="naive_predictor_2.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
             <param name="constant_velocity" value="true" />
         </node>
+
+        <node if="$(eval predictor=='pedestrian')" type="pecnet_sub.py" name="pecnet_predictor" pkg="autoware_mini" output="screen" required="true" />
+
+        <node if="$(eval predictor=='pedestriansg')" type="sgnet_sub.py" name="sgnet_predictor" pkg="autoware_mini" output="screen" required="true" />
+
+        <node if="$(eval predictor=='pedestrianled')" type="lednet_sub.py" name="lednet_predictor" pkg="autoware_mini" output="screen" required="true" />
+
+        <node if="$(eval predictor=='pedestrianga')" type="gatraj_sub.py" name="gatraj_predictor" pkg="autoware_mini" output="screen" required="true" />
+
+        <node if="$(eval predictor=='pedestrianmuse')" type="musevae_sub.py" name="musevae_predictor" pkg="autoware_mini" output="screen" required="true" />
+
         <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
             <remap from="detected_objects" to="predicted_objects" />
             <remap from="detected_objects_markers" to="predicted_objects_markers" />
         </node>
+
     </group>
-
-
-    <group if="$(eval predictor=='pedestrian')" ns="predictor">
-        <remap from="tracked_objects" to="/detection/tracked_objects" />
-        <remap from="predicted_objects" to="/detection/final_objects" />
-
-        <node type="pecnet_sub.py" name="pecnet_predictor" pkg="autoware_mini" output="screen" required="true">
-            <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
-            <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
-            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
-            <param name="predictor" type="string" value="$(arg predictor)"/>
-            <param name="bag_file" type="string" value="$(arg bag_file)"/>
-        </node>
-    </group>
-
-    <group if="$(eval predictor=='pedestriansg')" ns="predictor">
-        <remap from="tracked_objects" to="/detection/tracked_objects" />
-        <remap from="predicted_objects" to="/detection/final_objects" />
-
-        <node type="sgnet_sub.py" name="sgnet_predictor" pkg="autoware_mini" output="screen" required="true">
-            <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
-            <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
-            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
-            <param name="predictor" type="string" value="$(arg predictor)"/>
-            <param name="bag_file" type="string" value="$(arg bag_file)"/>
-        </node>
-    </group>
-
-    <group if="$(eval predictor=='pedestrianled')" ns="predictor">
-        <remap from="tracked_objects" to="/detection/tracked_objects" />
-        <remap from="predicted_objects" to="/detection/final_objects" />
-
-        <node type="lednet_sub.py" name="lednet_predictor" pkg="autoware_mini" output="screen" required="true">
-            <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
-            <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
-            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
-            <param name="predictor" type="string" value="$(arg predictor)"/>
-            <param name="bag_file" type="string" value="$(arg bag_file)"/>
-        </node>
-    </group>
-
-    <group if="$(eval predictor=='pedestrianga')" ns="predictor">
-        <remap from="tracked_objects" to="/detection/tracked_objects" />
-        <remap from="predicted_objects" to="/detection/final_objects" />
-
-        <node type="gatraj_sub.py" name="gatraj_predictor" pkg="autoware_mini" output="screen" required="true">
-            <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
-            <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
-            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
-            <param name="predictor" type="string" value="$(arg predictor)"/>
-            <param name="bag_file" type="string" value="$(arg bag_file)"/>
-        </node>
-    </group>
-
-    <group if="$(eval predictor=='pedestrianmuse')" ns="predictor">
-        <remap from="tracked_objects" to="/detection/tracked_objects" />
-        <remap from="predicted_objects" to="/detection/final_objects" />
-
-        <node type="musevae_sub.py" name="musevae_predictor" pkg="autoware_mini" output="screen" required="true">
-            <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
-            <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
-            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
-            <param name="predictor" type="string" value="$(arg predictor)"/>
-            <param name="bag_file" type="string" value="$(arg bag_file)"/>
-        </node>
-    </group>
-
 
     <node if="$(eval predictor=='none')" pkg="topic_tools" type="relay" args="tracked_objects final_objects" name="tracked_objects_relay" output="screen" required="true" />
 
@@ -210,14 +152,5 @@
         <remap from="detected_objects" to="final_objects" />
         <remap from="detected_objects_markers" to="final_objects_markers" />
     </node>
-
-    <!-- Metrics-->
-<!--     <node type="metrics_visualizer.py" ns="predictor" name="metrics_visualizer" pkg="autoware_mini" output="screen" required="true"> -->
-<!--         <remap from="predicted_objects" to="/detection/final_objects" /> -->
-<!--         <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/> -->
-<!--         <param name="predictor" type="string" value="$(arg predictor)"/> -->
-<!--         <param name="bag_file" type="string" value="$(arg bag_file)"/> -->
-<!--     </node> -->
-
 
 </launch>
