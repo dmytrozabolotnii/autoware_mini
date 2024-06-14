@@ -10,7 +10,7 @@ from shapely import prepare
 from autoware_msgs.msg import Lane, DetectedObjectArray, TrafficLightResultArray
 from geometry_msgs.msg import PoseStamped, TwistStamped
 
-from helpers.lanelet2 import load_lanelet2_map, get_stoplines
+from helpers.lanelet2 import load_lanelet2_map, get_stoplines, get_crosswalks
 from helpers.geometry import get_distance_between_two_points_2d, project_vector_to_heading
 from helpers.shapely import convert_to_shapely_points_list, get_polygon_width
 from helpers.path import Path
@@ -45,10 +45,11 @@ class VelocityLocalPlanner:
         self.global_path = None
         self.current_speed = None
         self.current_position = None
-        self.red_stoplines = {}
+        self.stopline_statuses = {}
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
         self.all_stoplines = get_stoplines(lanelet2_map)
+        self.all_crosswalks = get_crosswalks(lanelet2_map)
 
         # Publishers
         self.local_path_pub = rospy.Publisher('local_path', Lane, queue_size=1, tcp_nodelay=True)
@@ -87,12 +88,11 @@ class VelocityLocalPlanner:
 
     def traffic_light_status_callback(self, msg):
 
-        red_stoplines = {}
+        stopline_statuses = {}
         for result in msg.results:
-            if result.recognition_result == 0:
-                red_stoplines[result.lane_id] = result.recognition_result
-
-        self.red_stoplines = red_stoplines
+            stopline_statuses[result.lane_id] = result.recognition_result
+        
+        self.stopline_statuses = stopline_statuses
 
 
     def detected_objects_callback(self, msg):
@@ -100,7 +100,7 @@ class VelocityLocalPlanner:
             output_frame = self.output_frame
             global_path = self.global_path
 
-        red_stoplines = self.red_stoplines
+        stopline_statuses = self.stopline_statuses
         current_position = self.current_position
         current_speed = self.current_speed
 
@@ -184,10 +184,10 @@ class VelocityLocalPlanner:
                     object_braking_distances.append(self.braking_safety_distance_obstacle)
 
         # 2. ADD RED STOPLINES AS OBSTACLES
-        red_stoplines_linestrings = [self.all_stoplines[stopline_id] for stopline_id in red_stoplines]
-        for stopline_ls in red_stoplines_linestrings:
-            if stopline_ls.intersects(local_path.linestring):
-                intersection_point = local_path.linestring.intersection(stopline_ls)
+        for stopline_id, stopline_linestring in self.all_stoplines.items():
+            # if RED and intersects with local path
+            if stopline_id in stopline_statuses and stopline_statuses[stopline_id] == 0 and stopline_linestring.intersects(local_path.linestring):
+                intersection_point = local_path.linestring.intersection(stopline_linestring)
                 assert isinstance(intersection_point, ShapelyPoint), "Stop line and local path intersection point is not a ShapelyPoint"
                 # calc distance for all intersection points
                 distance_to_stopline = local_path.linestring.project(intersection_point)
