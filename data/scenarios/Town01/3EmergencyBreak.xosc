@@ -77,12 +77,12 @@
           <EnvironmentAction>
             <Environment name="Environment1">
               <TimeOfDay animation="false" dateTime="2020-03-20T12:00:00"/>
-              <Weather cloudState="$cloudState">
-                <Sun intensity="$sunIntensity" azimuth="$sunAzimuth" elevation="$sunElevation"/>
-                <Fog visualRange="$fogVisualRange"/>
-                <Precipitation precipitationType="$precipitationType" intensity="$precipitationIntensity"/>
+              <Weather cloudState="rainy">
+                <Sun intensity="0.2" azimuth="0" elevation="1.31"/>
+                <Fog visualRange="100000.0"/>
+                <Precipitation precipitationType="rain" intensity="11110.0"/>
               </Weather>
-              <RoadCondition frictionScaleFactor="$frictionScaleFactor"/>
+              <RoadCondition frictionScaleFactor="1.0"/>
             </Environment>
           </EnvironmentAction>
         </GlobalAction>

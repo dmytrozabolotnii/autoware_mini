@@ -15,11 +15,35 @@
   <arg name='timeout'             default='100' />
   <!-- Scenario Runner args -->
   <arg name='use_scenario_runner' default='false'/>
-  <arg name='scenario_name'       default=""/>
+  <arg name='scenario_name'       default=""/><!-- Scenario name for open scenario -->
+  <arg name='route_id'            default=""/><!-- Route ID to follow for route scenario -->
   <!-- Other -->
   <arg name='use_manual_control'  default='false' /><!-- Toggle manual control-->
   <arg name='generate_traffic'    default='false'/><!-- Generate Traffic -->
+  <!-- CARLA Rosbridge synchronous_mode, only set to false while running route scenario-->
+  <arg name="synchronous_mode"        default="$(eval not (use_scenario_runner and type(route_id) == int))"/>
   
+  <!--
+    ###################
+    ## Carla Commons ##
+    ###################
+    -->
+  <include file="$(find autoware_mini)/launch/platform/carla/carla_common.launch">
+    <arg name="map_name"              value="$(arg map_name)" />
+    <arg name="use_manual_control"    value="$(arg use_manual_control)" />
+  </include>
+
+ <!--
+    ###########################
+    ## Carla Scenario Runner ##
+    ###########################
+    -->
+  <include if="$(arg use_scenario_runner)" file="$(find autoware_mini)/launch/platform/carla/carla_scenario_runner.launch">
+    <arg name='map_name'                            value='$(arg map_name)'/>
+    <arg name="scenario_name"                       value="$(arg scenario_name)" />
+    <arg name="route_id"                            value="$(arg route_id)" />
+  </include>
+
   <!--
     ################################
     ## Carla RosBridge Essentials ##
@@ -35,27 +59,8 @@
     <arg name="host"                                              value="$(arg host)" />
     <arg name="port"                                              value="$(arg port)" />
     <arg name="timeout"                                           value="$(arg timeout)" />
+    <arg name="synchronous_mode"                                  value="$(arg synchronous_mode)" />
     <arg name='fixed_delta_seconds'                               value='$(eval 0 if use_manual_control else 0.05)'/>
-  </include>
-
-  <!--
-    ###########################
-    ## Carla Scenario Runner ##
-    ###########################
-    -->
-  <include if="$(arg use_scenario_runner)" file="$(find autoware_mini)/launch/platform/carla/carla_scenario_runner.launch">
-      <arg name='map_name'                            value='$(arg map_name)'/>
-      <arg name="scenario_name"                       value="$(arg scenario_name)" />
-  </include>
-
-  <!--
-    ###################
-    ## Carla Commons ##
-    ###################
-    -->
-  <include file="$(find autoware_mini)/launch/platform/carla/carla_common.launch">
-    <arg name="map_name"            value="$(arg map_name)" />
-    <arg name="use_manual_control"  value="$(arg use_manual_control)" />
   </include>
 
   <!--

@@ -4,8 +4,8 @@
 # # 
 # #############################
 
-export SCENARIOS=${TEAM_CODE_ROOT}/autoware_mini/data/leaderboard/all_towns_traffic_scenarios_public.json
-export ROUTES=${TEAM_CODE_ROOT}/autoware_mini/data/leaderboard/routes_devtest.xml
+export SCENARIOS=${TEAM_CODE_ROOT}/autoware_mini/data/routes/all_towns_traffic_scenarios_public.json
+export ROUTES=${TEAM_CODE_ROOT}/autoware_mini/data/routes/routes_devtest.xml
 export REPETITIONS=1
 export DEBUG_CHALLENGE=1
 export TEAM_AGENT=${TEAM_CODE_ROOT}/autoware_mini/nodes/platform/leaderboard/autoware_mini_agent.py
