@@ -1,27 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <OpenSCENARIO>
   <FileHeader revMajor="1" revMinor="0" date="2020-03-20T12:00:00" description="Control loss without previous action" author=""/>
-  <ParameterDeclarations>
-    
-    <!-- _______________________ Weather Parameters _____________________________ -->
-    <!-- CloudState possible values: skyOff, free, cloudy, overcast, rainy -->
-    <ParameterDeclaration name="cloudState" parameterType="string" value="rainy"/>
-    <!-- sunIntensity possible values: [0 .. inf). Direct sunlight is around 100,00 lx -->
-    <ParameterDeclaration name="sunIntensity" parameterType="double" value="0.2"/>
-    <!-- sunAzimuth possible values: [0..2PI]. 0=north, PI/2 = east, PI=south, 3/2 PI=west -->
-    <ParameterDeclaration name="sunAzimuth" parameterType="double" value="0.0"/>
-    <!-- sunElevation possible values: [-PI..PI]. 0=x/y plane, PI/2=zenith -->
-    <ParameterDeclaration name="sunElevation" parameterType="double" value="1.31"/>
-    <!-- fogVisualRange possible values: [0 .. inf). unit m -->
-    <ParameterDeclaration name="fogVisualRange" parameterType="double" value="100000.0"/>
-    <!-- precipitationType possible values: dry, rain, snow -->
-    <ParameterDeclaration name="precipitationType" parameterType="double" value="rain"/>
-    <!-- precipitationIntensity possible values: [0..1] -->
-    <ParameterDeclaration name="precipitationIntensity" parameterType="double" value="11110.0"/>
-    <!-- frictionScaleFactor possible values: [0 .. inf) -->
-    <ParameterDeclaration name="frictionScaleFactor" parameterType="double" value="1.0"/>
-    
-  </ParameterDeclarations>
   <CatalogLocations/>
   <RoadNetwork>
     <LogicFile filepath="Town01"/>
@@ -102,12 +81,12 @@
           <EnvironmentAction>
             <Environment name="Environment1">
               <TimeOfDay animation="false" dateTime="2020-03-20T12:00:00"/>
-              <Weather cloudState="$cloudState">
-                <Sun intensity="$sunIntensity" azimuth="$sunAzimuth" elevation="$sunElevation"/>
-                <Fog visualRange="$fogVisualRange"/>
-                <Precipitation precipitationType="$precipitationType" intensity="$precipitationIntensity"/>
+              <Weather cloudState="rainy">
+                <Sun intensity="0.2" azimuth="0" elevation="1.31"/>
+                <Fog visualRange="100000.0"/>
+                <Precipitation precipitationType="rain" intensity="11110.0"/>
               </Weather>
-              <RoadCondition frictionScaleFactor="$frictionScaleFactor"/>
+              <RoadCondition frictionScaleFactor="1.0"/>
             </Environment>
           </EnvironmentAction>
         </GlobalAction>

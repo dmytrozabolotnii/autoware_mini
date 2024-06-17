@@ -7,36 +7,47 @@
     <arg name='port'                                                default='2000' />
     <arg name='timeout'                                             default='100' />
     <!-- Scenario Runner args -->
-    <arg name='scenario_name' />
+    <arg name='scenario_runner_path'    default='$(optenv SCENARIO_RUNNER_ROOT)'/>
+    <!-- Open scenario args-->
+    <arg name='scenario_name'           default=''/>
     <arg name='scenario_file'           default='$(find autoware_mini)/data/scenarios/$(arg map_name)/$(arg scenario_name).xosc'/>
     <arg name='scenario_path'           default='$(find autoware_mini)/data/scenarios/$(arg map_name)'/>
-    <arg name='scenario_runner_path'    default='$(optenv SCENARIO_RUNNER_ROOT)'/>
+    <!-- Route scenario args-->
+    <arg name='routes_file'             default='$(find autoware_mini)/data/routes/routes_devtest.xml'/>
+    <arg name='route_scenarios_file'    default='$(find autoware_mini)/data/routes/all_towns_traffic_scenarios_public.json'/>
+    <arg name='route_id'                default=''/>
+    <arg name='agent_file'              default='$(find autoware_mini)/nodes/platform/carla/carla_minimal_agent.py'/>
 
     <!--
-    ################################
-    ## Scenario Runner Essentials ##
-    ################################
+    ###############################
+    ## Route Scenario Essentials ##
+    ###############################
     -->
+    <group if='$(eval type(route_id) == int)'>
+        <node pkg='autoware_mini' type='carla_route_scenario.sh' name='carla_route_scenario' args='$(arg routes_file) $(arg route_scenarios_file) $(arg route_id) $(arg agent_file)' output='screen' required="true"/>
+    </group>
 
-    <!--include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch">
-        <arg name='host'    value='$(arg host)'/>
-        <arg name='port'    value='$(arg port)'/>
-        <arg name='timeout' value='$(arg timeout)'/>
-    </include-->
+    <!--
+    ##############################
+    ## Open Scenario Essentials ##
+    ##############################
+    -->
+    <group unless='$(eval type(route_id) == int)'>
+        <include file="$(find carla_ros_scenario_runner)/launch/carla_ros_scenario_runner.launch">
+            <arg name='host'                    value='$(arg host)'/>
+            <arg name='port'                    value='$(arg port)'/>
+            <arg name="scenario_runner_path"    value="$(arg scenario_runner_path)"/>
+            <arg name="wait_for_ego"            value="true"/>
+        </include>
 
-    <include file="$(find carla_ros_scenario_runner)/launch/carla_ros_scenario_runner.launch">
-        <arg name='host'                    value='$(arg host)'/>
-        <arg name='port'                    value='$(arg port)'/>
-        <arg name="scenario_runner_path"    value="$(arg scenario_runner_path)"/>
-        <arg name="wait_for_ego"            value="true"/>
-    </include>
+        <!-- Publish list of scenarios for the map -->
+        <node pkg='autoware_mini' type='carla_scenario_publisher.py' name='carla_scenario_publisher' output='screen' required="true">
+            <param name="scenario_path"         value="$(arg scenario_path)" />
+        </node>
 
-    <!-- Launch one or all map specific scenarios -->
-    <node pkg='autoware_mini' type='carla_scenario_publisher.py' name='carla_scenario_publisher' output='screen' required="true">
-        <param name="scenario_path"         value="$(arg scenario_path)" />
-    </node>
-
-    <node if="$(eval scenario_name != '')" pkg="rosservice" type="rosservice" name="execute_scenario" output="screen"
-            args="call --wait /scenario_runner/execute_scenario '{ 'scenario': { 'scenario_file': '$(arg scenario_file)' } }'"/>
-
+        <!-- Run one scenario, if given -->
+        <node if="$(eval scenario_name != '')" pkg="rosservice" type="rosservice" name="execute_scenario" output="screen"
+                args="call --wait /scenario_runner/execute_scenario '{ 'scenario': { 'scenario_file': '$(arg scenario_file)' } }'"/>
+    </group>
+    
 </launch>

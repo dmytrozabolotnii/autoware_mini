@@ -21,3 +21,7 @@ carla_ackermann_control_ego_vehicle:
     # If the absolute value of the ackermann drive target acceleration exceeds this value,
     # directly the input acceleration is controlled 
     min_accel: 1.0
+
+carla_minimal_agent:
+    init_goal_delay: 5
+    downsampling_interval: 42

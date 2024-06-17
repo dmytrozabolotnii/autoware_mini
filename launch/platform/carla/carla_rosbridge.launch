@@ -20,6 +20,7 @@
   <arg name='port'                                                default='2000' />
   <arg name='timeout'                                             default='100' />
   <arg name='fixed_delta_seconds'                                 default='0.05'/>
+  <arg name='synchronous_mode'                                    default='true'/>
   
   <!--
     ########################
@@ -64,6 +65,7 @@
       <arg name='port'                value='$(arg port)' />
       <arg name='timeout'             value='$(arg timeout)' />
       <arg name='fixed_delta_seconds' value='$(arg fixed_delta_seconds)' />
+      <arg name="synchronous_mode"    value='$(arg synchronous_mode)' />
     </include>
   </group>
 

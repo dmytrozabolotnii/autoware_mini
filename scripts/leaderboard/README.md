@@ -5,9 +5,10 @@ With this stack you can run Carla's leaderboard evaluations on your local machin
 
 (<b>NOTE: Currently only leaderboard-1.0 is supported </b>)
 
-1. Download the Leaderboard repository.
+1. Download the Leaderboard repository and checkout to specified commit.
    ```
-   git clone https://github.com/carla-simulator/leaderboard.git
+   git clone https://github.com/carla-simulator/leaderboard.git && cd leaderboard &&
+   git checkout f731410c23efc6ef329a7810b44a71961cee3174
    ```
 2. Point environment variable `LEADERBOARD_ROOT` to the downloaded location of leaderboard.
    ```

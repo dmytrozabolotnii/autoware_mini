@@ -20,6 +20,7 @@
     <!-- Scenario Runner args -->
     <arg name='use_scenario_runner'     default='false'/>
     <arg name='scenario_name'           default=""/>
+    <arg name='route_id'                default=""/>                   <!-- Route ID to follow for running route scenario -->
     <arg name="generate_traffic"        default="$(eval not use_scenario_runner)" />
     <arg name="use_manual_control"      default="false"                 doc="use manual control for carla"/>
 
@@ -62,15 +63,16 @@
 
     <!-- Carla platform -->
     <include file="$(find autoware_mini)/launch/platform/carla.launch">
-        <arg name='map_name'            value='$(arg map_name)'/>
-        <arg name="use_lidar"           value="$(eval 'lidar' in detector and detector != 'lidar_vella')" />
-        <arg name="use_radar"           value="$(eval 'radar' in detector)" />
-        <arg name="use_gnss"            value="$(eval localizer == 'novatel')" />
-        <arg name="use_cam"             value="$(eval 'camera' in tfl_detector)" />
-        <arg name="use_manual_control"  value="$(arg use_manual_control)" />
-        <arg name="generate_traffic"    value="$(arg generate_traffic)" />
-        <arg name="use_scenario_runner" value="$(arg use_scenario_runner)" />
-        <arg name="scenario_name"       value="$(arg scenario_name)" />
+        <arg name='map_name'                            value='$(arg map_name)'/>
+        <arg name="use_lidar"                           value="$(eval 'lidar' in detector and detector != 'lidar_vella')" />
+        <arg name="use_radar"                           value="$(eval 'radar' in detector)" />
+        <arg name="use_gnss"                            value="$(eval localizer == 'novatel')" />
+        <arg name="use_cam"                             value="$(eval 'camera' in tfl_detector)" />
+        <arg name="use_manual_control"                  value="$(arg use_manual_control)" />
+        <arg name="generate_traffic"                    value="$(arg generate_traffic)" />
+        <arg name="use_scenario_runner"                 value="$(arg use_scenario_runner)" />
+        <arg name="route_id"                            value="$(arg route_id)" />
+        <arg name="scenario_name"                       value="$(arg scenario_name)" />
     </include>
 
     <!-- Rviz -->

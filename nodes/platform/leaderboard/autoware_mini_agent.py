@@ -137,7 +137,7 @@ class AutowareMiniRosAgent(AutonomousAgent):
                 self.map_file_publisher = rospy.Publisher('/carla/map_file', String, queue_size=1, tcp_nodelay=True, latch=True)
                 self.world_info_publisher = rospy.Publisher('/carla/world_info', CarlaWorldInfo, queue_size=1, tcp_nodelay=True, latch=True)
             elif sensor['type'] == 'sensor.speedometer':
-                self.odometry_publisher = rospy.Publisher('/carla/odometry', Odometry, queue_size=1, tcp_nodelay=True)                 
+                self.odometry_publisher = rospy.Publisher('{}/odometry'.format(topic_base), Odometry, queue_size=1, tcp_nodelay=True)                 
             else:
                 raise TypeError("Invalid sensor type: {}".format(sensor['type']))
         
