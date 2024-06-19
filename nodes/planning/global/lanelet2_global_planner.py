@@ -77,12 +77,12 @@ class Lanelet2GlobalPlanner:
                     msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z,
                     msg.pose.orientation.w, msg.header.frame_id)
 
-        if self.current_location == None:
+        if self.current_location is None:
             # TODO handle if current_pose gets lost at later stage - see current_pose_callback
             rospy.logwarn("%s - current_pose not available", rospy.get_name())
             return
         
-        if self.current_speed == None:
+        if self.current_speed is None:
             rospy.logwarn("%s - current_speed not available", rospy.get_name())
             return
 
@@ -96,7 +96,7 @@ class Lanelet2GlobalPlanner:
         self.publish_target_lanelets(start_lanelet, goal_lanelet)
 
         route = self.graph.getRoute(start_lanelet, goal_lanelet, 0, self.lane_change)
-        if route == None:
+        if route is None:
             rospy.logerr("%s - no route found, try new goal!", rospy.get_name())
             return
 
