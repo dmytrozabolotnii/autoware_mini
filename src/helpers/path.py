@@ -130,7 +130,8 @@ class Path:
 
         # Find the point on the path
         point_location = self.linestring.interpolate(distance)
-        point_before = self.linestring.interpolate(distance - 0.1)
+        # if distance is negative it is measured from the end of the linestring in reverse direction
+        point_before = self.linestring.interpolate(max(0, distance - 0.1))
 
         heading = get_heading_between_two_points(point_before, point_location)
 
@@ -148,7 +149,8 @@ class Path:
         """
 
         point_after_object = self.linestring.interpolate(distance + 0.1)
-        point_before_object = self.linestring.interpolate(distance - 0.1)
+        # if distance is negative it is measured from the end of the linestring in reverse direction
+        point_before_object = self.linestring.interpolate(max(0, distance - 0.1))
 
         # get heading between two points
         path_heading = math.atan2(point_after_object.y - point_before_object.y, point_after_object.x - point_before_object.x)
@@ -169,7 +171,8 @@ class Path:
 
         ego_distance_from_path_start = self.linestring.project(current_position)
 
-        pos1 = self.linestring.interpolate(ego_distance_from_path_start - 0.1)
+        # if distance is negative it is measured from the end of the linestring in reverse direction
+        pos1 = self.linestring.interpolate(max(0, ego_distance_from_path_start - 0.1))
         pos2 = self.linestring.interpolate(ego_distance_from_path_start + 0.1)
 
         numerator = (pos2.x - pos1.x) * (pos1.y - current_position.y) - (pos1.x - current_position.x) * (pos2.y - pos1.y)
