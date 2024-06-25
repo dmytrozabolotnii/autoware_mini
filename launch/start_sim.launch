@@ -5,6 +5,7 @@
     <arg name="global_planner"          default="lanelet2"      doc="waypoints, lanelet2" />
     <arg name="local_planner"           default="velocity"      doc="none, velocity" />
     <arg name="use_path_smoothing"      default="true" />
+    <arg name="use_road_area_filter"    default="false"            doc="use road area filter"/>
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
     <arg name="scenario_name"           default=""              doc="scenario name" />
     <arg name='map_name'                default="$(eval 'tartu_demo_noheight' if scenario_name == '' else 'tartu_demo')" />
@@ -29,6 +30,8 @@
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
         <arg name="detection_range"     value="$(arg detection_range)" />
+        <arg name="map_name"            value="$(arg map_name)" />
+        <arg name="use_road_area_filter" value="$(arg use_road_area_filter)" />
     </include>
 
     <!-- Planning -->

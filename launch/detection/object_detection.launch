@@ -4,6 +4,9 @@
     <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="for carla traffic light detector" />
     <arg name="use_lidar_center"    default="true"              doc="use velodyne lidar"/>
     <arg name="use_lidar_front"     default="false"             doc="use velodyne lidar"/>
+    <arg name="use_road_area_filter" default="false"            doc="use road area filter"/>
+    <arg name="map_name"            default="tartu_demo"        doc="map name for road area filter" />
+    <arg name="road_area_file"      default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
     <arg name="tracker"             default="ema"               doc="none, ema" />
     <arg name="predictor"           default="none"              doc="none, naive" />
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
@@ -13,11 +16,14 @@
         <node if="$(eval detection_range != '')" pkg="autoware_mini" type="detection_range_filter.py" name="detection_range_filter" output="screen" required="true" >
             <param name="detection_range" value="$(arg detection_range)" />
         </node>
-        <remap if="$(eval detection_range != '')" from="/detection/detected_objects" to="/detection/detected_objects_unfiltered" />
+        <node if="$(arg use_road_area_filter)" pkg="autoware_mini" type="road_area_filter.py" name="road_area_filter" output="screen" required="true" >
+            <param name="road_area_file" value="$(arg road_area_file)" />
+        </node>
+        <remap if="$(eval detection_range != '' or use_road_area_filter)" from="/detection/detected_objects" to="/detection/detected_objects_unfiltered" />
 
         <group if="$(eval 'lidar' in detector)" ns="lidar">
-            <remap if="$(eval 'fusion' not in detector and detection_range == '')" from="detected_objects" to="/detection/detected_objects" />
-            <remap if="$(eval 'fusion' not in detector and detection_range != '')" from="detected_objects" to="/detection/detected_objects_unfiltered" />
+            <remap if="$(eval 'fusion' not in detector and (detection_range == '' and not use_road_area_filter))" from="detected_objects" to="/detection/detected_objects" />
+            <remap if="$(eval 'fusion' not in detector and (detection_range != '' or use_road_area_filter))" from="detected_objects" to="/detection/detected_objects_unfiltered" />
             <group if="$(eval 'lidar_cluster' in detector)">
                 <group if="$(arg use_lidar_center)" ns="center">
                     <!-- Only functional in Carla simulation -->
@@ -77,8 +83,8 @@
         </group>
 
         <group if="$(eval 'radar' in detector)" ns="radar">
-            <remap if="$(eval 'fusion' not in detector and detection_range == '')" from="detected_objects" to="/detection/detected_objects" />
-            <remap if="$(eval 'fusion' not in detector and detection_range != '')" from="detected_objects" to="/detection/detected_objects_unfiltered" />
+            <remap if="$(eval 'fusion' not in detector and (detection_range == '' and not use_road_area_filter))" from="detected_objects" to="/detection/detected_objects" />
+            <remap if="$(eval 'fusion' not in detector and (detection_range != '' or use_road_area_filter))" from="detected_objects" to="/detection/detected_objects_unfiltered" />
             <node pkg="autoware_mini" type="radar_detector.py" name="radar_detector" output="screen" required="true"/>
             <group if="$(arg more_visualizations)">
                 <!-- visualizer for radar detections-->
