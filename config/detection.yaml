@@ -91,18 +91,21 @@ obstacle_simulation:
 
 ema_tracker:
   enable_initial_velocity_estimate: True
-  enable_initial_acceleration_estimate: True
+  enable_initial_acceleration_estimate: False
   enable_missed_detection_propagation: True
-  detection_counter_threshold: 2
+  detection_counter_threshold: 4
   missed_counter_threshold: 2
   velocity_gain: 0.1
-  acceleration_gain: 0.1
+  acceleration_gain: 0.0
   association_method: iou   # iou, euclidean
   max_euclidean_distance: 2.0
 
 naive_predictor:
   prediction_horizon: 1.0
   prediction_interval: 0.1
+
+road_area_filter:
+  use_centroid_filtering: True
 
 mqtt_traffic_light_detector:
   mqtt_host: mqtt.cloud.ut.ee

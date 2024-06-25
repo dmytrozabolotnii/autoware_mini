@@ -12,6 +12,7 @@
     <arg name="global_planner"          default="lanelet2"          doc="waypoints, lanelet2" />
     <arg name="local_planner"           default="velocity"          doc="velocity, none"/>
     <arg name="use_path_smoothing"      default="true" />
+    <arg name="use_road_area_filter"    default="false"            doc="use road area filter"/>
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
     <arg name='map_name'                default='tartu_demo' />
     <arg name="lanelet2_map_name"       default="$(arg map_name).osm" />
@@ -36,6 +37,8 @@
         <arg name="predictor"           value="$(arg predictor)" />
         <arg name="more_visualizations" value="$(arg more_visualizations)" />
         <arg name="detection_range"     value="$(arg detection_range)" />
+        <arg name="map_name"            value="$(arg map_name)" />
+        <arg name="use_road_area_filter" value="$(arg use_road_area_filter)" />
     </include>
 
     <!-- Planning -->

@@ -639,6 +639,14 @@ Visualization Manager:
             Traffic lights: true
           Queue Size: 100
           Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /detection/road_area
+          Name: Road area
+          Namespaces:
+            Road area: true
+          Queue Size: 100
+          Value: true
       Enabled: true
       Name: Map
     - Class: rviz/Group
@@ -806,6 +814,7 @@ Visualization Manager:
             Grid: true
             Map:
               Lanelet2 map: true
+              Road area: true
               Value: true
             Planning:
               "": true
@@ -904,6 +913,7 @@ Visualization Manager:
             Grid: true
             Map:
               Lanelet2 map: true
+              Road area: true
               Value: true
             Planning:
               "": true
@@ -1451,6 +1461,7 @@ Visualization Manager:
             Grid: true
             Map:
               Lanelet2 map: true
+              Road area: true
               Value: true
             Planning:
               Global path: true
