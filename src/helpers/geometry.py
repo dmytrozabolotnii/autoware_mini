@@ -102,3 +102,13 @@ def project_vector_to_heading(heading_angle, vector):
     """
 
     return vector.x * math.cos(heading_angle) + vector.y * math.sin(heading_angle)
+
+def create_vector_from_heading_and_scalar(heading, scalar):
+    """
+    Create vector from heading and scalar
+    :param heading: heading in radians
+    :param scalar: scalar
+    :return: vector
+    """
+
+    return (scalar * math.cos(heading), scalar * math.sin(heading))

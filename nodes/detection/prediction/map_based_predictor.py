@@ -5,7 +5,7 @@ import math
 import numpy as np
 from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
 
-from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_distance_between_two_points_2d
+from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_distance_between_two_points_2d, create_vector_from_heading_and_scalar
 from helpers.lanelet2 import load_lanelet2_map
 import lanelet2
 from lanelet2.core import BasicPoint2d
@@ -69,10 +69,13 @@ class MapBasedPredictor:
                     continue
                 
                 # Skip lanelet if angle difference between object heading and lanelet heading is over limit
-                obj_heading = math.degrees(get_heading_from_vector(obj.velocity.linear))
+                obj_heading = get_heading_from_vector(obj.velocity.linear)
                 forward_point = linestring.interpolate(obj_distance_from_lanelet_start + 0.1)
-                lanelet_heading = math.degrees(get_heading_between_two_points(trajectory_start_point, forward_point))
-                angle_diff = abs(obj_heading - lanelet_heading)
+                lanelet_heading = get_heading_between_two_points(trajectory_start_point, forward_point)
+                angle_diff = math.degrees(abs(obj_heading - lanelet_heading))
+                if angle_diff > 180:
+                    angle_diff = 360 - angle_diff                
+
                 if angle_diff > self.angle_threshold:
                     continue
 
@@ -108,9 +111,11 @@ class MapBasedPredictor:
                         p = trajectory_linestring.interpolate(obj_distance_from_lanelet_start + d)
                         wp.pose.pose.position.x = p.x
                         wp.pose.pose.position.y = p.y
-                        # TODO velocities should be recalculated using trajectory heading and x,y should be filled
-                        wp.twist.twist.linear.x = velocities[i]
-                        wp.twist.twist.linear.y = 0
+                        # TODO Recalculating velocity vector based on lanelet heading at the object location.
+                        # Wrong when lanelet changes direction (turns), but good enough for now?
+                        vector = create_vector_from_heading_and_scalar(lanelet_heading, velocities[i])
+                        wp.twist.twist.linear.x = vector[0]
+                        wp.twist.twist.linear.y = vector[1]
                         lane.waypoints.append(wp)
                     obj.candidate_trajectories.lanes.append(lane)
 
