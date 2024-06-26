@@ -9,7 +9,7 @@ from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_he
 from helpers.lanelet2 import load_lanelet2_map
 import lanelet2
 from lanelet2.core import BasicPoint2d
-from lanelet2.geometry import findWithin2d
+from lanelet2.geometry import findWithin2d, findNearest
 from shapely.geometry import LineString, Point as ShapelyPoint
 
 class MapBasedPredictor:
@@ -83,7 +83,7 @@ class MapBasedPredictor:
                 potential_lanelets.append(lanelet)
 
             selected_lanelet = None
-            if angle_differences:
+            if len(angle_differences) > 0:
                 min_index = np.argmin(angle_differences)
                 selected_lanelet = potential_lanelets[min_index]
 
@@ -103,7 +103,7 @@ class MapBasedPredictor:
 
                 for trajectory in all_trajectories:
                     # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
-                    trajectory_linestring = LineString([(p.x, p.y) for lanelet in trajectory for p in lanelet.centerline])
+                    trajectory_linestring = LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline])
 
                     lane = Lane()
                     for i, d in enumerate(distances):
@@ -111,38 +111,38 @@ class MapBasedPredictor:
                         p = trajectory_linestring.interpolate(obj_distance_from_lanelet_start + d)
                         wp.pose.pose.position.x = p.x
                         wp.pose.pose.position.y = p.y
+                        wp.pose.pose.position.z = p.z
                         # TODO Recalculating velocity vector based on lanelet heading at the object location.
                         # Wrong when lanelet changes direction (turns), but good enough for now?
-                        vector = create_vector_from_heading_and_scalar(lanelet_heading, velocities[i])
-                        wp.twist.twist.linear.x = vector[0]
-                        wp.twist.twist.linear.y = vector[1]
+                        speed_x, speed_y = create_vector_from_heading_and_scalar(lanelet_heading, velocities[i])
+                        wp.twist.twist.linear.x = speed_x
+                        wp.twist.twist.linear.y = speed_y
                         lane.waypoints.append(wp)
                     obj.candidate_trajectories.lanes.append(lane)
 
             # 3. OBJECTS NOT LINKED WITH ANY LANELET - PREDICT BASED ON CURRENT VELOCITY AND ACCELERATION
             else:
-                obj_centroid = [obj.pose.position.x, obj.pose.position.y]
-                obj_velocity = [obj.velocity.linear.x, obj.velocity.linear.y]
+                # Predict future positions and velocities
+                predicted_centroids = np.empty((num_timesteps, 2), dtype=np.float32)
+                predicted_velocities = np.empty((num_timesteps, 2), dtype=np.float32)
+
+                predicted_centroids[0] = [obj.pose.position.x, obj.pose.position.y]
+                predicted_velocities[0] = [obj.velocity.linear.x, obj.velocity.linear.y]
                 obj_acceleration = np.array([obj.acceleration.linear.x, obj.acceleration.linear.y])
 
-                # Predict future positions and velocities
-                obj_prediction = np.empty((num_timesteps), dtype=[
-                    ('centroid', np.float32, (2,)),
-                    ('velocity', np.float32, (2,)),
-                ])
-
-                obj_prediction[0]['centroid'] = obj_centroid
-                obj_prediction[0]['velocity'] = obj_velocity
-
                 for j in range(1, num_timesteps):
-                    obj_prediction[j]['centroid'] = obj_prediction[j-1]['centroid'] + obj_prediction[j-1]['velocity'] * self.prediction_interval
-                    obj_prediction[j]['velocity'] = obj_prediction[j-1]['velocity'] + obj_acceleration * self.prediction_interval
+                    predicted_centroids[j] = predicted_centroids[j-1] + predicted_velocities[j-1] * self.prediction_interval
+                    predicted_velocities[j] = predicted_velocities[j-1] + obj_acceleration * self.prediction_interval
+                
+                # find z value from closest point in map
+                z = findNearest(self.lanelet2_map.pointLayer, BasicPoint2d(obj.pose.position.x, obj.pose.position.y), 1)[0][1].z
 
                 lane = Lane()
                 for j in range(num_timesteps):
                     wp = Waypoint()
-                    wp.pose.pose.position.x, wp.pose.pose.position.y = obj_prediction[j]['centroid']
-                    wp.twist.twist.linear.x, wp.twist.twist.linear.y = obj_prediction[j]['velocity']
+                    wp.pose.pose.position.x, wp.pose.pose.position.y = predicted_centroids[j]
+                    wp.pose.pose.position.z = z
+                    wp.twist.twist.linear.x, wp.twist.twist.linear.y = predicted_velocities[j]
                     lane.waypoints.append(wp)
                 
                 obj.candidate_trajectories.lanes.append(lane)
