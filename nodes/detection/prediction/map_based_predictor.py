@@ -134,14 +134,11 @@ class MapBasedPredictor:
                     predicted_centroids[j] = predicted_centroids[j-1] + predicted_velocities[j-1] * self.prediction_interval
                     predicted_velocities[j] = predicted_velocities[j-1] + obj_acceleration * self.prediction_interval
                 
-                # find z value from closest point in map
-                z = findNearest(self.lanelet2_map.pointLayer, BasicPoint2d(obj.pose.position.x, obj.pose.position.y), 1)[0][1].z
-
                 lane = Lane()
                 for j in range(num_timesteps):
                     wp = Waypoint()
                     wp.pose.pose.position.x, wp.pose.pose.position.y = predicted_centroids[j]
-                    wp.pose.pose.position.z = z
+                    wp.pose.pose.position.z = obj.pose.position.z
                     wp.twist.twist.linear.x, wp.twist.twist.linear.y = predicted_velocities[j]
                     lane.waypoints.append(wp)
                 
