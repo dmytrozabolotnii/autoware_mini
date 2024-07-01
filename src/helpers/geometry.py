@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import Point, Quaternion
 
@@ -112,3 +113,39 @@ def create_vector_from_heading_and_scalar(heading, scalar):
     """
 
     return (scalar * math.cos(heading), scalar * math.sin(heading))
+
+def get_point_position_2d(point1, point2, point3):
+    """
+    Determines whether a point is to the right or left side of a line
+    :param point1: first point of a line
+    :param point2: last point of a line
+    :param point3: single point
+    :return: value (value < 0 - right, value = 0 - on the line, value > 0 - left)
+    """
+
+    return (point2.x - point1.x)*(point3.y - point1.y) - (point2.y - point1.y)*(point3.x - point1.x)
+
+def angle_between_three_points(point_a, point_b, point_c):
+    """
+    Calculates angle between three points
+    :param point_a: Point
+    :param point_b: Middle point
+    :param point_c: Point
+    :return: angle in radians
+    """
+    BA = np.array([point_a.x - point_b.x, point_a.y - point_b.y])
+    BC = np.array([point_c.x - point_b.x, point_c.y - point_b.y])
+    
+    dot_product = np.dot(BA, BC)
+    
+    magnitude_ba = np.linalg.norm(BA)
+    magnitude_bc = np.linalg.norm(BC)
+    
+    cos_theta = dot_product / (magnitude_ba * magnitude_bc)
+    
+    # Clip the cosine value within range [-1, 1] to avoid numerical issues
+    cos_theta = np.clip(cos_theta, -1.0, 1.0)
+    
+    angle = np.arccos(cos_theta)
+    
+    return angle
