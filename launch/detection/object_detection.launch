@@ -8,7 +8,7 @@
     <arg name="map_name"            default="tartu_demo"        doc="map name for road area filter" />
     <arg name="road_area_file"      default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
     <arg name="tracker"             default="ema"               doc="none, ema" />
-    <arg name="predictor"           default="none"              doc="none, naive" />
+    <arg name="predictor"           default="none"              doc="none, naive, map" />
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
 
@@ -114,9 +114,10 @@
     </group>
     <node if="$(eval tracker=='none')" pkg="topic_tools" type="relay" args="detected_objects tracked_objects" name="detected_objects_relay" output="screen" required="true" />
 
-    <group if="$(eval predictor=='naive')">
+    <group unless="$(eval predictor=='none')">
         <remap from="predicted_objects" to="final_objects" />
-        <node type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true" />
+        <node if="$(eval predictor=='naive')" type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true" />
+        <node if="$(eval predictor=='map')" type="map_based_predictor.py" name="map_based_predictor" pkg="autoware_mini" output="screen" required="true" />
         <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
             <remap from="detected_objects" to="predicted_objects" />
             <remap from="detected_objects_markers" to="predicted_objects_markers" />

@@ -2,6 +2,14 @@ import math
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import Point, Quaternion
 
+def get_heading_from_vector(vector):
+    """
+    Get heading from vector
+    :param vector: vector
+    :return: heading in radians
+    """
+
+    return math.atan2(vector.y, vector.x)
 
 def get_heading_from_orientation(orientation):
     """
@@ -94,3 +102,13 @@ def project_vector_to_heading(heading_angle, vector):
     """
 
     return vector.x * math.cos(heading_angle) + vector.y * math.sin(heading_angle)
+
+def create_vector_from_heading_and_scalar(heading, scalar):
+    """
+    Create vector from heading and scalar
+    :param heading: heading in radians
+    :param scalar: scalar
+    :return: vector
+    """
+
+    return (scalar * math.cos(heading), scalar * math.sin(heading))

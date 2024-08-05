@@ -100,12 +100,18 @@ class DetectedObjectsVisualizer:
                 marker = Marker(header=header)
                 marker.ns = 'candidate_trajectories'
                 marker.id = object.id
-                marker.type = marker.LINE_STRIP
+                marker.type = marker.LINE_LIST
                 marker.action = marker.ADD
                 marker.pose.orientation.w = 1.0
                 marker.scale.x = object_width
                 marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
-                marker.points = [Point(wp.pose.pose.position.x, wp.pose.pose.position.y, wp.pose.pose.position.z) for wp in object.candidate_trajectories.lanes[0].waypoints]
+                # visualize possible multiple trajectories
+                for lane in object.candidate_trajectories.lanes:
+                    for i in range(len(lane.waypoints) - 1):
+                        p1 = lane.waypoints[i].pose.pose.position
+                        p2 = lane.waypoints[i + 1].pose.pose.position
+                        marker.points.append(Point(p1.x, p1.y, p1.z))
+                        marker.points.append(Point(p2.x, p2.y, p2.z))
                 markers.markers.append(marker)
 
             # text

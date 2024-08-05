@@ -13,7 +13,7 @@
     <arg name="use_path_smoothing"      default="true" />
     <arg name="use_road_area_filter"    default="false"         doc="use road area filter"/>
     <arg name="tracker"                 default="ema"           doc="none, ema"/>
-    <arg name="predictor"               default="none"          doc="none, naive"/>
+    <arg name="predictor"               default="none"          doc="none, naive, map"/>
     <arg name='map_name'                default='tartu_demo' />
     <arg name="lanelet2_map_name"       default="$(arg map_name).osm" />
     <arg name="use_tf"                  default="true"          doc="replaces tf-s in bag with the current ones"/>
