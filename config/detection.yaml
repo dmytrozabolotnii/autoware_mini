@@ -109,7 +109,7 @@ map_based_predictor:
   prediction_interval: 0.1
   distance_from_lanelet: 0.1        # m - outside of lanelet area
   distance_from_centerline: 1.0     # m - from centerline
-  angle_threshold: 10.0             # degrees - object heading and lanelet heading
+  angle_threshold: 30.0             # degrees - object heading and lanelet heading
 
 road_area_filter:
   use_centroid_filtering: True
