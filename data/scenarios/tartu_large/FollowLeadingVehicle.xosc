@@ -76,9 +76,7 @@
               <AssignControllerAction>
                 <Controller name="EgoVehicleAgent">
                   <Properties>
-                            <!-- <Property name="module" value="carla_ros_scenario_runner.ros_vehicle_control" />
-                            <Property name="launch" value="carla_ad_agent.launch"/>
-                            <Property name="launch-package" value="carla_ad_agent"/> -->
+                    <Property name="module" value="external_control"/>
                   </Properties>
                 </Controller>
               </AssignControllerAction>

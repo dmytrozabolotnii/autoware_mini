@@ -68,7 +68,7 @@
               <AssignControllerAction>
                 <Controller name="EgoVehicleAgent">
                   <Properties>
-                    <!-- <Property name="module" value="external_control"/> -->
+                    <Property name="module" value="external_control"/>
                   </Properties>
                 </Controller>
               </AssignControllerAction>
