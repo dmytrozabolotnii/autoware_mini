@@ -70,7 +70,7 @@
                                 {
                                     "type": "sensor.camera.rgb",
                                     "id": "camera_fr",
-                                    "spawn_point": {"x": 1.152, "y": -0.168, "z": -0.747, "roll": -2.5772026, "pitch": -10.9791546, "yaw": -11.4588476},
+                                    "spawn_point": {"x": 1.152, "y": -0.168, "z": -0.747, "roll": 2.577203, "pitch": -10.9791911, "yaw": -12.4411494},
                                     "image_size_x": 2064,
                                     "image_size_y": 1544,
                                     "fov": 32.8,
