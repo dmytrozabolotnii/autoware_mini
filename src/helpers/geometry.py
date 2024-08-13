@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from scipy.interpolate import BPoly
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import Point, Quaternion
 
@@ -133,6 +134,7 @@ def angle_between_three_points(point_a, point_b, point_c):
     :param point_c: Point
     :return: angle in radians
     """
+
     BA = np.array([point_a.x - point_b.x, point_a.y - point_b.y])
     BC = np.array([point_c.x - point_b.x, point_c.y - point_b.y])
     
@@ -149,3 +151,34 @@ def angle_between_three_points(point_a, point_b, point_c):
     angle = np.arccos(cos_theta)
     
     return angle
+
+def calculate_points_on_bezier_curve(control_points, n):
+    """
+    Generates n number of equaly spaced points on a Bezier curve
+    :param control_points: Bezier curve conrol points as an numpy array
+    :param n: number of points to calculate
+    :return: points on Bezier curve
+    """
+    
+    x = control_points[:, 0]
+    y = control_points[:, 1]
+
+    # Coefficients
+    c_x = np.array([x]).T
+    c_y = np.array([y]).T
+
+    # Breakpoints
+    t = np.array([0, 1])
+
+    # Create BPoly objects for x and y coordinates
+    bpoly_x = BPoly(c_x, t)
+    bpoly_y = BPoly(c_y, t)
+
+    # Generate 10 waypoint coordinates on the Bezier curve
+    t_wp = np.linspace(0, 1, n)
+    x_wp = bpoly_x(t_wp)
+    y_wp = bpoly_y(t_wp)
+
+    bezier_points = np.array([x_wp, y_wp]).T
+
+    return bezier_points

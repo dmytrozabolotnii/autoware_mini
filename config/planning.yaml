@@ -15,7 +15,8 @@ lanelet2_global_planner:
   speed_limit: 50.0                 # max velocity for route (km/h), will be replaced by speed taken from map
   ego_vehicle_stopped_speed_limit: 0.1
   lane_change: True
-  lane_change_length: 15    # m
+  lane_change_base_length: 10.0    # m
+  lane_change_perlane_length: 5.0    # m
   lanelet_search_radius: 1.0
 
 waypoint_loader:
