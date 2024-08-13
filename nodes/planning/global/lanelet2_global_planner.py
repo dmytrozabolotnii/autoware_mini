@@ -141,7 +141,7 @@ class Lanelet2GlobalPlanner:
         start_point_distance = global_path.linestring.project(start_point)
         new_goal_point_distance = global_path.linestring.project(new_goal)
 
-        # interpolate point coordinates
+        # Interpolate point coordinates
         start_on_path = global_path.linestring.interpolate(start_point_distance)
         new_goal_on_path = global_path.linestring.interpolate(new_goal_point_distance)
 
@@ -157,26 +157,26 @@ class Lanelet2GlobalPlanner:
             rospy.logerr("%s - goal point can't be on the same lanelet before start point", rospy.get_name())
             return
 
-        # If there is only one goal candidate, we can fix the preceding lanelets to be the best found route
-        if len(goal_lanelet_candidates) == 1:
-            lanelet_candidates = [[lanelet] for lanelet in route]
-
-        # update member variables
-        self.goal_point = new_goal_on_path
-        self.start_point = start_point
-        self.lanelet_candidates = lanelet_candidates
-        rospy.logdebug("Lanelet candidates: " + str(list(map(len, lanelet_candidates))))
-
-        # trim the global path 
+        # Trim the global path 
         trimmed_waypoints = global_path.extract_waypoints(start_point_distance, new_goal_point_distance, trim=True, copy=True)
 
-        # calculate lane changes
+        # Calculate lane changes
         lane_change_waypoints = self.create_lane_change_paths(trimmed_waypoints)
         if lane_change_waypoints is None:
             rospy.logerr("%s - calculated path contained an impossible lane change", rospy.get_name())
             return
         
-        # publish the global path
+        # If there is only one goal candidate, we can fix the preceding lanelets to be the best found route
+        if len(goal_lanelet_candidates) == 1:
+            lanelet_candidates = [[lanelet] for lanelet in route]
+
+        # Update member variables
+        self.goal_point = new_goal_on_path
+        self.start_point = start_point
+        self.lanelet_candidates = lanelet_candidates
+        rospy.logdebug("Lanelet candidates: " + str(list(map(len, lanelet_candidates))))
+        
+        # Publish the global path
         self.publish_waypoints(lane_change_waypoints)
         rospy.loginfo("%s - global path published", rospy.get_name())
 
