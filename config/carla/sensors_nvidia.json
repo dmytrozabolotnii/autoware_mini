@@ -106,7 +106,7 @@
                                 {
                                     "type": "sensor.camera.rgb",
                                     "id": "interfacea_link0",
-                                    "spawn_point": {"x": 0.77, "y": 0.62, "z": -0.49, "roll": -1.576381, "pitch": 0.001396, "yaw": -0.182561},
+                                    "spawn_point": {"x": 0.77, "y": 0.62, "z": -0.49, "roll": 0.0800012, "pitch": 0.3199997, "yaw": 79.540447},
                                     "image_size_x": 1928,
                                     "image_size_y": 1208,
                                     "fov": 120,
@@ -115,7 +115,7 @@
                                 {
                                     "type": "sensor.camera.rgb",
                                     "id": "interfacea_link1",
-                                    "spawn_point": {"x": 0.83, "y": -0.51, "z": -0.49, "roll": -1.63537, "pitch": 0.001919, "yaw": -2.844538},
+                                    "spawn_point": {"x": 0.83, "y": -0.51, "z": -0.49, "roll": 0.1102298, "pitch": 3.6999932, "yaw": -72.9728863},
                                     "image_size_x": 1928,
                                     "image_size_y": 1208,
                                     "fov": 120,
@@ -124,7 +124,7 @@
                                 {
                                     "type": "sensor.camera.rgb",
                                     "id": "interfacea_link2",
-                                    "spawn_point": {"x": 0.89, "y": 0.04, "z": -0.49, "roll": -1.601863, "pitch": 0.033684, "yaw": -1.533795},
+                                    "spawn_point": {"x": 0.89, "y": 0.04, "z": -0.49, "roll": 1.9309309, "pitch": 1.7789899, "yaw": 2.1799671},
                                     "image_size_x": 1928,
                                     "image_size_y": 1208,
                                     "fov": 120,
@@ -133,7 +133,7 @@
                                 {
                                     "type": "sensor.camera.rgb",
                                     "id": "interfacea_link3",
-                                    "spawn_point": {"x": 0.89, "y": 0.09, "z": -0.49, "roll": -1.58912, "pitch": 0.024434, "yaw": -1.533097},
+                                    "spawn_point": {"x": 0.89, "y": 0.09, "z": -0.49, "roll": 1.400235, "pitch": 1.0496865, "yaw": 2.1856566},
                                     "image_size_x": 1928,
                                     "image_size_y": 1208,
                                     "fov": 60,
