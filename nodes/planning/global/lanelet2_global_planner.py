@@ -132,7 +132,7 @@ class Lanelet2GlobalPlanner:
         # Convert lanelet path to waypoints
         waypoints = self.convert_to_waypoints(lanelet_path, route_obj)
         if waypoints is None:
-            rospy.logerr("%s - no path found, try new goal!", rospy.get_name())
+            rospy.logerr("%s - path contained an impossible lane change, try new goal!", rospy.get_name())
             return
         
         global_path = Path(waypoints, velocities=True, blinkers=True)
