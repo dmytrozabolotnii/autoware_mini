@@ -222,15 +222,17 @@ def sgnet_iter(dataset, model, device, n=5):
             #     input_normalized[:, :, i] = (input_normalized[:, :, i] - torch.mean(input_normalized[:, :, i])) / reduce
 
             input_traj_torch = input_normalized
-
-            for j in range(n):
+            forwards = (n // input_traj_torch.shape[1]) + 1
+            for i in range(forwards):
                 all_goal_traj, all_dec_traj = model(input_traj_torch)
                 all_goal_traj_np = all_goal_traj.to('cpu').numpy()
                 all_dec_traj_np = all_dec_traj.to('cpu').numpy()
-                dest_path = all_dec_traj_np[:, -1, :, :]
-                dest_path = dest_path + shift
 
-                batch_by_batch_guesses[len(batch_by_batch_guesses) - 1].append(dest_path)
+                for j in range(n // forwards):
+                    dest_path = all_dec_traj_np[:, -1 - j, :, :]
+                    dest_path = dest_path + shift
+
+                    batch_by_batch_guesses[len(batch_by_batch_guesses) - 1].append(dest_path)
 
     true_guesses = [[] for _ in range(n)]
     for batch_guess in batch_by_batch_guesses:

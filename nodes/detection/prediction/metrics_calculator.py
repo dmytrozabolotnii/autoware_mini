@@ -40,7 +40,7 @@ class MetricsCalculator:
         self.skip_points = int(rospy.get_param('step_length') / rospy.get_param('inference_timer')) - 1
         self.pad_future = int(rospy.get_param('prediction_horizon'))
         self.bagscenarioname = rospy.get_param('bag_file')[:-4]
-        self.category_name = '_one_node_fixed_tracker_threshold_4_gatraj_5_interpolation_change'
+        self.category_name = rospy.get_param('results_category_folder')
         self.dir_name = self.bagscenarioname + self.category_name
         self.predictorname = rospy.get_param('predictor')
         self.csvfilename = osp.join(rospy.get_param('csv_file_result'), self.category_name, self.dir_name, self.dir_name + '_' + self.predictorname + '_' + str(time.time()) + '.csv')

@@ -107,17 +107,22 @@ predictor:
   inference_timer: 0.4 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
+  results_category_folder: "_one_node_k_10"
+
   pecnet_predictor:
-    predictions_amount: 5
+    predictions_amount: 10
 
   sgnet_predictor:
-    predictions_amount: 1
+    predictions_amount: 10
 
   lednet_predictor:
     predictions_amount: 20
 
   gatraj_predictor:
-    predictions_amount: 5
+    predictions_amount: 10
+
+  musevae_predictor:
+    predictions_amount: 10
 
 
 mqtt_traffic_light_detector:
