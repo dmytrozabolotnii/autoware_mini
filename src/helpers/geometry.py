@@ -115,28 +115,17 @@ def create_vector_from_heading_and_scalar(heading, scalar):
 
     return (scalar * math.cos(heading), scalar * math.sin(heading))
 
-def get_point_position_2d(point1, point2, point3):
-    """
-    Determines whether a point is to the right or left side of a line
-    :param point1: first point of a line
-    :param point2: last point of a line
-    :param point3: single point
-    :return: value (value < 0 - right, value = 0 - on the line, value > 0 - left)
-    """
-
-    return (point2.x - point1.x)*(point3.y - point1.y) - (point2.y - point1.y)*(point3.x - point1.x)
-
-def angle_between_three_points(point_a, point_b, point_c):
+def get_angle_between_three_points(first_point, middle_point, third_point):
     """
     Calculates angle between three points
-    :param point_a: Point
-    :param point_b: Middle point
-    :param point_c: Point
+    :param first_point: Point
+    :param middle_point: Middle point
+    :param third_point: Point
     :return: angle in radians
     """
 
-    BA = np.array([point_a.x - point_b.x, point_a.y - point_b.y])
-    BC = np.array([point_c.x - point_b.x, point_c.y - point_b.y])
+    BA = np.array([first_point.x - middle_point.x, first_point.y - middle_point.y])
+    BC = np.array([third_point.x - middle_point.x, third_point.y - middle_point.y])
     
     dot_product = np.dot(BA, BC)
     
@@ -159,26 +148,8 @@ def calculate_points_on_bezier_curve(control_points, n):
     :param n: number of points to calculate
     :return: points on Bezier curve
     """
-    
-    x = control_points[:, 0]
-    y = control_points[:, 1]
 
-    # Coefficients
-    c_x = np.array([x]).T
-    c_y = np.array([y]).T
-
-    # Breakpoints
-    t = np.array([0, 1])
-
-    # Create BPoly objects for x and y coordinates
-    bpoly_x = BPoly(c_x, t)
-    bpoly_y = BPoly(c_y, t)
-
-    # Generate 10 waypoint coordinates on the Bezier curve
-    t_wp = np.linspace(0, 1, n)
-    x_wp = bpoly_x(t_wp)
-    y_wp = bpoly_y(t_wp)
-
-    bezier_points = np.array([x_wp, y_wp]).T
-
+    p0, p1, p2, p3 = control_points
+    samples = np.linspace(0, 1, n)
+    bezier_points = [(1-t)**3 * p0 + 3*(1-t)**2 * t * p1 + 3*(1-t) * t**2 * p2 + t**3 * p3 for t in samples]
     return bezier_points

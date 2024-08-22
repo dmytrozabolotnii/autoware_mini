@@ -17,8 +17,8 @@ from std_srvs.srv import Empty, EmptyResponse
 from visualization_msgs.msg import MarkerArray, Marker
 
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading, \
-    get_distance_between_two_points_2d, angle_between_three_points, calculate_points_on_bezier_curve
-from helpers.lanelet2 import load_lanelet2_map
+    get_distance_between_two_points_2d, get_angle_between_three_points, calculate_points_on_bezier_curve
+from helpers.lanelet2 import load_lanelet2_map, find_following_lane_change_lanelet
 from helpers.path import Path
 
 LANELET_TURN_DIRECTION_TO_WAYPOINT_STATE_MAP = {
@@ -44,6 +44,7 @@ class Lanelet2GlobalPlanner:
         self.lanelet_search_radius = rospy.get_param("~lanelet_search_radius")
         self.lane_change_base_length = rospy.get_param("~lane_change_base_length")
         self.lane_change_perlane_length = rospy.get_param("~lane_change_perlane_length")
+        self.waypoint_interval = rospy.get_param("waypoint_interval")
 
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
         coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
@@ -132,7 +133,7 @@ class Lanelet2GlobalPlanner:
         # Convert lanelet path to waypoints
         waypoints = self.convert_to_waypoints(lanelet_path, route_obj)
         if waypoints is None:
-            rospy.logerr("%s - path contained an impossible lane change, try new goal!", rospy.get_name())
+            rospy.logerr("%s - route contained an impossible lane change!", rospy.get_name())
             return
         
         global_path = Path(waypoints, velocities=True, blinkers=True)
@@ -163,7 +164,7 @@ class Lanelet2GlobalPlanner:
         # Calculate lane changes
         lane_change_waypoints = self.create_lane_change_paths(trimmed_waypoints)
         if lane_change_waypoints is None:
-            rospy.logerr("%s - calculated path contained an impossible lane change", rospy.get_name())
+            rospy.logerr("%s - path contained an impossible lane change!", rospy.get_name())
             return
         
         # If there is only one goal candidate, we can fix the preceding lanelets to be the best found route
@@ -211,7 +212,6 @@ class Lanelet2GlobalPlanner:
         shortest_distance = math.inf
         possible_routes = list(itertools.product(*lanelet_candidates))
         for possible_route in possible_routes:
-            #path = self.graph.shortestPathWithVia(possible_route[0], possible_route[1:-1], possible_route[-1], 0, self.lane_change)
             route = self.graph.getRouteVia(possible_route[0], possible_route[1:-1], possible_route[-1], 0, self.lane_change)
             if route is None:
                 continue
@@ -252,43 +252,43 @@ class Lanelet2GlobalPlanner:
                 blinker = None
                 lanechange_state = 0
                 
-            lanelets = [lanelet]
+            following_lanelet = lanelet
+            following_lanelets_length = length2d(following_lanelet)
 
             # Make sure we have enough space to perform the lane change
             if lanechange_state > 0:
                 # Extend the lanelet with following lanelets until the desired lane change length is reached
-                while sum(map(length2d, lanelets)) < self.lane_change_base_length + lanechange_state * self.lane_change_perlane_length:
+                while following_lanelets_length < self.lane_change_base_length + lanechange_state * self.lane_change_perlane_length:
                     # Find a suitable following lanelet
                     if blinker == WaypointState.STR_LEFT:
-                        following_lanelet = self.find_following_lane_change_lanelet(lanelet, route, True)
+                        following_lanelet = find_following_lane_change_lanelet(following_lanelet, route, True)
                     elif blinker == WaypointState.STR_RIGHT:
-                        following_lanelet = self.find_following_lane_change_lanelet(lanelet, route, False)
+                        following_lanelet = find_following_lane_change_lanelet(following_lanelet, route, False)
                     else:
-                        return None
+                        following_lanelet = None
                     
                     # If there is no following lanelet then the lane change is impossible
                     if following_lanelet is None:
                         return None
 
-                    lanelets.append(following_lanelet)
+                    following_lanelets_length += length2d(following_lanelet)
 
-            # Loop over lanelets
-            for lanelet in lanelets:
-                # Loop over centerline points
-                for idx in range(0, len(lanelet.centerline)):
-                    if not last_lanelet and idx == len(lanelet.centerline)-1:
-                        # Skip last point on every lanelet (except last), because it is the same as the first point of the following lanelet
-                        break
 
-                    point = lanelet.centerline[idx]
+            # Loop over the current lanelet's centerline points
+            for idx in range(0, len(lanelet.centerline)):
+                if not last_lanelet and idx == len(lanelet.centerline)-1:
+                    # Skip last point on every lanelet (except last), because it is the same as the first point of the following lanelet
+                    break
 
-                    if last_lanelet and idx == len(lanelet.centerline)-1:
-                        # Use heading of previous point - last point of last lanelet has no following point
-                        waypoint = self.create_waypoint(point, lanelet, lanelet.centerline[idx-1], lanelet.centerline[idx], blinker=blinker, lane_change=lanechange_state)
-                    else:
-                        waypoint = self.create_waypoint(point, lanelet, lanelet.centerline[idx], lanelet.centerline[idx+1], blinker=blinker, lane_change=lanechange_state)
+                point = lanelet.centerline[idx]
 
-                    waypoints.append(waypoint)
+                if last_lanelet and idx == len(lanelet.centerline)-1:
+                    # Use heading of previous point - last point of last lanelet has no following point
+                    waypoint = self.create_waypoint_with_lanelet(point, lanelet, lanelet.centerline[idx-1], lanelet.centerline[idx], blinker, lanechange_state)
+                else:
+                    waypoint = self.create_waypoint_with_lanelet(point, lanelet, lanelet.centerline[idx], lanelet.centerline[idx+1], blinker, lanechange_state)
+
+                waypoints.append(waypoint)
 
         return waypoints
 
@@ -341,6 +341,12 @@ class Lanelet2GlobalPlanner:
             # Check for lane change
             if waypoints[idx].wpstate.lanechange_state > 0:
                 start_idx = idx
+                end_idx = None
+
+                # Check that the lane change waypoint is not the last waypoint of the path
+                if start_idx + 1 == len(waypoints):
+                    return None
+                
                 start_point = waypoints[start_idx].pose.pose.position
                 other_point = waypoints[start_idx + 1].pose.pose.position
                 blinker = waypoints[start_idx].wpstate.steering_state
@@ -353,33 +359,30 @@ class Lanelet2GlobalPlanner:
                 # Skip all non lane change waypoints until enough distance to perform lane change
                 while idx < len(waypoints):
                     current_point = waypoints[idx].pose.pose.position
+                    # Get the diagonal distance of the lane change
                     d = get_distance_between_two_points_2d(start_point, current_point)
 
-                    # Calculate the lane change angle to check that the lane change doesn't happen behind us
-                    a = angle_between_three_points(other_point, start_point, current_point)
+                    # Calculate the lane change angle
+                    a = get_angle_between_three_points(other_point, start_point, current_point)
 
                     # Calculate lane change length
-                    lanechange_length = self.lane_change_base_length + lanechange_state * self.lane_change_perlane_length
+                    given_lanechange_length = self.lane_change_base_length + lanechange_state * self.lane_change_perlane_length
 
-                    if abs(a) < np.pi/2 and d > lanechange_length:
+                    # Use the angle to check that the lane change doesn't happen behind us
+                    # Multiply the diagonal distance with cos(a) to get the parallel distance of the lane change 
+                    if abs(a) < np.pi/2 and d * np.cos(a) > given_lanechange_length:
+                        end_idx = idx
                         break
+
                     idx += 1
 
-                if idx >= len(waypoints):
+                if end_idx is None:
                     return None
-                
-                end_idx = idx
-
-                # Directions of the other points needed for the spline calculation 
-                d1, d2 = -1, -1
-                if start_idx == 0:
-                    d1 = 1
-                if end_idx == len(waypoints) - 1:
-                    d2 = 1
 
                 # Replace section of waypoints with spline
-                spline = self.calculate_lane_change_spline(waypoints[start_idx], waypoints[end_idx], waypoints[start_idx+d1], waypoints[end_idx-1], 
-                                                           lanechange_length, (d1, d2), blinker)
+                spline = self.calculate_lane_change_spline(waypoints[start_idx], waypoints[end_idx], 
+                                                           waypoints[start_idx+1], waypoints[end_idx-1], 
+                                                           given_lanechange_length, blinker)
 
                 waypoints = waypoints[:start_idx] + spline + waypoints[end_idx+1:]
 
@@ -391,9 +394,8 @@ class Lanelet2GlobalPlanner:
 
         return waypoints
 
-    def calculate_lane_change_spline(self, start_waypoint, end_waypoint, waypoint1, waypoint2, lanechange_length, directions, blinker):
+    def calculate_lane_change_spline(self, start_waypoint, end_waypoint, waypoint1, waypoint2, lanechange_length, blinker):
         waypoints = []
-        dir1, dir2 = directions
 
         ##################################################################
         # Calculate Bezier curve control points p0, p1, p2, p3
@@ -403,8 +405,8 @@ class Lanelet2GlobalPlanner:
 
         p3 = np.array([end_waypoint.pose.pose.position.x, end_waypoint.pose.pose.position.y])
 
-        dx1 = (waypoint1.pose.pose.position.x - p0[0])*dir1
-        dy1 = (waypoint1.pose.pose.position.y - p0[1])*dir1
+        dx1 = waypoint1.pose.pose.position.x - p0[0]
+        dy1 = waypoint1.pose.pose.position.y - p0[1]
 
         vec_length1 = np.sqrt(dx1**2 + dy1**2)
         dx1 /= vec_length1
@@ -415,8 +417,8 @@ class Lanelet2GlobalPlanner:
 
         p1 = np.array([p0[0] + scaled_x1, p0[1] + scaled_y1])
 
-        dx2 = (waypoint2.pose.pose.position.x - p3[0])*-dir2
-        dy2 = (waypoint2.pose.pose.position.y - p3[1])*-dir2
+        dx2 = waypoint2.pose.pose.position.x - p3[0]
+        dy2 = waypoint2.pose.pose.position.y - p3[1]
 
         vec_length2 = np.sqrt(dx2**2 + dy2**2)
         dx2 /= vec_length2
@@ -429,19 +431,34 @@ class Lanelet2GlobalPlanner:
 
         control_points = np.array([p0, p1, p2, p3])
 
-        bezier_points = calculate_points_on_bezier_curve(control_points, 10)
+        bezier_points = calculate_points_on_bezier_curve(control_points, int(lanechange_length // self.waypoint_interval))
 
         ##################################################################
         # Create lane change waypoints
         ##################################################################
 
-        speed = min(start_waypoint.twist.twist.linear.x, end_waypoint.twist.twist.linear.x)
+        # Calculate the distance of each Bezier point from the benning of the spline
+        lane_change_wp_distances = np.cumsum(np.sqrt(np.sum(np.diff(bezier_points, axis=0)**2, axis=1)))
+        # Add 0 to the beginning of the array
+        lane_change_wp_distances = np.insert(lane_change_wp_distances, 0, 0)
+        # Use the first and last distance as datapoints
+        distance_datapoints  = np.array([0, lane_change_wp_distances[-1]])
+        
+        # Speed interpolation
+        speed_datapoints = np.array([start_waypoint.twist.twist.linear.x, end_waypoint.twist.twist.linear.x])
+        speed = np.interp(lane_change_wp_distances, distance_datapoints, speed_datapoints)
 
-        lw = min(start_waypoint.dtlane.lw, end_waypoint.dtlane.lw)
-        rw = min(start_waypoint.dtlane.rw, end_waypoint.dtlane.rw)
+        # Left lane width interpolation
+        lw_datapoints = np.array([start_waypoint.dtlane.lw, end_waypoint.dtlane.lw])
+        lw = np.interp(lane_change_wp_distances, distance_datapoints, lw_datapoints)
 
-        z_s = start_waypoint.pose.pose.position.z
-        z_e = end_waypoint.pose.pose.position.z
+        # Right lane width interpolation
+        lw_datapoints = np.array([start_waypoint.dtlane.rw, end_waypoint.dtlane.rw])
+        rw = np.interp(lane_change_wp_distances, distance_datapoints, lw_datapoints)
+
+        # z-coordinate interpolation
+        z_datapoints = np.array([start_waypoint.pose.pose.position.z, end_waypoint.pose.pose.position.z])
+        z_coords = np.interp(lane_change_wp_distances, distance_datapoints, z_datapoints)
 
         # Calculate new heading for the start waypoint
         start_heading = get_heading_between_two_points(ShapelyPoint(p0), ShapelyPoint(bezier_points[0]))
@@ -456,12 +473,9 @@ class Lanelet2GlobalPlanner:
                 next_point = ShapelyPoint(p3)
             else:
                 next_point = ShapelyPoint(bezier_points[i+1])
-
-            point_z = z_s + i*(z_e - z_s)/(len(bezier_points) - 1)
             
-            coords = (point.x, point.y, point_z)
-            waypoint = self.create_waypoint(coords=coords, blinker=blinker, p1=point, p2=next_point, 
-                                        speed=speed, lw=lw, rw=rw)
+            coords = (point.x, point.y, z_coords[i])
+            waypoint = self.create_waypoint_with_attributes(coords, point, next_point, blinker, speed[i], lw[i], rw[i], 0)
             
             waypoints.append(waypoint)
 
@@ -469,62 +483,47 @@ class Lanelet2GlobalPlanner:
 
         return waypoints
     
-    def find_following_lane_change_lanelet(self, lanelet, route, is_left_side):
-        # All following relations of the current lanelet
-        following_relations = route.followingRelations(lanelet)
-        
-        if is_left_side:
-            adjacent_relation = route.leftRelation(lanelet)
-        else:
-            adjacent_relation = route.rightRelation(lanelet)
-
-        # Return None if there are no adajncent relations 
-        if adjacent_relation is None:
-            return None
-        
-        # All following relations of the adjacent lanelet
-        adjacent_following_relations = route.followingRelations(adjacent_relation.lanelet)
-
-        for following_relation in following_relations:
-            # Get the adjancent relation of the follwing relaton
-            if is_left_side:
-                following_adjacent_relation = route.leftRelation(following_relation.lanelet)
-            else:
-                following_adjacent_relation = route.rightRelation(following_relation.lanelet)
-            
-
-            if following_adjacent_relation is None:
-                continue
-            
-            # Suitable following lanelet is found if the its adjancent lanelet matches the current lanelet's follower
-            for adjacent_following_relation in adjacent_following_relations:
-                if adjacent_following_relation.lanelet == adjacent_following_relation.lanelet:
-                    return following_relation.lanelet
-
-        return None
-
-    def create_waypoint(self, point=None, lanelet=None, p1=None, p2=None, coords=None,
-                        blinker=None, speed=None, lw=None, rw=None, lane_change=0):
-        
+    def create_waypoint_with_lanelet(self, point, lanelet, p1, p2, blinker, lane_change):
         if blinker is None:
             if 'turn_direction' in lanelet.attributes:
                 blinker = LANELET_TURN_DIRECTION_TO_WAYPOINT_STATE_MAP[lanelet.attributes['turn_direction']]
             else:
                 blinker = WaypointState.STR_STRAIGHT
 
-        if speed is None:
-            speed = self.speed_limit / 3.6
-            if 'speed_limit' in lanelet.attributes:
-                speed = min(speed, float(lanelet.attributes['speed_limit']) / 3.6)
-            if 'speed_ref' in lanelet.attributes:
-                speed = min(speed, float(lanelet.attributes['speed_ref']) / 3.6)
+        speed = self.speed_limit / 3.6
+        if 'speed_limit' in lanelet.attributes:
+            speed = min(speed, float(lanelet.attributes['speed_limit']) / 3.6)
+        if 'speed_ref' in lanelet.attributes:
+            speed = min(speed, float(lanelet.attributes['speed_ref']) / 3.6)
 
         waypoint = Waypoint()
-        
-        if coords is not None:
-            x, y, z = coords
-        else:
-            x, y, z = point.x, point.y, point.z
+        x, y, z = point.x, point.y, point.z
+
+        waypoint.pose.pose.position.x = x
+        waypoint.pose.pose.position.y = y
+        waypoint.pose.pose.position.z = z
+        waypoint.wpstate.steering_state = blinker
+        waypoint.wpstate.lanechange_state = lane_change
+
+        # calculate quaternion for orientation
+        heading = get_heading_between_two_points(p1, p2)
+        waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
+
+        # calculate quaternion for orientation
+        heading = get_heading_between_two_points(p1, p2)
+        waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
+
+        waypoint.twist.twist.linear.x = speed
+
+        waypoint.dtlane.lw = lanelet2_distance(point, lanelet.leftBound)
+        waypoint.dtlane.rw = lanelet2_distance(point, lanelet.rightBound)
+
+        return waypoint
+
+    def create_waypoint_with_attributes(self, coords, p1, p2, blinker, speed, lw, rw, lane_change):
+
+        waypoint = Waypoint()
+        x, y, z = coords
 
         waypoint.pose.pose.position.x = x
         waypoint.pose.pose.position.y = y
@@ -537,16 +536,8 @@ class Lanelet2GlobalPlanner:
         waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
 
         waypoint.twist.twist.linear.x = speed
-
-        if lw is None:
-            waypoint.dtlane.lw = lanelet2_distance(point, lanelet.leftBound)
-        else:
-            waypoint.dtlane.lw = lw
-
-        if rw is None:
-            waypoint.dtlane.rw = lanelet2_distance(point, lanelet.rightBound)
-        else:
-            waypoint.dtlane.rw = rw
+        waypoint.dtlane.lw = lw
+        waypoint.dtlane.rw = rw
 
         return waypoint
 
