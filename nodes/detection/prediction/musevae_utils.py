@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import os
-import MUSE_VAE.model as model
+import sys
 from torch.distributions.normal import Normal
 from torch.utils import data
 from scipy import ndimage
@@ -16,7 +16,11 @@ from torchvision import transforms
 import os
 import argparse
 import cv2
-
+import os.path as osp
+import pathlib
+sys.path.append(osp.join(pathlib.Path(__file__).parent.resolve(), 'MUSE_VAE'))
+from model import *
+from unet.unet import *
 
 def parse_args():
     '''
@@ -29,7 +33,7 @@ def parse_args():
                         help='run id')
     parser.add_argument('--model_name', default='micro', type=str,
                         help='model name: one of [lg_ae, lg_cvae, sg_net, micro]')
-    parser.add_argument('--device', default='cpu', type=str,
+    parser.add_argument('--device', default='cuda', type=str,
                         help='cpu/cuda')
 
     # training hyperparameters
@@ -53,11 +57,11 @@ def parse_args():
     parser.add_argument('--obs_len', default=8, type=int)
     parser.add_argument('--pred_len', default=12, type=int)
     parser.add_argument('--skip', default=1, type=int)
-    parser.add_argument('--dataset_dir', default='./datasets/pfsd', type=str, help='dataset directory')
-    parser.add_argument('--dataset_name', default='pfsd', type=str,
+    parser.add_argument('--dataset_dir', default='./datasets/sdd', type=str, help='dataset directory')
+    parser.add_argument('--dataset_name', default='sdd', type=str,
                         help='dataset name')
     parser.add_argument('--scale', default=100.0, type=float)
-    parser.add_argument('--heatmap_size', default=160, type=int)
+    parser.add_argument('--heatmap_size', default=256, type=int)
     parser.add_argument('--anneal_epoch', default=10, type=int)
 
     # Macro
@@ -325,35 +329,35 @@ def eval_mode(models):
 
     return encoderMx, encoderMy, decoderMy, lg_cvae, sg_unet
 
-def seq_collate(data):
-    (obs_seq_list, pred_seq_list,
-     map_path, inv_h_t,
-     local_map, local_ic, local_homo, scale) = zip(*data)
-    scale = scale[0]
-
-    _len = [len(seq) for seq in obs_seq_list]
-    cum_start_idx = [0] + np.cumsum(_len).tolist()
-    seq_start_end = [[start, end]
-                     for start, end in zip(cum_start_idx, cum_start_idx[1:])]
-
-    obs_traj = torch.stack(obs_seq_list, dim=0).permute(2, 0, 1)
-    fut_traj = torch.stack(pred_seq_list, dim=0).permute(2, 0, 1)
-    seq_start_end = torch.LongTensor(seq_start_end)
-
-    inv_h_t = np.stack(inv_h_t)
-    local_ic = np.stack(local_ic)
-    local_homo = torch.tensor(np.stack(local_homo)).float().to(obs_traj.device)
-
-    obs_traj_st = obs_traj.clone()
-    obs_traj_st[:, :, :2] = (obs_traj_st[:,:,:2] - obs_traj_st[-1, :, :2]) / scale
-    obs_traj_st[:, :, 2:] /= scale
-    out = [
-        obs_traj, fut_traj, obs_traj_st, fut_traj[:,:,2:4] / scale, seq_start_end,
-        map_path, inv_h_t,
-        local_map, local_ic, local_homo
-    ]
-
-    return tuple(out)
+# def seq_collate(data):
+#     (obs_seq_list, pred_seq_list,
+#      map_path, inv_h_t,
+#      local_map, local_ic, local_homo, scale) = zip(*data)
+#     scale = scale[0]
+#
+#     _len = [len(seq) for seq in obs_seq_list]
+#     cum_start_idx = [0] + np.cumsum(_len).tolist()
+#     seq_start_end = [[start, end]
+#                      for start, end in zip(cum_start_idx, cum_start_idx[1:])]
+#
+#     obs_traj = torch.stack(obs_seq_list, dim=0).permute(2, 0, 1)
+#     fut_traj = torch.stack(pred_seq_list, dim=0).permute(2, 0, 1)
+#     seq_start_end = torch.LongTensor(seq_start_end)
+#
+#     inv_h_t = np.stack(inv_h_t)
+#     local_ic = np.stack(local_ic)
+#     local_homo = torch.tensor(np.stack(local_homo)).float().to(obs_traj.device)
+#
+#     obs_traj_st = obs_traj.clone()
+#     obs_traj_st[:, :, :2] = (obs_traj_st[:,:,:2] - obs_traj_st[-1, :, :2]) / scale
+#     obs_traj_st[:, :, 2:] /= scale
+#     out = [
+#         obs_traj, fut_traj, obs_traj_st, fut_traj[:,:,2:4] / scale, seq_start_end,
+#         map_path, inv_h_t,
+#         local_map, local_ic, local_homo
+#     ]
+#
+#     return tuple(out)
 
 
 class TrajectoryDataset(data.Dataset):
@@ -673,7 +677,7 @@ class heatmap_generation(object):
 def musevae_iter(dataset, models, device, args, n=5):
 
     dataloader = data.DataLoader(
-        dataset, batch_size=len(dataset), shuffle=False, num_workers=0)
+        dataset, batch_size=len(dataset), shuffle=False, num_workers=0, collate_fn=seq_collate)
 
     encoderMx, encoderMy, decoderMy, lg_cvae, sg_unet = models
 
@@ -683,7 +687,7 @@ def musevae_iter(dataset, models, device, args, n=5):
     heatmap_size = args.heatmap_size
     dataset_name = args.dataset_name
     scale = args.scale
-    n_w = args.n_w
+    n_w = n
     n_z = args.n_z
 
     eps = 1e-9
@@ -695,7 +699,7 @@ def musevae_iter(dataset, models, device, args, n=5):
     make_one_heatmap = hg.make_one_heatmap
 
     batch_by_batch_guesses = []
-    with torch.no_grad():
+    with torch.inference_mode():
         for batch_idx, batch in enumerate(dataloader):
             batch_by_batch_guesses.append([])
             (obs_traj, _, obs_traj_st, _, seq_start_end,
@@ -798,7 +802,8 @@ def musevae_iter(dataset, models, device, args, n=5):
             ade, fde = [], []
             for dist in fut_rel_pos_dists:
                 pred_fut_traj = integrate_samples(dist.rsample() * scale, obs_traj[-1, :, :2], dt=dt)
-                print(pred_fut_traj.shape)
+                pred_fut_traj = pred_fut_traj.cpu().numpy().swapaxes(1, 0)
+                batch_by_batch_guesses[len(batch_by_batch_guesses) - 1].append(pred_fut_traj)
 
     true_guesses = [[] for _ in range(n)]
     for batch_guess in batch_by_batch_guesses:
@@ -808,29 +813,64 @@ def musevae_iter(dataset, models, device, args, n=5):
     return true_guesses
 
 
+def seq_collate(data):
+    (obs_seq_list, _,
+     _, inv_h_t,
+     local_map, local_ic, local_homo, scale) = zip(*data)
+    scale = scale[0]
+
+    _len = [len(seq) for seq in obs_seq_list]
+    cum_start_idx = [0] + np.cumsum(_len).tolist()
+    seq_start_end = [[start, end]
+                     for start, end in zip(cum_start_idx, cum_start_idx[1:])]
+
+    obs_traj = torch.stack(obs_seq_list, dim=0).permute(1, 0, 2)
+    # fut_traj = torch.stack(pred_seq_list, dim=0).permute(2, 0, 1)
+    seq_start_end = torch.LongTensor(seq_start_end)
+
+    inv_h_t = np.stack(inv_h_t)
+    local_ic = np.stack(local_ic)
+    local_homo = torch.tensor(np.stack(local_homo)).float().to(obs_traj.device)
+
+    obs_traj_st = obs_traj.clone()
+    obs_traj_st[:, :, :2] = (obs_traj_st[:,:,:2] - obs_traj_st[-1, :, :2]) / scale
+    obs_traj_st[:, :, 2:] /= scale
+    out = [
+        obs_traj, [], obs_traj_st, [], seq_start_end,
+        [], inv_h_t,
+        local_map, local_ic, local_homo
+    ]
+
+    return tuple(out)
+
+
 class MuseVAEDatasetInit(data.Dataset):
-    def __init__(self, detected_object_trajs, velocity_objects, acceleration_objects, end_points, global_map, pad_past=8, pad_future=0, inference_timer_duration=0.5, scale=100):
+    def __init__(self, detected_object_trajs, velocity_objects, acceleration_objects, global_map, end_points, pad_past=8, pad_future=0, inference_timer_duration=0.5, scale=100, device='cuda'):
         self.obs_len = pad_past
         # self.pred_len = 12
         self.skip = 1
         self.scale = scale
         self.global_map = global_map
 
-        self.traj_flat = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(detected_object_trajs)])
+        self.traj_flat = detected_object_trajs
         traj = np.copy(self.traj_flat)
-        self.velocitytraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(velocity_objects)]) / inference_timer_duration
-        self.acceltraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-                                     mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(acceleration_objects)]) / inference_timer_duration
+        self.velocitytraj = velocity_objects
+        self.acceltraj = acceleration_objects
+
+        # self.traj_flat = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
+        #                              mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(detected_object_trajs)])
+        # traj = np.copy(self.traj_flat)
+        # self.velocitytraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
+        #                              mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(velocity_objects)]) / inference_timer_duration
+        # self.acceltraj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
+        #                              mode='edge')[end_points[i]:end_points[i] + pad_past + pad_future + 1] for i, traj in enumerate(acceleration_objects)]) / inference_timer_duration
 
         self.traj = np.concatenate((traj, self.velocitytraj,
                                     self.acceltraj), axis=2)
 
-        self.stats={}
-        self.maps={}
-
-
+        self.stats = {}
+        self.maps = {}
+        self.device = device
 
     def __len__(self):
         return len(self.traj)
@@ -838,18 +878,17 @@ class MuseVAEDatasetInit(data.Dataset):
     def __getitem__(self, idx):
         inv_h_t = np.expand_dims(np.eye(3), axis=0)
 
-        local_map, local_ic, local_homo = self.get_local_map_ic(self.global_map, self.traj[idx], zoom=1,
-                                                                radius=self.scale,
+        local_map, local_ic, local_homo = self.get_local_map_ic(self.global_map, self.traj[idx][:, :2], zoom=1,
+                                                                radius=80,
                                                                 compute_local_homo=True)
 
         out = [
-            self.traj[idx].to(self.device), None,
-            None, inv_h_t,
+            torch.FloatTensor(self.traj[idx]).to(self.device), [],
+            [], inv_h_t,
             local_map, local_ic, local_homo, self.scale
         ]
 
         return out
-
 
     def get_local_map_ic(self, global_map, all_traj, zoom=10, radius=8, compute_local_homo=False):
             radius = radius * zoom
@@ -897,7 +936,6 @@ class MuseVAEDatasetInit(data.Dataset):
                                             np.linalg.pinv(np.transpose(h)))
                 all_pixel_local /= np.expand_dims(all_pixel_local[:, 2], 1)
                 all_pixel_local = np.round(all_pixel_local).astype(int)[:, :2]
-
             return local_map, all_pixel_local, h
 
 
