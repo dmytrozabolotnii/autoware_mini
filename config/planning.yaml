@@ -17,7 +17,7 @@ lanelet2_global_planner:
   lane_change: True
   lane_change_base_length: 10.0    # m
   lane_change_perlane_length: 5.0    # m
-  lanelet_search_radius: 1.0
+  lanelet_search_radius: 0.5
 
 waypoint_loader:
   output_frame: map

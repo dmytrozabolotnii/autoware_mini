@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from scipy.interpolate import BPoly
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import Point, Quaternion
 

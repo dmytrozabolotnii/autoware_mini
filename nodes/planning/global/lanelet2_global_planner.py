@@ -181,7 +181,6 @@ class Lanelet2GlobalPlanner:
         self.publish_waypoints(lane_change_waypoints)
         rospy.loginfo("%s - global path published", rospy.get_name())
 
-
     def current_pose_callback(self, msg):
         self.current_location = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
@@ -252,11 +251,11 @@ class Lanelet2GlobalPlanner:
                 blinker = None
                 lanechange_state = 0
                 
-            following_lanelet = lanelet
-            following_lanelets_length = length2d(following_lanelet)
-
             # Make sure we have enough space to perform the lane change
             if lanechange_state > 0:
+                following_lanelet = lanelet
+                following_lanelets_length = length2d(following_lanelet)
+
                 # Extend the lanelet with following lanelets until the desired lane change length is reached
                 while following_lanelets_length < self.lane_change_base_length + lanechange_state * self.lane_change_perlane_length:
                     # Find a suitable following lanelet
@@ -275,66 +274,22 @@ class Lanelet2GlobalPlanner:
 
 
             # Loop over the current lanelet's centerline points
-            for idx in range(0, len(lanelet.centerline)):
+            for idx, point in enumerate(lanelet.centerline):
                 if not last_lanelet and idx == len(lanelet.centerline)-1:
                     # Skip last point on every lanelet (except last), because it is the same as the first point of the following lanelet
                     break
 
-                point = lanelet.centerline[idx]
-
                 if last_lanelet and idx == len(lanelet.centerline)-1:
-                    # Use heading of previous point - last point of last lanelet has no following point
-                    waypoint = self.create_waypoint_with_lanelet(point, lanelet, lanelet.centerline[idx-1], lanelet.centerline[idx], blinker, lanechange_state)
+                    # use heading of previous point - last point of last lanelet has no following point
+                    heading = get_heading_between_two_points(lanelet.centerline[idx-1], lanelet.centerline[idx])
                 else:
-                    waypoint = self.create_waypoint_with_lanelet(point, lanelet, lanelet.centerline[idx], lanelet.centerline[idx+1], blinker, lanechange_state)
+                    heading = get_heading_between_two_points(lanelet.centerline[idx], lanelet.centerline[idx+1])
 
+                waypoint = self.create_waypoint_with_lanelet(point, heading, lanelet, blinker, lanechange_state)
                 waypoints.append(waypoint)
 
         return waypoints
 
-
-    def publish_waypoints(self, waypoints):
-
-        lane = Lane()        
-        lane.header.frame_id = self.output_frame
-        lane.header.stamp = rospy.Time.now()
-        lane.waypoints = waypoints
-        
-        self.waypoints_pub.publish(lane)
-
-
-    def publish_target_lanelets(self, start_lanelet, goal_lanelet):
-        
-        marker_array = MarkerArray()
-
-        # create correct ones
-        marker = self.create_target_lanelet_marker()
-        marker.ns = "start_lanelet"
-        marker.color = GREEN
-        for point in to2D(start_lanelet.centerline):
-            marker.points.append(Point(point.x, point.y, 0.0))
-        marker_array.markers.append(marker)
-
-        marker = self.create_target_lanelet_marker()
-        marker.ns = "goal_lanelet"
-        marker.color = RED
-        for point in to2D(goal_lanelet.centerline):
-            marker.points.append(Point(point.x, point.y, 0.0))
-        marker_array.markers.append(marker)
-
-        self.target_lane_pub.publish(marker_array)
-    
-    def create_target_lanelet_marker(self):
-        marker = Marker()
-        marker.header.frame_id = self.output_frame
-        marker.header.stamp = rospy.Time.now()
-        marker.action = Marker.ADD
-        marker.type = Marker.POINTS
-        marker.pose.orientation.w = 1.0
-        marker.scale.x = 0.3
-        marker.scale.y = 0.3
-        return marker
-    
     def create_lane_change_paths(self, waypoints):
         idx = 0
         while idx < len(waypoints):
@@ -370,7 +325,7 @@ class Lanelet2GlobalPlanner:
 
                     # Use the angle to check that the lane change doesn't happen behind us
                     # Multiply the diagonal distance with cos(a) to get the parallel distance of the lane change 
-                    if abs(a) < np.pi/2 and d * np.cos(a) > given_lanechange_length:
+                    if abs(a) < np.pi/2 and d * np.cos(a) >= given_lanechange_length:
                         end_idx = idx
                         break
 
@@ -475,7 +430,8 @@ class Lanelet2GlobalPlanner:
                 next_point = ShapelyPoint(bezier_points[i+1])
             
             coords = (point.x, point.y, z_coords[i])
-            waypoint = self.create_waypoint_with_attributes(coords, point, next_point, blinker, speed[i], lw[i], rw[i], 0)
+            heading = get_heading_between_two_points(point, next_point)
+            waypoint = self.create_waypoint_with_attributes(coords, heading, blinker, speed[i], lw[i], rw[i], 0)
             
             waypoints.append(waypoint)
 
@@ -483,7 +439,7 @@ class Lanelet2GlobalPlanner:
 
         return waypoints
     
-    def create_waypoint_with_lanelet(self, point, lanelet, p1, p2, blinker, lane_change):
+    def create_waypoint_with_lanelet(self, point, heading, lanelet, blinker, lane_change):
         if blinker is None:
             if 'turn_direction' in lanelet.attributes:
                 blinker = LANELET_TURN_DIRECTION_TO_WAYPOINT_STATE_MAP[lanelet.attributes['turn_direction']]
@@ -506,11 +462,6 @@ class Lanelet2GlobalPlanner:
         waypoint.wpstate.lanechange_state = lane_change
 
         # calculate quaternion for orientation
-        heading = get_heading_between_two_points(p1, p2)
-        waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
-
-        # calculate quaternion for orientation
-        heading = get_heading_between_two_points(p1, p2)
         waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
 
         waypoint.twist.twist.linear.x = speed
@@ -520,7 +471,7 @@ class Lanelet2GlobalPlanner:
 
         return waypoint
 
-    def create_waypoint_with_attributes(self, coords, p1, p2, blinker, speed, lw, rw, lane_change):
+    def create_waypoint_with_attributes(self, coords, heading, blinker, speed, lw, rw, lane_change):
 
         waypoint = Waypoint()
         x, y, z = coords
@@ -532,7 +483,6 @@ class Lanelet2GlobalPlanner:
         waypoint.wpstate.lanechange_state = lane_change
 
         # calculate quaternion for orientation
-        heading = get_heading_between_two_points(p1, p2)
         waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
 
         waypoint.twist.twist.linear.x = speed
@@ -541,6 +491,47 @@ class Lanelet2GlobalPlanner:
 
         return waypoint
 
+    def publish_waypoints(self, waypoints):
+
+        lane = Lane()        
+        lane.header.frame_id = self.output_frame
+        lane.header.stamp = rospy.Time.now()
+        lane.waypoints = waypoints
+        
+        self.waypoints_pub.publish(lane)
+
+    def publish_target_lanelets(self, start_lanelet, goal_lanelet):
+        
+        marker_array = MarkerArray()
+
+        # create correct ones
+        marker = self.create_target_lanelet_marker()
+        marker.ns = "start_lanelet"
+        marker.color = GREEN
+        for point in to2D(start_lanelet.centerline):
+            marker.points.append(Point(point.x, point.y, 0.0))
+        marker_array.markers.append(marker)
+
+        marker = self.create_target_lanelet_marker()
+        marker.ns = "goal_lanelet"
+        marker.color = RED
+        for point in to2D(goal_lanelet.centerline):
+            marker.points.append(Point(point.x, point.y, 0.0))
+        marker_array.markers.append(marker)
+
+        self.target_lane_pub.publish(marker_array)
+    
+    def create_target_lanelet_marker(self):
+        marker = Marker()
+        marker.header.frame_id = self.output_frame
+        marker.header.stamp = rospy.Time.now()
+        marker.action = Marker.ADD
+        marker.type = Marker.POINTS
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.3
+        marker.scale.y = 0.3
+        return marker
+    
     def run(self):
         rospy.spin()
 
