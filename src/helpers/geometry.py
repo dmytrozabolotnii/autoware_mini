@@ -149,6 +149,7 @@ def calculate_points_on_bezier_curve(control_points, n):
     """
 
     p0, p1, p2, p3 = control_points
-    samples = np.linspace(0, 1, n)
-    bezier_points = [(1-t)**3 * p0 + 3*(1-t)**2 * t * p1 + 3*(1-t) * t**2 * p2 + t**3 * p3 for t in samples]
+    t = np.linspace(0, 1, n)[:, np.newaxis]
+    # using implicit broadcasting to ensure that the operation is performed on each point
+    bezier_points = (1-t)**3 * p0 + 3*(1-t)**2 * t * p1 + 3*(1-t) * t**2 * p2 + t**3 * p3
     return bezier_points
