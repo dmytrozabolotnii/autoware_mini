@@ -2,11 +2,13 @@
 
 import rospy
 import numpy as np
+import math
 
 from geometry_msgs.msg import Point
 from autoware_msgs.msg import Lane, Waypoint
 
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading, \
+    get_heading_from_orientation, get_point_using_heading_and_distance, \
     get_distance_between_two_points_2d, get_angle_between_three_points, calculate_points_on_bezier_curve
 
 
@@ -84,7 +86,6 @@ class LaneChangePlanner:
 
                 # Replace section of waypoints with spline
                 spline = self.calculate_lane_change_spline(waypoints[start_idx], waypoints[end_idx], 
-                                                           waypoints[start_idx+1], waypoints[end_idx-1], 
                                                            given_lanechange_length, steering_state)
 
                 waypoints = waypoints[:start_idx] + spline + waypoints[end_idx+1:]
@@ -97,44 +98,24 @@ class LaneChangePlanner:
 
         return waypoints
 
-    def calculate_lane_change_spline(self, start_waypoint, end_waypoint, waypoint1, waypoint2, lanechange_length, steering_state):
-        waypoints = []
+    def calculate_lane_change_spline(self, start_waypoint, end_waypoint, lanechange_length, steering_state):
 
         ##################################################################
         # Calculate Bezier curve control points p0, p1, p2, p3
         ##################################################################
 
-        p0 = np.array([start_waypoint.pose.pose.position.x, start_waypoint.pose.pose.position.y])
+        start_heading = get_heading_from_orientation(start_waypoint.pose.pose.orientation)
+        control_point1 = get_point_using_heading_and_distance(start_waypoint.pose.pose.position, start_heading, lanechange_length / 3)
 
-        p3 = np.array([end_waypoint.pose.pose.position.x, end_waypoint.pose.pose.position.y])
+        end_heading = get_heading_from_orientation(end_waypoint.pose.pose.orientation)
+        control_point2 = get_point_using_heading_and_distance(end_waypoint.pose.pose.position, end_heading + math.pi, lanechange_length / 3)
 
-        dx1 = waypoint1.pose.pose.position.x - p0[0]
-        dy1 = waypoint1.pose.pose.position.y - p0[1]
-
-        vec_length1 = np.sqrt(dx1**2 + dy1**2)
-        dx1 /= vec_length1
-        dy1 /= vec_length1
-
-        scaled_x1 = dx1 * lanechange_length / 3
-        scaled_y1 = dy1 * lanechange_length / 3
-
-        p1 = np.array([p0[0] + scaled_x1, p0[1] + scaled_y1])
-
-        dx2 = waypoint2.pose.pose.position.x - p3[0]
-        dy2 = waypoint2.pose.pose.position.y - p3[1]
-
-        vec_length2 = np.sqrt(dx2**2 + dy2**2)
-        dx2 /= vec_length2
-        dy2 /= vec_length2
-
-        scaled_x2 = dx2 * lanechange_length / 3
-        scaled_y2 = dy2 * lanechange_length / 3
-
-        p2 = np.array([p3[0] + scaled_x2, p3[1] + scaled_y2])
-
-        control_points = np.array([p0, p1, p2, p3])
-
-        bezier_points = calculate_points_on_bezier_curve(control_points, int(lanechange_length // self.waypoint_interval))
+        bezier_points = calculate_points_on_bezier_curve(
+            start_waypoint.pose.pose.position,
+            control_point1, control_point2, 
+            end_waypoint.pose.pose.position,
+            int(lanechange_length // self.waypoint_interval)
+        )
 
         ##################################################################
         # Create lane change waypoints
@@ -163,18 +144,18 @@ class LaneChangePlanner:
         z_datapoints = np.array([start_waypoint.pose.pose.position.z, end_waypoint.pose.pose.position.z])
         z_coords = np.interp(lane_change_wp_distances, distance_datapoints, z_datapoints)
 
+        waypoints = []
         for i in range(len(bezier_points)):
-            point = Point(x=bezier_points[i, 0], y=bezier_points[i, 1])
             if i == len(bezier_points) - 1:
-                next_point = Point(x=p3[0], y=p3[1])
+                heading = end_heading
             else:
+                point = Point(x=bezier_points[i, 0], y=bezier_points[i, 1])
                 next_point = Point(x=bezier_points[i+1, 0], y=bezier_points[i+1, 1])
-            
-            heading = get_heading_between_two_points(point, next_point)
+                heading = get_heading_between_two_points(point, next_point)
 
             waypoint = Waypoint()
-            waypoint.pose.pose.position.x = point.x
-            waypoint.pose.pose.position.y = point.y
+            waypoint.pose.pose.position.x = bezier_points[i, 0]
+            waypoint.pose.pose.position.y = bezier_points[i, 1]
             waypoint.pose.pose.position.z = z_coords[i]
             waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
             waypoint.twist.twist.linear.x = speed[i]
