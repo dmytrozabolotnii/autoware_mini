@@ -52,7 +52,11 @@ class LaneChangePlanner:
                     return None
                 
                 start_point = waypoints[start_idx].pose.pose.position
-                other_point = waypoints[start_idx + 1].pose.pose.position
+
+                # Calculate a point 1 unit away in the driving direction for lane change angle calculation
+                start_point_heading = get_heading_from_orientation(waypoints[start_idx].pose.pose.orientation)
+                other_point = get_point_using_heading_and_distance(waypoints[start_idx].pose.pose.position, start_point_heading, 1)
+
                 steering_state = waypoints[start_idx].wpstate.steering_state
 
                 # Skip all lane change waypoints
@@ -73,7 +77,7 @@ class LaneChangePlanner:
                     given_lanechange_length = self.lane_change_base_length + lanechange_state * self.lane_change_perlane_length
 
                     # Use the angle to check that the lane change doesn't happen behind us
-                    # Multiply the diagonal distance with cos(a) to get the parallel distance of the lane change 
+                    # Multiply the diagonal distance with cos(a) to get the parallel distance of the lane change
                     if abs(a) < np.pi/2 and d * np.cos(a) >= given_lanechange_length:
                         end_idx = idx
                         break
