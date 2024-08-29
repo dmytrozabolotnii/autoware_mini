@@ -131,3 +131,44 @@ def get_stoplines_center(lanelet2_map):
             stopline_centers[link.id] = [(center_x, center_y), plIds] 
 
     return stopline_centers
+
+def find_following_lane_change_lanelet(lanelet, route, is_left_side):
+    """
+    Checks if lane change is possible on the following lanelet.
+    If yes then return the following lanelet
+    :param lanelet: current lanelet
+    :param route: lanelet2 route object
+    :param is_left_side: wether the current lanelet is to the left of the adjancent lanelet
+    :return: the following lanelet if it is suitable for a lane change, None otherwise
+    """
+    # All following relations of the current lanelet
+    following_relations = route.followingRelations(lanelet)
+    
+    if is_left_side:
+        adjacent_relation = route.leftRelation(lanelet)
+    else:
+        adjacent_relation = route.rightRelation(lanelet)
+
+    # Return None if there are no adajncent relations 
+    if adjacent_relation is None:
+        return None
+    
+    # All following relations of the adjacent lanelet
+    adjacent_following_relations = route.followingRelations(adjacent_relation.lanelet)
+
+    for following_relation in following_relations:
+        # Get the adjancent relation of the follwing relaton
+        if is_left_side:
+            following_adjacent_relation = route.leftRelation(following_relation.lanelet)
+        else:
+            following_adjacent_relation = route.rightRelation(following_relation.lanelet)
+        
+        if following_adjacent_relation is None:
+            continue
+        
+        # Suitable following lanelet is found if the its adjancent lanelet matches the current lanelet's follower
+        for adjacent_following_relation in adjacent_following_relations:
+            if adjacent_following_relation.lanelet == following_adjacent_relation.lanelet:
+                return following_relation.lanelet
+
+    return None

@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import Point, Quaternion
 
@@ -112,3 +113,50 @@ def create_vector_from_heading_and_scalar(heading, scalar):
     """
 
     return (scalar * math.cos(heading), scalar * math.sin(heading))
+
+def get_angle_between_three_points(first_point, middle_point, third_point):
+    """
+    Calculates angle between three points
+    :param first_point: Point
+    :param middle_point: Middle point
+    :param third_point: Point
+    :return: angle in radians
+    """
+
+    BA = np.array([first_point.x - middle_point.x, first_point.y - middle_point.y])
+    BC = np.array([third_point.x - middle_point.x, third_point.y - middle_point.y])
+    
+    dot_product = np.dot(BA, BC)
+    
+    magnitude_ba = np.linalg.norm(BA)
+    magnitude_bc = np.linalg.norm(BC)
+    
+    cos_theta = dot_product / (magnitude_ba * magnitude_bc)
+    
+    # Clip the cosine value within range [-1, 1] to avoid numerical issues
+    cos_theta = np.clip(cos_theta, -1.0, 1.0)
+    
+    angle = np.arccos(cos_theta)
+    
+    return angle
+
+def calculate_points_on_bezier_curve(start_point, control_point1, control_point2, end_point, n):
+    """
+    Generates n number of equaly spaced points on a Bezier curve
+    :param start_point: Bezier curve starting point
+    :param control_point1: Bezier curve control point 1
+    :param control_point2: Bezier curve control point 2
+    :param end_point: Bezier curve end point
+    :param n: number of points to calculate
+    :return: points on Bezier curve
+    """
+
+    p0 = np.array([start_point.x, start_point.y])
+    p1 = np.array([control_point1.x, control_point1.y])
+    p2 = np.array([control_point2.x, control_point2.y])
+    p3 = np.array([end_point.x, end_point.y])
+
+    # using implicit broadcasting to ensure that the operation is performed on each point
+    t = np.linspace(0, 1, n)[:, np.newaxis]
+    bezier_points = (1-t)**3 * p0 + 3*(1-t)**2 * t * p1 + 3*(1-t) * t**2 * p2 + t**3 * p3
+    return bezier_points
