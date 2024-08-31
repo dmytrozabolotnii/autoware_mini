@@ -31,8 +31,12 @@
   <remap from="/carla/ego_vehicle/base_link/lidar_center/lidar_front/os_sensor" to="/lidar_front/points" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/camera_fl/camera_info" to="/camera_fl/camera_info" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/camera_fr/camera_info" to="/camera_fr/camera_info" />
+  <remap from="/carla/ego_vehicle/base_link/lidar_center/interfacea_link2/camera_info" to="/interfacea/link2/camera_info" />
+  <remap from="/carla/ego_vehicle/base_link/lidar_center/interfacea_link1/camera_info" to="/interfacea/link1/camera_info" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/camera_fl/image" to="/camera_fl/image_raw" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/camera_fr/image" to="/camera_fr/image_raw" />
+  <remap from="/carla/ego_vehicle/base_link/lidar_center/interfacea_link2/image" to="/interfacea/link2/image_raw" />
+  <remap from="/carla/ego_vehicle/base_link/lidar_center/interfacea_link1/image" to="/interfacea/link1/image_raw" />
   <remap from="/carla/ego_vehicle/base_link/gnss_forward" to="/gps/fix_forward" />
   <remap from="/carla/ego_vehicle/base_link/gnss" to="/gps/fix" />
   <remap from="/carla/ego_vehicle/base_link/imu" to="/gps/imu" />

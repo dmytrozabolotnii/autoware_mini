@@ -34,13 +34,15 @@
     <arg name="start_option"            default="$(eval '--start ' + str(start) if start != '' else '')" doc="rosbag play parameter" />
     <arg name="duration"                default=""              doc="Seconds to play from start" />
     <arg name="duration_option"         default="$(eval '--duration ' + str(duration) if duration != '' else '')" doc="rosbag play parameter" />
+    <arg name="rate"                    default=""              doc="Bag speed parameteer, defaults to 1.0 i.e. the normal speed" />
+    <arg name="rate_option"             default="$(eval '--rate ' + str(rate) if rate != '' else '')" doc="rosbag play parameter" />
 
     <!-- Use simulation time from bag -->
     <param name="/use_sim_time" value="true" />
 
     <!-- Play back bag -->
     <node pkg="rosbag" type="play" name="player" required="true" output="screen"
-            args="$(find autoware_mini)/data/bags/$(arg bag_file) --clock --quiet --queue=1 --delay $(arg bag_delay) $(arg loop_option) $(arg start_option) $(arg duration_option)">
+            args="$(find autoware_mini)/data/bags/$(arg bag_file) --clock --quiet --queue=1 --delay $(arg bag_delay) $(arg loop_option) $(arg start_option) $(arg duration_option) $(arg rate_option)">
         <!-- Rename saved topics that are replaced by current ones -->
         <remap from="/tf" to="/bag/tf" if="$(arg use_tf)"/>
         <remap from="/tf_static" to="/bag/tf_static" if="$(arg use_tf)"/>

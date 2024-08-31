@@ -4,8 +4,11 @@
 
     <!-- Vehicle platform -->
     <include file="$(find vehicle_platform)/launch/platform.launch">
-        <arg name="use_tf"          value="$(arg use_tf)" />
-        <arg name="use_lexus_model" value="true" />
+        <arg name="use_tf"              value="$(arg use_tf)" />
+        <arg name="use_lexus_model"     value="true" />
+        <arg name="use_nvidia_cameras"  value="true" />
+        <arg name="use_remote_driver"   value="false" />
+        <arg name="uncompress"          value="true" />
     </include>
 
     <group ns="vehicle">

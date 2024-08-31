@@ -18,24 +18,26 @@
     <!-- Camera based traffic light detection -->
     <group if="$(eval 'camera' in tfl_detector)">
         
-        <!-- Camera FL -->
-        <node pkg="autoware_mini" type="camera_traffic_light_detector.py" name="camera_traffic_light_detector_left" output="screen" required="true" ns="camera_fl">
-            <remap from="camera_info" to="/camera_fl/camera_info"/>
-            <remap from="image_raw" to="/camera_fl/image_raw"/>
+        <!-- Nvidia Front Left 120 FOV camera -->
+        <node pkg="autoware_mini" type="camera_traffic_light_detector.py" name="camera_traffic_light_detector_link1" output="screen" required="true" ns="interfacea_link1">
+            <remap from="camera_info" to="/interfacea/link1/camera_info"/>
+            <remap from="image_raw" to="/interfacea/link1/image_raw"/>
             <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             <param name="onnx_path" value="$(arg onnx_path)" />
         </node>
-
-        <!-- Camera FR -->
-        <node pkg="autoware_mini" type="camera_traffic_light_detector.py" name="camera_traffic_light_detector_right" output="screen" required="true" ns="camera_fr">
-            <remap from="camera_info" to="/camera_fr/camera_info"/>
-            <remap from="image_raw" to="/camera_fr/image_raw"/>
+        
+        <!-- Nvidia Front Forward 120 FOV camera -->
+        <node pkg="autoware_mini" type="camera_traffic_light_detector.py" name="camera_traffic_light_detector_link2" output="screen" required="true" ns="interfacea_link2">
+            <remap from="camera_info" to="/interfacea/link2/camera_info"/>
+            <remap from="image_raw" to="/interfacea/link2/image_raw"/>
             <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             <param name="onnx_path" value="$(arg onnx_path)" />
         </node>
 
         <node pkg="autoware_mini" type="traffic_light_majority_merger.py" name="traffic_light_majority_merger" output="screen" required="true" >
             <remap if="$(eval tfl_detector=='mqtt_camera_fusion')" from="traffic_light_status" to="camera/traffic_light_status"/>
+            <remap from="camera1/traffic_light_status" to="interfacea_link1/traffic_light_status"/>
+            <remap from="camera2/traffic_light_status" to="interfacea_link2/traffic_light_status"/>
         </node>
 
         <node if="$(eval tfl_detector=='mqtt_camera_fusion')" pkg="autoware_mini" type="traffic_light_priority_merger.py" name="traffic_light_priority_merger" output="screen" required="true" >

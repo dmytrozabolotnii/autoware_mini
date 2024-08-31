@@ -198,8 +198,8 @@ class CameraTrafficLightDetector:
                     point_camera = transform_point(point_map, transform)
                     u, v = self.camera_model.project3dToPixel((point_camera.x, point_camera.y, point_camera.z))
 
-                    # check with image limits using the camera model
-                    if u < 0 or u >= self.camera_model.width or v < 0 or v >= self.camera_model.height:
+                    # check with image limits using the camera model and bulb's z coordinate w.r.t camera
+                    if u < 0 or u >= self.camera_model.width or v < 0 or v >= self.camera_model.height or point_camera.z < 0:
                         break
 
                     # calculate radius of the bulb in pixels
