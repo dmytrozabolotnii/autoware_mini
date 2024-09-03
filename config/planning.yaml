@@ -44,3 +44,8 @@ velocity_local_planner:
   braking_safety_distance_obstacle: 4.0
   braking_safety_distance_stopline: 2.0
   braking_safety_distance_goal: 0.1
+
+local_path_extractor:
+  local_path_length: 100 # m
+stop_at_goal:
+  braking_safety_distance_goal: 0.1
