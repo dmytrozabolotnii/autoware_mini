@@ -6,7 +6,7 @@ import time
 class MessageCache:
     def __init__(self, id,
                  initial_trajectory_point,
-                 initial_velocity, initial_acceleration, initial_header, delta_t=0.5):
+                 initial_velocity, initial_acceleration, initial_header, pad_past=8, hide_past=0, delta_t=0.5):
         self.id = id
         self.endpoints_count = 0
         self.raw_trajectories = [initial_trajectory_point]
@@ -16,9 +16,12 @@ class MessageCache:
         self.prediction_history = [[]]
         self.predictions_history_headers = [None]
         # Approximate time between points
+        self.pad_past = pad_past
+        self.hide_past = hide_past
         self.delta_t = delta_t
 
-    def backpropagate_trajectories(self, pad_past=8, ca=False):
+    def backpropagate_trajectories(self, ca=False):
+        pad_past = self.pad_past
         # Create fake history of movement depending on velocity and acceleration vector we receive
         if ca:
             # Constance acceleration mode
@@ -62,7 +65,7 @@ class MessageCache:
         self.raw_accelerations.append(self.raw_accelerations[len(self.raw_accelerations) - 1])
         self.headers.append(self.headers[len(self.headers) - 1])
 
-    def return_last_interpolated_trajectory(self, length=8, delta=0.4):
+    def return_last_interpolated_trajectory(self, length=8, delta=0.4, hide_past=0):
         if self.endpoints_count == 0:
             return np.array([self.raw_trajectories[-1]] * length)
 
@@ -87,7 +90,7 @@ class MessageCache:
         distance_interpolated_values = np.interp(past_trajectory_normalized_times, time_between_points_cumsum, dist_between_points_cumsum)
         past_trajectory = LineString([linepoints.interpolate(distance_interpolated_values[i]) for i in range(length)])
 
-        return np.flip(np.asarray(past_trajectory.coords), axis=0)
+        return np.pad(np.flip(np.asarray(past_trajectory.coords[:length-hide_past]), axis=0), ((hide_past, 0), (0, 0)), mode='edge')
 
     def return_last_interpolated_velocities(self, trajectory, delta=0.4):
         return np.gradient(trajectory, delta)

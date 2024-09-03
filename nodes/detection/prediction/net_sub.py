@@ -29,6 +29,7 @@ class NetSubscriber(metaclass=ABCMeta):
         self.model = None
         self.use_backpropagation = bool(rospy.get_param('predictor_backfill'))
         self.pad_past = int(rospy.get_param('prediction_history'))
+        self.hide_past = int(rospy.get_param('prediction_history_hide'))
 
         # ROS timers/pub/sub
         self.class_init = False
@@ -56,7 +57,7 @@ class NetSubscriber(metaclass=ABCMeta):
                 with self.lock:
                     if _id not in self.cache:
                         self.cache[_id] = MessageCache(_id, position, velocity, acceleration, header,
-                                                       delta_t=self.inference_timer_duration)
+                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration)
                         #if self.use_backpropagation:
                         #    self.cache[_id].backpropagate_trajectories(pad_past=self.pad_past * (self.skip_points + 1))
 
