@@ -3,7 +3,6 @@
 import rospy
 import numpy as np
 from ros_numpy import msgify
-from shapely import prepare
 from shapely.geometry import Point as ShapelyPoint
 from autoware_msgs.msg import Lane, TrafficLightResultArray
 from sensor_msgs.msg import PointCloud2
@@ -65,7 +64,6 @@ class TrafficLightStopline:
             collision_points = msgify(PointCloud2, stopline_points)
         else:
             local_path = Path(msg.waypoints)
-            prepare(local_path)
 
             for stopline_id, stopline_linestring in self.all_stoplines.items():
                 # if RED and intersects with local path
@@ -75,6 +73,7 @@ class TrafficLightStopline:
                     x, y, z = intersection_point.x, intersection_point.y, intersection_point.z
 
                     # append point to stopline_points as new row
+                    # TODO last field category !?!?
                     stopline_point = np.array([(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, 0)], dtype=dtype)
                     stopline_points = np.append(stopline_points, stopline_point)
 
