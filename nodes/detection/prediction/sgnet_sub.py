@@ -46,7 +46,7 @@ class SGNetSubscriber(NetSubscriber):
                                                                          (self.skip_points + 1))
                      for key in temp_active_keys if self.cache[key].endpoints_count == 0]
 
-                temp_raw_trajectories = [self.cache[key].return_last_interpolated_trajectory(self.pad_past, self.inference_timer_duration) for key in temp_active_keys]
+                temp_raw_trajectories = [self.cache[key].return_last_interpolated_trajectory(self.pad_past, self.inference_timer_duration, self.hide_past) for key in temp_active_keys]
                 temp_raw_velocities = [np.gradient(trajectory, self.inference_timer_duration)[0] for trajectory in temp_raw_trajectories]
                 temp_raw_acceleration = [np.gradient(velocities, self.inference_timer_duration)[0] for velocities in temp_raw_velocities]
 

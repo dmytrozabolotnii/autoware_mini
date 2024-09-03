@@ -44,7 +44,7 @@ class GATrajSubscriber(NetSubscriber):
 
                 # temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
                 #                          for key in temp_active_keys]
-                temp_raw_trajectories = [self.cache[key].return_last_interpolated_trajectory(self.pad_past, self.inference_timer_duration) for key in temp_active_keys]
+                temp_raw_trajectories = [self.cache[key].return_last_interpolated_trajectory(self.pad_past, self.inference_timer_duration, self.hide_past) for key in temp_active_keys]
                 temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1)
                                   for key in temp_active_keys]
                 temp_headers = [self.cache[key].return_last_header() for key in temp_active_keys]
