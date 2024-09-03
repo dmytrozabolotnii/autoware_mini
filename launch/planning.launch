@@ -58,6 +58,9 @@
         <group if="$(eval local_planner=='velocity')">
             <node pkg="autoware_mini" type="local_path_extractor.py" name="local_path_extractor" output="screen" required="true" />
             <node pkg="autoware_mini" type="stop_at_goal.py" name="stop_at_goal" output="screen" required="true" />
+            <node pkg="autoware_mini" type="traffic_light_stopline.py" name="traffic_light_stopline" output="screen" required="true" >
+                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+            </node>
 
             <!-- <node pkg="autoware_mini" type="velocity_local_planner.py" name="velocity_local_planner" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />

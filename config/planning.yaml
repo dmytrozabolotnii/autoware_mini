@@ -46,6 +46,9 @@ velocity_local_planner:
   braking_safety_distance_goal: 0.1
 
 local_path_extractor:
+  publish_rate: 10
   local_path_length: 100 # m
 stop_at_goal:
   braking_safety_distance_goal: 0.1
+traffic_light_stopline:
+  braking_safety_distance_stopline: 2
