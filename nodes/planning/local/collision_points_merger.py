@@ -2,7 +2,7 @@
 
 import rospy
 import numpy as np
-from ros_numpy import msgify
+from ros_numpy import msgify, numpify
 import message_filters
 from sensor_msgs.msg import PointCloud2
 
@@ -22,12 +22,12 @@ class CollisionPointsMerger:
         collision_local_path_sub = message_filters.Subscriber('collision_local_path', PointCloud2, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         collision_tfl_stopline_sub = message_filters.Subscriber('collision_tfl_stopline', PointCloud2, queue_size=1, tcp_nodelay=True)
 
-        ts = message_filters.ApproximateTimeSynchronizer([collision_local_path_sub, collision_tfl_stopline_sub], 10, 0.1, allow_headerless=True)
+        ts = message_filters.ApproximateTimeSynchronizer([collision_local_path_sub, collision_tfl_stopline_sub], queue_size=2, slop=0.1)
         ts.registerCallback(self.collision_points_callback)
 
 
     def collision_goal_callback(self, msg):
-        self.collision_goal_points = msg.data
+        self.collision_goal_points = msg
 
 
     def collision_points_callback(self, collision_local_path, collision_tfl_stopline):
@@ -35,21 +35,9 @@ class CollisionPointsMerger:
         if self.collision_goal_points is None:
             return
 
-        dtype = np.dtype([
-            ('x', np.float32),
-            ('y', np.float32),
-            ('z', np.float32),
-            ('vx', np.float32),
-            ('vy', np.float32),
-            ('vz', np.float32),
-            ('distance_to_stop', np.float32),
-            ('category', np.int32)
-        ])
-
-        # TODO if emty arrays, then from rviz it is not deleted?
-        collision_local_path_np = np.frombuffer(collision_local_path.data, dtype=dtype)
-        collision_tfl_stopline_np = np.frombuffer(collision_tfl_stopline.data, dtype=dtype)
-        collision_goal_points_np = np.frombuffer(self.collision_goal_points, dtype=dtype)
+        collision_local_path_np = numpify(collision_local_path)
+        collision_tfl_stopline_np =  numpify(collision_tfl_stopline)
+        collision_goal_points_np = numpify(self.collision_goal_points)
 
         collision_points = np.concatenate((collision_local_path_np, collision_tfl_stopline_np, collision_goal_points_np))
 
