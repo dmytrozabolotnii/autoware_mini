@@ -35,15 +35,13 @@ class LocalPathExtractor:
 
     def path_callback(self, msg):
         
+        self.output_frame = msg.header.frame_id
+
         if len(msg.waypoints) == 0:
-            with self.lock:
-                self.global_path = None
-                self.output_frame = None
+            self.global_path = None
             rospy.loginfo("%s - Empty global path received", rospy.get_name())
         else:
-            with self.lock:
-                self.global_path = Path(msg.waypoints)
-                self.output_frame = msg.header.frame_id
+            self.global_path = Path(msg.waypoints)
             rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(self.global_path.waypoints))
 
 
