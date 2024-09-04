@@ -46,7 +46,7 @@ class StopAtGoal:
             z = last_point.pose.pose.position.z
 
             # Create goal point
-            # TODO can't have category as string label - need to agree on the label coding?!?
+            # TODO can't have category as string label - need to agree on the label coding?!?  0 - Goal point
             goal_point = np.append(goal_point, np.array([(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, 0)], dtype=dtype))
 
         # publish clustered points message

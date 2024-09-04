@@ -73,15 +73,13 @@ class TrafficLightStopline:
                     x, y, z = intersection_point.x, intersection_point.y, intersection_point.z
 
                     # append point to stopline_points as new row
-                    # TODO last field category !?!?
-                    stopline_point = np.array([(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, 0)], dtype=dtype)
+                    # TODO last field category !?!?  1 - TFL stopline
+                    stopline_point = np.array([(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, 1)], dtype=dtype)
                     stopline_points = np.append(stopline_points, stopline_point)
 
             collision_points = msgify(PointCloud2, stopline_points)
 
-
-        collision_points.header.frame_id = msg.header.frame_id
-        collision_points.header.stamp = msg.header.stamp
+        collision_points.header = msg.header
         self.traffic_light_stopline_pub.publish(collision_points)
 
 
