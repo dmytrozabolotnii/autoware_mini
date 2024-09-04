@@ -2,9 +2,8 @@
 
 import rospy
 import numpy as np
-from ros_numpy import msgify, numpify
+from ros_numpy import msgify
 import message_filters
-from autoware_msgs.msg import Lane
 from sensor_msgs.msg import PointCloud2
 
 class CollisionPointsMerger:
