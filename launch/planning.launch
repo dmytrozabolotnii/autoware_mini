@@ -6,6 +6,7 @@
     <arg name="use_path_smoothing"      default="true" />
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
     <arg name="lanelet2_map_name"       default="tartu_demo.osm" />
+    <arg name="use_scenario_runner"     default="false" />
 
     <group ns="planning">
 
@@ -29,6 +30,11 @@
 
         <!-- Global path visualizer -->
         <node pkg="autoware_mini" type="global_path_visualizer.py" name="global_path_visualizer" output="screen" required="true"/>
+
+        <!-- Goal publisher -->
+        <node unless="$(arg use_scenario_runner)" pkg="autoware_mini" type="goal_publisher.py" name="goal_publisher" output="screen" required="true">
+            <param name="map_name" value="$(find autoware_mini)/data/maps/tartu_demo" />
+        </node>
 
         <!-- Path smoothing -->
         <group if="$(arg use_path_smoothing)">
