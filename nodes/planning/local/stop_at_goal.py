@@ -22,7 +22,7 @@ class StopAtGoal:
 
         collision_points = CollisionPoints()
 
-        if len(msg.waypoints) != 0:
+        if len(msg.waypoints) > 0:
             # Extract last point from the path
             last_point = msg.waypoints[-1]
 

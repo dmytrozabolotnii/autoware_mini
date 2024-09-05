@@ -52,3 +52,5 @@ stop_at_goal:
   braking_safety_distance_goal: 0.1
 traffic_light_stopline:
   braking_safety_distance_stopline: 2
+local_path_collision:
+  braking_safety_distance_obstacle: 4
