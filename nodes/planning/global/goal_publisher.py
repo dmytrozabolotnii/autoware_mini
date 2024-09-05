@@ -29,12 +29,27 @@ class GoalPublisher:
         with open(msg.scenario.scenario_file, 'r') as file:
             goals = yaml.safe_load_all(file)
 
-            # Publish all goals in the yaml file
             for goal in goals:
-                goal_pose = self.goal_from_yaml(goal["pose"])
-                self.goal_publisher.publish(goal_pose)
+                if goal["name"] == msg.scenario.name:
+                    for position in goal["position"]:
+                        goal_pose = PoseStamped()
+                        goal_pose.header.stamp = rospy.Time.now()
+                        goal_pose.header.frame_id = "map"
 
-        return True
+                        goal_pose.pose.position.x = position["x"]
+                        goal_pose.pose.position.y = position["y"]
+                        goal_pose.pose.position.z = position["z"]
+
+                        goal_pose.pose.orientation.x = 0
+                        goal_pose.pose.orientation.y = 0
+                        goal_pose.pose.orientation.z = 0
+                        goal_pose.pose.orientation.w = 0
+
+                        self.goal_publisher.publish(goal_pose)
+                        
+                        return True
+
+        return False
     
     def goal_from_yaml(self, yaml_data):
         goal = PoseStamped()
@@ -45,25 +60,25 @@ class GoalPublisher:
         goal.pose.position.y = yaml_data["position"]["y"]
         goal.pose.position.z = yaml_data["position"]["z"]
 
-        goal.pose.orientation.x = yaml_data["orientation"]["x"]
-        goal.pose.orientation.y = yaml_data["orientation"]["y"]
-        goal.pose.orientation.z = yaml_data["orientation"]["z"]
-        goal.pose.orientation.w = yaml_data["orientation"]["w"]
+        goal.pose.orientation.x = 0
+        goal.pose.orientation.y = 0
+        goal.pose.orientation.z = 0
+        goal.pose.orientation.w = 0
         
         return goal
 
     def run(self):
-        # Read all goals files from the given path
-        goal_files = glob.glob(os.path.join(self.map_name, '*.yaml'))
-
-        # Goal all file names
         goals_list = CarlaScenarioList()
-        for goal_file in goal_files:
-            scenario = CarlaScenario(
-                name=os.path.basename(goal_file).split('.')[0],
-                scenario_file=goal_file
-            )
-            goals_list.scenarios.append(scenario)
+
+        with open(self.map_name, 'r') as file:
+            goals = yaml.safe_load_all(file)
+        
+            for goal in goals:
+                scenario = CarlaScenario(
+                    name=goal["name"],
+                    scenario_file=self.map_name
+                )
+                goals_list.scenarios.append(scenario)
 
         self.available_scenarios_pub.publish(goals_list)
 

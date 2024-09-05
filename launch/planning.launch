@@ -33,7 +33,7 @@
 
         <!-- Goal publisher -->
         <node unless="$(arg use_scenario_runner)" pkg="autoware_mini" type="goal_publisher.py" name="goal_publisher" output="screen" required="true">
-            <param name="map_name" value="$(find autoware_mini)/data/maps/tartu_demo" />
+            <param name="map_name" value="$(find autoware_mini)/data/maps/tartu_large_goals.yaml" />
         </node>
 
         <!-- Path smoothing -->
