@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
 import rospy
-import numpy as np
-from ros_numpy import msgify
 from autoware_msgs.msg import Lane
 from sensor_msgs.msg import PointCloud2
+from helpers.collision import CollisionPoints
 
 class StopAtGoal:
 
@@ -21,22 +20,9 @@ class StopAtGoal:
 
     def path_callback(self, msg):
 
-        # Create empty array for collision points
-        dtype = np.dtype([
-            ('x', np.float32),
-            ('y', np.float32),
-            ('z', np.float32),
-            ('vx', np.float32),
-            ('vy', np.float32),
-            ('vz', np.float32),
-            ('distance_to_stop', np.float32),
-            ('category', np.int32)
-        ])
-        goal_point = np.array([], dtype=dtype)
+        collision_points = CollisionPoints()
 
-        if len(msg.waypoints) == 0:
-            collision_points = msgify(PointCloud2, goal_point)
-        else:
+        if len(msg.waypoints) != 0:
             # Extract last point from the path
             last_point = msg.waypoints[-1]
 
@@ -47,12 +33,11 @@ class StopAtGoal:
 
             # Create goal point
             # TODO can't have category as string label - need to agree on the label coding?!?  0 - Goal point
-            goal_point = np.append(goal_point, np.array([(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, 0)], dtype=dtype))
+            collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, 0)
 
-        # publish clustered points message
-        collision_points = msgify(PointCloud2, goal_point)
-        collision_points.header.frame_id = msg.header.frame_id
-        self.goal_point_pub.publish(collision_points)
+        collision_points_msg = collision_points.get_message()
+        collision_points_msg.header.frame_id = msg.header.frame_id
+        self.goal_point_pub.publish(collision_points_msg)
 
     def run(self):
         rospy.spin()
