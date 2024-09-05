@@ -65,10 +65,6 @@
             <node pkg="autoware_mini" type="collision_points_merger.py" name="collision_points_merger" output="screen" required="true" />
             <node pkg="autoware_mini" type="speed_planner.py" name="speed_planner" output="screen" required="true" />
 
-            <!-- <node pkg="autoware_mini" type="velocity_local_planner.py" name="velocity_local_planner" output="screen" required="true" >
-                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
-            </node> -->
-
             <node pkg="autoware_mini" type="local_path_visualizer.py" name="local_path_visualizer" output="screen" required="true"/>
         </group>
         <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/smoothed_path /planning/local_path" name="local_path_relay" output="screen" required="true" />
