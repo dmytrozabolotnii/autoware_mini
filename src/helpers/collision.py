@@ -29,5 +29,5 @@ class CollisionPoints:
             y = point.y
             self.add_point(x, y, z, vx, vy, vz, distance_to_stop, category)
 
-    def get_message(self):
+    def create_message(self):
         return msgify(PointCloud2, self._array)

@@ -35,7 +35,7 @@ class StopAtGoal:
             # TODO can't have category as string label - need to agree on the label coding?!?  0 - Goal point
             collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, 0)
 
-        collision_points_msg = collision_points.get_message()
+        collision_points_msg = collision_points.create_message()
         collision_points_msg.header.frame_id = msg.header.frame_id
         self.goal_point_pub.publish(collision_points_msg)
 

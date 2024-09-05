@@ -60,7 +60,7 @@ class TrafficLightStopline:
         current_speed = self.current_speed
 
         if current_speed is None or current_position is None:
-            rospy.logwarn_throttle(1, "%s - current speed or position not received!", rospy.get_name())
+            rospy.logwarn_throttle(3, "%s - current speed or position not received!", rospy.get_name())
             return
 
         stopline_statuses = self.stopline_statuses
@@ -68,7 +68,7 @@ class TrafficLightStopline:
 
         if len(msg.waypoints) == 0 or len(stopline_statuses) == 0:
             # no local path or no stoplines - create empty collision points message
-            collision_points_msg = collision_points.get_message()
+            collision_points_msg = collision_points.create_message()
         else:
             local_path = Path(msg.waypoints)
             ego_distance_from_local_path_start = local_path.linestring.project(current_position)
@@ -88,7 +88,7 @@ class TrafficLightStopline:
                         x, y, z = intersection_point.x, intersection_point.y, intersection_point.z
                         collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, 1)
 
-            collision_points_msg = collision_points.get_message()
+            collision_points_msg = collision_points.create_message()
 
         collision_points_msg.header = msg.header
         self.traffic_light_stopline_pub.publish(collision_points_msg)

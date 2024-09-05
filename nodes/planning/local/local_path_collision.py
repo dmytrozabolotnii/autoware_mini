@@ -37,12 +37,12 @@ class LocalPathCollision:
         collision_points = CollisionPoints()
         
         if detected_objects is None:
-            rospy.logwarn_throttle(1, "%s - detected objects not received!", rospy.get_name())
+            rospy.logwarn_throttle(3, "%s - detected objects not received!", rospy.get_name())
             return
 
-        # no local path or no objects detected - create empty collision points message
         if len(msg.waypoints) == 0 or len(detected_objects)==0:
-            collision_points_msg = collision_points.get_message()
+            # no local path or no objects detected - create empty collision points message
+            collision_points_msg = collision_points.create_message()
         else:
             local_path = Path(msg.waypoints)
 
@@ -89,7 +89,7 @@ class LocalPathCollision:
                                                                  distance_to_stop = self.braking_safety_distance_obstacle,
                                                                  category = 3)
 
-            collision_points_msg = collision_points.get_message()
+            collision_points_msg = collision_points.create_message()
 
         collision_points_msg.header = msg.header
         self.local_path_collision_pub.publish(collision_points_msg)
