@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 import rospy
-import numpy as np
-from ros_numpy import msgify
 from shapely.geometry import Point as ShapelyPoint
 from autoware_msgs.msg import Lane, TrafficLightResultArray
 from sensor_msgs.msg import PointCloud2
 from helpers.path import Path
+from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines
 
 class TrafficLightStopline:
@@ -45,23 +44,10 @@ class TrafficLightStopline:
     def path_callback(self, msg):
 
         stopline_statuses = self.stopline_statuses
-
-        # create empty numpy array for the stopline points
-        dtype = np.dtype([
-            ('x', np.float32),
-            ('y', np.float32),
-            ('z', np.float32),
-            ('vx', np.float32),
-            ('vy', np.float32),
-            ('vz', np.float32),
-            ('distance_to_stop', np.float32),
-            ('category', np.int32)
-        ])
-        stopline_points = np.array([], dtype=dtype)
-
+        collision_points = CollisionPoints()
 
         if len(msg.waypoints) == 0 or len(stopline_statuses) == 0:
-            collision_points = msgify(PointCloud2, stopline_points)
+            collision_points_msg = collision_points.get_message()
         else:
             local_path = Path(msg.waypoints)
 
@@ -72,16 +58,13 @@ class TrafficLightStopline:
                     assert isinstance(intersection_point, ShapelyPoint), "Stop line and local path intersection point is not a ShapelyPoint"
                     x, y, z = intersection_point.x, intersection_point.y, intersection_point.z
 
-                    # append point to stopline_points as new row
                     # TODO last field category !?!?  1 - TFL stopline
-                    stopline_point = np.array([(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, 1)], dtype=dtype)
-                    stopline_points = np.append(stopline_points, stopline_point)
+                    collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, 1)
 
-            collision_points = msgify(PointCloud2, stopline_points)
+            collision_points_msg = collision_points.get_message()
 
-        collision_points.header = msg.header
-        self.traffic_light_stopline_pub.publish(collision_points)
-
+        collision_points_msg.header = msg.header
+        self.traffic_light_stopline_pub.publish(collision_points_msg)
 
     def run(self):
         rospy.spin()
