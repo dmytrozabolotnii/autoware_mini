@@ -2,6 +2,7 @@
 
 import rospy
 import math
+import message_filters
 import numpy as np
 from ros_numpy import numpify
 from shapely.geometry import Point as ShapelyPoint
@@ -31,8 +32,12 @@ class SpeedPlanner:
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('collision_points', PointCloud2, self.collision_points_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
+
+        collision_points_sub = message_filters.Subscriber('collision_points', PointCloud2, tcp_nodelay=True)
+        local_path_sub = message_filters.Subscriber('extracted_local_path', Lane, tcp_nodelay=True)
+
+        ts = message_filters.TimeSynchronizer([collision_points_sub, local_path_sub], queue_size=4)
+        ts.registerCallback(self.collision_points_and_path_callback)
 
     def current_velocity_callback(self, msg):
         self.current_speed = msg.twist.linear.x
@@ -40,25 +45,24 @@ class SpeedPlanner:
     def current_pose_callback(self, msg):
         self.current_position = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
-    def collision_points_callback(self, msg):
-        self.collision_points = numpify(msg)
+    def collision_points_and_path_callback(self, collision_points_sub, local_path_sub):
 
-    def path_callback(self, msg):
+        time_start = rospy.Time.now()
 
-        collision_points = self.collision_points
+        collision_points = numpify(collision_points_sub)
         current_position = self.current_position
         current_speed = self.current_speed
 
         if current_speed is None or current_position is None or collision_points is None:
             lane = Lane()
-            lane.header = msg.header
+            lane.header = local_path_sub.header
             self.local_path_pub.publish(lane)
             rospy.logwarn_throttle(3, "%s - current speed, position or collision points not received!", rospy.get_name())
             return
 
-        if  len(msg.waypoints) == 0 or len(collision_points) == 0:
-            # no local path or no collision points menas no alterations to the path (publish msg)
-            self.local_path_pub.publish(msg)
+        if  len(local_path_sub.waypoints) == 0 or len(collision_points) == 0:
+            # no local path or no collision points menas no alterations to the path
+            self.local_path_pub.publish(local_path_sub)
             return
 
         closest_object_distance = 0.0
@@ -67,7 +71,7 @@ class SpeedPlanner:
         stopping_point_distance = 0.0
 
         # create local path
-        local_path = Path(msg.waypoints)
+        local_path = Path(local_path_sub.waypoints)
         ego_distance_from_local_path_start = local_path.linestring.project(current_position)
 
         # extract object distances, velocities and braking distances
@@ -115,7 +119,7 @@ class SpeedPlanner:
 
         # Update the lane message with the calculated values
         lane = Lane()
-        lane.header = msg.header
+        lane.header = local_path_sub.header
         lane.waypoints = local_path.waypoints
         lane.closest_object_distance = closest_object_distance
         lane.closest_object_velocity = closest_object_velocity

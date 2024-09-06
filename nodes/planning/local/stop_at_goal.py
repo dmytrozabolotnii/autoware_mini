@@ -32,7 +32,6 @@ class StopAtGoal:
             z = last_point.pose.pose.position.z
 
             # Create goal point
-            # TODO can't have category as string label - need to agree on the label coding?!?  0 - Goal point
             collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, CATEGORY['GOAL_POINT'])
 
         collision_points_msg = collision_points.create_message()

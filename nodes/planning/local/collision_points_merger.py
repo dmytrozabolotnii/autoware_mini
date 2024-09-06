@@ -19,10 +19,10 @@ class CollisionPointsMerger:
         # subscribers
         rospy.Subscriber('collision_goal', PointCloud2, self.collision_goal_callback, queue_size=1, tcp_nodelay=True)
 
-        collision_local_path_sub = message_filters.Subscriber('collision_local_path', PointCloud2, queue_size=1, buff_size=2**20, tcp_nodelay=True)
-        collision_tfl_stopline_sub = message_filters.Subscriber('collision_tfl_stopline', PointCloud2, queue_size=1, tcp_nodelay=True)
+        collision_local_path_sub = message_filters.Subscriber('collision_local_path', PointCloud2, tcp_nodelay=True)
+        collision_tfl_stopline_sub = message_filters.Subscriber('collision_tfl_stopline', PointCloud2, tcp_nodelay=True)
 
-        ts = message_filters.TimeSynchronizer([collision_local_path_sub, collision_tfl_stopline_sub], 2)
+        ts = message_filters.TimeSynchronizer([collision_local_path_sub, collision_tfl_stopline_sub], queue_size=4)
         ts.registerCallback(self.collision_points_callback)
 
 
