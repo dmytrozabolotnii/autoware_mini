@@ -7,7 +7,7 @@ from shapely.geometry import Polygon, LineString
 from autoware_msgs.msg import Lane, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from helpers.path import Path
-from helpers.collision import CollisionPoints
+from helpers.collision import CollisionPoints, CATEGORY
 from helpers.shapely import convert_to_shapely_points_list, get_polygon_width
 
 class LocalPathCollision:
@@ -65,7 +65,7 @@ class LocalPathCollision:
                                                              vy = object.velocity.linear.y,
                                                              vz = object.velocity.linear.z,
                                                              distance_to_stop = self.braking_safety_distance_obstacle,
-                                                             category = 2)
+                                                             category = CATEGORY['OBSTACLE_ON_PATH'])
 
                 # 2) check if object candidate trajectory intersects with local path buffer
                 if len(object.candidate_trajectories.lanes) > 0:
@@ -87,7 +87,7 @@ class LocalPathCollision:
                                                                  vy = object.velocity.linear.y,
                                                                  vz = object.velocity.linear.z,
                                                                  distance_to_stop = self.braking_safety_distance_obstacle,
-                                                                 category = 3)
+                                                                 category = CATEGORY['COLLIDING_TRAJECTORY'])
 
             collision_points_msg = collision_points.create_message()
 

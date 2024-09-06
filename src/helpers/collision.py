@@ -1,3 +1,4 @@
+import enum
 import numpy as np
 from ros_numpy import msgify
 from sensor_msgs.msg import PointCloud2
@@ -13,6 +14,13 @@ DTYPE = np.dtype([
     ('distance_to_stop', np.float32),
     ('category', np.int32)
 ])
+
+CATEGORY = {
+    'GOAL_POINT': 0,
+    'TRAFFIC_LIGHT_STOPLINE': 1,
+    'OBSTACLE_ON_PATH': 2,
+    'COLLIDING_TRAJECTORY': 3
+}
 
 class CollisionPoints:
     def __init__(self):
