@@ -52,8 +52,12 @@ class LocalPathExtractor:
             global_path = self.global_path
             output_frame = self.output_frame
 
+        lane = Lane()
+        lane.header.frame_id = output_frame
+
         if current_position is None or global_path is None:
-            self.publish_local_path_wp([], output_frame)
+            lane.header.stamp = rospy.Time.now()
+            self.local_path_pub.publish(lane)
             return
 
         # # TODO how to avoid jumping from one place to another on path - just finding the closest point is dangerous!
@@ -61,15 +65,9 @@ class LocalPathExtractor:
         ego_distance_from_global_path_start = global_path.linestring.project(current_position)
 
         # extract local path using dstances
-        local_path = Path(global_path.extract_waypoints(ego_distance_from_global_path_start, ego_distance_from_global_path_start + self.local_path_length, copy=True))
-        self.publish_local_path_wp(local_path.waypoints, output_frame)
-
-    def publish_local_path_wp(self, local_path_waypoints, output_frame):
-        # create lane message
-        lane = Lane()
-        lane.header.frame_id = output_frame
-        lane.header.stamp = rospy.Time.now()
+        local_path_waypoints = global_path.extract_waypoints(ego_distance_from_global_path_start, ego_distance_from_global_path_start + self.local_path_length, copy=True)
         lane.waypoints = local_path_waypoints
+        lane.header.stamp = rospy.Time.now()
         self.local_path_pub.publish(lane)
 
     def run(self):
