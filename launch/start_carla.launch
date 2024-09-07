@@ -10,6 +10,7 @@
     <arg name="localizer"               default="carla"                 doc="novatel, carla" />
     <arg name="detector"                default="carla"                 doc="lidar_cluster, lidar_sfa, sim, carla" />
     <arg name="tfl_detector"            default="carla"                 doc="carla, camera, mqtt_camera_fusion" />
+    <arg name="tfl_cameras"             default="mako"                  doc="mako, nvidia" />
     <arg name="tracker"                 default="$(eval 'ema' if detector != 'carla' else 'none')" />
     <arg name="predictor"               default="none"                  doc="none, naive, map" />
     <arg name="follower"                default="pure_pursuit"          doc="pure_pursuit, stanley" />
@@ -35,6 +36,7 @@
     <include file="$(find autoware_mini)/launch/detection.launch">
         <arg name="detector"            value="$(arg detector)" />
         <arg name="tfl_detector"        value="$(arg tfl_detector)" />
+        <arg name="tfl_cameras"         value="$(arg tfl_cameras)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name='use_lidar_center'    value='$(arg use_lidar_center)'/>
         <arg name='use_lidar_front'     value='$(arg use_lidar_front)'/>
@@ -70,7 +72,8 @@
         <arg name="use_lidar"                           value="$(eval 'lidar' in detector and detector != 'lidar_vella')" />
         <arg name="use_radar"                           value="$(eval 'radar' in detector)" />
         <arg name="use_gnss"                            value="$(eval localizer == 'novatel')" />
-        <arg name="use_cam"                             value="$(eval 'camera' in tfl_detector)" />
+        <arg name="use_mako_cameras"                    value="$(eval 'camera' in tfl_detector and tfl_cameras=='mako')" />
+        <arg name="use_nvidia_cameras"                  value="$(eval 'camera' in tfl_detector and tfl_cameras=='nvidia')" />
         <arg name="use_manual_control"                  value="$(arg use_manual_control)" />
         <arg name="generate_traffic"                    value="$(arg generate_traffic)" />
         <arg name="use_scenario_runner"                 value="$(arg use_scenario_runner)" />

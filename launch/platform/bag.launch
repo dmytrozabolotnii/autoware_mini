@@ -1,15 +1,22 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="use_tf"  default="true" />
+    <arg name="use_tf"              default="true" />
+    <arg name="repub_camera_info"   default="false" />
+    <arg name="use_nvidia_cameras"  default="false" />
 
     <!-- Vehicle platform -->
     <include file="$(find vehicle_platform)/launch/platform.launch">
-        <arg name="use_tf"              value="$(arg use_tf)" />
-        <arg name="use_lexus_model"     value="true" />
-        <arg name="use_nvidia_cameras"  value="true" />
-        <arg name="use_remote_driver"   value="false" />
-        <arg name="uncompress"          value="true" />
+        <arg name="use_lexus_model"             value="true" />
+        <arg name="use_tf"                      value="$(arg use_tf)" />
+        <arg name="use_nvidia_cameras"          value="$(arg use_nvidia_cameras)" />
+        <!-- Don't run remote nvidia driver in Bag mode -->
+        <arg name="use_remote_nvidia_driver"    value="false" />
+        <!-- Rectify only nvidia camera images -->
+        <arg name="rectify"                     value="$(arg use_nvidia_cameras)" />
     </include>
+
+    <!-- Republish camera infos for nvidia cameras -->
+    <include if="$(arg repub_camera_info)" file="$(find vehicle_platform)/launch/sensors/camera_intriniscs_republish.launch" />
 
     <group ns="vehicle">
         <rosparam command="load" file="$(find autoware_mini)/config/vehicle.yaml" />

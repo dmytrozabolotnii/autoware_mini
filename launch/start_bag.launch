@@ -7,6 +7,7 @@
     <arg name="use_lidar_center"        default="true"          doc="use velodyne lidar"/>
     <arg name="use_lidar_front"         default="false"         doc="use ouster lidar"/>
     <arg name="tfl_detector"            default="camera"        doc="camera, mqtt, mqtt_camera_fusion" />
+    <arg name="tfl_cameras"             default="mako"          doc="mako, nvidia" />
     <arg name="global_planner"          default="lanelet2"      doc="waypoints, lanelet2"/>
     <arg name="local_planner"           default="velocity"      doc="velocity"/>
     <arg name="follower"                default="pure_pursuit"  doc="pure_pursuit, stanley"/>
@@ -36,6 +37,7 @@
     <arg name="duration_option"         default="$(eval '--duration ' + str(duration) if duration != '' else '')" doc="rosbag play parameter" />
     <arg name="rate"                    default=""              doc="Bag speed parameteer, defaults to 1.0 i.e. the normal speed" />
     <arg name="rate_option"             default="$(eval '--rate ' + str(rate) if rate != '' else '')" doc="rosbag play parameter" />
+    <arg name="repub_camera_info"       default="true"          doc="Republish camera_info topics using camera intrinsics files" />
 
     <!-- Use simulation time from bag -->
     <param name="/use_sim_time" value="true" />
@@ -93,6 +95,12 @@
         <remap from="/points_raw_center" to="/lidar_center/points_raw"/>
         <remap from="/points_raw_front" to="/lidar_front/points_raw"/>
         <remap from="/lidar_0/vlp32/pcl2" to="/lidar_center/points_raw"/>
+        <!-- Remap camera_info's from bags to get latest intrinsics from calibration files: TODO: (Should republish mako camera infos as well ??) -->
+        <remap from="/interfacea/link0/camera_info" to="/temp/interfacea/link0/camera_info" if="$(arg repub_camera_info)"/>
+        <remap from="/interfacea/link1/camera_info" to="/temp/interfacea/link1/camera_info" if="$(arg repub_camera_info)"/>
+        <remap from="/interfacea/link2/camera_info" to="/temp/interfacea/link2/camera_info" if="$(arg repub_camera_info)"/>
+        <remap from="/interfacea/link3/camera_info" to="/temp/interfacea/link3/camera_info" if="$(arg repub_camera_info)"/>
+        <remap from="/interfaceb/link0/camera_info" to="/temp/interfaceb/link0/camera_info" if="$(arg repub_camera_info)"/>
     </node>
 
     <node if="$(eval benchmark_delay_topic != '')" pkg="rostopic" type="rostopic" name="delay" required="true" output="screen"
@@ -113,6 +121,7 @@
         <arg name="use_lidar_center"    value="$(arg use_lidar_center)" />
         <arg name="use_lidar_front"     value="$(arg use_lidar_front)" />
         <arg name="tfl_detector"        value="$(arg tfl_detector)" />
+        <arg name="tfl_cameras"         value="$(arg tfl_cameras)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
@@ -137,7 +146,9 @@
 
     <!-- Bag platform -->
     <include file="$(find autoware_mini)/launch/platform/bag.launch">
-        <arg name="use_tf"              value="$(arg use_tf)" />
+        <arg name="use_tf"               value="$(arg use_tf)" />
+        <arg name="repub_camera_info"    value="$(arg repub_camera_info)" />
+        <arg name="use_nvidia_cameras"   value="$(eval 'camera' in tfl_detector and tfl_cameras=='nvidia')" />
     </include>
 
     <!-- Rviz -->
