@@ -24,7 +24,7 @@ class TrafficLightMajorityMerger:
 
         # Subscribers
         camera1_tfl_status = message_filters.Subscriber('camera1/traffic_light_status', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)
-        camera2_tfl_status = message_filters.Subscriber('camera1/traffic_light_status', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)
+        camera2_tfl_status = message_filters.Subscriber('camera2/traffic_light_status', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)
         ts = message_filters.ApproximateTimeSynchronizer([camera1_tfl_status, camera2_tfl_status], queue_size=2, slop=0.1)
         ts.registerCallback(self.camera_tfl_status_callback)
 
