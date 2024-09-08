@@ -32,7 +32,14 @@
 
         <!-- Path smoothing -->
         <group if="$(arg use_path_smoothing)">
-            <node pkg="autoware_mini" type="path_smoothing.py" name="path_smoothing" output="screen" required="true" />
+            <node pkg="autoware_mini" type="lane_change_planner.py" name="lane_change_planner" output="screen" required="true" />
+            <node pkg="autoware_mini" type="global_path_visualizer.py" name="lane_change_path_visualizer" output="screen" required="true">
+                <remap from="global_path" to="lane_change_path"/>
+                <remap from="global_path_markers" to="lane_change_path_markers"/>
+            </node>
+            <node pkg="autoware_mini" type="path_smoothing.py" name="path_smoothing" output="screen" required="true">
+                <remap from="global_path" to="lane_change_path"/>
+            </node>
             <node pkg="autoware_mini" type="global_path_visualizer.py" name="smoothed_path_visualizer" output="screen" required="true">
                 <remap from="global_path" to="smoothed_path"/>
                 <remap from="global_path_markers" to="smoothed_path_markers"/>
