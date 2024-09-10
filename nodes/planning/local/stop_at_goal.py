@@ -3,7 +3,7 @@
 import rospy
 from autoware_msgs.msg import Lane
 from sensor_msgs.msg import PointCloud2
-from helpers.collision import CollisionPoints, CATEGORY
+from helpers.collision import CollisionPoints, CAT_GOAL_POINT
 
 class StopAtGoal:
 
@@ -32,7 +32,7 @@ class StopAtGoal:
             z = last_point.pose.pose.position.z
 
             # Create goal point
-            collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, CATEGORY['GOAL_POINT'])
+            collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, CAT_GOAL_POINT)
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header.frame_id = msg.header.frame_id

@@ -15,12 +15,10 @@ DTYPE = np.dtype([
     ('category', np.int32)
 ])
 
-CATEGORY = {
-    'GOAL_POINT': 0,
-    'TRAFFIC_LIGHT_STOPLINE': 1,
-    'OBSTACLE_ON_PATH': 2,
-    'COLLIDING_TRAJECTORY': 3
-}
+CAT_GOAL_POINT = 0
+CAT_TRAFFIC_LIGHT_STOPLINE = 1
+CAT_OBSTACLE_ON_PATH = 2
+CAT_COLLIDING_TRAJECTORY = 3
 
 class CollisionPoints:
     def __init__(self):
