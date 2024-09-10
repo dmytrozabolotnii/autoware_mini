@@ -158,19 +158,6 @@ class PECNet(nn.Module):
 
         return generated_dest, interpolated_future
 
-    # # separated for forward to let choose the best destination
-    # def predict(self, past, generated_dest, mask, initial_pos):
-    #     ftraj = self.encoder_past(past)
-    #     generated_dest_features = self.encoder_dest(generated_dest)
-    #     prediction_features = torch.cat((ftraj, generated_dest_features, initial_pos), dim=1)
-    #
-    #     for i in range(self.nonlocal_pools):
-    #         # non local social pooling
-    #         prediction_features = self.non_local_social_pooling(prediction_features, mask)
-    #
-    #     interpolated_future = self.predictor(prediction_features)
-    #
-    #     return interpolated_future
 
 
 def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
@@ -179,26 +166,6 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
         dataset, batch_size=len(dataset), shuffle=False, num_workers=0)
 
     model.eval()
-
-    # input_names = ["x", "initial_pos", "mask_for_predict"]
-    #
-    # output_names = ["interpolated_future"]
-    #
-    # dynamic_axes_dict = {
-    #     "x": {
-    #         0: "pedestrians",
-    #     },
-    #     "initial_pos": {
-    #         0: "pedestrians",
-    #     },
-    #     "mask_for_predict": {
-    #         0: "pedestrians",
-    #         1: "pedestrians"
-    #     },
-    #     "interpolated_future": {
-    #         0: "pedestrians"
-    #     }
-    # }
 
     with torch.no_grad():
         batch_by_batch_guesses = []
@@ -223,18 +190,6 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
 
             shift = shift.cpu().numpy()
 
-            # if not os.path.isfile("PECNet/PECNET.onnx"):
-            #     torch.onnx.export(model,
-            #                       (x, initial_pos, maskx),
-            #                       "PECNet/PECNET.onnx",
-            #                       verbose=True,
-            #                       input_names=input_names,
-            #                       output_names=output_names,
-            #                       dynamic_axes=dynamic_axes_dict,
-            #                       opset_version=12,
-            #                       export_params=True,
-            #                       )
-
             for j in range(n):
                 dest_recon, dest_path = model.forward(x, initial_pos, maskx, device=device)
                 # dest_path = model.predict(x, dest_recon, maskx,
@@ -257,8 +212,6 @@ def pecnet_iter(dataset, model, device, hyper_params, n=5, tuning=200):
 
 class PECNetDatasetInit(data.Dataset):
     def __init__(self, detected_object_trajs, end_points, pad_past=7, pad_future=0, dist_thresh=100):
-        # self.traj = np.array([np.pad(np.array(traj), ((pad_past, pad_future), (0, 0)),
-        #                              mode='edge')[end_points[i]:(end_points[i] + pad_past + pad_future + 1)] for i, traj in enumerate(detected_object_trajs)])
         self.traj = detected_object_trajs
         self.initial_shift = np.min(self.traj)
 

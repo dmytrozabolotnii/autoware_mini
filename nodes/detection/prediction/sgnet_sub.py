@@ -25,7 +25,6 @@ class SGNetSubscriber(NetSubscriber):
             self.checkpoint = torch.load(rospy.get_param('data_path_prediction') + args.checkpoint, map_location=self.device)
             self.model.load_state_dict(self.checkpoint['model_state_dict'])
         self.model = torch.jit.script(self.model)
-        print(self.model.code)
         self.predictions_amount = rospy.get_param('~predictions_amount')
         self.pad_past = self.past_horizon
         self.class_init = True
@@ -33,9 +32,6 @@ class SGNetSubscriber(NetSubscriber):
         rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
-        # print('Time of callback', time.time() - self.timer)
-        self.timer = time.time()
-
         if len(self.active_keys) and self.model is not None and next(self.model.parameters()).is_cuda and self.class_init:
 
             # Run inference
