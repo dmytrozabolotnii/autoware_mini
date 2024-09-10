@@ -4,7 +4,6 @@ import numpy as np
 import rospy
 import torch
 import os.path as osp
-import time
 from PIL import Image
 import rasterio as rio
 
@@ -28,10 +27,6 @@ class MuseVAESubscriber(NetSubscriber):
         self.local_band = self.rio_global_map.read(1)
         self.buffer = 80
         self.map_res = 0.5
-        # print(self.rio_global_map.bounds)
-        # if osp.isfile(rospy.get_param('~data_path_prediction') + args.checkpoint):
-        #     self.checkpoint = torch.load(rospy.get_param('~data_path_prediction') + args.checkpoint, map_location=self.device)
-        #     self.model.load_state_dict(self.checkpoint['model_state_dict'])
         self.predictions_amount = rospy.get_param('~predictions_amount')
         self.pad_past = self.past_horizon
         self.class_init = True
@@ -39,7 +34,6 @@ class MuseVAESubscriber(NetSubscriber):
         rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
-        self.timer = time.time()
         if len(self.active_keys) and self.models is not None and self.class_init:
             # Run inference
             with self.lock:
@@ -79,11 +73,9 @@ class MuseVAESubscriber(NetSubscriber):
                                                    pad_future=0,
                                                    inference_timer_duration=self.inference_timer_duration * (self.skip_points + 1),
                                                    device=self.device)
-            # print('Dataset time,', time.time() - self.timer)
             inference_result = musevae_iter(inference_dataset, self.models, self.device, self.args, n=self.predictions_amount)
             inference_result = np.array(inference_result) * self.map_res + initial_shift
             temp_raw_trajectories = temp_raw_trajectories * self.map_res + initial_shift
-            # print('Inference time,', time.time() - self.timer)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
                 with self.lock:

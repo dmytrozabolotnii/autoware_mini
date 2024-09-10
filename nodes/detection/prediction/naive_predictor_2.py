@@ -1,3 +1,5 @@
+# Adapted naive_predictor for pedestrian prediction experiments
+
 #!/usr/bin/env python3
 
 import rospy

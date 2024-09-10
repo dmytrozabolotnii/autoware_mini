@@ -25,14 +25,10 @@ class GATrajSubscriber(NetSubscriber):
         self.model.load_state_dict(self.checkpoint["state_dict"])
         self.predictions_amount = rospy.get_param('~predictions_amount')
         self.pad_past = self.args.min_obs
-        self.timer = time.time()
 
         rospy.loginfo(rospy.get_name() + " - initialized")
 
     def inference_callback(self, event):
-        # print('Time of callback', time.time() - self.timer)
-        self.timer = time.time()
-
         if len(self.active_keys) and self.model is not None and next(self.model.parameters()).is_cuda:
             # Run inference
             with self.lock:
@@ -42,8 +38,6 @@ class GATrajSubscriber(NetSubscriber):
                                                                          (self.skip_points + 1))
                      for key in temp_active_keys if self.cache[key].endpoints_count == 0]
 
-                # temp_raw_trajectories = [self.cache[key].raw_trajectories[-1::-1 * (self.skip_points + 1)][::-1]
-                #                          for key in temp_active_keys]
                 temp_raw_trajectories = [self.cache[key].return_last_interpolated_trajectory(self.pad_past, self.inference_timer_duration, self.hide_past) for key in temp_active_keys]
                 temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1)
                                   for key in temp_active_keys]
@@ -55,11 +49,9 @@ class GATrajSubscriber(NetSubscriber):
                                                   pad_future=0,
                                                   dist_thresh=50 / 2
                                                       )
-            t0 = time.time()
 
             inference_result = gatraj_iter(inference_dataset, self.model, self.device, self.args, n=self.predictions_amount)
             torch.cuda.synchronize()
-            # print('Inference time:', time.time() - t0)
             # Update history of inferences
             for j, _id in enumerate(temp_active_keys):
                 with self.lock:

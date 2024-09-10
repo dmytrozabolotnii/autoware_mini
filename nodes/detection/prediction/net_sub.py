@@ -33,8 +33,6 @@ class NetSubscriber(metaclass=ABCMeta):
 
         # ROS timers/pub/sub
         self.class_init = False
-        self.timer = time.time()
-        self.timer2 = time.time()
 
         self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
         self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
@@ -58,8 +56,6 @@ class NetSubscriber(metaclass=ABCMeta):
                     if _id not in self.cache:
                         self.cache[_id] = MessageCache(_id, position, velocity, acceleration, header,
                                                        pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration)
-                        #if self.use_backpropagation:
-                        #    self.cache[_id].backpropagate_trajectories(pad_past=self.pad_past * (self.skip_points + 1))
 
                     else:
                         self.cache[_id].move_endpoints()
@@ -97,21 +93,14 @@ class NetSubscriber(metaclass=ABCMeta):
         self.objects_pub.publish(output_msg_array)
 
     def move_endpoints(self):
-        # print('Time of moving endpoints ', time.time() - self.timer2)
-        self.timer2 = time.time()
         # Moves end-point of cached trajectory every inference
         with self.lock:
             # Update metrics node cache and calculate metrics
-            # self.metrics_node.update_cache()
+
             # Calculate metrics
-            # for i, key in enumerate(self.active_keys):
-            #     if i == 0:
-            #         self.cache[key].return_last_interpolated_trajectory()
             if len(self.active_keys) > 0:
                 self.metrics_node.calculate_metrics({key: self.cache[key] for key in self.active_keys})
 
-            # for _id in self.active_keys:
-            #     self.cache[_id].move_endpoints()
             # Resets active keys
             self.active_keys = set()
 
