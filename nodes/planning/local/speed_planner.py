@@ -48,8 +48,6 @@ class SpeedPlanner:
 
     def collision_points_and_path_callback(self, collision_points_sub, local_path_sub):
 
-        time_start = rospy.Time.now()
-
         collision_points = numpify(collision_points_sub)
         current_position = self.current_position
         current_speed = self.current_speed
@@ -93,8 +91,8 @@ class SpeedPlanner:
         closest_object_distance = object_distances[min_value_index] - ego_distance_from_local_path_start - self.current_pose_to_car_front
         closest_object_velocity = object_velocities[min_value_index]
         stopping_point_distance = object_distances[min_value_index] - object_braking_distances[min_value_index]
-        # category 0 is goal point, not blocking
-        if collision_points[min_value_index]["category"] != CAT_GOAL_POINT:
+        collision_point_category = collision_points[min_value_index]["category"]
+        if collision_point_category != CAT_GOAL_POINT:
             local_path_blocked = True
 
         # Recalculate target_velocity for all the waypoints using the closest object
@@ -126,6 +124,7 @@ class SpeedPlanner:
         lane.closest_object_velocity = closest_object_velocity
         lane.is_blocked = local_path_blocked
         lane.cost = stopping_point_distance
+        lane.increment = collision_point_category
         self.local_path_pub.publish(lane)
 
 

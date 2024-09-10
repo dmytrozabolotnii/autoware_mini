@@ -73,7 +73,7 @@ class LocalPathCollision:
                     object_width = get_polygon_width(object_polygon, object_heading)
 
                     trajectory_linestring = LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in object.candidate_trajectories.lanes[0].waypoints])
-                    trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="square")
+                    trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="flat")
                     prepare(trajectory_buffer)
 
                     if local_path_buffer.intersects(trajectory_buffer):
