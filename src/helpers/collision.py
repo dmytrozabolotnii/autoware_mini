@@ -15,10 +15,18 @@ DTYPE = np.dtype([
     ('category', np.int32)
 ])
 
-CAT_GOAL_POINT = 0
-CAT_TRAFFIC_LIGHT_STOPLINE = 1
-CAT_OBSTACLE_ON_PATH = 2
-CAT_COLLIDING_TRAJECTORY = 3
+CAT_GOAL_POINT = 1
+CAT_TRAFFIC_LIGHT_STOPLINE = 2
+CAT_OBSTACLE_ON_PATH = 3
+CAT_COLLIDING_TRAJECTORY = 4
+
+COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
+    0: "OK, no obstacles",
+    1: "Approaching goal",
+    2: "Traffic light stopline",
+    3: "Obstacle on path",
+    4: "Colliding trajectory"
+}
 
 class CollisionPoints:
     def __init__(self):
