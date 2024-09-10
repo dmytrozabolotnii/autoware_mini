@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-
-import os
-import glob
 import yaml
 
 import rospy
 from geometry_msgs.msg import PoseStamped
+from autoware_msgs.msg import Lane
 
-from carla_ros_scenario_runner_types.msg import CarlaScenarioList, CarlaScenario
+from carla_ros_scenario_runner_types.msg import CarlaScenarioList, CarlaScenario, CarlaScenarioRunnerStatus
 from carla_ros_scenario_runner_types.srv import ExecuteScenario
+
+from helpers.geometry import get_distance_between_two_points_2d
 
 class GoalPublisher:
 
@@ -16,11 +16,19 @@ class GoalPublisher:
 
         # Node parameters
         self.map_name = rospy.get_param("~map_name")
+        self.distance_to_centerline_limit = rospy.get_param("distance_to_centerline_limit")
+
+        # Internal variables
+        self.global_path_last_waypoint = None
 
         # Publishers
         self.available_scenarios_pub = rospy.Publisher('/carla/available_scenarios', CarlaScenarioList, queue_size=10, latch=True)
-        self.goal_publisher = rospy.Publisher(
-            '/move_base_simple/goal', PoseStamped, queue_size=0, tcp_nodelay=True, latch=True)
+        self.goal_publisher = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10, tcp_nodelay=True, latch=True)
+        self.scenario_status_publisher = rospy.Publisher('/scenario_runner/status', CarlaScenarioRunnerStatus, queue_size=10, tcp_nodelay=True, latch=True)
+        
+        # Subscribers
+        rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.goal_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=None, tcp_nodelay=True)
 
         # Services
         rospy.Service('/scenario_runner/execute_scenario', ExecuteScenario, self.publish_goal_callback)
@@ -47,7 +55,7 @@ class GoalPublisher:
 
                         self.goal_publisher.publish(goal_pose)
                         
-                        return True
+                    return True
 
         return False
     
@@ -66,6 +74,26 @@ class GoalPublisher:
         goal.pose.orientation.w = 0
         
         return goal
+    
+    def goal_callback(self, msg): 
+        if self.global_path_last_waypoint is None:
+            return
+        
+        distance = get_distance_between_two_points_2d(msg.pose.position, self.global_path_last_waypoint)
+
+        if distance > self.distance_to_centerline_limit:
+            # If the last point of the global path is too far from the goal, then set scenario runner status to SHUTTINGDOWN (yellow)
+            self.scenario_status_publisher.publish(CarlaScenarioRunnerStatus(3))
+    
+    def global_path_callback(self, msg):
+        if len(msg.waypoints) > 0:
+            self.global_path_last_waypoint = msg.waypoints[-1].pose.pose.position
+            # Set scenario runner status to RUNNING (green)
+            self.scenario_status_publisher.publish(CarlaScenarioRunnerStatus(2))
+        else:
+            # If the global path vanishes, then set scenario runner status to STOPPED (red)
+            self.scenario_status_publisher.publish(CarlaScenarioRunnerStatus(0))
+            self.global_path_last_waypoint = None
 
     def run(self):
         goals_list = CarlaScenarioList()

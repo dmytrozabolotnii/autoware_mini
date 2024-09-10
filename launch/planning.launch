@@ -6,6 +6,7 @@
     <arg name="use_path_smoothing"      default="true" />
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
     <arg name="lanelet2_map_name"       default="tartu_demo.osm" />
+    <arg name="map_name"                default="tartu_demo" />
     <arg name="use_scenario_runner"     default="false" />
 
     <group ns="planning">
@@ -33,7 +34,7 @@
 
         <!-- Goal publisher -->
         <node unless="$(arg use_scenario_runner)" pkg="autoware_mini" type="goal_publisher.py" name="goal_publisher" output="screen" required="true">
-            <param name="map_name" value="$(find autoware_mini)/data/maps/tartu_large_goals.yaml" />
+            <param name="map_name" value="$(find autoware_mini)/data/maps/$(arg map_name)_goals.yaml" />
         </node>
 
         <!-- Path smoothing -->

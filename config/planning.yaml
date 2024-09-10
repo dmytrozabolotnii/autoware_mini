@@ -9,11 +9,11 @@ max_deceleration: 10.0
 stopping_speed_limit: 1.0
 lane_change_base_length: 10.0    # m
 lane_change_perlane_length: 5.0    # m
+distance_to_centerline_limit: 5.0  # m
 
 lanelet2_global_planner:
   output_frame: map
   distance_to_goal_limit: 5.0
-  distance_to_centerline_limit: 5.0
   speed_limit: 50.0                 # max velocity for route (km/h), will be replaced by speed taken from map
   ego_vehicle_stopped_speed_limit: 0.1
   lane_change: True
