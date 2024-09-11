@@ -19,7 +19,7 @@
     <arg name='use_lidar_front'         default='false'/>
     <arg name='rviz'                    default='true'/>
     <!-- Scenario Runner args -->
-    <arg name='use_scenario_runner'     default='true'/>
+    <arg name='use_scenario_runner'     default='false'/>
     <arg name='scenario_name'           default=""/>
     <arg name='route_id'                default=""/>                   <!-- Route ID to follow for running route scenario -->
     <arg name="generate_traffic"        default="$(eval not use_scenario_runner)" />
@@ -53,7 +53,7 @@
         <arg name="waypoints_file"      value="$(arg waypoints_file)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
-        <arg name="use_scenario_runner" value="$(arg use_scenario_runner)" />
+        <arg name="load_goals"          value="$(eval not use_scenario_runner)" />
     </include>
 
     <!-- Control -->

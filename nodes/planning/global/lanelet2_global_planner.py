@@ -36,7 +36,7 @@ class Lanelet2GlobalPlanner:
         # Parameters
         self.output_frame = rospy.get_param("~output_frame")
         self.distance_to_goal_limit = rospy.get_param("~distance_to_goal_limit")
-        self.distance_to_centerline_limit = rospy.get_param("distance_to_centerline_limit")
+        self.distance_to_centerline_limit = rospy.get_param("~distance_to_centerline_limit")
         self.speed_limit = rospy.get_param("~speed_limit")
         self.ego_vehicle_stopped_speed_limit = rospy.get_param("~ego_vehicle_stopped_speed_limit")
         self.lane_change = rospy.get_param("~lane_change")

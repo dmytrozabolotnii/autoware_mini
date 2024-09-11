@@ -19,7 +19,6 @@
     <arg name="max_speed"               default="40" />
     <arg name="detection_range"         default=""                  doc="enter a value in meters to enable it" />
     <arg name="more_visualizations"     default="false"             doc="By default visualize only the final detections" />
-    <arg name='use_scenario_runner'     default='false'/>
     
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -50,7 +49,6 @@
         <arg name="waypoints_file"      value="$(arg waypoints_file)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
-        <arg name="use_scenario_runner" value="$(arg use_scenario_runner)" />
     </include>
 
     <!-- Control -->

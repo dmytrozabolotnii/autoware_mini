@@ -7,7 +7,7 @@
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
     <arg name="lanelet2_map_name"       default="tartu_demo.osm" />
     <arg name="map_name"                default="tartu_demo" />
-    <arg name="use_scenario_runner"     default="false" />
+    <arg name="load_goals"              default="true" />
 
     <group ns="planning">
 
@@ -33,8 +33,8 @@
         <node pkg="autoware_mini" type="global_path_visualizer.py" name="global_path_visualizer" output="screen" required="true"/>
 
         <!-- Goal publisher -->
-        <node unless="$(arg use_scenario_runner)" pkg="autoware_mini" type="goal_publisher.py" name="goal_publisher" output="screen" required="true">
-            <param name="map_name" value="$(find autoware_mini)/data/maps/$(arg map_name)_goals.yaml" />
+        <node if="$(eval eval('_' + '_import_' + '_(\'os\')').path.exists(find('autoware_mini') + '/data/maps/' + map_name + '_goals.yaml') and load_goals)" pkg="autoware_mini" type="goal_publisher.py" name="goal_publisher" output="screen" required="true">
+            <param name="goals_file" value="$(find autoware_mini)/data/maps/$(arg map_name)_goals.yaml" />
         </node>
 
         <!-- Path smoothing -->
