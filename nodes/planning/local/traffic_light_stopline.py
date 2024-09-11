@@ -66,10 +66,7 @@ class TrafficLightStopline:
         stopline_statuses = self.stopline_statuses
         collision_points = CollisionPoints()
 
-        if len(msg.waypoints) == 0 or len(stopline_statuses) == 0:
-            # no local path or no stoplines - create empty collision points message
-            collision_points_msg = collision_points.create_message()
-        else:
+        if len(msg.waypoints) > 0 and len(stopline_statuses) > 0:
             local_path = Path(msg.waypoints)
             ego_distance_from_local_path_start = local_path.linestring.project(current_position)
 
@@ -88,8 +85,7 @@ class TrafficLightStopline:
                         x, y, z = intersection_point.x, intersection_point.y, intersection_point.z
                         collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, CAT_TRAFFIC_LIGHT_STOPLINE)
 
-            collision_points_msg = collision_points.create_message()
-
+        collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header
         self.traffic_light_stopline_pub.publish(collision_points_msg)
 
