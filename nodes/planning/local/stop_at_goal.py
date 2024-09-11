@@ -37,7 +37,7 @@ class StopAtGoal:
         collision_points = CollisionPoints()
         goal_point = self.goal_point
 
-        if goal_point is not None:
+        if goal_point is not None and len(msg.waypoints) > 0:
             # check if goal point is at the end of the local path
             if math.isclose(get_distance_between_two_points_2d(goal_point, msg.waypoints[-1].pose.pose.position), 0.0):
                 # add goal point as collision point
