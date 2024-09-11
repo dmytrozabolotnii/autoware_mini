@@ -55,7 +55,6 @@ class Lanelet2GlobalPlanner:
         self.lanelet_candidates = []
         self.current_location = None
         self.current_speed = None
-        self.start_point = None
         self.goal_point = None
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
@@ -91,20 +90,16 @@ class Lanelet2GlobalPlanner:
             return
 
         # Using current pose as start point
-        if self.start_point is None:
-            start_point = ShapelyPoint(self.current_location.x, self.current_location.y)
-            # Get nearest lanelets to start point
-            start_lanelet_candidates = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(start_point.x, start_point.y), self.lanelet_search_radius)
-            # If no lanelet found near start point, return
-            if len(start_lanelet_candidates) == 0:
-                rospy.logerr("%s - no lanelet found near start point", rospy.get_name())
-                return
-            # Extract lanelet objects from candidates
-            start_lanelet_candidates = [start_lanelet[1] for start_lanelet in start_lanelet_candidates]
-            lanelet_candidates = [start_lanelet_candidates]
-        else:
-            start_point = self.start_point
-            lanelet_candidates = copy.copy(self.lanelet_candidates)
+        start_point = ShapelyPoint(self.current_location.x, self.current_location.y)
+        # Get nearest lanelets to start point
+        start_lanelet_candidates = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(start_point.x, start_point.y), self.lanelet_search_radius)
+        # If no lanelet found near start point, return
+        if len(start_lanelet_candidates) == 0:
+            rospy.logerr("%s - no lanelet found near start point", rospy.get_name())
+            return
+        # Extract lanelet objects from candidates
+        start_lanelet_candidates = [start_lanelet[1] for start_lanelet in start_lanelet_candidates]
+        lanelet_candidates = [start_lanelet_candidates] + self.lanelet_candidates[1:]
         
         new_goal = ShapelyPoint(msg.pose.position.x, msg.pose.position.y)
         # Get nearest lanelets to goal point
@@ -163,7 +158,6 @@ class Lanelet2GlobalPlanner:
 
         # Update member variables
         self.goal_point = new_goal_on_path
-        self.start_point = start_point
         self.lanelet_candidates = lanelet_candidates
         rospy.logdebug("Lanelet candidates: " + str(list(map(len, lanelet_candidates))))
         
@@ -181,7 +175,6 @@ class Lanelet2GlobalPlanner:
             d = distance(self.current_location, self.goal_point)
             if d < self.distance_to_goal_limit and self.current_speed < self.ego_vehicle_stopped_speed_limit:
                 self.goal_point = None
-                self.start_point = None
                 self.lanelet_candidates = []
                 self.publish_waypoints([])
                 rospy.loginfo("%s - goal reached, clearing path!", rospy.get_name())
@@ -191,7 +184,6 @@ class Lanelet2GlobalPlanner:
 
     def cancel_route_callback(self, msg):
         self.goal_point = None
-        self.start_point = None
         self.lanelet_candidates = []
         self.publish_waypoints([])
         rospy.loginfo("%s - route cancelled!", rospy.get_name())

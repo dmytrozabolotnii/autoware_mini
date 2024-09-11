@@ -19,30 +19,34 @@ class GoalPublisher:
         # Internal variables
         self.goals = {}
         self.current_scenario_status = CarlaScenarioRunnerStatus.STOPPED
-        self.display_scenario_status_running = True
+        self.previous_goal_failed = False
 
         # Publishers
         self.available_scenarios_pub = rospy.Publisher('/carla/available_scenarios', CarlaScenarioList, queue_size=10, latch=True)
-        self.goal_publisher = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10, tcp_nodelay=True, latch=True)
+        self.goal_publisher = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=10, tcp_nodelay=True)
         self.scenario_status_publisher = rospy.Publisher('/scenario_runner/status', CarlaScenarioRunnerStatus, queue_size=10, tcp_nodelay=True, latch=True)
         
         # Subscribers
         rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.goal_callback, queue_size=None, tcp_nodelay=True)
-        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('smoothed_path', Lane, self.global_path_callback, queue_size=None, tcp_nodelay=True)
 
         # Services
         rospy.Service('/scenario_runner/execute_scenario', ExecuteScenario, self.publish_goal_handler)
 
     def publish_goal_handler(self, msg):
+        if msg.scenario.name not in self.goals:
+            rospy.logerr("Scenario not found in the goals file")
+            return False
+
         # Reset the scenario runner status
         self.current_scenario_status = CarlaScenarioRunnerStatus.STOPPED
         self.scenario_status_publisher.publish(self.current_scenario_status)
-        self.display_scenario_status_running = True
+        self.previous_goal_failed = False
 
         # Create a seperate thread for publishing goals, otherwise a delay causes the RViz to freeze
-        self.t = threading.Thread(target = self.publish_goals, args=(self.goals[msg.scenario.name],))
-        self.t.daemon = True
-        self.t.start()
+        t = threading.Thread(target = self.publish_goals, args=(self.goals[msg.scenario.name],))
+        t.daemon = True
+        t.start()
 
         return True
     
@@ -68,7 +72,7 @@ class GoalPublisher:
     
     def goal_callback(self, msg): 
         if self.current_scenario_status == CarlaScenarioRunnerStatus.STARTING:
-            self.display_scenario_status_running = False
+            self.previous_goal_failed = True
 
         # If a goal is published, then set scenario runner status to STARTING (yellow)
         self.current_scenario_status = CarlaScenarioRunnerStatus.STARTING
@@ -77,14 +81,14 @@ class GoalPublisher:
     def global_path_callback(self, msg):
         if len(msg.waypoints) > 0:
             # Set scenario runner status to RUNNING (green) only when a global path was found for the prevous goal point
-            if self.display_scenario_status_running:
+            if not self.previous_goal_failed:
                 self.current_scenario_status = CarlaScenarioRunnerStatus.RUNNING
                 self.scenario_status_publisher.publish(CarlaScenarioRunnerStatus.RUNNING)
         else:
             # If the global path vanishes, then set scenario runner status to STOPPED (grey)
             self.current_scenario_status = CarlaScenarioRunnerStatus.STOPPED
             self.scenario_status_publisher.publish(self.current_scenario_status)
-            self.display_scenario_status_running = True
+            self.previous_goal_failed = False
 
     def run(self):
         goals_list = CarlaScenarioList()
