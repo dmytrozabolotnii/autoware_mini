@@ -82,6 +82,11 @@ class LocalPathCollision:
                             intersection_result = trajectory_buffer.intersection(local_path_buffer)
                             intersection_points = convert_to_shapely_points_list(intersection_result)
 
+                            # TODO simple hack to ignore trajectories from behind
+                            collision_distance = min([local_path.linestring.project(point) for point in intersection_points])
+                            if collision_distance < 0.01:
+                                continue
+
                             # TODO currently assigning to trajectory intersection points the speed vectors from the object!
                             collision_points.add_intersection_points(intersection_points,
                                                                     z = object.pose.position.z,
