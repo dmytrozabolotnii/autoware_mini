@@ -69,25 +69,27 @@ class LocalPathCollision:
 
                 # 2) check if object candidate trajectory intersects with local path buffer
                 if len(object.candidate_trajectories.lanes) > 0:
+
                     object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
                     object_width = get_polygon_width(object_polygon, object_heading)
 
-                    trajectory_linestring = LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in object.candidate_trajectories.lanes[0].waypoints])
-                    trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="flat")
-                    prepare(trajectory_buffer)
+                    for trajectory in object.candidate_trajectories.lanes:
+                        trajectory_linestring = LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in trajectory.waypoints])
+                        trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="flat")
+                        prepare(trajectory_buffer)
 
-                    if local_path_buffer.intersects(trajectory_buffer):
-                        intersection_result = trajectory_buffer.intersection(local_path_buffer)
-                        intersection_points = convert_to_shapely_points_list(intersection_result)
+                        if local_path_buffer.intersects(trajectory_buffer):
+                            intersection_result = trajectory_buffer.intersection(local_path_buffer)
+                            intersection_points = convert_to_shapely_points_list(intersection_result)
 
-                        # TODO currently assigning to trajectory intersection points the speed vectors from the object!
-                        collision_points.add_intersection_points(intersection_points,
-                                                                 z = object.pose.position.z,
-                                                                 vx = object.velocity.linear.x,
-                                                                 vy = object.velocity.linear.y,
-                                                                 vz = object.velocity.linear.z,
-                                                                 distance_to_stop = self.braking_safety_distance_obstacle,
-                                                                 category = CAT_COLLIDING_TRAJECTORY)
+                            # TODO currently assigning to trajectory intersection points the speed vectors from the object!
+                            collision_points.add_intersection_points(intersection_points,
+                                                                    z = object.pose.position.z,
+                                                                    vx = object.velocity.linear.x,
+                                                                    vy = object.velocity.linear.y,
+                                                                    vz = object.velocity.linear.z,
+                                                                    distance_to_stop = self.braking_safety_distance_obstacle,
+                                                                    category = CAT_COLLIDING_TRAJECTORY)
 
             collision_points_msg = collision_points.create_message()
 
