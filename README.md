@@ -1,6 +1,6 @@
 # Autoware Mini
 
-Autoware Mini is a minimalistic Python-based autonomy software. It is built on Python and ROS 1 to make it easy to get started and tinkering. It uses Autoware messages to define the interfaces between the modules, aiming to be compatible with [Autoware](https://www.autoware.org/). Autoware Mini currently works on ROS Noetic (Ubuntu 20.04 and through [Conda RoboStack](https://robostack.github.io/) also on many other Linux versions). The software is open-source with a friendly MIT license.
+Autoware Mini is a minimalistic Python-based autonomy software. It is built on Python and ROS 1 to make it easy to get started and tinkering. It uses Autoware messages to define the interfaces between the modules, aiming to be compatible with [Autoware](https://www.autoware.org/). Autoware Mini currently works on ROS Noetic (Ubuntu 20.04). The software is open-source with a friendly MIT license.
 
 ## Goals
 
@@ -57,7 +57,6 @@ Here are couple of short videos introducing the Autoware Mini features.
 2. Clone the repos
    ```
    git clone https://github.com/UT-ADL/autoware_mini.git
-   # not needed for the simplest planner simulation
    git clone https://github.com/UT-ADL/vehicle_platform.git
    # if using Carla simulation
    git clone --recurse-submodules -b async_bridge https://github.com/UT-ADL/ros-bridge carla_ros_bridge
