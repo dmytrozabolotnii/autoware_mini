@@ -15,20 +15,24 @@ DTYPE = np.dtype([
     ('category', np.int32)
 ])
 
-CAT_GOAL_POINT = 1
-CAT_TRAFFIC_LIGHT_STOPLINE = 2
-CAT_OBSTACLE_ON_PATH = 3
-CAT_COLLIDING_TRAJECTORY = 4
-
-COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
-    0: "OK, no obstacles",
-    1: "Approaching goal",
-    2: "Traffic light stopline",
-    3: "Obstacle on path",
-    4: "Colliding trajectory"
-}
-
 class CollisionPoints:
+
+    NO_OBSTACLES = 0
+    GOAL_POINT = 1
+    TRAFFIC_LIGHT_STOPLINE = 2
+    STOPPED_OBSTACLE_ON_PATH = 3
+    MOVING_OBSTACLE_ON_PATH = 4
+    COLLIDING_TRAJECTORY = 5
+
+    COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
+        NO_OBSTACLES:               "Following path",
+        GOAL_POINT:                 "Arriving to destination",
+        TRAFFIC_LIGHT_STOPLINE:     "Stopping for traffic light",
+        STOPPED_OBSTACLE_ON_PATH:   "Stopping for obstacle",
+        MOVING_OBSTACLE_ON_PATH:    "Following an obstacle",
+        COLLIDING_TRAJECTORY:       "Stopping for predicted trajectory"
+    }
+
     def __init__(self):
 
         self._array = np.array([], dtype=DTYPE)

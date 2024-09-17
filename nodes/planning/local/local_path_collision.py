@@ -6,8 +6,9 @@ from shapely import prepare
 from shapely.geometry import Polygon, LineString
 from autoware_msgs.msg import Lane, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
+from helpers.geometry import get_vector_norm_3d
 from helpers.path import Path
-from helpers.collision import CollisionPoints, CAT_OBSTACLE_ON_PATH, CAT_COLLIDING_TRAJECTORY
+from helpers.collision import CollisionPoints
 from helpers.shapely import convert_to_shapely_points_list, get_polygon_width
 
 class LocalPathCollision:
@@ -16,6 +17,7 @@ class LocalPathCollision:
 
         # parameters
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
+        self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
         self.braking_safety_distance_obstacle = rospy.get_param("~braking_safety_distance_obstacle")
 
         # variables
@@ -55,14 +57,24 @@ class LocalPathCollision:
                 if local_path_buffer.intersects(object_polygon):
                     intersection_result = object_polygon.intersection(local_path_buffer)
                     intersection_points = convert_to_shapely_points_list(intersection_result)
+                    object_speed = get_vector_norm_3d(object.velocity.linear)
 
-                    collision_points.add_intersection_points(intersection_points,
-                                                             z = object.pose.position.z,
-                                                             vx = object.velocity.linear.x,
-                                                             vy = object.velocity.linear.y,
-                                                             vz = object.velocity.linear.z,
-                                                             distance_to_stop = self.braking_safety_distance_obstacle,
-                                                             category = CAT_OBSTACLE_ON_PATH)
+                    if object_speed < self.stopping_speed_limit:
+                        collision_points.add_intersection_points(intersection_points,
+                                                                z = object.pose.position.z,
+                                                                vx = object.velocity.linear.x,
+                                                                vy = object.velocity.linear.y,
+                                                                vz = object.velocity.linear.z,
+                                                                distance_to_stop = self.braking_safety_distance_obstacle,
+                                                                category = CollisionPoints.STOPPED_OBSTACLE_ON_PATH)
+                    else:
+                        collision_points.add_intersection_points(intersection_points,
+                                                                z = object.pose.position.z,
+                                                                vx = object.velocity.linear.x,
+                                                                vy = object.velocity.linear.y,
+                                                                vz = object.velocity.linear.z,
+                                                                distance_to_stop = self.braking_safety_distance_obstacle,
+                                                                category = CollisionPoints.MOVING_OBSTACLE_ON_PATH)
 
                 # 2) check if object candidate trajectory intersects with local path buffer
                 if len(object.candidate_trajectories.lanes) > 0:
@@ -91,7 +103,7 @@ class LocalPathCollision:
                                                                     vy = object.velocity.linear.y,
                                                                     vz = object.velocity.linear.z,
                                                                     distance_to_stop = self.braking_safety_distance_obstacle,
-                                                                    category = CAT_COLLIDING_TRAJECTORY)
+                                                                    category = CollisionPoints.COLLIDING_TRAJECTORY)
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header

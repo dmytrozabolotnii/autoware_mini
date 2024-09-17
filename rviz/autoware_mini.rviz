@@ -4,9 +4,9 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Dashboard1
         - /Map1/Lanelet2 map1/Namespaces1
         - /Sensing1
-        - /Detection1
         - /Detection1/Lidar1
         - /Detection1/Detected objects1/Namespaces1
         - /Detection1/Tracked objects1/Namespaces1
@@ -508,9 +508,9 @@ Visualization Manager:
           Topic: /dashboard/planner_status
           Value: true
           font: DejaVu Sans Condensed
-          height: 20
+          height: 30
           left: 10
-          line width: 2
+          line width: 1
           text size: 11
           top: 285
           width: 266
@@ -533,7 +533,7 @@ Visualization Manager:
           left: 10
           line width: 2
           text size: 11
-          top: 305
+          top: 315
           width: 266
         - Align Bottom: false
           Background Alpha: 0.800000011920929
@@ -554,7 +554,7 @@ Visualization Manager:
           left: 10
           line width: 2
           text size: 11
-          top: 325
+          top: 335
           width: 266
         - Align Bottom: false
           Background Alpha: 0.800000011920929
@@ -575,7 +575,7 @@ Visualization Manager:
           left: 10
           line width: 2
           text size: 11
-          top: 345
+          top: 355
           width: 266
         - Align Bottom: false
           Background Alpha: 0.800000011920929
@@ -596,7 +596,7 @@ Visualization Manager:
           left: 10
           line width: 2
           text size: 9
-          top: 375
+          top: 385
           width: 266
         - Align Bottom: false
           Background Alpha: 0.800000011920929
@@ -617,7 +617,7 @@ Visualization Manager:
           left: 10
           line width: 2
           text size: 9
-          top: 485
+          top: 495
           width: 266
         - Align Bottom: false
           Background Alpha: 0.800000011920929
@@ -638,7 +638,7 @@ Visualization Manager:
           left: 10
           line width: 2
           text size: 9
-          top: 565
+          top: 575
           width: 266
       Enabled: true
       Name: Dashboard
@@ -764,7 +764,8 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              "": true
+              Current pose: true
+              Follower markers: true
               Value: true
             Dashboard:
               Accel limit: true
@@ -877,7 +878,8 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              "": true
+              Current pose: true
+              Follower markers: true
               Value: true
             Dashboard:
               Accel limit: true
@@ -1709,7 +1711,8 @@ Visualization Manager:
               Value: true
             Grid: true
             Map:
-              "": true
+              Lanelet2 map: true
+              Road area: true
               Value: true
             Planning:
               "": true

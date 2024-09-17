@@ -3,7 +3,7 @@
 import rospy
 from autoware_msgs.msg import Lane
 from jsk_rviz_plugins.msg import OverlayText
-from helpers.collision import COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS
+from helpers.collision import CollisionPoints
 
 class PlannerStatusInfo:
     def __init__(self):
@@ -18,12 +18,12 @@ class PlannerStatusInfo:
     def local_path_callback(self, msg):
 
         planner_status = OverlayText()
-        text = "Planner: "
+        text = ""
 
         if len(msg.waypoints) == 0:
-            text += "<span style='color: white;'>No path</span>\n"
+            text += "<span style='color: gray;'>Waiting for path</span>\n"
         else:
-            text += "<span style='color: white;'>{}</span>\n".format(COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[msg.increment])
+            text += "<span style='color: white;'>{}</span>\n".format(CollisionPoints.COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[msg.increment])
 
         planner_status.text = text
         self.planner_status_pub.publish(planner_status)

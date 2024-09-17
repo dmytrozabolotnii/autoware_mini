@@ -10,7 +10,7 @@ from autoware_msgs.msg import Lane
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from helpers.path import Path
-from helpers.collision import CAT_GOAL_POINT
+from helpers.collision import CollisionPoints
 from helpers.geometry import project_vector_to_heading, get_distance_between_two_points_2d
 
 class SpeedPlanner:
@@ -93,7 +93,7 @@ class SpeedPlanner:
         closest_object_velocity = object_velocities[min_value_index]
         stopping_point_distance = object_distances[min_value_index] - object_braking_distances[min_value_index]
         collision_point_category = collision_points[min_value_index]["category"]
-        if collision_point_category != CAT_GOAL_POINT:
+        if collision_point_category != CollisionPoints.GOAL_POINT:
             local_path_blocked = True
 
         # Recalculate target_velocity for all the waypoints using the closest object

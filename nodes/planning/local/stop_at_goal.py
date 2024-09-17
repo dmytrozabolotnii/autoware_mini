@@ -4,7 +4,7 @@ import rospy
 import math
 from autoware_msgs.msg import Lane
 from sensor_msgs.msg import PointCloud2
-from helpers.collision import CollisionPoints, CAT_GOAL_POINT
+from helpers.collision import CollisionPoints
 from helpers.geometry import get_distance_between_two_points_2d
 
 class StopAtGoal:
@@ -41,7 +41,7 @@ class StopAtGoal:
             # check if goal point is at the end of the local path
             if math.isclose(get_distance_between_two_points_2d(goal_point, msg.waypoints[-1].pose.pose.position), 0.0):
                 # add goal point as collision point
-                collision_points.add_point(goal_point.x, goal_point.y, goal_point.z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, CAT_GOAL_POINT)
+                collision_points.add_point(goal_point.x, goal_point.y, goal_point.z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, CollisionPoints.GOAL_POINT)
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header.frame_id = msg.header.frame_id
