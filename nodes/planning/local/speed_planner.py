@@ -84,7 +84,7 @@ class SpeedPlanner:
 
         # calculate target velocity for every collision pont
         # 'abs' is used to turn negative speed of approaching cars into positive, so that target distance would be smaller and thus target_speed will be decreased
-        target_distances = object_distances - ego_distance_from_local_path_start - self.current_pose_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
+        target_distances = object_distances - self.current_pose_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
         target_velocities = np.sqrt(np.maximum(0.0, np.maximum(0.0, object_velocities)**2 + 2 * self.default_deceleration * target_distances))
 
         # find the closest collision point
@@ -98,7 +98,7 @@ class SpeedPlanner:
 
         # Recalculate target_velocity for all the waypoints using the closest object
         zero_speeds_onwards = False
-        target_distance_object = stopping_point_distance - self.current_pose_to_car_front - self.braking_reaction_time * np.abs(closest_object_velocity)
+        target_distance_object = target_distances[min_value_index]
         for i, wp in enumerate(local_path.waypoints):
 
             # once we get zero speed, keep it that way
