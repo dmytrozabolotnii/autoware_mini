@@ -4,6 +4,7 @@ import rospy
 import numpy as np
 from ros_numpy import msgify, numpify
 import message_filters
+import traceback
 from sensor_msgs.msg import PointCloud2
 
 class CollisionPointsMerger:
@@ -31,23 +32,25 @@ class CollisionPointsMerger:
 
 
     def collision_points_callback(self, collision_local_path, collision_tfl_stopline):
+        try:
+            if self.collision_goal_points is None:
+                return
 
-        if self.collision_goal_points is None:
-            return
+            collision_local_path_np = numpify(collision_local_path)
+            collision_tfl_stopline_np =  numpify(collision_tfl_stopline)
+            collision_goal_points_np = numpify(self.collision_goal_points)
 
-        collision_local_path_np = numpify(collision_local_path)
-        collision_tfl_stopline_np =  numpify(collision_tfl_stopline)
-        collision_goal_points_np = numpify(self.collision_goal_points)
+            collision_points = np.concatenate((collision_local_path_np, collision_tfl_stopline_np, collision_goal_points_np))
 
-        collision_points = np.concatenate((collision_local_path_np, collision_tfl_stopline_np, collision_goal_points_np))
+            # Create a new PointCloud2 message
+            merged_points_msg = msgify(PointCloud2, collision_points)
+            merged_points_msg.header = collision_local_path.header
 
-        # Create a new PointCloud2 message
-        merged_points_msg = msgify(PointCloud2, collision_points)
-        merged_points_msg.header = collision_local_path.header
+            # Publish the merged collision points
+            self.collision_points_pub.publish(merged_points_msg)
 
-        # Publish the merged collision points
-        self.collision_points_pub.publish(merged_points_msg)
-
+        except Exception as e:
+            rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
 
     def run(self):
         rospy.spin()
