@@ -497,19 +497,19 @@ Visualization Manager:
           Background Color: 0; 0; 0
           Class: jsk_rviz_plugin/OverlayText
           Enabled: true
-          Foreground Alpha: 1
-          Foreground Color: 128; 128; 128
+          Foreground Alpha: 0.800000011920929
+          Foreground Color: 255; 255; 255
           Invert Shadow: false
-          Name: Planner status
+          Name: Rule-based planner status
           Overtake BG Color Properties: true
           Overtake FG Color Properties: true
           Overtake Position Properties: true
-          Topic: /dashboard/planner_status
+          Topic: /dashboard/rule_based_planner_status
           Value: true
           font: DejaVu Sans Condensed
           height: 30
           left: 10
-          line width: 1
+          line width: 2
           text size: 11
           top: 285
           width: 266
@@ -776,7 +776,7 @@ Visualization Manager:
               GNSS general: true
               Pacmod dtailed: true
               Pacmod general: true
-              Planner status: true
+              Rule-based planner status: true
               SSC detailed: true
               SSC general: true
               Speed:
@@ -825,10 +825,23 @@ Visualization Manager:
               Value: true
             Grid: true
             Map:
-              "": true
+              Lanelet2 map: true
+              Road area: true
               Value: true
             Planning:
-              "": true
+              Collision points:
+                All Collision points: true
+                Goal: true
+                Loca path: true
+                Traffic light stopline: true
+                Value: true
+              Global path: true
+              Lane change global path: true
+              Lanelet2 global path: true
+              Local path: true
+              Smoothed global path: true
+              Start and Goal lanelet markers: true
+              Stop point: true
               Value: true
             Sensing:
               Camera Image Left: true
@@ -839,7 +852,10 @@ Visualization Manager:
               Radar raw: true
               Value: true
             Simulation:
-              "": true
+              Bicycle markers: true
+              Carla camera view: true
+              Carla image view: true
+              Carla route: true
               Value: true
             System:
               Current pose: true
@@ -874,7 +890,7 @@ Visualization Manager:
               GNSS general: true
               Pacmod dtailed: true
               Pacmod general: true
-              Planner status: true
+              Rule-based planner status: true
               SSC detailed: true
               SSC general: true
               Speed:
@@ -1033,10 +1049,23 @@ Visualization Manager:
               Value: true
             Grid: true
             Map:
-              "": true
+              Lanelet2 map: true
+              Road area: true
               Value: true
             Planning:
-              "": true
+              Collision points:
+                All Collision points: true
+                Goal: true
+                Loca path: true
+                Traffic light stopline: true
+                Value: true
+              Global path: true
+              Lane change global path: true
+              Lanelet2 global path: true
+              Local path: true
+              Smoothed global path: true
+              Start and Goal lanelet markers: true
+              Stop point: true
               Value: true
             Sensing:
               Camera Image Left: true
@@ -1047,7 +1076,10 @@ Visualization Manager:
               Radar raw: true
               Value: true
             Simulation:
-              "": true
+              Bicycle markers: true
+              Carla camera view: true
+              Carla image view: true
+              Carla route: true
               Value: true
             System:
               Current pose: true
@@ -1413,7 +1445,8 @@ Visualization Manager:
               Marker Topic: /planning/stop_line_markers
               Name: Stop line status
               Namespaces:
-                {}
+                Status text: true
+                Stop line: true
               Queue Size: 100
               Value: true
           Enabled: true
@@ -1667,7 +1700,7 @@ Visualization Manager:
               GNSS general: true
               Pacmod dtailed: true
               Pacmod general: true
-              Planner status: true
+              Rule-based planner status: true
               SSC detailed: true
               SSC general: true
               Speed:
@@ -1716,19 +1749,26 @@ Visualization Manager:
               Value: true
             Grid: true
             Map:
-              "": true
+              Lanelet2 map: true
+              Road area: true
               Value: true
             Planning:
-              "": true
+              Collision points:
+                All Collision points: true
+                Goal: true
+                Loca path: true
+                Traffic light stopline: true
+                Value: true
+              Global path: true
+              Lane change global path: true
+              Lanelet2 global path: true
+              Local path: true
+              Smoothed global path: true
+              Start and Goal lanelet markers: true
+              Stop point: true
               Value: true
             Sensing:
-              Camera Image Left: true
-              Camera Image Right: true
-              Camera View Left: true
-              Camera View Right: true
-              Points raw center: true
-              Points raw front: true
-              Radar raw: true
+              "": true
               Value: true
             Simulation:
               Bicycle markers: true
