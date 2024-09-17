@@ -83,7 +83,7 @@ class GoalPublisher:
             # Set scenario runner status to RUNNING (green) only when a global path was found for the prevous goal point
             if not self.previous_goal_failed:
                 self.current_scenario_status = CarlaScenarioRunnerStatus.RUNNING
-                self.scenario_status_publisher.publish(CarlaScenarioRunnerStatus.RUNNING)
+                self.scenario_status_publisher.publish(self.current_scenario_status)
         else:
             # If the global path vanishes, then set scenario runner status to STOPPED (grey)
             self.current_scenario_status = CarlaScenarioRunnerStatus.STOPPED
