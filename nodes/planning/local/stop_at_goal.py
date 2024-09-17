@@ -22,7 +22,7 @@ class StopAtGoal:
 
         # subscribers
         rospy.Subscriber('extracted_local_path', Lane, self.local_path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('smoothed_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
 
     def global_path_callback(self, msg):
 
