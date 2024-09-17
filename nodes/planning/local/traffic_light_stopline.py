@@ -84,6 +84,9 @@ class TrafficLightStopline:
                     if distance_to_stopline > 0 and current_speed < self.tfl_force_stop_speed_limit / 3.6 or 0 <= deceleration <= self.tfl_maximum_deceleration:
                         x, y, z = intersection_point.x, intersection_point.y, intersection_point.z
                         collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, CollisionPoints.TRAFFIC_LIGHT_STOPLINE)
+                    else:
+                        rospy.logwarn_throttle(3, "%s - ignore red traffic light, deceleration: %f, distance: %f", rospy.get_name(), deceleration, distance_for_deceleration)
+
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header
