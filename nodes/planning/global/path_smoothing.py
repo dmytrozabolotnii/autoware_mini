@@ -29,8 +29,8 @@ class PathSmoothing:
 
 
     def global_path_callback(self, msg):
-        if len(msg.waypoints) == 0:
-            # create marker_array to delete all visualization markers
+        if len(msg.waypoints) < 2:
+            # create empty path, nothing to smooth
             self.publish_smoothed_path(np.array([]), msg.header.frame_id)
             return
 
