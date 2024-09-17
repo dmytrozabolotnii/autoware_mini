@@ -22,9 +22,15 @@
         </node>
 
         <!-- Lanelet2 global planner -->
-        <node if="$(eval global_planner=='lanelet2')" pkg="autoware_mini" type="lanelet2_global_planner.py" name="lanelet2_global_planner" output="screen" required="true">
-            <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
-        </node>
+        <group if="$(eval global_planner=='lanelet2')">
+            <node pkg="autoware_mini" type="lanelet2_global_planner.py" name="lanelet2_global_planner" output="screen" required="true">
+                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+            </node>
+            <node pkg="autoware_mini" type="global_path_visualizer.py" name="lanelet2_global_path_visualizer" output="screen" required="true">
+                <remap from="global_path" to="lanelet2_global_path"/>
+                <remap from="global_path_markers" to="lanelet2_global_path_markers"/>
+            </node>
+        </group>
 
         <!-- Carla waypoints publisher -->
         <node if="$(eval global_planner=='carla')" pkg='autoware_mini' type='carla_waypoints_publisher.py' name='carla_waypoints_publisher' output='screen' required="true" />
@@ -40,19 +46,21 @@
         <!-- Path smoothing -->
         <group if="$(arg use_path_smoothing)">
             <node pkg="autoware_mini" type="lane_change_planner.py" name="lane_change_planner" output="screen" required="true" />
-            <node pkg="autoware_mini" type="global_path_visualizer.py" name="lane_change_path_visualizer" output="screen" required="true">
-                <remap from="global_path" to="lane_change_path"/>
-                <remap from="global_path_markers" to="lane_change_path_markers"/>
+            <node pkg="autoware_mini" type="global_path_visualizer.py" name="lane_change_global_path_visualizer" output="screen" required="true">
+                <remap from="global_path" to="lane_change_global_path"/>
+                <remap from="global_path_markers" to="lane_change_global_path_markers"/>
             </node>
-            <node pkg="autoware_mini" type="path_smoothing.py" name="path_smoothing" output="screen" required="true">
-                <remap from="global_path" to="lane_change_path"/>
+            <node pkg="autoware_mini" type="path_smoothing.py" name="path_smoothing" output="screen" required="true" />
+            <node pkg="autoware_mini" type="global_path_visualizer.py" name="smoothed_global_path_visualizer" output="screen" required="true">
+                <remap from="global_path" to="smoothed_global_path"/>
+                <remap from="global_path_markers" to="smoothed_global_path_markers"/>
             </node>
-            <node pkg="autoware_mini" type="global_path_visualizer.py" name="smoothed_path_visualizer" output="screen" required="true">
-                <remap from="global_path" to="smoothed_path"/>
-                <remap from="global_path_markers" to="smoothed_path_markers"/>
-            </node>
+            <node pkg="topic_tools" type="relay" args="/planning/smoothed_global_path /planning/global_path" name="global_path_relay" output="screen" required="true" />
         </group>
-        <node unless="$(arg use_path_smoothing)" pkg="topic_tools" type="relay" args="/planning/global_path /planning/smoothed_path" name="smoothed_path_relay" output="screen" required="true" />
+        <node unless="$(arg use_path_smoothing)" pkg="topic_tools" type="relay" args="/planning/lanelet2_global_path /planning/global_path" name="global_path_relay" output="screen" required="true" />
+
+        <!-- Global path visualizer -->
+        <node pkg="autoware_mini" type="global_path_visualizer.py" name="global_path_visualizer" output="screen" required="true"/>
 
         <!-- Rule-based local planner -->
         <group if="$(eval local_planner=='rule')">
@@ -67,7 +75,7 @@
 
             <node pkg="autoware_mini" type="local_path_visualizer.py" name="local_path_visualizer" output="screen" required="true"/>
         </group>
-        <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/smoothed_path /planning/local_path" name="local_path_relay" output="screen" required="true" />
+        <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/global_path /planning/local_path" name="local_path_relay" output="screen" required="true" />
 
         <!-- Config -->
         <rosparam command="load" file="$(find autoware_mini)/config/planning.yaml" />
