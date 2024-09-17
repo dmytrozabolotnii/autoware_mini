@@ -22,7 +22,7 @@ class LocalPathCollision:
         self.detected_objects = None
 
         # publishers
-        self.local_path_collision_pub = rospy.Publisher('collision_local_path', PointCloud2, queue_size=1, tcp_nodelay=True)
+        self.local_path_collision_pub = rospy.Publisher('local_path_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
@@ -40,10 +40,7 @@ class LocalPathCollision:
             rospy.logwarn_throttle(3, "%s - detected objects not received!", rospy.get_name())
             return
 
-        if len(msg.waypoints) == 0 or len(detected_objects)==0:
-            # no local path or no objects detected - create empty collision points message
-            collision_points_msg = collision_points.create_message()
-        else:
+        if len(msg.waypoints) > 0 and len(detected_objects) > 0:
             local_path = Path(msg.waypoints)
 
             # create buffer around local path
@@ -96,8 +93,7 @@ class LocalPathCollision:
                                                                     distance_to_stop = self.braking_safety_distance_obstacle,
                                                                     category = CAT_COLLIDING_TRAJECTORY)
 
-            collision_points_msg = collision_points.create_message()
-
+        collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header
         self.local_path_collision_pub.publish(collision_points_msg)
 

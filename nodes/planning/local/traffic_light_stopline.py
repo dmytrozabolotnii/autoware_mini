@@ -30,7 +30,7 @@ class TrafficLightStopline:
         self.current_speed = None
 
         # publishers
-        self.traffic_light_stopline_pub = rospy.Publisher('collision_tfl_stopline', PointCloud2, queue_size=1, tcp_nodelay=True)
+        self.traffic_light_stopline_pub = rospy.Publisher('tfl_stopline_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)

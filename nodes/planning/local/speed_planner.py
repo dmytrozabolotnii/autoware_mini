@@ -46,22 +46,22 @@ class SpeedPlanner:
     def current_pose_callback(self, msg):
         self.current_position = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
-    def collision_points_and_path_callback(self, collision_points_sub, local_path_sub):
+    def collision_points_and_path_callback(self, collision_points_msg, local_path_msg):
 
-        collision_points = numpify(collision_points_sub)
+        collision_points = numpify(collision_points_msg)
         current_position = self.current_position
         current_speed = self.current_speed
 
         if current_speed is None or current_position is None or collision_points is None:
             lane = Lane()
-            lane.header = local_path_sub.header
+            lane.header = local_path_msg.header
             self.local_path_pub.publish(lane)
             rospy.logwarn_throttle(3, "%s - current speed, position or collision points not received!", rospy.get_name())
             return
 
-        if  len(local_path_sub.waypoints) == 0 or len(collision_points) == 0:
+        if  len(local_path_msg.waypoints) == 0 or len(collision_points) == 0:
             # no local path or no collision points menas no alterations to the path
-            self.local_path_pub.publish(local_path_sub)
+            self.local_path_pub.publish(local_path_msg)
             return
 
         closest_object_distance = 0.0
@@ -70,7 +70,7 @@ class SpeedPlanner:
         stopping_point_distance = 0.0
 
         # create local path
-        local_path = Path(local_path_sub.waypoints)
+        local_path = Path(local_path_msg.waypoints)
         ego_distance_from_local_path_start = local_path.linestring.project(current_position)
 
         # extract object distances, velocities and braking distances
@@ -80,9 +80,10 @@ class SpeedPlanner:
         object_velocities = np.array([project_vector_to_heading(heading, Vector3(vx, vy, vz)) 
                                       for heading, (x, y, z, vx, vy, vz, distance_to_stop, category)
                                       in zip(collision_points_path_headings, collision_points)])
-        object_braking_distances = np.array([distance_to_stop for x, y, z, vx, vy, vz, distance_to_stop, category in collision_points])
+        object_braking_distances = collision_points['distance_to_stop']
 
         # calculate target velocity for every collision pont
+        # 'abs' is used to turn negative speed of approaching cars into positive, so that target distance would be smaller and thus target_speed will be decreased
         target_distances = object_distances - ego_distance_from_local_path_start - self.current_pose_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
         target_velocities = np.sqrt(np.maximum(0.0, np.maximum(0.0, object_velocities)**2 + 2 * self.default_deceleration * target_distances))
 
@@ -118,7 +119,7 @@ class SpeedPlanner:
 
         # Update the lane message with the calculated values
         lane = Lane()
-        lane.header = local_path_sub.header
+        lane.header = local_path_msg.header
         lane.waypoints = local_path.waypoints
         lane.closest_object_distance = closest_object_distance
         lane.closest_object_velocity = closest_object_velocity

@@ -60,8 +60,8 @@ class LocalPathExtractor:
             self.local_path_pub.publish(local_path)
             return
 
-        # # TODO how to avoid jumping from one place to another on path - just finding the closest point is dangerous!
-        # # Example of global path overlapping with itself.
+        # TODO avoid jumping from one place to another on path - just finding the closest point is dangerous!
+        # Example of global path overlapping with itself.
         ego_distance_from_global_path_start = global_path.linestring.project(current_position)
 
         # extract local path using dstances

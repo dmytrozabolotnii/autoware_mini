@@ -18,7 +18,7 @@ class StopAtGoal:
         self.goal_point = None
 
         # publishers
-        self.goal_point_pub = rospy.Publisher('collision_goal', PointCloud2, queue_size=1, latch=True, tcp_nodelay=True)
+        self.goal_point_pub = rospy.Publisher('goal_collision_points', PointCloud2, queue_size=1, latch=True, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('extracted_local_path', Lane, self.local_path_callback, queue_size=1, tcp_nodelay=True)
