@@ -52,7 +52,7 @@ class PurePursuitFollower:
         rospy.Subscriber('/planning/local_path', Lane, self.path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         current_pose_sub = message_filters.Subscriber('/localization/current_pose', PoseStamped, queue_size=1, tcp_nodelay=True)
         current_velocity_sub = message_filters.Subscriber('/localization/current_velocity', TwistStamped, queue_size=1, tcp_nodelay=True)
-        ts = message_filters.ApproximateTimeSynchronizer([current_pose_sub, current_velocity_sub], queue_size=2, slop=0.02)
+        ts = message_filters.TimeSynchronizer([current_pose_sub, current_velocity_sub], queue_size=2)
         ts.registerCallback(self.current_status_callback)
 
         # output information to console
@@ -89,7 +89,7 @@ class PurePursuitFollower:
             stamp = current_pose_msg.header.stamp
 
             if path is None:
-                self.publish_vehicle_command(stamp)
+                self.publish_vehicle_command(stamp, 0, 0, -self.max_deceleration)
                 rospy.logwarn_throttle(30, "%s - no waypoints, stopping!", rospy.get_name())
                 return
 
@@ -109,7 +109,7 @@ class PurePursuitFollower:
 
             # if "waypoint planner" is used and no global and local planner involved
             if ego_distance_from_path_start >= path.linestring.length:
-                self.publish_vehicle_command(stamp)
+                self.publish_vehicle_command(stamp, 0, 0, -self.max_deceleration)
                 rospy.logwarn_throttle(10, "%s - end of path reached", rospy.get_name())
                 return
 
@@ -128,7 +128,7 @@ class PurePursuitFollower:
 
             if abs(cross_track_error) > self.lateral_error_limit or abs(math.degrees(heading_angle_difference)) > self.heading_angle_limit:
                 # stop vehicle if cross track error or heading angle difference is over limit
-                self.publish_vehicle_command(stamp)
+                self.publish_vehicle_command(stamp, 0, 0, -self.max_deceleration)
                 rospy.logerr_throttle(10, "%s - lateral error or heading angle difference over limit", rospy.get_name())
                 return
 

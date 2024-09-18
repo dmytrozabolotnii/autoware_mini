@@ -54,6 +54,8 @@
         <arg name="use_path_smoothing"  value="$(arg use_path_smoothing)" />
         <arg name="waypoints_file"      value="$(arg waypoints_file)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
+        <arg name="map_name"            value="$(arg map_name)" />
+        <arg name="load_goals"          value="$(eval not use_scenario_runner)" />
     </include>
 
     <!-- Control -->
