@@ -35,6 +35,12 @@ LANELET_COLOR_TO_MARKER_COLOR = {
     "green": GREEN,
 }
 
+INDEX_TO_MARKER_COLOR = {
+    0: RED,
+    1: YELLOW,
+    2: GREEN,
+}
+
 class Lanelet2MapVisualizer:
 
     def __init__(self):
@@ -180,27 +186,35 @@ def visualize_regulatoryElementLayer(map):
         if reg_el.attributes["subtype"] == "traffic_light":
             stamp = rospy.Time.now()
             # can have several individual traffic lights
-            for tfl in reg_el.parameters["light_bulbs"]:
-                for bulb in tfl:
+            for tfl in reg_el.parameters["refers"]:
+                p1 = tfl[0]
+                p2 = tfl[1]
+
+                # calculate bulb positions
+                bulb_x = (p1.x + p2.x) / 2
+                bulb_y = (p1.y + p2.y) / 2
+                bulb_z = p1.z + 0.705
+
+                for i in range(3):
                     # Create a marker for the traffic light bulb
                     marker = Marker()
                     marker.header.frame_id = "map"
                     marker.header.stamp = stamp
                     marker.ns = "Traffic lights"
-                    marker.id = bulb.id
+                    marker.id = len(marker_array.markers)
                     marker.type = marker.SPHERE
                     marker.action = marker.ADD
                     marker.scale.x = 0.2
                     marker.scale.y = 0.2
                     marker.scale.z = 0.2
-                    # marker.color = map.pointLayer.get(bulb.id).attributes["color"]
-                    marker.color = LANELET_COLOR_TO_MARKER_COLOR[map.pointLayer.get(bulb.id).attributes["color"]]
-                    marker.pose.position.x = bulb.x
-                    marker.pose.position.y = bulb.y
-                    marker.pose.position.z = bulb.z
+                    marker.color = INDEX_TO_MARKER_COLOR[i]
+                    marker.pose.position.x = bulb_x
+                    marker.pose.position.y = bulb_y
+                    marker.pose.position.z = bulb_z
                     marker.pose.orientation.w = 1.0
 
                     marker_array.markers.append(marker)
+                    bulb_z -= 0.175
 
         # TODO stop line, yield line, speed limit, etc.
 
