@@ -9,12 +9,17 @@
   <arg name="use_lidar"                                           default="false"/>
   <arg name="use_radar"                                           default="false"/>
   <arg name="use_gnss"                                            default="false"/>
-  <arg name="use_cam"                                             default="false" />
+  <arg name="use_mako_cameras"                                    default="false" />
+  <arg name="use_nvidia_cameras"                                  default="false" />
   <!-- Load correct sensor configurations-->
-  <arg if="$(eval not use_lidar and not use_radar and use_cam)"       name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_no_lidars_and_radars.json" />
-  <arg if="$(eval not use_lidar and not use_radar and not use_cam)"   name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_minimal.json" />
-  <arg if="$(eval (use_lidar or use_radar) and use_cam)"              name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors.json" />
-  <arg if="$(eval (use_lidar or use_radar) and not use_cam)"          name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_no_cam.json" />
+  <arg if="$(eval not use_lidar and not use_radar and not use_mako_cameras and not use_nvidia_cameras)"     name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_minimal.json" />
+  <arg if="$(eval not use_lidar and not use_radar and use_mako_cameras and not use_nvidia_cameras)"         name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_mako_with_no_lidars_and_radars.json" />
+  <arg if="$(eval not use_lidar and not use_radar and use_nvidia_cameras and not use_mako_cameras)"         name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_nvidia_with_no_lidars_and_radars.json" />
+  <arg if="$(eval not use_lidar and not use_radar and use_mako_cameras and use_nvidia_cameras)"             name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_no_lidars_and_radars.json.json" />
+  <arg if="$(eval (use_lidar or use_radar) and not use_mako_cameras and not use_nvidia_cameras)"            name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_no_cam.json" />
+  <arg if="$(eval (use_lidar or use_radar) and use_mako_cameras and not use_nvidia_cameras)"                name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_mako.json" />
+  <arg if="$(eval (use_lidar or use_radar) and use_nvidia_cameras and not use_mako_cameras)"                name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_nvidia.json" />
+  <arg if="$(eval (use_lidar or use_radar) and use_mako_cameras and use_nvidia_cameras)"                    name="objects_definition_file"    default="$(find autoware_mini)/config/carla/sensors_all.json" />
   <!-- Carla Server parameters -->
   <arg name='host'                                                default='localhost' />
   <arg name='port'                                                default='2000' />
@@ -31,8 +36,12 @@
   <remap from="/carla/ego_vehicle/base_link/lidar_center/lidar_front/os_sensor" to="/lidar_front/points" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/camera_fl/camera_info" to="/camera_fl/camera_info" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/camera_fr/camera_info" to="/camera_fr/camera_info" />
+  <remap from="/carla/ego_vehicle/base_link/lidar_center/interfacea_link2/camera_info" to="/interfacea/link2/camera_info" />
+  <remap from="/carla/ego_vehicle/base_link/lidar_center/interfacea_link1/camera_info" to="/interfacea/link1/camera_info" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/camera_fl/image" to="/camera_fl/image_raw" />
   <remap from="/carla/ego_vehicle/base_link/lidar_center/camera_fr/image" to="/camera_fr/image_raw" />
+  <remap from="/carla/ego_vehicle/base_link/lidar_center/interfacea_link2/image" to="/interfacea/link2/image_rect" />
+  <remap from="/carla/ego_vehicle/base_link/lidar_center/interfacea_link1/image" to="/interfacea/link1/image_rect" />
   <remap from="/carla/ego_vehicle/base_link/gnss_forward" to="/gps/fix_forward" />
   <remap from="/carla/ego_vehicle/base_link/gnss" to="/gps/fix" />
   <remap from="/carla/ego_vehicle/base_link/imu" to="/gps/imu" />

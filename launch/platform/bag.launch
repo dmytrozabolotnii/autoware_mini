@@ -1,11 +1,20 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="use_tf"  default="true" />
+    <arg name="use_tf"              default="true" />
+    <arg name="repub_camera_info"   default="false" />
+    <arg name="use_nvidia_cameras"  default="false" />
 
     <!-- Vehicle platform -->
     <include file="$(find vehicle_platform)/launch/platform.launch">
-        <arg name="use_tf"          value="$(arg use_tf)" />
-        <arg name="use_lexus_model" value="true" />
+        <arg name="use_lexus_model"             value="true" />
+        <arg name="use_tf"                      value="$(arg use_tf)" />
+        <arg name="use_nvidia_cameras"          value="$(arg use_nvidia_cameras)" />
+        <!-- Don't run remote nvidia driver in Bag mode -->
+        <arg name="use_remote_nvidia_driver"    value="false" />
+        <!-- Rectify only nvidia camera images -->
+        <arg name="rectify"                     value="$(arg use_nvidia_cameras)" />
+        <!-- Republish camera infos for nvidia cameras -->
+        <arg name="repub_camera_info"           value="$(arg repub_camera_info)" />
     </include>
 
     <group ns="vehicle">

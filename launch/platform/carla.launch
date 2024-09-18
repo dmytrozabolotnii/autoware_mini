@@ -8,7 +8,9 @@
   <arg name="use_lidar"           default="false"/>
   <arg name="use_radar"           default="false"/>
   <arg name="use_gnss"            default="false"/>
-  <arg name="use_cam"             default="false" />
+  <!-- Cameras for tfl detection -->
+  <arg name="use_mako_cameras"                default="false" />
+  <arg name="use_nvidia_cameras"              default="false" />
   <!-- Carla Server parameters -->
   <arg name='host'                default='localhost' />
   <arg name='port'                default='2000' />
@@ -55,7 +57,8 @@
     <arg name="use_lidar"                                         value="$(arg use_lidar)" />
     <arg name="use_radar"                                         value="$(arg use_radar)" />
     <arg name="use_gnss"                                          value="$(arg use_gnss)" />
-    <arg name="use_cam"                                           value="$(arg use_cam)" />
+    <arg name="use_mako_cameras"                                  value="$(arg use_mako_cameras)" />
+    <arg name="use_nvidia_cameras"                                value="$(arg use_nvidia_cameras)" />
     <arg name="host"                                              value="$(arg host)" />
     <arg name="port"                                              value="$(arg port)" />
     <arg name="timeout"                                           value="$(arg timeout)" />

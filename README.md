@@ -58,6 +58,8 @@ Here are couple of short videos introducing the Autoware Mini features.
    ```
    git clone https://github.com/UT-ADL/autoware_mini.git
    git clone https://github.com/UT-ADL/vehicle_platform.git
+   # for decoding h264 nvidia camera images
+   git clone https://github.com/UT-ADL/h264_image_transport.git
    # if using Carla simulation
    git clone --recurse-submodules -b async_bridge https://github.com/UT-ADL/ros-bridge carla_ros_bridge
    ```
