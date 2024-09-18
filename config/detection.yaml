@@ -145,7 +145,7 @@ interfacea_link1:
     traffic_light_bulb_radius: 0.1    # meters
     radius_to_roi_multiplier: 12.0  # multiplier for radius to get roi size
     min_roi_width: 15  # minimum ROI width in pixels, when classification makes sense
-    rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc
+    rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06
 
 interfacea_link2:
@@ -153,5 +153,5 @@ interfacea_link2:
     traffic_light_bulb_radius: 0.1    # meters
     radius_to_roi_multiplier: 12.0  # multiplier for radius to get roi size
     min_roi_width: 15  # minimum ROI width in pixels, when classification makes sense
-    rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc
+    rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06

@@ -13,10 +13,9 @@
         <arg name="use_remote_nvidia_driver"    value="false" />
         <!-- Rectify only nvidia camera images -->
         <arg name="rectify"                     value="$(arg use_nvidia_cameras)" />
+        <!-- Republish camera infos for nvidia cameras -->
+        <arg name="repub_camera_info"           value="$(arg repub_camera_info)" />
     </include>
-
-    <!-- Republish camera infos for nvidia cameras -->
-    <include if="$(arg repub_camera_info)" file="$(find vehicle_platform)/launch/sensors/camera_intriniscs_republish.launch" />
 
     <group ns="vehicle">
         <rosparam command="load" file="$(find autoware_mini)/config/vehicle.yaml" />

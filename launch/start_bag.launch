@@ -96,11 +96,11 @@
         <remap from="/points_raw_front" to="/lidar_front/points_raw"/>
         <remap from="/lidar_0/vlp32/pcl2" to="/lidar_center/points_raw"/>
         <!-- Remap camera_info's from bags to get latest intrinsics from calibration files: TODO: (Should republish mako camera infos as well ??) -->
-        <remap from="/interfacea/link0/camera_info" to="/temp/interfacea/link0/camera_info" if="$(arg repub_camera_info)"/>
-        <remap from="/interfacea/link1/camera_info" to="/temp/interfacea/link1/camera_info" if="$(arg repub_camera_info)"/>
-        <remap from="/interfacea/link2/camera_info" to="/temp/interfacea/link2/camera_info" if="$(arg repub_camera_info)"/>
-        <remap from="/interfacea/link3/camera_info" to="/temp/interfacea/link3/camera_info" if="$(arg repub_camera_info)"/>
-        <remap from="/interfaceb/link0/camera_info" to="/temp/interfaceb/link0/camera_info" if="$(arg repub_camera_info)"/>
+        <remap from="/interfacea/link0/camera_info" to="/bag/interfacea/link0/camera_info" if="$(arg repub_camera_info)"/>
+        <remap from="/interfacea/link1/camera_info" to="/bag/interfacea/link1/camera_info" if="$(arg repub_camera_info)"/>
+        <remap from="/interfacea/link2/camera_info" to="/bag/interfacea/link2/camera_info" if="$(arg repub_camera_info)"/>
+        <remap from="/interfacea/link3/camera_info" to="/bag/interfacea/link3/camera_info" if="$(arg repub_camera_info)"/>
+        <remap from="/interfaceb/link0/camera_info" to="/bag/interfaceb/link0/camera_info" if="$(arg repub_camera_info)"/>
     </node>
 
     <node if="$(eval benchmark_delay_topic != '')" pkg="rostopic" type="rostopic" name="delay" required="true" output="screen"
