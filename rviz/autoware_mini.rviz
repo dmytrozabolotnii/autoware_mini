@@ -10,7 +10,6 @@ Panels:
         - /Detection1/Detected objects1/Namespaces1
         - /Detection1/Tracked objects1/Namespaces1
         - /Planning1
-        - /Planning1/Global path1/Namespaces1
         - /Planning1/Lane change global path1/Namespaces1
         - /Simulation1
       Splitter Ratio: 0.6272878646850586
@@ -32,7 +31,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: All Collision points
   - Class: rviz_carla_plugin/CarlaControl
     Name: CarlaControl
   - Class: jsk_rviz_plugin/EmptyServiceCallInterfaceAction
@@ -830,19 +829,7 @@ Visualization Manager:
               Road area: true
               Value: true
             Planning:
-              Collision points:
-                All Collision points: true
-                Goal: true
-                Loca path: true
-                Traffic light stopline: true
-                Value: true
-              Global path: true
-              Lane change global path: true
-              Lanelet2 global path: true
-              Local path: true
-              Smoothed global path: true
-              Start and Goal lanelet markers: true
-              Stop point: true
+              "": true
               Value: true
             Sensing:
               Camera Image Left: true
@@ -853,7 +840,10 @@ Visualization Manager:
               Radar raw: true
               Value: true
             Simulation:
-              "": true
+              Bicycle markers: true
+              Carla camera view: true
+              Carla image view: true
+              Carla route: true
               Value: true
             System:
               Current pose: true
@@ -1052,19 +1042,7 @@ Visualization Manager:
               Road area: true
               Value: true
             Planning:
-              Collision points:
-                All Collision points: true
-                Goal: true
-                Loca path: true
-                Traffic light stopline: true
-                Value: true
-              Global path: true
-              Lane change global path: true
-              Lanelet2 global path: true
-              Local path: true
-              Smoothed global path: true
-              Start and Goal lanelet markers: true
-              Stop point: true
+              "": true
               Value: true
             Sensing:
               Camera Image Left: true
@@ -1075,7 +1053,10 @@ Visualization Manager:
               Radar raw: true
               Value: true
             Simulation:
-              "": true
+              Bicycle markers: true
+              Carla camera view: true
+              Carla image view: true
+              Carla route: true
               Value: true
             System:
               Current pose: true
@@ -1574,7 +1555,9 @@ Visualization Manager:
           Marker Topic: /planning/global_path_markers
           Name: Global path
           Namespaces:
-            {}
+            Path: true
+            Velocity label: false
+            Waypoint pose: false
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -1594,19 +1577,12 @@ Visualization Manager:
           Queue Size: 100
           Value: false
         - Class: rviz/MarkerArray
-          Enabled: false
-          Marker Topic: /planning/smoothed_global_path_markers
-          Name: Smoothed global path
-          Namespaces:
-            {}
-          Queue Size: 100
-          Value: false
-        - Class: rviz/MarkerArray
           Enabled: true
           Marker Topic: /planning/local_path_markers
           Name: Local path
           Namespaces:
-            {}
+            Stopping lateral distance: true
+            Velocity label: true
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -1677,8 +1653,7 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              Current pose: true
-              Follower markers: true
+              "": true
               Value: true
             Dashboard:
               Accel limit: true
@@ -1744,28 +1719,10 @@ Visualization Manager:
               Road area: true
               Value: true
             Planning:
-              Collision points:
-                All Collision points: true
-                Goal: true
-                Loca path: true
-                Traffic light stopline: true
-                Value: true
-              Global path: true
-              Lane change global path: true
-              Lanelet2 global path: true
-              Local path: true
-              Smoothed global path: true
-              Start and Goal lanelet markers: true
-              Stop point: true
+              "": true
               Value: true
             Sensing:
-              Camera Image Left: true
-              Camera Image Right: true
-              Camera View Left: true
-              Camera View Right: true
-              Points raw center: true
-              Points raw front: true
-              Radar raw: true
+              "": true
               Value: true
             Simulation:
               Bicycle markers: true
