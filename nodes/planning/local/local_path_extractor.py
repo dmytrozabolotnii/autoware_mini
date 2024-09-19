@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import rospy
-import math
 import threading
 from shapely.geometry import Point as ShapelyPoint
 from autoware_msgs.msg import Lane
@@ -17,7 +16,6 @@ class LocalPathExtractor:
         self.local_path_length = rospy.get_param("~local_path_length")
 
         # variables
-        self.lock = threading.Lock()
         self.current_position = None
         self.global_path = None
         self.output_frame = None
@@ -42,15 +40,13 @@ class LocalPathExtractor:
             global_path = Path(msg.waypoints)
             rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(global_path.waypoints))
 
-        with self.lock:
-            self.output_frame = output_frame
-            self.global_path = global_path
+        self.output_frame = output_frame
+        self.global_path = global_path
 
     def extract_local_path(self):
-        with self.lock:
-            current_position = self.current_position
-            global_path = self.global_path
-            output_frame = self.output_frame
+        current_position = self.current_position
+        global_path = self.global_path
+        output_frame = self.output_frame
 
         local_path = Lane()
         local_path.header.frame_id = output_frame

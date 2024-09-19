@@ -29,6 +29,9 @@ class TrafficLightStoplineChecker:
         self.current_position = None
         self.current_speed = None
 
+        lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
+        self.all_stoplines = get_stoplines(lanelet2_map)
+
         # publishers
         self.traffic_light_stopline_pub = rospy.Publisher('tfl_stopline_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
@@ -37,9 +40,6 @@ class TrafficLightStoplineChecker:
         rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/detection/traffic_light_status', TrafficLightResultArray, self.traffic_light_status_callback, queue_size=1, tcp_nodelay=True)
-
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
-        self.all_stoplines = get_stoplines(lanelet2_map)
 
     def current_pose_callback(self, msg):
         self.current_position = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
@@ -81,7 +81,7 @@ class TrafficLightStoplineChecker:
                     distance_for_deceleration = distance_to_stopline - ego_distance_from_local_path_start - self.current_pose_to_car_front
                     deceleration = (current_speed**2) / (2 * distance_for_deceleration)
                     # base_link has not crossed the stopline and velocity is below tfl_force_stop_speed_limit or deceleration is less than maximum allowed deceleration
-                    if distance_to_stopline > 0 and current_speed < self.tfl_force_stop_speed_limit / 3.6 or 0 <= deceleration <= self.tfl_maximum_deceleration:
+                    if (distance_to_stopline > 0 and current_speed < self.tfl_force_stop_speed_limit / 3.6) or 0 <= deceleration <= self.tfl_maximum_deceleration:
                         x, y, z = intersection_point.x, intersection_point.y, intersection_point.z
                         collision_points.add_point(x, y, z, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, CollisionPoints.TRAFFIC_LIGHT_STOPLINE)
                     else:

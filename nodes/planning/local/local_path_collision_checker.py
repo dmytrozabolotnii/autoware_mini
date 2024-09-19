@@ -59,22 +59,13 @@ class LocalPathCollisionChecker:
                     intersection_points = convert_to_shapely_points_list(intersection_result)
                     object_speed = get_vector_norm_3d(object.velocity.linear)
 
-                    if object_speed < self.stopping_speed_limit:
-                        collision_points.add_intersection_points(intersection_points,
-                                                                z = object.pose.position.z,
-                                                                vx = object.velocity.linear.x,
-                                                                vy = object.velocity.linear.y,
-                                                                vz = object.velocity.linear.z,
-                                                                distance_to_stop = self.braking_safety_distance_obstacle,
-                                                                category = CollisionPoints.STOPPED_OBSTACLE_ON_PATH)
-                    else:
-                        collision_points.add_intersection_points(intersection_points,
-                                                                z = object.pose.position.z,
-                                                                vx = object.velocity.linear.x,
-                                                                vy = object.velocity.linear.y,
-                                                                vz = object.velocity.linear.z,
-                                                                distance_to_stop = self.braking_safety_distance_obstacle,
-                                                                category = CollisionPoints.MOVING_OBSTACLE_ON_PATH)
+                    collision_points.add_intersection_points(intersection_points,
+                                                            z = object.pose.position.z,
+                                                            vx = object.velocity.linear.x,
+                                                            vy = object.velocity.linear.y,
+                                                            vz = object.velocity.linear.z,
+                                                            distance_to_stop = self.braking_safety_distance_obstacle,
+                                                            category = CollisionPoints.STOPPED_OBSTACLE_ON_PATH if object_speed < self.stopping_speed_limit else CollisionPoints.MOVING_OBSTACLE_ON_PATH)
 
                 # 2) check if object candidate trajectory intersects with local path buffer
                 if len(object.candidate_trajectories.lanes) > 0:

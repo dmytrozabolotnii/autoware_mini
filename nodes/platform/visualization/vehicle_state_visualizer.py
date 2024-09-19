@@ -4,7 +4,7 @@ import rospy
 from autoware_msgs.msg import VehicleStatus, VehicleCmd
 from jsk_rviz_plugins.msg import OverlayText
 from sensor_msgs.msg import Image
-from std_msgs.msg import ColorRGBA, String
+from std_msgs.msg import ColorRGBA
 import cv2
 from cv_bridge import CvBridge
 
@@ -46,18 +46,10 @@ class VehicleStateVisualizer:
         self.right_blinker_arrow_pub = rospy.Publisher('right_blinker_arrow', OverlayText, queue_size=1)
         self.left_blinker_cmd_pub =  rospy.Publisher('left_blinker_cmd', OverlayText, queue_size=1)
         self.left_blinker_arrow_pub = rospy.Publisher('left_blinker_arrow', OverlayText, queue_size=1)
-        self.rule_based_planner_status_pub = rospy.Publisher('rule_based_planner_status', OverlayText, queue_size=1)
 
         # Subscribers
-        rospy.Subscriber('/planning/rule_based_planner_status', String, self.rule_based_planner_status_callback, queue_size=1)
         rospy.Subscriber('/vehicle/vehicle_status', VehicleStatus, self.vehicle_status_callback, queue_size=1)
         rospy.Subscriber('/control/vehicle_cmd', VehicleCmd, self.vehicle_cmd_callback, queue_size=1)
-
-
-    def rule_based_planner_status_callback(self, msg):
-        rule_based_planner_status = OverlayText()
-        rule_based_planner_status.text = msg.data
-        self.rule_based_planner_status_pub.publish(rule_based_planner_status)
 
 
     def vehicle_cmd_callback(self, msg):

@@ -4,7 +4,8 @@ import rospy
 import math
 from autoware_msgs.msg import Lane
 from visualization_msgs.msg import MarkerArray, Marker
-from std_msgs.msg import ColorRGBA, String
+from std_msgs.msg import ColorRGBA
+from jsk_rviz_plugins.msg import OverlayText
 from helpers.path import Path
 from helpers.collision import CollisionPoints
 
@@ -21,7 +22,7 @@ class LocalPathVisualizer:
 
         # Publishers
         self.local_path_markers_pub = rospy.Publisher('local_path_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
-        self.planner_status_pub = rospy.Publisher('rule_based_planner_status', String, queue_size=1, tcp_nodelay=True)
+        self.planner_status_pub = rospy.Publisher('/dashboard/planner_status', OverlayText, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('local_path', Lane, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
@@ -37,7 +38,7 @@ class LocalPathVisualizer:
             points = [waypoint.pose.pose.position for waypoint in lane.waypoints]
             color = ColorRGBA(0.2, 1.0, 0.2, 0.3)
 
-            planner_status_text = CollisionPoints.COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[lane.increment]
+            planner_status_text = "<div style='text-align: center; color: white;'>" + CollisionPoints.COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[lane.increment] + "</div>"
 
             # local path with stopping_lateral_distance
             marker = Marker(header=lane.header)
@@ -127,7 +128,7 @@ class LocalPathVisualizer:
         # delete markers if local path not created
         else:
 
-            planner_status_text = "Waiting for path"
+            planner_status_text = "<div style='text-align: center; color: gray;'>Waiting for path</div>"
 
             marker = Marker(header=lane.header)
             marker.ns = "Stopping lateral distance"
@@ -155,7 +156,9 @@ class LocalPathVisualizer:
 
             self.published_waypoints = 0
 
-        self.planner_status_pub.publish(planner_status_text)
+        planner_status = OverlayText()
+        planner_status.text = planner_status_text
+        self.planner_status_pub.publish(planner_status)
         self.local_path_markers_pub.publish(marker_array)
 
     def run(self):

@@ -32,7 +32,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: All Collision points
+    SyncSource: ""
   - Class: rviz_carla_plugin/CarlaControl
     Name: CarlaControl
   - Class: jsk_rviz_plugin/EmptyServiceCallInterfaceAction
@@ -492,28 +492,28 @@ Visualization Manager:
               width: 48
           Enabled: true
           Name: Wheel and blinkers
-        - Align Bottom: false
+        - Align Bottom: true
           Background Alpha: 0.800000011920929
           Background Color: 0; 0; 0
           Class: jsk_rviz_plugin/OverlayText
           Enabled: true
-          Foreground Alpha: 0.800000011920929
-          Foreground Color: 255; 255; 255
+          Foreground Alpha: 1
+          Foreground Color: 128; 128; 128
           Invert Shadow: false
-          Name: Rule-based planner status
+          Name: Planner status
           Overtake BG Color Properties: true
           Overtake FG Color Properties: true
           Overtake Position Properties: true
-          Topic: /dashboard/rule_based_planner_status
+          Topic: /dashboard/planner_status
           Value: true
           font: DejaVu Sans Condensed
-          height: 30
+          height: 25
           left: 10
           line width: 2
           text size: 11
           top: 285
           width: 266
-        - Align Bottom: false
+        - Align Bottom: true
           Background Alpha: 0.800000011920929
           Background Color: 0; 0; 0
           Class: jsk_rviz_plugin/OverlayText
@@ -528,11 +528,11 @@ Visualization Manager:
           Topic: /dashboard/gnss_general
           Value: true
           font: DejaVu Sans Condensed
-          height: 20
+          height: 25
           left: 10
           line width: 2
           text size: 11
-          top: 315
+          top: 310
           width: 266
         - Align Bottom: false
           Background Alpha: 0.800000011920929
@@ -763,7 +763,8 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              "": true
+              Current pose: true
+              Follower markers: true
               Value: true
             Dashboard:
               Accel limit: true
@@ -776,7 +777,7 @@ Visualization Manager:
               GNSS general: true
               Pacmod dtailed: true
               Pacmod general: true
-              Rule-based planner status: true
+              Planner status: true
               SSC detailed: true
               SSC general: true
               Speed:
@@ -852,10 +853,7 @@ Visualization Manager:
               Radar raw: true
               Value: true
             Simulation:
-              Bicycle markers: true
-              Carla camera view: true
-              Carla image view: true
-              Carla route: true
+              "": true
               Value: true
             System:
               Current pose: true
@@ -877,7 +875,8 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              "": true
+              Current pose: true
+              Follower markers: true
               Value: true
             Dashboard:
               Accel limit: true
@@ -890,7 +889,7 @@ Visualization Manager:
               GNSS general: true
               Pacmod dtailed: true
               Pacmod general: true
-              Rule-based planner status: true
+              Planner status: true
               SSC detailed: true
               SSC general: true
               Speed:
@@ -1076,10 +1075,7 @@ Visualization Manager:
               Radar raw: true
               Value: true
             Simulation:
-              Bicycle markers: true
-              Carla camera view: true
-              Carla image view: true
-              Carla route: true
+              "": true
               Value: true
             System:
               Current pose: true
@@ -1407,7 +1403,6 @@ Visualization Manager:
           Name: Final objects
           Namespaces:
             bounding_box: false
-            candidate_trajectories: true
             centroid: true
             convex_hull: true
             speed: true
@@ -1445,8 +1440,7 @@ Visualization Manager:
               Marker Topic: /planning/stop_line_markers
               Name: Stop line status
               Namespaces:
-                Status text: true
-                Stop line: true
+                {}
               Queue Size: 100
               Value: true
           Enabled: true
@@ -1533,7 +1527,7 @@ Visualization Manager:
               Invert Rainbow: false
               Max Color: 255; 255; 255
               Min Color: 0; 0; 0
-              Name: Loca path
+              Name: Local path
               Position Transformer: XYZ
               Queue Size: 10
               Selectable: true
@@ -1580,9 +1574,7 @@ Visualization Manager:
           Marker Topic: /planning/global_path_markers
           Name: Global path
           Namespaces:
-            Path: true
-            Velocity label: false
-            Waypoint pose: false
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -1614,9 +1606,7 @@ Visualization Manager:
           Marker Topic: /planning/local_path_markers
           Name: Local path
           Namespaces:
-            Stopping lateral distance: true
-            Stopping point: true
-            Velocity label: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -1687,7 +1677,8 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              "": true
+              Current pose: true
+              Follower markers: true
               Value: true
             Dashboard:
               Accel limit: true
@@ -1700,7 +1691,7 @@ Visualization Manager:
               GNSS general: true
               Pacmod dtailed: true
               Pacmod general: true
-              Rule-based planner status: true
+              Planner status: true
               SSC detailed: true
               SSC general: true
               Speed:
@@ -1768,7 +1759,13 @@ Visualization Manager:
               Stop point: true
               Value: true
             Sensing:
-              "": true
+              Camera Image Left: true
+              Camera Image Right: true
+              Camera View Left: true
+              Camera View Right: true
+              Points raw center: true
+              Points raw front: true
+              Radar raw: true
               Value: true
             Simulation:
               Bicycle markers: true
