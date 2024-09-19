@@ -39,11 +39,11 @@ path_smoothing:
 local_path_extractor:
   publish_rate: 10                        # Hz 
   local_path_length: 100                  # m
-stop_at_goal:
+goal_stop_checker:
   braking_safety_distance_goal: 0.1       # m
-traffic_light_stopline:
+traffic_light_stopline_checker:
   braking_safety_distance_stopline: 2     # m
   tfl_force_stop_speed_limit: 5.0         # km/h
   tfl_maximum_deceleration: 2.8           # m/s2
-local_path_collision:
+local_path_collision_checker:
   braking_safety_distance_obstacle: 4     # m

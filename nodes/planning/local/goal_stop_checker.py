@@ -7,7 +7,7 @@ from sensor_msgs.msg import PointCloud2
 from helpers.collision import CollisionPoints
 from helpers.geometry import get_distance_between_two_points_2d
 
-class StopAtGoal:
+class GoalStopChecker:
 
     def __init__(self):
 
@@ -51,6 +51,6 @@ class StopAtGoal:
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('stop_at_goal')
-    node = StopAtGoal()
+    rospy.init_node('goal_stop_checker')
+    node = GoalStopChecker()
     node.run()

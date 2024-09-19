@@ -9,7 +9,7 @@ from helpers.path import Path
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines
 
-class TrafficLightStopline:
+class TrafficLightStoplineChecker:
 
     def __init__(self):
 
@@ -96,6 +96,6 @@ class TrafficLightStopline:
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('traffic_light_stopline')
-    node = TrafficLightStopline()
+    rospy.init_node('traffic_light_stopline_checker')
+    node = TrafficLightStoplineChecker()
     node.run()

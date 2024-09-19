@@ -11,7 +11,7 @@ from helpers.path import Path
 from helpers.collision import CollisionPoints
 from helpers.shapely import convert_to_shapely_points_list, get_polygon_width
 
-class LocalPathCollision:
+class LocalPathCollisionChecker:
 
     def __init__(self):
 
@@ -113,6 +113,6 @@ class LocalPathCollision:
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('local_path_collision')
-    node = LocalPathCollision()
+    rospy.init_node('local_path_collision_checker')
+    node = LocalPathCollisionChecker()
     node.run()
