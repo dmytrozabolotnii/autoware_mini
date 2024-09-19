@@ -30,10 +30,16 @@
                 <remap from="global_path" to="lanelet2_global_path"/>
                 <remap from="global_path_markers" to="lanelet2_global_path_markers"/>
             </node>
+            <node pkg="autoware_mini" type="lane_change_planner.py" name="lane_change_planner" output="screen" required="true" />
+            <node pkg="autoware_mini" type="global_path_visualizer.py" name="lane_change_global_path_visualizer" output="screen" required="true">
+                <remap from="global_path" to="lane_change_global_path"/>
+                <remap from="global_path_markers" to="lane_change_global_path_markers"/>
+            </node>
         </group>
 
-        <!-- Carla waypoints publisher -->
-        <node if="$(eval global_planner=='carla')" pkg='autoware_mini' type='carla_waypoints_publisher.py' name='carla_waypoints_publisher' output='screen' required="true" />
+        <!-- Path smoothing -->
+        <node if="$(arg use_path_smoothing)" pkg="autoware_mini" type="path_smoothing.py" name="path_smoothing" output="screen" required="true" />
+        <node unless="$(arg use_path_smoothing)" pkg="topic_tools" type="relay" args="/planning/lane_change_global_path /planning/global_path" name="global_path_relay" output="screen" required="true" />
 
         <!-- Global path visualizer -->
         <node pkg="autoware_mini" type="global_path_visualizer.py" name="global_path_visualizer" output="screen" required="true"/>
@@ -43,24 +49,8 @@
             <param name="goals_file" value="$(find autoware_mini)/data/maps/$(arg map_name)_goals.yaml" />
         </node>
 
-        <!-- Path smoothing -->
-        <group if="$(arg use_path_smoothing)">
-            <node pkg="autoware_mini" type="lane_change_planner.py" name="lane_change_planner" output="screen" required="true" />
-            <node pkg="autoware_mini" type="global_path_visualizer.py" name="lane_change_global_path_visualizer" output="screen" required="true">
-                <remap from="global_path" to="lane_change_global_path"/>
-                <remap from="global_path_markers" to="lane_change_global_path_markers"/>
-            </node>
-        </group>
-
         <!-- Carla waypoints publisher -->
         <node if="$(eval global_planner=='carla')" pkg='autoware_mini' type='carla_waypoints_publisher.py' name='carla_waypoints_publisher' output='screen' required="true" />
-
-        <!-- Path smoothing -->
-        <node if="$(arg use_path_smoothing)" pkg="autoware_mini" type="path_smoothing.py" name="path_smoothing" output="screen" required="true" />
-        <node unless="$(arg use_path_smoothing)" pkg="topic_tools" type="relay" args="/planning/lane_change_global_path /planning/global_path" name="global_path_relay" output="screen" required="true" />
-
-        <!-- Global path visualizer -->
-        <node pkg="autoware_mini" type="global_path_visualizer.py" name="global_path_visualizer" output="screen" required="true"/>
 
         <!-- Rule-based local planner -->
         <group if="$(eval local_planner=='rule')">
@@ -75,6 +65,7 @@
 
             <node pkg="autoware_mini" type="local_path_visualizer.py" name="local_path_visualizer" output="screen" required="true"/>
         </group>
+
         <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/global_path /planning/local_path" name="local_path_relay" output="screen" required="true" />
 
         <!-- Config -->
