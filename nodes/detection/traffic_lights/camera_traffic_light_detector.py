@@ -19,7 +19,7 @@ from autoware_msgs.msg import Lane
 from cv_bridge import CvBridge, CvBridgeError
 
 from helpers.transform import transform_point
-from helpers.lanelet2 import get_stoplines, get_stoplines_trafficlights_bulbs, load_lanelet2_map
+from helpers.lanelet2 import get_stoplines, get_stoplines_trafficlights, load_lanelet2_map
 
 # Classifier outputs 4 classes (LightState)
 CLASSIFIER_RESULT_TO_STRING = {
@@ -65,7 +65,7 @@ class CameraTrafficLightDetector:
         # Extract all stop lines and signals from the lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
         self.stoplines = get_stoplines(lanelet2_map)
-        self.signals = get_stoplines_trafficlights_bulbs(lanelet2_map)
+        self.signals = get_stoplines_trafficlights(lanelet2_map)
 
         # remove stoplines that have no signals. If stopline_id is not in self.signals then it has no signals (traffic lights)
         self.stoplines = {k: v for k, v in self.stoplines.items() if k in self.signals}
@@ -187,11 +187,12 @@ class CameraTrafficLightDetector:
         rois = []
 
         for linkId in stoplines_on_path:
-            for plId, bulbs in self.signals[linkId].items():
-
+            for plId, traffic_lights in self.signals[linkId].items():
                 us = []
                 vs = []
-                for _, _, x, y, z in bulbs:
+
+                for tfl_corner in traffic_lights.values():
+                    x, y, z = tfl_corner
                     point_map = Point(float(x), float(y), float(z))
 
                     # transform point to camera frame and then to image frame
@@ -202,17 +203,12 @@ class CameraTrafficLightDetector:
                     if u < 0 or u >= self.camera_model.width or v < 0 or v >= self.camera_model.height or point_camera.z < 0:
                         break
 
-                    # calculate radius of the bulb in pixels
-                    d = np.linalg.norm([point_camera.x, point_camera.y, point_camera.z])
-                    radius = self.camera_model.fx() * self.traffic_light_bulb_radius / d
-
-                    # calc extent for every signal then generate roi using min/max and rounding
-                    extent = radius * self.radius_to_roi_multiplier
+                    extent = 25
                     us.extend([u + extent, u - extent])
                     vs.extend([v + extent, v - extent])
-
+                    
                 # not all signals were in image, take next traffic light
-                if len(us) < 6:
+                if len(us) < 8:
                     continue
                 # round and clip against image limits
                 us = np.clip(np.round(np.array(us)), 0, self.camera_model.width - 1)
