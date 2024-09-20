@@ -27,21 +27,16 @@ def load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_orig
 
 def get_crosswalks(lanelet2_map):
     """
-    Find all crosswalks on map and return a dictionary with all linked stopline ids and a polygon
+    Find all crosswalks on map and return as a list 
     :param lanelet2_map: lanelet2 map
-    :return: {lanelet_id: {stopline_ids: [stopline_ids], polygon: Polygon}}
+    :return: crosswalk lanelets
     """
 
-    crosswalks = {}
+    crosswalks = []
     for lanelet in lanelet2_map.laneletLayer:
         if lanelet.attributes:
             if lanelet.attributes["subtype"] == "crosswalk":
-                # add crosswalk to dictionary
-                stopline_ids = []
-                if "stopline_ids" in lanelet.attributes:
-                    stopline_ids = lanelet.attributes["stopline_ids"]
-                    stopline_ids = [int(x) for x in stopline_ids.split(",")]
-                crosswalks[lanelet.id] = {"stopline_ids": stopline_ids, "polygon": Polygon([(p.x, p.y) for p in lanelet.polygon2d()])}
+                crosswalks.append(lanelet)
 
     return crosswalks
 
