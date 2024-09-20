@@ -22,10 +22,10 @@ class LaneChangePlanner:
         self.lane_change_perlane_length = rospy.get_param("lane_change_perlane_length")
 
         # Publishers
-        self.lane_change_path_pub = rospy.Publisher('lane_change_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
+        self.lane_change_path_pub = rospy.Publisher('lane_change_global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('lanelet2_global_path', Lane, self.global_path_callback, queue_size=None, tcp_nodelay=True)
 
 
     def global_path_callback(self, msg):
