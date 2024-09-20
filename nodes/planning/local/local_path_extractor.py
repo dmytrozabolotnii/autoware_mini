@@ -2,6 +2,7 @@
 
 import rospy
 import threading
+import traceback
 from shapely.geometry import Point as ShapelyPoint
 from autoware_msgs.msg import Lane
 from geometry_msgs.msg import PoseStamped
@@ -44,25 +45,28 @@ class LocalPathExtractor:
         self.global_path = global_path
 
     def extract_local_path(self):
-        current_position = self.current_position
-        global_path = self.global_path
-        output_frame = self.output_frame
+        try:
+            current_position = self.current_position
+            global_path = self.global_path
+            output_frame = self.output_frame
 
-        local_path = Lane()
-        local_path.header.frame_id = output_frame
-        local_path.header.stamp = rospy.Time.now()
+            local_path = Lane()
+            local_path.header.frame_id = output_frame
+            local_path.header.stamp = rospy.Time.now()
 
-        if current_position is None or global_path is None:
+            if current_position is None or global_path is None:
+                self.local_path_pub.publish(local_path)
+                return
+
+            # TODO avoid jumping from one place to another on path - just finding the closest point is dangerous!
+            # Example of global path overlapping with itself.
+            ego_distance_from_global_path_start = global_path.linestring.project(current_position)
+
+            # extract local path using dstances
+            local_path.waypoints = global_path.extract_waypoints(ego_distance_from_global_path_start, ego_distance_from_global_path_start + self.local_path_length)
             self.local_path_pub.publish(local_path)
-            return
-
-        # TODO avoid jumping from one place to another on path - just finding the closest point is dangerous!
-        # Example of global path overlapping with itself.
-        ego_distance_from_global_path_start = global_path.linestring.project(current_position)
-
-        # extract local path using dstances
-        local_path.waypoints = global_path.extract_waypoints(ego_distance_from_global_path_start, ego_distance_from_global_path_start + self.local_path_length)
-        self.local_path_pub.publish(local_path)
+        except Exception as e:
+            rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
 
     def run(self):
         # start separate thread for spinning subcribers
@@ -73,7 +77,10 @@ class LocalPathExtractor:
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
             self.extract_local_path()
-            rate.sleep()
+            try:
+                rate.sleep()
+            except rospy.ROSTimeMovedBackwardsException:
+                pass
 
 if __name__ == '__main__':
     rospy.init_node('local_path_extractor')

@@ -44,7 +44,7 @@ class GoalStopChecker:
                 collision_points.add_point(goal_point.x, goal_point.y, goal_point.z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, CollisionPoints.GOAL_POINT)
 
         collision_points_msg = collision_points.create_message()
-        collision_points_msg.header.frame_id = msg.header.frame_id
+        collision_points_msg.header = msg.header
         self.goal_point_pub.publish(collision_points_msg)
 
     def run(self):

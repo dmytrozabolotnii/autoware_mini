@@ -18,27 +18,18 @@ class CollisionPointsMerger:
         self.collision_points_pub = rospy.Publisher('collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        rospy.Subscriber('goal_collision_points', PointCloud2, self.collision_goal_callback, queue_size=1, tcp_nodelay=True)
-
+        collision_goal_sub = message_filters.Subscriber('goal_collision_points', PointCloud2, tcp_nodelay=True)
         collision_local_path_sub = message_filters.Subscriber('local_path_collision_points', PointCloud2, tcp_nodelay=True)
         collision_tfl_stopline_sub = message_filters.Subscriber('tfl_stopline_collision_points', PointCloud2, tcp_nodelay=True)
 
-        ts = message_filters.TimeSynchronizer([collision_local_path_sub, collision_tfl_stopline_sub], queue_size=4)
+        ts = message_filters.TimeSynchronizer([collision_goal_sub, collision_local_path_sub, collision_tfl_stopline_sub], queue_size=4)
         ts.registerCallback(self.collision_points_callback)
 
-
-    def collision_goal_callback(self, msg):
-        self.collision_goal_points = msg
-
-
-    def collision_points_callback(self, collision_local_path, collision_tfl_stopline):
+    def collision_points_callback(self, collision_goal_points, collision_local_path, collision_tfl_stopline):
         try:
-            if self.collision_goal_points is None:
-                return
-
             collision_local_path_np = numpify(collision_local_path)
             collision_tfl_stopline_np =  numpify(collision_tfl_stopline)
-            collision_goal_points_np = numpify(self.collision_goal_points)
+            collision_goal_points_np = numpify(collision_goal_points)
 
             collision_points = np.concatenate((collision_local_path_np, collision_tfl_stopline_np, collision_goal_points_np))
 

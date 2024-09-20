@@ -53,11 +53,8 @@ class SpeedPlanner:
             current_position = self.current_position
             current_speed = self.current_speed
 
-            if current_speed is None or current_position is None or collision_points is None:
-                lane = Lane()
-                lane.header = local_path_msg.header
-                self.local_path_pub.publish(lane)
-                rospy.logwarn_throttle(3, "%s - current speed, position or collision points not received!", rospy.get_name())
+            if current_speed is None or current_position is None:
+                rospy.logwarn_throttle(3, "%s - current speed or position not received!", rospy.get_name())
                 return
 
             if  len(local_path_msg.waypoints) == 0 or len(collision_points) == 0:
