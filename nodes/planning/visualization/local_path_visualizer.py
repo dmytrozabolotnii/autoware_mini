@@ -9,6 +9,15 @@ from jsk_rviz_plugins.msg import OverlayText
 from helpers.path import Path
 from helpers.collision import CollisionPoints
 
+COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
+    CollisionPoints.NO_OBSTACLES:               "Following path",
+    CollisionPoints.GOAL_POINT:                 "Arriving to destination",
+    CollisionPoints.TRAFFIC_LIGHT_STOPLINE:     "Stopping for traffic light",
+    CollisionPoints.STOPPED_OBSTACLE_ON_PATH:   "Stopping for object",
+    CollisionPoints.MOVING_OBSTACLE_ON_PATH:    "Following an object",
+    CollisionPoints.COLLIDING_TRAJECTORY:       "Stopping for prediction"
+}
+
 class LocalPathVisualizer:
     def __init__(self):
 
@@ -38,7 +47,7 @@ class LocalPathVisualizer:
             points = [waypoint.pose.pose.position for waypoint in lane.waypoints]
             color = ColorRGBA(0.2, 1.0, 0.2, 0.3)
 
-            planner_status_text = "<div style='text-align: center; color: white;'>" + CollisionPoints.COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[lane.increment] + "</div>"
+            planner_status_text = "<div style='text-align: center; color: white;'>" + COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[lane.increment] + "</div>"
 
             # local path with stopping_lateral_distance
             marker = Marker(header=lane.header)

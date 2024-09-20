@@ -24,15 +24,6 @@ class CollisionPoints:
     MOVING_OBSTACLE_ON_PATH = 4
     COLLIDING_TRAJECTORY = 5
 
-    COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
-        NO_OBSTACLES:               "Following path",
-        GOAL_POINT:                 "Arriving to destination",
-        TRAFFIC_LIGHT_STOPLINE:     "Stopping for traffic light",
-        STOPPED_OBSTACLE_ON_PATH:   "Stopping for obstacle",
-        MOVING_OBSTACLE_ON_PATH:    "Following an obstacle",
-        COLLIDING_TRAJECTORY:       "Stopping for predicted trajectory"
-    }
-
     def __init__(self):
 
         self._array = np.array([], dtype=DTYPE)
