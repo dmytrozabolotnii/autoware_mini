@@ -263,7 +263,10 @@ class BicycleSimulation:
         marker.header.frame_id = "map"
         marker.header.stamp = stamp
         marker.type = marker.SPHERE_LIST
-        marker.action = marker.ADD
+        if self.blinkers in (VehicleStatus.LAMP_HAZARD, VehicleStatus.LAMP_LEFT, VehicleStatus.LAMP_RIGHT):
+            marker.action = marker.ADD
+        else:
+            marker.action = marker.DELETE
         marker.id = 2
         marker.scale.x = 0.3
         marker.scale.y = 0.3
