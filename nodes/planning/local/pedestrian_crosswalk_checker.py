@@ -67,34 +67,30 @@ class PedestrianCrosswalkChecker:
                     object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
                     object_speed = get_vector_norm_3d(object.velocity.linear)
                     object_heading = get_heading_from_vector(object.velocity.linear)
+                    object_width = get_polygon_width(object_polygon, object_heading)
 
                     for crosswalk_id in crosswalks_on_local_path[:]:
                         crosswalk_polygon = self.crosswalks[crosswalk_id]['polygon']
+                        angle_difference = math.degrees(get_smallest_angle_between_lines(object_heading, self.crosswalks[crosswalk_id]['heading']))
 
-                        # STATIC OBJECTS
-                        if object_speed < self.stopping_speed_limit:
-                            if object_polygon.intersects(crosswalk_polygon):
-                                collision_points.add_intersection_points(self.crosswalks[crosswalk_id]['points'], z=object.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.STATIC_OBJECT_ON_CROSSWALK)
+                        # INTERSECTING OBJECTS
+                        if object_polygon.intersects(crosswalk_polygon):
+                            if object_speed < self.stopping_speed_limit or angle_difference < self.crossing_angle_max_limit:
+                                collision_points.add_intersection_points(self.crosswalks[crosswalk_id]['points'], z=object.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
                                 crosswalks_on_local_path.remove(crosswalk_id)
-                                break  # Stop checking other crosswalks for this object
-                        # MOVING OBJECTS
+                                if object_speed < self.stopping_speed_limit:
+                                    break  # Stop checking other crosswalks for this object
+                        # NON-INTERSECTING OBJECTS - CONSIDER TRAJECTORIES
                         else:
-                            angle_difference = math.degrees(get_smallest_angle_between_lines(object_heading, self.crosswalks[crosswalk_id]['heading']))
                             # consider them crossing if they are within the crossing angle limit
-                            if angle_difference < self.crossing_angle_max_limit:
-                                if object_polygon.intersects(crosswalk_polygon):
-                                    collision_points.add_intersection_points(self.crosswalks[crosswalk_id]['points'], z=object.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.MOVING_OBJECT_ON_CROSSWALK)
-                                    crosswalks_on_local_path.remove(crosswalk_id)
-                                # CHECK TRAJECTORIES
-                                else:
-                                    object_width = get_polygon_width(object_polygon, object_heading)
-                                    for lane in object.candidate_trajectories.lanes:
-                                        trajectory = LineString([(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in lane.waypoints])
-                                        trajectory_buffer = trajectory.buffer(object_width / 2, cap_style="flat")
-                                        prepare(trajectory_buffer)
-                                        if trajectory_buffer.intersects(crosswalk_polygon):
-                                            collision_points.add_intersection_points(self.crosswalks[crosswalk_id]['points'], z=object.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_INTERSECTING_CROSSWALK)
-                                            crosswalks_on_local_path.remove(crosswalk_id)
+                            if object_speed >= self.stopping_speed_limit and angle_difference < self.crossing_angle_max_limit:
+                                for lane in object.candidate_trajectories.lanes:
+                                    trajectory = LineString([(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in lane.waypoints])
+                                    trajectory_buffer = trajectory.buffer(object_width / 2, cap_style="flat")
+                                    prepare(trajectory_buffer)
+                                    if trajectory_buffer.intersects(crosswalk_polygon):
+                                        collision_points.add_intersection_points(self.crosswalks[crosswalk_id]['points'], z=object.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
+                                        crosswalks_on_local_path.remove(crosswalk_id)
 
                     # Exit early if all crosswalks are processed
                     if len(crosswalks_on_local_path) == 0:
