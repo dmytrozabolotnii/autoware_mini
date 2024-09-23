@@ -10,12 +10,14 @@ from helpers.path import Path
 from helpers.collision import CollisionPoints
 
 COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
-    CollisionPoints.NO_OBSTACLES:               "Following path",
-    CollisionPoints.GOAL_POINT:                 "Arriving to destination",
-    CollisionPoints.TRAFFIC_LIGHT_STOPLINE:     "Stopping for traffic light",
-    CollisionPoints.STOPPED_OBSTACLE_ON_PATH:   "Stopping for object",
-    CollisionPoints.MOVING_OBSTACLE_ON_PATH:    "Following an object",
-    CollisionPoints.COLLIDING_TRAJECTORY:       "Stopping for prediction"
+    CollisionPoints.NO_OBSTACLES:                       "Following path",
+    CollisionPoints.GOAL_POINT:                         "Arriving to destination",
+    CollisionPoints.TRAFFIC_LIGHT_STOPLINE:             "Stopping for traffic light",
+    CollisionPoints.STOPPED_OBSTACLE_ON_PATH:           "Stopping for object",
+    CollisionPoints.MOVING_OBSTACLE_ON_PATH:            "Following an object",
+    CollisionPoints.COLLIDING_TRAJECTORY:               "Stopping for prediction",
+    CollisionPoints.OBJECT_ON_CROSSWALK:                "Stopping for crosswalk",
+    CollisionPoints.TRAJECTORY_ON_CROSSWALK:  "Stopping for crosswalk (P)"
 }
 
 class LocalPathVisualizer:

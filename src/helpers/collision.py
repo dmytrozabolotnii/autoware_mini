@@ -23,6 +23,8 @@ class CollisionPoints:
     STOPPED_OBSTACLE_ON_PATH = 3
     MOVING_OBSTACLE_ON_PATH = 4
     COLLIDING_TRAJECTORY = 5
+    OBJECT_ON_CROSSWALK = 6
+    TRAJECTORY_ON_CROSSWALK = 7
 
     def __init__(self):
 

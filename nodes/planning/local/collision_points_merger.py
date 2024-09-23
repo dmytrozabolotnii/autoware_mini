@@ -21,21 +21,23 @@ class CollisionPointsMerger:
         collision_goal_sub = message_filters.Subscriber('goal_collision_points', PointCloud2, tcp_nodelay=True)
         collision_local_path_sub = message_filters.Subscriber('local_path_collision_points', PointCloud2, tcp_nodelay=True)
         collision_tfl_stopline_sub = message_filters.Subscriber('tfl_stopline_collision_points', PointCloud2, tcp_nodelay=True)
+        collision_crosswalk_sub = message_filters.Subscriber('crosswalk_collision_points', PointCloud2, tcp_nodelay=True)
 
-        ts = message_filters.TimeSynchronizer([collision_goal_sub, collision_local_path_sub, collision_tfl_stopline_sub], queue_size=4)
+        ts = message_filters.TimeSynchronizer([collision_goal_sub, collision_local_path_sub, collision_tfl_stopline_sub, collision_crosswalk_sub], queue_size=4)
         ts.registerCallback(self.collision_points_callback)
 
-    def collision_points_callback(self, collision_goal_points, collision_local_path, collision_tfl_stopline):
+    def collision_points_callback(self, collision_goal_points_msg, collision_local_path_msg, collision_tfl_stopline_msg, collision_crosswalk_msg):
         try:
-            collision_local_path_np = numpify(collision_local_path)
-            collision_tfl_stopline_np =  numpify(collision_tfl_stopline)
-            collision_goal_points_np = numpify(collision_goal_points)
+            collision_local_path_np = numpify(collision_local_path_msg)
+            collision_tfl_stopline_np =  numpify(collision_tfl_stopline_msg)
+            collision_goal_points_np = numpify(collision_goal_points_msg)
+            collision_crosswalk_np = numpify(collision_crosswalk_msg)
 
-            collision_points = np.concatenate((collision_local_path_np, collision_tfl_stopline_np, collision_goal_points_np))
+            collision_points = np.concatenate((collision_local_path_np, collision_tfl_stopline_np, collision_goal_points_np, collision_crosswalk_np))
 
             # Create a new PointCloud2 message
             merged_points_msg = msgify(PointCloud2, collision_points)
-            merged_points_msg.header = collision_local_path.header
+            merged_points_msg.header = collision_local_path_msg.header
 
             # Publish the merged collision points
             self.collision_points_pub.publish(merged_points_msg)

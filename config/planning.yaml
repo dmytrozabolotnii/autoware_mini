@@ -47,3 +47,6 @@ traffic_light_stopline_checker:
   tfl_maximum_deceleration: 2.8           # m/s2
 local_path_collision_checker:
   braking_safety_distance_obstacle: 4     # m
+pedestrian_crosswalk_checker:
+  braking_safety_distance_crosswalk: 6    # m
+  crossing_angle_max_limit: 70            # degrees
