@@ -50,8 +50,7 @@ class CameraTrafficLightDetector:
         onnx_path = rospy.get_param("~onnx_path")
 
         self.rectify_image = rospy.get_param('~rectify_image')
-        self.traffic_light_bulb_radius = rospy.get_param("~traffic_light_bulb_radius")
-        self.radius_to_roi_multiplier = rospy.get_param("~radius_to_roi_multiplier")
+        self.roi_extent = rospy.get_param("~roi_extent")
         self.min_roi_width = rospy.get_param("~min_roi_width")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.waypoint_interval = rospy.get_param("/planning/waypoint_interval")
@@ -199,28 +198,35 @@ class CameraTrafficLightDetector:
                     point_camera = transform_point(point_map, transform)
                     u, v = self.camera_model.project3dToPixel((point_camera.x, point_camera.y, point_camera.z))
 
-                    # check with image limits using the camera model and bulb's z coordinate w.r.t camera
+                    # check with image limits using the camera model and points's z coordinate w.r.t camera
                     if u < 0 or u >= self.camera_model.width or v < 0 or v >= self.camera_model.height or point_camera.z < 0:
                         break
-
-                    extent = 25
-                    us.extend([u + extent, u - extent])
-                    vs.extend([v + extent, v - extent])
                     
+                    # convert the extent in meters to extent in pixels
+                    extent_x_px = self.camera_model.fx() * self.roi_extent / point_camera.z
+                    extent_y_px = self.camera_model.fy() * self.roi_extent / point_camera.z
+
+                    us.extend([u + extent_x_px, u - extent_x_px])
+                    vs.extend([v + extent_y_px, v - extent_y_px])
+
                 # not all signals were in image, take next traffic light
                 if len(us) < 8:
                     continue
+
                 # round and clip against image limits
                 us = np.clip(np.round(np.array(us)), 0, self.camera_model.width - 1)
                 vs = np.clip(np.round(np.array(vs)), 0, self.camera_model.height - 1)
+                
                 # extract one roi per traffic light
                 min_u = int(np.min(us))
                 max_u = int(np.max(us))
                 min_v = int(np.min(vs))
                 max_v = int(np.max(vs))
+
                 # check if roi is too small
                 if max_u - min_u < self.min_roi_width:
                     continue
+                
                 rois.append([int(linkId), plId, min_u, max_u, min_v, max_v])
 
         return rois

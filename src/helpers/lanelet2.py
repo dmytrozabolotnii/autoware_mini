@@ -107,32 +107,6 @@ def get_stoplines_trafficlights(lanelet2_map):
 
     return signals
 
-def get_stoplines_trafficlights_bulbs(lanelet2_map):
-    """
-    Iterate over all regulatory_elements with subtype traffic light and extract the stoplines and sinals.
-    Organize the data into dictionary indexed by stopline id that contains a traffic_light id and light bulb data.
-    :param lanelet2_map: lanelet2 map
-    :return: {stopline_id: {traffic_light_id: [[bulb_id, bulb_color, x, y, z], ...], ...}, ...}
-    """
-
-    signals = {}
-
-    for reg_el in lanelet2_map.regulatoryElementLayer:
-        if reg_el.attributes["subtype"] == "traffic_light":
-            # ref_line is the stop line and there is only 1 stopline per traffic light reg_el
-            linkId = reg_el.parameters["ref_line"][0].id
-
-            for bulbs in reg_el.parameters["light_bulbs"]:
-                # plId represents the traffic light (pole), one stop line can be associated with multiple traffic lights
-                plId = bulbs.id
-                # one traffic light has red, yellow and green bulbs
-                bulb_data = [[bulb.id, bulb.attributes["color"], bulb.x, bulb.y, bulb.z] for bulb in bulbs]
-                # signals is a dictionary indexed by stopline id and contains dictionary of traffic lights indexed by pole id
-                # which in turn contains a list of bulbs
-                signals.setdefault(linkId, {}).setdefault(plId, []).extend(bulb_data)
-
-    return signals
-
 def get_stoplines_center(lanelet2_map):
     """
     Iterate over all regulatory_elements with subtype traffic light and extract the stoplines centers.
