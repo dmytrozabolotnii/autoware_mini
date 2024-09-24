@@ -61,13 +61,13 @@ class CameraTrafficLightDetector:
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
 
-        # Extract all stop lines and signals from the lanelet2 map
+        # Extract all stop lines and traffic lights from the lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
         self.stoplines = get_stoplines(lanelet2_map)
-        self.signals = get_stoplines_trafficlights(lanelet2_map)
+        self.trafficlights = get_stoplines_trafficlights(lanelet2_map)
 
-        # remove stoplines that have no signals. If stopline_id is not in self.signals then it has no signals (traffic lights)
-        self.stoplines = {k: v for k, v in self.stoplines.items() if k in self.signals}
+        # remove stoplines that have no traffic lights. If stopline_id is not in self.trafficlights then it has no traffic lights
+        self.stoplines = {k: v for k, v in self.stoplines.items() if k in self.trafficlights}
 
         self.bridge = CvBridge()
         self.model = onnxruntime.InferenceSession(onnx_path, providers=['CUDAExecutionProvider'])
@@ -96,7 +96,7 @@ class CameraTrafficLightDetector:
 
     def local_path_callback(self, local_path_msg):
 
-        # used in calculate_roi_coordinates to filter out only relevant signals
+        # used in calculate_roi_coordinates to filter out only relevant traffic lights
         stoplines_on_path = []
 
         # If there is a local path collect allt the stop line id's on the path
@@ -186,12 +186,11 @@ class CameraTrafficLightDetector:
         rois = []
 
         for linkId in stoplines_on_path:
-            for plId, traffic_lights in self.signals[linkId].items():
+            for plId, traffic_lights in self.trafficlights[linkId].items():
                 us = []
                 vs = []
 
-                for tfl_corner in traffic_lights.values():
-                    x, y, z = tfl_corner
+                for x, y, z in traffic_lights.values():
                     point_map = Point(float(x), float(y), float(z))
 
                     # transform point to camera frame and then to image frame
@@ -209,7 +208,7 @@ class CameraTrafficLightDetector:
                     us.extend([u + extent_x_px, u - extent_x_px])
                     vs.extend([v + extent_y_px, v - extent_y_px])
 
-                # not all signals were in image, take next traffic light
+                # not all traffic lights were in image, take next traffic light
                 if len(us) < 8:
                     continue
 
