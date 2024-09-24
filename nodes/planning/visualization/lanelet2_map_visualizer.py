@@ -190,10 +190,12 @@ def visualize_regulatoryElementLayer(map):
                 p1 = tfl[0]
                 p2 = tfl[1]
 
+                tfl_height = float(tfl.attributes["height"])
+
                 # calculate bulb positions
                 bulb_x = (p1.x + p2.x) / 2
                 bulb_y = (p1.y + p2.y) / 2
-                bulb_z = p1.z + 0.705
+                bulb_z = p1.z + 5*tfl_height/6
 
                 for i in range(3):
                     # Create a marker for the traffic light bulb
@@ -204,9 +206,9 @@ def visualize_regulatoryElementLayer(map):
                     marker.id = len(marker_array.markers)
                     marker.type = marker.SPHERE
                     marker.action = marker.ADD
-                    marker.scale.x = 0.2
-                    marker.scale.y = 0.2
-                    marker.scale.z = 0.2
+                    marker.scale.x = tfl_height/6
+                    marker.scale.y = tfl_height/6
+                    marker.scale.z = tfl_height/6
                     marker.color = INDEX_TO_MARKER_COLOR[i]
                     marker.pose.position.x = bulb_x
                     marker.pose.position.y = bulb_y
@@ -214,7 +216,7 @@ def visualize_regulatoryElementLayer(map):
                     marker.pose.orientation.w = 1.0
 
                     marker_array.markers.append(marker)
-                    bulb_z -= 0.175
+                    bulb_z -= tfl_height/6
 
         # TODO stop line, yield line, speed limit, etc.
 
