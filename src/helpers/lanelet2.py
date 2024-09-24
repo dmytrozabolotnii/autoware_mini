@@ -126,7 +126,7 @@ def get_stoplines_center(lanelet2_map):
             # Extract center point from stopline
             center_x, center_y = np.mean(line_points, axis=0)
             # Extract traffic light (Pole) ids for the same stopline
-            plIds = [bulbs.id for bulbs in reg_el.parameters["light_bulbs"]]
+            plIds = [tfl.id for tfl in reg_el.parameters["refers"]]
 
             stopline_centers[link.id] = [(center_x, center_y), plIds] 
 
