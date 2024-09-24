@@ -95,6 +95,7 @@ class PedestrianCrosswalkChecker:
                                     if trajectory_buffer.intersects(crosswalk_polygon):
                                         collision_points.add_intersection_points(self.crosswalks[crosswalk_id]['points'], z=object.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
                                         crosswalks_on_local_path.remove(crosswalk_id)
+                                        break
 
                     # Exit early if all crosswalks are processed
                     if len(crosswalks_on_local_path) == 0:
