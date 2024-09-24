@@ -80106,11 +80106,6 @@
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
-  <relation id="100083" version="1" visible="true">
-    <member type="way" ref="2000830" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
   <relation id="100084" version="1" visible="true">
     <member type="way" ref="5000012" role="ref_line" />
     <member type="way" ref="2000840" role="refers" />
