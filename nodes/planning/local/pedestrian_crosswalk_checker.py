@@ -72,14 +72,13 @@ class PedestrianCrosswalkChecker:
                     object_projection_on_path = local_path_linestring.interpolate(local_path_linestring.project(object_centroid))
                     object_projection_on_path_heading = get_heading_between_two_points(object_centroid, object_projection_on_path)
                     object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_projection_on_path_heading))
-                    object_distance_from_path = object_centroid.distance(local_path_linestring)
 
                     for crosswalk_id in crosswalks_on_local_path[:]:
                         crosswalk_polygon = self.crosswalks[crosswalk_id]['polygon']
 
                         # INTERSECTING OBJECTS
                         if object_polygon.intersects(crosswalk_polygon):
-                            if object_speed < self.stopping_speed_limit or object_path_approach_angle < self.crossing_angle_max_limit or object_distance_from_path < self.stopping_lateral_distance:
+                            if object_speed < self.stopping_speed_limit or object_path_approach_angle < self.crossing_angle_max_limit:
                                 collision_points.add_intersection_points(self.crosswalks[crosswalk_id]['points'], z=object.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
                                 crosswalks_on_local_path.remove(crosswalk_id)
                                 if object_speed < self.stopping_speed_limit:
