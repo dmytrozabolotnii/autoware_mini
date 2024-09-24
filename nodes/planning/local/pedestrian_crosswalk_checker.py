@@ -64,12 +64,16 @@ class PedestrianCrosswalkChecker:
 
             if len(crosswalks_on_local_path) > 0:
                 for object in detected_objects:
-                    object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
                     object_centroid = ShapelyPoint(object.pose.position.x, object.pose.position.y)
+                    object_distance_from_local_path_start = local_path_linestring.project(object_centroid)
+                    # ignore objects behind the ego vehicle
+                    if math.isclose(object_distance_from_local_path_start, 0.0):
+                        continue
                     object_speed = get_vector_norm_3d(object.velocity.linear)
                     object_heading = get_heading_from_vector(object.velocity.linear)
+                    object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
                     object_width = get_polygon_width(object_polygon, object_heading)
-                    object_projection_on_path = local_path_linestring.interpolate(local_path_linestring.project(object_centroid))
+                    object_projection_on_path = local_path_linestring.interpolate(object_distance_from_local_path_start)
                     object_projection_on_path_heading = get_heading_between_two_points(object_centroid, object_projection_on_path)
                     object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_projection_on_path_heading))
 
