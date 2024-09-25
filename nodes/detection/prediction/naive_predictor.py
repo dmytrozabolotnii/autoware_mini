@@ -42,14 +42,15 @@ class NaivePredictor:
 
         # Create candidate trajectories
         for i, obj in enumerate(msg.objects):
-            lane = Lane()
-            for j in range(num_timesteps):
-                wp = Waypoint()
-                wp.pose.pose.position.x, wp.pose.pose.position.y = predicted_objects_array[j][i]['centroid']
-                wp.pose.pose.position.z = obj.pose.position.z
-                wp.twist.twist.linear.x, wp.twist.twist.linear.y = predicted_objects_array[j][i]['velocity']
-                lane.waypoints.append(wp)
-            obj.candidate_trajectories.lanes.append(lane)
+            if len(obj.candidate_trajectories.lanes) == 0:
+                lane = Lane()
+                for j in range(num_timesteps):
+                    wp = Waypoint()
+                    wp.pose.pose.position.x, wp.pose.pose.position.y = predicted_objects_array[j][i]['centroid']
+                    wp.pose.pose.position.z = obj.pose.position.z
+                    wp.twist.twist.linear.x, wp.twist.twist.linear.y = predicted_objects_array[j][i]['velocity']
+                    lane.waypoints.append(wp)
+                obj.candidate_trajectories.lanes.append(lane)
 
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)

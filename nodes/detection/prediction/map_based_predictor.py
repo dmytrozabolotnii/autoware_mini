@@ -3,14 +3,19 @@
 import rospy
 import math
 import numpy as np
-from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
-
-from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_distance_between_two_points_2d, create_vector_from_heading_and_scalar
-from helpers.lanelet2 import load_lanelet2_map
 import lanelet2
 from lanelet2.core import BasicPoint2d
-from lanelet2.geometry import findWithin2d, findNearest
+from lanelet2.geometry import findWithin2d
 from shapely.geometry import LineString, Point as ShapelyPoint
+from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
+from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_distance_between_two_points_2d, create_vector_from_heading_and_scalar, get_angle_between_two_headings
+from helpers.lanelet2 import load_lanelet2_map
+
+CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
+    'straight': {'straight': 1, 'left': 0.5, 'right': 0.5},
+    'left': {'straight': 0.5, 'left': 1, 'right': -1},
+    'right': {'straight': 0.5, 'left': -1, 'right': 1}
+}
 
 class MapBasedPredictor:
     def __init__(self):
@@ -28,10 +33,7 @@ class MapBasedPredictor:
         utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
-        # traffic rules
-        traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany,
-                                                  lanelet2.traffic_rules.Participants.VehicleTaxi)
-        # routing graph
+        traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.VehicleTaxi)
         self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
 
         # Publishers
@@ -44,14 +46,14 @@ class MapBasedPredictor:
 
         num_timesteps = int(self.prediction_horizon // self.prediction_interval)
 
-        for i, obj in enumerate(msg.objects):
+        for i, object in enumerate(msg.objects):
 
-            # 1. SEARCH FOR SUITABLE LANELETS FOR OBJECT
-            obj_location = BasicPoint2d(obj.pose.position.x, obj.pose.position.y)
-            # find lanelets within distance to obj_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
-            lanelets_witihn_distance = findWithin2d(self.lanelet2_map.laneletLayer, obj_location, self.distance_from_lanelet)
+            # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
+            object_location = BasicPoint2d(object.pose.position.x, object.pose.position.y)
+            # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
+            lanelets_witihn_distance = findWithin2d(self.lanelet2_map.laneletLayer, object_location, self.distance_from_lanelet)
 
-            angle_differences = []
+            heading_differences = []
             potential_lanelets = []
             for d, lanelet in lanelets_witihn_distance:
 
@@ -60,55 +62,65 @@ class MapBasedPredictor:
                     if lanelet.attributes["subtype"] == "crosswalk":
                         continue
 
-                # Skip lanelet if distance from centerline over limit
                 linestring = LineString([(p.x, p.y) for p in lanelet.centerline])
-                obj_distance_from_lanelet_start = linestring.project(ShapelyPoint(obj_location.x, obj_location.y))
-                trajectory_start_point = linestring.interpolate(obj_distance_from_lanelet_start)
-                obj_distance_from_centerline = get_distance_between_two_points_2d(trajectory_start_point, obj_location)
-                if obj_distance_from_centerline > self.distance_from_centerline:
+                object_distance_from_lanelet_start = linestring.project(ShapelyPoint(object_location.x, object_location.y))
+                trajectory_start_point = linestring.interpolate(object_distance_from_lanelet_start)
+
+                # Skip lanelet if distance from centerline over limit
+                object_distance_from_centerline = get_distance_between_two_points_2d(trajectory_start_point, object_location)
+                if object_distance_from_centerline > self.distance_from_centerline:
                     continue
-                
+
                 # Skip lanelet if angle difference between object heading and lanelet heading is over limit
-                obj_heading = get_heading_from_vector(obj.velocity.linear)
-                forward_point = linestring.interpolate(obj_distance_from_lanelet_start + 0.1)
+                object_heading = get_heading_from_vector(object.velocity.linear)
+                forward_point = linestring.interpolate(object_distance_from_lanelet_start + 0.1)
                 lanelet_heading = get_heading_between_two_points(trajectory_start_point, forward_point)
-                angle_diff = math.degrees(abs(obj_heading - lanelet_heading))
-                if angle_diff > 180:
-                    angle_diff = 360 - angle_diff                
-
-                if angle_diff > self.angle_threshold:
+                heading_difference_degrees = math.degrees(get_angle_between_two_headings(object_heading, lanelet_heading))
+                if heading_difference_degrees > self.angle_threshold:
                     continue
 
-                angle_differences.append(angle_diff)
+                heading_differences.append(heading_difference_degrees)
                 potential_lanelets.append(lanelet)
 
             selected_lanelet = None
-            if len(angle_differences) > 0:
-                min_index = np.argmin(angle_differences)
+            if len(heading_differences) > 0:
+                min_index = np.argmin(heading_differences)
                 selected_lanelet = potential_lanelets[min_index]
+                # TODO: Correct object indicator should be taken from the object, currently using closest lanelet
+                object_indicator = selected_lanelet.attributes["turn_direction"]
 
             # 2. CREATE MAP BASED TRAJECTORIES FOR OBJECT
             if selected_lanelet is not None:
 
-                obj_speed = get_vector_norm_3d(obj.velocity.linear)
-                obj_accel = get_vector_norm_3d(obj.acceleration.linear)
+                object_speed = get_vector_norm_3d(object.velocity.linear)
+                object_accel = get_vector_norm_3d(object.acceleration.linear)
 
                 # Predict future positions and velocities
                 timesteps = np.arange(num_timesteps) * self.prediction_interval
-                velocities = obj_speed + obj_accel * timesteps
+                velocities = object_speed + object_accel * timesteps
                 distances = np.cumsum(np.insert(velocities[:-1] * self.prediction_interval, 0, 0))
 
-                # get all possible paths (lanelet branching) from selected lanelet to max distance
+                # get all possible paths (lanelet branching), from selected lanelet to max distance
                 all_trajectories = self.graph.possiblePaths(selected_lanelet, distances[-1])
 
-                for trajectory in all_trajectories:
+                if len(all_trajectories) > 0:
+                    selected_trajectory = all_trajectories[0]
+                    if len(all_trajectories) > 1:
+                        # Evaluate all possible paths (based on car indicator and path turn directions) and select the best one - highest score!
+                        all_trajectories_with_turn_directions = {}
+                        for i, trajectory in enumerate(all_trajectories):
+                            all_trajectories_with_turn_directions[i] = [lanelet.attributes["turn_direction"] for lanelet in trajectory]
+                        all_trajectories_evaluated = self.evaluate_paths(all_trajectories_with_turn_directions, object_indicator)
+                        selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
+
                     # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
-                    trajectory_linestring = LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline])
+                    trajectory_linestring = LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
+                    object_distance_from_trajectory_linestring_start = trajectory_linestring.project(ShapelyPoint(object_location.x, object_location.y))
 
                     lane = Lane()
                     for i, d in enumerate(distances):
                         wp = Waypoint()
-                        p = trajectory_linestring.interpolate(obj_distance_from_lanelet_start + d)
+                        p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + d)
                         wp.pose.pose.position.x = p.x
                         wp.pose.pose.position.y = p.y
                         wp.pose.pose.position.z = p.z
@@ -118,34 +130,21 @@ class MapBasedPredictor:
                         wp.twist.twist.linear.x = speed_x
                         wp.twist.twist.linear.y = speed_y
                         lane.waypoints.append(wp)
-                    obj.candidate_trajectories.lanes.append(lane)
-
-            # 3. OBJECTS NOT LINKED WITH ANY LANELET - PREDICT BASED ON CURRENT VELOCITY AND ACCELERATION
-            else:
-                # Predict future positions and velocities
-                predicted_centroids = np.empty((num_timesteps, 2), dtype=np.float32)
-                predicted_velocities = np.empty((num_timesteps, 2), dtype=np.float32)
-
-                predicted_centroids[0] = [obj.pose.position.x, obj.pose.position.y]
-                predicted_velocities[0] = [obj.velocity.linear.x, obj.velocity.linear.y]
-                obj_acceleration = np.array([obj.acceleration.linear.x, obj.acceleration.linear.y])
-
-                for j in range(1, num_timesteps):
-                    predicted_centroids[j] = predicted_centroids[j-1] + predicted_velocities[j-1] * self.prediction_interval
-                    predicted_velocities[j] = predicted_velocities[j-1] + obj_acceleration * self.prediction_interval
-                
-                lane = Lane()
-                for j in range(num_timesteps):
-                    wp = Waypoint()
-                    wp.pose.pose.position.x, wp.pose.pose.position.y = predicted_centroids[j]
-                    wp.pose.pose.position.z = obj.pose.position.z
-                    wp.twist.twist.linear.x, wp.twist.twist.linear.y = predicted_velocities[j]
-                    lane.waypoints.append(wp)
-                
-                obj.candidate_trajectories.lanes.append(lane)
+                    object.candidate_trajectories.lanes.append(lane)
 
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)
+
+    def evaluate_paths(self, paths, object_indicator):
+        # Evaluate each path using scoring constants with decreasing weight
+        # return list of evaluation scores in the order of given paths
+
+        evaluations = [
+            sum(CAR_INDICATOR_VS_TURN_DIRECTION_SCORING[object_indicator][turn] * (1 if i == 0 else 1 / i)
+                for i, turn in enumerate(path))
+            for path in paths.values()
+        ]
+        return evaluations
 
     def run(self):
         rospy.spin()
