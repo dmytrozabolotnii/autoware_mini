@@ -75,13 +75,12 @@ def get_stoplines_api_id(lanelet2_map):
 
     return stopline_ids
 
-
-def get_stoplines_trafficlights_bulbs(lanelet2_map):
+def get_stoplines_trafficlights(lanelet2_map):
     """
     Iterate over all regulatory_elements with subtype traffic light and extract the stoplines and sinals.
-    Organize the data into dictionary indexed by stopline id that contains a traffic_light id and light bulb data.
+    Organize the data into dictionary indexed by stopline id that contains a traffic_light id and the four coners of the traffic light.
     :param lanelet2_map: lanelet2 map
-    :return: {stopline_id: {traffic_light_id: [[bulb_id, bulb_color, x, y, z], ...], ...}, ...}
+    :return: {stopline_id: {traffic_light_id: {'top_left': [x, y, z], 'top_right': [...], 'bottom_left': [...], 'bottom_right': [...]}, ...}, ...}
     """
 
     signals = {}
@@ -90,15 +89,21 @@ def get_stoplines_trafficlights_bulbs(lanelet2_map):
         if reg_el.attributes["subtype"] == "traffic_light":
             # ref_line is the stop line and there is only 1 stopline per traffic light reg_el
             linkId = reg_el.parameters["ref_line"][0].id
-
-            for bulbs in reg_el.parameters["light_bulbs"]:
+            
+            for tfl in reg_el.parameters["refers"]:
+                tfl_height = float(tfl.attributes["height"])
                 # plId represents the traffic light (pole), one stop line can be associated with multiple traffic lights
-                plId = bulbs.id
-                # one traffic light has red, yellow and green bulbs
-                bulb_data = [[bulb.id, bulb.attributes["color"], bulb.x, bulb.y, bulb.z] for bulb in bulbs]
+                plId = tfl.id
+
+                traffic_light_data = {'top_left': [tfl[0].x, tfl[0].y, tfl[0].z + tfl_height], 
+                                      'top_right': [tfl[1].x, tfl[1].y, tfl[1].z + tfl_height], 
+                                      'bottom_left': [tfl[0].x, tfl[0].y, tfl[0].z], 
+                                      'bottom_right': [tfl[1].x, tfl[1].y, tfl[1].z]}
+
+
                 # signals is a dictionary indexed by stopline id and contains dictionary of traffic lights indexed by pole id
-                # which in turn contains a list of bulbs
-                signals.setdefault(linkId, {}).setdefault(plId, []).extend(bulb_data)
+                # which in turn contains a dictionary of traffic light corners
+                signals.setdefault(linkId, {}).setdefault(plId, traffic_light_data)
 
     return signals
 
@@ -121,7 +126,7 @@ def get_stoplines_center(lanelet2_map):
             # Extract center point from stopline
             center_x, center_y = np.mean(line_points, axis=0)
             # Extract traffic light (Pole) ids for the same stopline
-            plIds = [bulbs.id for bulbs in reg_el.parameters["light_bulbs"]]
+            plIds = [tfl.id for tfl in reg_el.parameters["refers"]]
 
             stopline_centers[link.id] = [(center_x, center_y), plIds] 
 
