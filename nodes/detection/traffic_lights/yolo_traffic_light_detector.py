@@ -18,9 +18,9 @@ from autoware_msgs.msg import Lane
 
 from cv_bridge import CvBridge
 
-import yolo_output_postprocessor
 from helpers.transform import transform_point
 from helpers.lanelet2 import get_stoplines, get_stoplines_trafficlights, load_lanelet2_map
+from helpers.yolo import PostprocessYOLO, preprocess_image_for_yolo, convert_and_scale_yolo_boxes, intersection_over_union
 
 # Classifier outputs 4 classes (LightState)
 CLASSIFIER_RESULT_TO_STRING = {
@@ -69,24 +69,29 @@ class YoloTrafficLightDetector:
         self.roi_extent = rospy.get_param("~roi_extent")
         self.min_roi_width = rospy.get_param("~min_roi_width")
         self.transform_timeout = rospy.get_param("~transform_timeout")
-        #self.waypoint_interval = rospy.get_param("/planning/waypoint_interval")
         coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
         use_custom_origin = rospy.get_param("/localization/use_custom_origin")
         utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        self.iou_threshold = rospy.get_param("~iou_threshold")
 
         # Extract all stop lines and traffic lights from the lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
         self.stoplines = get_stoplines(lanelet2_map)
         self.trafficlights = get_stoplines_trafficlights(lanelet2_map)
 
-        # remove stoplines that have no traffic lights. If stopline_id is not in self.trafficlights then it has no traffic lights
+        # Remove stoplines that have no traffic lights. If stopline_id is not in self.trafficlights then it has no traffic lights
         self.stoplines = {k: v for k, v in self.stoplines.items() if k in self.trafficlights}
 
         self.bridge = CvBridge()
         self.yolo_model = onnxruntime.InferenceSession(yolo_path, providers=['CUDAExecutionProvider'])
-        self.yolo_postprocessor = yolo_output_postprocessor.PostprocessYOLO(**YOLO_POSTPROCESSOR_ARGS)
+        self.yolo_postprocessor = PostprocessYOLO(**YOLO_POSTPROCESSOR_ARGS)
+
+        # Yolo model warm-up
+        input_shape = self.yolo_model.get_inputs()[0].shape
+        dummy_input = np.random.rand(*input_shape).astype(np.float32)
+        self.yolo_model.run(None, {'000_net': dummy_input})
 
         # Publishers
         self.tfl_status_pub = rospy.Publisher('traffic_light_status', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)
@@ -115,7 +120,7 @@ class YoloTrafficLightDetector:
         # used in calculate_roi_coordinates to filter out only relevant traffic lights
         stoplines_on_path = []
 
-        # If there is a local path collect allt the stop line id's on the path
+        # if there is a local path collect allt the stop line id's on the path
         if len(local_path_msg.waypoints) > 0:
             local_path = LineString([(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in local_path_msg.waypoints])
 
@@ -163,7 +168,6 @@ class YoloTrafficLightDetector:
             self.camera_model.rectifyImage(image, image)
 
         if len(stoplines_on_path) > 0:
-
             # extract transform
             try:
                 transform = self.tf_buffer.lookup_transform(transform_to_frame, transform_from_frame, image_time_stamp, rospy.Duration(self.transform_timeout))
@@ -174,7 +178,6 @@ class YoloTrafficLightDetector:
             map_rois = self.calculate_roi_coordinates(stoplines_on_path, transform)
 
             if len(map_rois) > 0:
-                
                 # get yolo predictions
                 yolo_rois, classes, scores = self.get_yolo_predictions(image)
 
@@ -187,9 +190,7 @@ class YoloTrafficLightDetector:
         if self.tfl_roi_pub.get_num_connections() > 0:
             self.publish_roi_images(image, map_rois, yolo_rois, match_dict, image_time_stamp)
 
-
     def calculate_roi_coordinates(self, stoplines_on_path, transform):
-
         rois = []
 
         for linkId in stoplines_on_path:
@@ -236,6 +237,64 @@ class YoloTrafficLightDetector:
                 rois.append([int(linkId), plId, min_u, max_u, min_v, max_v])
 
         return rois
+    
+    def get_yolo_predictions(self, image):
+        # preprocess image to correct format for YOLO 
+        preprocessed_image = preprocess_image_for_yolo(image, YOLO_POSTPROCESSOR_ARGS["yolo_input_resolution"])
+
+        # make a prediction
+        yolo_outputs = self.yolo_model.run(None, {'000_net': preprocessed_image})
+
+        # postprocess YOLO input
+        yolo_output_shapes = [(1,27,19,19), (1,27,38,38)] #shapes for tiny yolov3
+        yolo_outputs = [output.reshape(shape) for output, shape in zip(yolo_outputs, yolo_output_shapes)]
+
+        boxes, classes, scores = self.yolo_postprocessor.process(yolo_outputs, YOLO_POSTPROCESSOR_ARGS["yolo_input_resolution"])
+
+        if len(boxes) > 0:
+            rois = convert_and_scale_yolo_boxes(boxes, image.shape[:2], YOLO_POSTPROCESSOR_ARGS["yolo_input_resolution"])
+            return rois, classes, scores
+        else:
+            return boxes, classes, scores
+        
+    def match_map_and_yolo_rois(self, map_rois, yolo_rois, yolo_classes, yolo_scores):
+        tfl_results = []
+        match_dict = {}
+        
+        # for every map roi
+        for linkId, plId, x1_map, x2_map, y1_map, y2_map in map_rois:
+            iou_max = -2
+            matched_roi = None
+
+            # for every yolo class and box
+            for idx, cls, score, yolo_roi in zip(range(len(yolo_rois)), yolo_classes, yolo_scores, yolo_rois):
+                iou_score = intersection_over_union((x1_map, y1_map, x2_map, y2_map), yolo_roi)
+                # if iou over threshold use max iou for association
+                if iou_score > self.iou_threshold:
+                    if iou_score > iou_max:
+                        matched_roi = [cls, score, yolo_roi, idx]
+                        iou_max = iou_score
+                else:
+                    continue
+
+            tfl_result = TrafficLightResult()
+            tfl_result.light_id = plId
+            tfl_result.lane_id = linkId
+
+            if matched_roi is None:
+                # no match for map ROI - traffic light status is unknown
+                tfl_result.recognition_result = 2
+                tfl_result.recognition_result_str = "unknown"
+                match_dict[plId] = None
+            else:
+                # yolo ROI and map ROI were matched
+                tfl_result.recognition_result = CLASSIFIER_RESULT_TO_TLRESULT[matched_roi[0]]
+                tfl_result.recognition_result_str = CLASSIFIER_RESULT_TO_STRING[matched_roi[0]]
+                match_dict[plId] = matched_roi
+
+            tfl_results.append(tfl_result)
+
+        return tfl_results, match_dict
 
     def publish_roi_images(self, image, map_rois, yolo_rois, match_dict, image_time_stamp):
         # add rois to image
@@ -244,15 +303,18 @@ class YoloTrafficLightDetector:
 
             for _, plId, min_u, max_u, min_v, max_v in map_rois:
                 if match_dict[plId] is None:
+                    # map roi was not matched with any yolo roi
                     text_string = "%s %.2f" % ("unknown", 0)
                     color = (0,0,0)
 
                 else:
+                    # map roi was matched with a yolo roi
                     cl, score, yolo_roi, yolo_idx = match_dict[plId]
 
                     yolo_min_u, yolo_min_v, yolo_max_u, yolo_max_v = yolo_roi
                     matched_yolo_roi_idxs.append(yolo_idx)
                     
+                    # add smaller yolo roi
                     yolo_start_point = (yolo_min_u, yolo_min_v)
                     yolo_end_point = (yolo_max_u, yolo_max_v)
                     cv2.rectangle(image, yolo_start_point, yolo_end_point, color=CLASSIFIER_RESULT_TO_LIGHT_COLOR[cl], thickness=2)
@@ -260,6 +322,7 @@ class YoloTrafficLightDetector:
                     text_string = "%s %.2f" % (CLASSIFIER_RESULT_TO_STRING[cl], score)
                     color = CLASSIFIER_RESULT_TO_COLOR[cl]
 
+                #add bigger map roi
                 text_width, text_height = cv2.getTextSize(text_string, cv2.FONT_HERSHEY_SIMPLEX, 1.5, 2)[0]
                 text_orig_u = int(min_u + (max_u - min_u) / 2 - text_width / 2)
                 text_orig_v = max_v + text_height + 3
@@ -287,118 +350,6 @@ class YoloTrafficLightDetector:
         
         img_msg.header.stamp = image_time_stamp
         self.tfl_roi_pub.publish(img_msg)
-
-    def preprocess_image_for_yolo(self, img):
-        # Resize to match YOLO input dimensions
-        out_img = cv2.resize(img, YOLO_POSTPROCESSOR_ARGS["yolo_input_resolution"], interpolation=cv2.INTER_LINEAR)
-        # Normalize to [0,1]
-        out_img = out_img.astype("float") / 255.0
-        # HWC to CHW
-        out_img = np.transpose(out_img,[2,0,1])
-        # CHW to NCHW
-        out_img = np.expand_dims(out_img,axis = 0)
-        # Convert the image to row-major order, also known as "C order":
-        out_img = np.array(out_img, dtype = np.float32, order = 'C')
-    
-        return out_img
-    
-    def convert_yolo_boxes(self, box, original_img_size):
-        #Convert yolo output of x_1 y_1 w h to x_1 y_1 x_2 y_2 and scale the boxes based on the original image size
-        yolo_img_size = YOLO_POSTPROCESSOR_ARGS["yolo_input_resolution"]
-
-        x_scale = original_img_size[1] / yolo_img_size[0]
-        y_scale = original_img_size[0] / yolo_img_size[1]
-
-        x1 = box[:, 0] * x_scale
-        y1 = box[:, 1] * y_scale
-        x2 = (box[:, 0] + box[:, 2]) * x_scale
-        y2 = (box[:, 1] + box[:, 3]) * y_scale
-
-        return np.rint(np.array([x1, y1, x2, y2]).T).astype(int)
-
-    def get_yolo_predictions(self, image):
-        # Preprocess image to correct format for YOLO 
-        preprocessed_image = self.preprocess_image_for_yolo(image)
-
-        # Make a prediction
-        yolo_outputs = self.yolo_model.run(None, {'000_net': preprocessed_image})
-
-        # Postprocess YOLO input
-        yolo_output_shapes = [(1,27,19,19), (1,27,38,38)] #shapes for tiny yolov3
-        yolo_outputs = [output.reshape(shape) for output, shape in zip(yolo_outputs, yolo_output_shapes)]
-
-        boxes, classes, scores = self.yolo_postprocessor.process(yolo_outputs, YOLO_POSTPROCESSOR_ARGS["yolo_input_resolution"])
-
-        if len(boxes) > 0:
-            rois = self.convert_yolo_boxes(boxes, image.shape[:2])
-            return rois, classes, scores
-        else:
-            return boxes, classes, scores
-        
-    def intersection_over_union(self, box1, box2):
-        """Implement intersection over union (IoU) between box1 and box2
-        
-        Arguments:
-        box1 -- first box, list object with coordinates (x1, y1, x2, y2)
-        box2 -- second box, list object with coordinates (x1, y1, x2, y2)
-        """
-
-        # Calculate the coordinates of intersection of box1 and box2. 
-        x1_inter = max(box1[0], box2[0])
-        y1_inter = max(box1[1], box2[1])
-        x2_inter = min(box1[2], box2[2])
-        y2_inter = min(box1[3], box2[3])
-        #Calculate intersection area.
-        inter_area = max(0, x2_inter - x1_inter) * max(0, y2_inter - y1_inter)
-        
-        # Calculate the Union area.
-        box1_area = (box1[3] - box1[1] ) * (box1[2] - box1[0])
-        box2_area = (box2[3] - box2[1] ) * (box2[2] - box2[0])
-        union_area = box1_area + box2_area - inter_area
-    
-        # compute the IoU  
-        iou = inter_area/union_area
-        return iou
-        
-    def match_map_and_yolo_rois(self, map_rois, yolo_rois, yolo_classes, yolo_scores, iou_thres=0.05):
-        tfl_results = []
-        match_dict = {}
-        
-        # for every map roi
-        for linkId, plId, x1_map, x2_map, y1_map, y2_map in map_rois:
-            iou_max = -2
-            matched_roi = None
-
-            # for every yolo class and box
-            for idx, cls, score, yolo_roi in zip(range(len(yolo_rois)), yolo_classes, yolo_scores, yolo_rois):
-                iou_score = self.intersection_over_union((x1_map, y1_map, x2_map, y2_map), yolo_roi)
-                # if iou over threshold use max iou for association
-                if iou_score > iou_thres:
-                    if iou_score > iou_max:
-                        matched_roi = [cls, score, yolo_roi, idx]
-                        iou_max = iou_score
-                else:
-                    continue
-
-            tfl_result = TrafficLightResult()
-            tfl_result.light_id = plId
-            tfl_result.lane_id = linkId
-
-            if matched_roi is None:
-                # no match for map ROI - traffic light status is unknown
-                tfl_result.recognition_result = 2
-                tfl_result.recognition_result_str = "unknown"
-                match_dict[plId] = None
-            else:
-                # yolo ROI and map ROI were matched
-                tfl_result.recognition_result = CLASSIFIER_RESULT_TO_TLRESULT[matched_roi[0]]
-                tfl_result.recognition_result_str = CLASSIFIER_RESULT_TO_STRING[matched_roi[0]]
-                match_dict[plId] = matched_roi
-
-            tfl_results.append(tfl_result)
-
-        return tfl_results, match_dict
-
 
     def run(self):
         rospy.spin()

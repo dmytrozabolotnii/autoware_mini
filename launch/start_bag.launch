@@ -6,7 +6,7 @@
     <arg name="detector"                default="lidar_cluster" doc="lidar_cluster, sim, carla"/>
     <arg name="use_lidar_center"        default="true"          doc="use velodyne lidar"/>
     <arg name="use_lidar_front"         default="false"         doc="use ouster lidar"/>
-    <arg name="tfl_detector"            default="camera"        doc="camera, mqtt, mqtt_camera_fusion" />
+    <arg name="tfl_detector"            default="camera"        doc="camera, mqtt, mqtt_camera_fusion, yolo" />
     <arg name="tfl_cameras"             default="mako"          doc="mako, nvidia" />
     <arg name="global_planner"          default="lanelet2"      doc="waypoints, lanelet2"/>
     <arg name="local_planner"           default="rule"          doc="rule"/>
@@ -149,7 +149,7 @@
     <include file="$(find autoware_mini)/launch/platform/bag.launch">
         <arg name="use_tf"               value="$(arg use_tf)" />
         <arg name="repub_camera_info"    value="$(arg repub_camera_info)" />
-        <arg name="use_nvidia_cameras"   value="$(eval 'camera' in tfl_detector and tfl_cameras=='nvidia')" />
+        <arg name="use_nvidia_cameras"   value="$(eval ('camera' in tfl_detector or tfl_detector=='yolo') and tfl_cameras=='nvidia')" />
     </include>
 
     <!-- Rviz -->

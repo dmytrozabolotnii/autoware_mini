@@ -134,6 +134,7 @@ camera_fl:
     min_roi_width: 50  # minimum ROI width in pixels, when classification makes sense
     rectify_image: False  # the distortions of Mako cameras are so small they don't matter
     transform_timeout: 0.06
+    iou_threshold: 0.05
 
 camera_fr:
   camera_traffic_light_detector_right:
@@ -141,6 +142,7 @@ camera_fr:
     min_roi_width: 50  # minimum ROI width in pixels, when classification makes sense
     rectify_image: False  # the distortions of Mako cameras are so small they don't matter
     transform_timeout: 0.06
+    iou_threshold: 0.05
 
 interfacea_link1:
   camera_traffic_light_detector_link1:
@@ -148,6 +150,7 @@ interfacea_link1:
     min_roi_width: 15  # minimum ROI width in pixels, when classification makes sense
     rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06
+    iou_threshold: 0.05
 
 interfacea_link2:
   camera_traffic_light_detector_link2:
@@ -155,3 +158,4 @@ interfacea_link2:
     min_roi_width: 15  # minimum ROI width in pixels, when classification makes sense
     rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06
+    iou_threshold: 0.05
