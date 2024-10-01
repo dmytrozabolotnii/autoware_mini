@@ -46,10 +46,10 @@ class MapBasedPredictor:
 
         num_timesteps = int(self.prediction_horizon // self.prediction_interval)
 
-        for i, object in enumerate(msg.objects):
+        for i, obj in enumerate(msg.objects):
 
             # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
-            object_location = BasicPoint2d(object.pose.position.x, object.pose.position.y)
+            object_location = BasicPoint2d(obj.pose.position.x, obj.pose.position.y)
             # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
             lanelets_witihn_distance = findWithin2d(self.lanelet2_map.laneletLayer, object_location, self.distance_from_lanelet)
 
@@ -72,7 +72,7 @@ class MapBasedPredictor:
                     continue
 
                 # Skip lanelet if angle difference between object heading and lanelet heading is over limit
-                object_heading = get_heading_from_vector(object.velocity.linear)
+                object_heading = get_heading_from_vector(obj.velocity.linear)
                 forward_point = linestring.interpolate(object_distance_from_lanelet_start + 0.1)
                 lanelet_heading = get_heading_between_two_points(trajectory_start_point, forward_point)
                 heading_difference_degrees = math.degrees(get_angle_between_two_headings(object_heading, lanelet_heading))
@@ -92,8 +92,8 @@ class MapBasedPredictor:
             # 2. CREATE MAP BASED TRAJECTORIES FOR OBJECT
             if selected_lanelet is not None:
 
-                object_speed = get_vector_norm_3d(object.velocity.linear)
-                object_accel = get_vector_norm_3d(object.acceleration.linear)
+                object_speed = get_vector_norm_3d(obj.velocity.linear)
+                object_accel = get_vector_norm_3d(obj.acceleration.linear)
 
                 # Predict future positions and velocities
                 timesteps = np.arange(num_timesteps) * self.prediction_interval
@@ -130,7 +130,7 @@ class MapBasedPredictor:
                         wp.twist.twist.linear.x = speed_x
                         wp.twist.twist.linear.y = speed_y
                         lane.waypoints.append(wp)
-                    object.candidate_trajectories.lanes.append(lane)
+                    obj.candidate_trajectories.lanes.append(lane)
 
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)

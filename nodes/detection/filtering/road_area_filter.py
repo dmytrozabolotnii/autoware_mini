@@ -27,6 +27,8 @@ class RoadAreaFilter:
 
         assert self.filtering_method in ["centroid", "intersects", "within"], "filtering_method must be one of 'centroid', 'intersects', 'within'"
 
+        self.current_location = None
+
         # initialize coordinate_transformer
         if self.coordinate_transformer == "utm":
             self.transformer = WGS84ToUTMTransformer(False, self.utm_origin_lat, self.utm_origin_lon)
@@ -98,6 +100,9 @@ class RoadAreaFilter:
     def detected_objects_callback(self, msg):
         current_location = self.current_location
 
+        if current_location is None:
+            return
+
         # get nearby road area blocks from within 200m
         nearby_road_areas = self.road_area[dwithin(self.road_area, current_location, 200)]
         if self.filtering_method == "within":
@@ -107,8 +112,8 @@ class RoadAreaFilter:
             prepare(nearby_not_road_area)
 
         # Create array objects
-        objects = DetectedObjectArray()
-        objects.header = msg.header
+        detected_objects = DetectedObjectArray()
+        detected_objects.header = msg.header
 
         for obj in msg.objects:
             if self.filtering_method == "centroid":
@@ -119,12 +124,12 @@ class RoadAreaFilter:
 
             if self.filtering_method == "centroid" or self.filtering_method == "intersects":
                 if obj_geom.intersects(nearby_road_areas).any():
-                    objects.objects.append(obj)
+                    detected_objects.objects.append(obj)
             else:  # filtering_method == "within" / use intersects, but with area that is not road area
                 if not obj_geom.intersects(nearby_not_road_area):
-                    objects.objects.append(obj)
+                    detected_objects.objects.append(obj)
 
-        self.objects_pub.publish(objects)
+        self.objects_pub.publish(detected_objects)
 
     def run(self):
         rospy.spin()
