@@ -87,7 +87,8 @@ class MapBasedPredictor:
                 min_index = np.argmin(heading_differences)
                 selected_lanelet = potential_lanelets[min_index]
                 # TODO: Correct object indicator should be taken from the object, currently using closest lanelet
-                object_indicator = selected_lanelet.attributes["turn_direction"]
+                object_indicator = selected_lanelet.attributes["turn_direction"] if "turn_direction" in selected_lanelet.attributes else "straight"
+
 
             # 2. CREATE MAP BASED TRAJECTORIES FOR OBJECT
             if selected_lanelet is not None:
@@ -103,48 +104,52 @@ class MapBasedPredictor:
                 # get all possible paths (lanelet branching), from selected lanelet to max distance
                 all_trajectories = self.graph.possiblePaths(selected_lanelet, distances[-1])
 
-                if len(all_trajectories) > 0:
+                if len(all_trajectories) == 1:
                     selected_trajectory = all_trajectories[0]
-                    if len(all_trajectories) > 1:
-                        # Evaluate all possible paths (based on car indicator and path turn directions) and select the best one - highest score!
-                        all_trajectories_with_turn_directions = []
-                        for i, trajectory in enumerate(all_trajectories):
-                            all_trajectories_with_turn_directions.append([lanelet.attributes["turn_direction"] for lanelet in trajectory])
-                        all_trajectories_evaluated = self.evaluate_paths(all_trajectories_with_turn_directions, object_indicator)
-                        selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
+                elif len(all_trajectories) > 1:
+                    # Evaluate all possible paths (based on car indicator and path turn directions) and select the best one - highest score!
+                    all_trajectories_with_turn_directions = []
+                    for i, trajectory in enumerate(all_trajectories):
+                        all_trajectories_with_turn_directions.append([lanelet.attributes["turn_direction"] if "turn_direction" in lanelet.attributes else "straight" for lanelet in trajectory])
+                    all_trajectories_evaluated = self.evaluate_paths(all_trajectories_with_turn_directions, object_indicator)
+                    selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
-                    # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
-                    trajectory_linestring = LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
-                    object_distance_from_trajectory_linestring_start = trajectory_linestring.project(ShapelyPoint(object_location.x, object_location.y))
+                # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
+                trajectory_linestring = LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
+                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(ShapelyPoint(object_location.x, object_location.y))
 
-                    lane = Lane()
-                    for i, d in enumerate(distances):
-                        wp = Waypoint()
-                        p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + d)
-                        wp.pose.pose.position.x = p.x
-                        wp.pose.pose.position.y = p.y
-                        wp.pose.pose.position.z = p.z
-                        # TODO Recalculating velocity vector based on lanelet heading at the object location.
-                        # Wrong when lanelet changes direction (turns), but good enough for now?
-                        speed_x, speed_y = create_vector_from_heading_and_scalar(lanelet_heading, velocities[i])
-                        wp.twist.twist.linear.x = speed_x
-                        wp.twist.twist.linear.y = speed_y
-                        lane.waypoints.append(wp)
-                    obj.candidate_trajectories.lanes.append(lane)
+                lane = Lane()
+                for i, d in enumerate(distances):
+                    wp = Waypoint()
+                    p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + d)
+                    wp.pose.pose.position.x = p.x
+                    wp.pose.pose.position.y = p.y
+                    wp.pose.pose.position.z = p.z
+                    # TODO Recalculating velocity vector based on lanelet heading at the object location.
+                    # Wrong when lanelet changes direction (turns), but good enough for now?
+                    speed_x, speed_y = create_vector_from_heading_and_scalar(lanelet_heading, velocities[i])
+                    wp.twist.twist.linear.x = speed_x
+                    wp.twist.twist.linear.y = speed_y
+                    lane.waypoints.append(wp)
+                obj.candidate_trajectories.lanes.append(lane)
 
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)
 
     def evaluate_paths(self, paths, object_indicator):
-        # Evaluate each path using scoring constants with decreasing weight
-        # return list of evaluation scores in the order of given paths
-
-        evaluations = [
-            sum(CAR_INDICATOR_VS_TURN_DIRECTION_SCORING[object_indicator][turn] * (1 if i == 0 else 1 / i)
-                for i, turn in enumerate(path))
-            for path in paths
-        ]
-        return evaluations
+        scores = []
+        for path in paths:
+            path_score = 0
+            for i, turn in enumerate(path):
+                # score the lanelet according to how well it matches the object indicator
+                lanelet_score = CAR_INDICATOR_VS_TURN_DIRECTION_SCORING[object_indicator][turn]
+                if i > 0:
+                    # discount farther lanelets
+                    lanelet_score /= i
+                # path score is sum of lanelet scores
+                path_score += lanelet_score
+            scores.append(path_score)
+        return scores
 
     def run(self):
         rospy.spin()
