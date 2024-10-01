@@ -37,7 +37,6 @@ class MqttTrafficLightDetector:
         self.mqtt_port = rospy.get_param('~mqtt_port')
         self.mqtt_topic = rospy.get_param('~mqtt_topic')
         self.timeout = rospy.get_param('~timeout')
-        self.rate = rospy.Rate(10) # 10hz
         self.id_string = rospy.get_param('~id_string')
 
         coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
@@ -123,13 +122,13 @@ class MqttTrafficLightDetector:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
 
     def run(self):
+        rate = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
             self.combine_tfl_results_and_publish()
             try:
-                self.rate.sleep()
-            except rospy.exceptions.ROSTimeMovedBackwardsException:
+                rate.sleep()
+            except (rospy.ROSTimeMovedBackwardsException, rospy.exceptions.ROSInterruptException):
                 pass
-
 
 
 if __name__ == '__main__':

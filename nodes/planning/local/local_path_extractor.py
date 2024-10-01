@@ -79,7 +79,7 @@ class LocalPathExtractor:
             self.extract_local_path()
             try:
                 rate.sleep()
-            except rospy.ROSTimeMovedBackwardsException:
+            except (rospy.ROSTimeMovedBackwardsException, rospy.exceptions.ROSInterruptException):
                 pass
 
 if __name__ == '__main__':

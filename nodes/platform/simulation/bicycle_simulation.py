@@ -146,7 +146,10 @@ class BicycleSimulation:
             self.publish_vehicle_status(stamp)
             self.publish_bicycle_markers(stamp)
 
-            rate.sleep()
+            try:
+                rate.sleep()
+            except (rospy.ROSTimeMovedBackwardsException, rospy.exceptions.ROSInterruptException):
+                pass
 
     def publish_base_link_to_map_tf(self, stamp):
             

@@ -77,7 +77,10 @@ class ObstacleSimulation:
 
         while not rospy.is_shutdown():
             self.publish_detected_objects()
-            rate.sleep()
+            try:
+                rate.sleep()
+            except (rospy.ROSTimeMovedBackwardsException, rospy.exceptions.ROSInterruptException):
+                pass
 
     def publish_detected_objects(self):
         stamp = rospy.Time.now()
