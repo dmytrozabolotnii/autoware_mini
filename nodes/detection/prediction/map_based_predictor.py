@@ -107,9 +107,9 @@ class MapBasedPredictor:
                     selected_trajectory = all_trajectories[0]
                     if len(all_trajectories) > 1:
                         # Evaluate all possible paths (based on car indicator and path turn directions) and select the best one - highest score!
-                        all_trajectories_with_turn_directions = {}
+                        all_trajectories_with_turn_directions = []
                         for i, trajectory in enumerate(all_trajectories):
-                            all_trajectories_with_turn_directions[i] = [lanelet.attributes["turn_direction"] for lanelet in trajectory]
+                            all_trajectories_with_turn_directions.append([lanelet.attributes["turn_direction"] for lanelet in trajectory])
                         all_trajectories_evaluated = self.evaluate_paths(all_trajectories_with_turn_directions, object_indicator)
                         selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
@@ -142,7 +142,7 @@ class MapBasedPredictor:
         evaluations = [
             sum(CAR_INDICATOR_VS_TURN_DIRECTION_SCORING[object_indicator][turn] * (1 if i == 0 else 1 / i)
                 for i, turn in enumerate(path))
-            for path in paths.values()
+            for path in paths
         ]
         return evaluations
 
