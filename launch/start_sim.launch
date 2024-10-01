@@ -12,7 +12,7 @@
     <arg name="lanelet2_map_name"       default="$(arg map_name).osm" />
     <arg name="detector"                default="$(eval 'sim' if scenario_name == '' else 'none')" />
     <arg name="tfl_detector"            default="none"          doc="mqtt" />
-    <arg name="tracker"                 default="none"          doc="none, ema"/>
+    <arg name="tracker"                 default="$(eval 'ema' if scenario_name != '' else 'none')"  doc="none, ema"/>
     <arg name="predictor"               default="none"          doc="none, naive, map"/>
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
 
