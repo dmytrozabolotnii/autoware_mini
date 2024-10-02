@@ -108,7 +108,9 @@ class MapBasedPredictor:
                 # get all possible paths (lanelet branching), from selected lanelet to max distance
                 all_trajectories = self.graph.possiblePaths(selected_lanelet, distances[-1])
 
-                if len(all_trajectories) == 1:
+                if len(all_trajectories) == 0:
+                    continue
+                elif len(all_trajectories) == 1:
                     selected_trajectory = all_trajectories[0]
                 elif len(all_trajectories) > 1:
                     # Evaluate all possible paths (based on car indicator and path turn directions) and select the best one - highest score!
