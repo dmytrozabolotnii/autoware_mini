@@ -14,8 +14,6 @@ from shapely.ops import unary_union
 from shapely import prepare, dwithin, box, total_bounds, Polygon, Point as ShapelyPoint
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
 
-import time
-
 class RoadAreaFilter:
     def __init__(self):
 
@@ -107,7 +105,6 @@ class RoadAreaFilter:
         self.current_location = ShapelyPoint(msg.pose.position.x, msg.pose.position.y)
 
     def detected_objects_callback(self, msg):
-        start = time.time()
 
         current_location = self.current_location
         if current_location is None:
@@ -139,7 +136,6 @@ class RoadAreaFilter:
                     detected_objects.objects.append(obj)
 
         self.objects_pub.publish(detected_objects)
-        print(time.time() - start)
 
     def run(self):
         rospy.spin()
