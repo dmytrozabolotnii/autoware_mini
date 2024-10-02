@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import math
-import numpy as np
 import rospy
 from shapely.geometry import Polygon, LineString, Point as ShapelyPoint
 from shapely import prepare
