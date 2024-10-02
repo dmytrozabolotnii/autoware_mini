@@ -57,15 +57,16 @@ class PedestrianCrosswalkChecker:
 
             local_path_linestring = LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
             prepare(local_path_linestring)
+            local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
+            prepare(local_path_buffer)
 
             # extract crosswalks that intersect with local path
             crosswalks_on_local_path = []
             for crosswalk_id, crosswalk in self.crosswalks.items():
                 if crosswalk['polygon'].intersects(local_path_linestring):
                     crosswalks_on_local_path.append(crosswalk_id)
-                    ego_path_crosswalk_intersection = convert_to_shapely_points_list(local_path_linestring.intersection(crosswalk['polygon']))
-                    ego_path_crosswalk_intersection_distances = ([local_path_linestring.project(point) for point in ego_path_crosswalk_intersection])
-                    self.crosswalks[crosswalk_id]['intersection_point'] = ego_path_crosswalk_intersection[np.argmin(ego_path_crosswalk_intersection_distances)]
+                    crosswalk_intersection_points = convert_to_shapely_points_list(local_path_linestring.intersection(crosswalk['polygon']))
+                    self.crosswalks[crosswalk_id]['intersection_points'] = crosswalk_intersection_points
 
             if len(crosswalks_on_local_path) > 0:
                 for obj in detected_objects:
@@ -80,18 +81,17 @@ class PedestrianCrosswalkChecker:
                     object_width = get_polygon_width(object_polygon, object_heading)
                     object_projection_on_path = local_path_linestring.interpolate(object_distance_from_local_path_start)
                     object_projection_on_path_heading = get_heading_between_two_points(object_centroid, object_projection_on_path)
-                    object_distance_from_local_path = object_centroid.distance(local_path_linestring)
                     object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_projection_on_path_heading))
 
                     for crosswalk_id in crosswalks_on_local_path[:]:
                         crosswalk_polygon = self.crosswalks[crosswalk_id]['polygon']
-                        intersection_point = self.crosswalks[crosswalk_id]['intersection_point']
+                        crosswalk_intersection_points = self.crosswalks[crosswalk_id]['intersection_points']
 
                         # INTERSECTING OBJECTS
                         if object_polygon.intersects(crosswalk_polygon):
                             if object_speed < self.stopping_speed_limit or object_path_approach_angle < self.crossing_angle_max_limit or \
-                                (180 - object_path_approach_angle < self.crossing_angle_max_limit and object_distance_from_local_path < self.stopping_lateral_distance):
-                                collision_points.add_point(x=intersection_point.x, y=intersection_point.y , z=obj.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
+                                (180 - object_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(object_polygon)):
+                                collision_points.add_intersection_points(crosswalk_intersection_points, z=obj.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
                                 crosswalks_on_local_path.remove(crosswalk_id)
                                 if object_speed < self.stopping_speed_limit:
                                     break  # Stop checking other crosswalks for this object
@@ -103,11 +103,11 @@ class PedestrianCrosswalkChecker:
                                 prepare(trajectory_buffer)
                                 if trajectory_buffer.intersects(crosswalk_polygon):
                                     # find closest point along the object'ss trajectory to the crosswalk and get the heading from there!
-                                    intersection_points = trajectory_buffer.intersection(crosswalk_polygon)
-                                    closest_point_to_object = min([trajectory.linestring.project(point) for point in convert_to_shapely_points_list(intersection_points)])
+                                    intersection_points = convert_to_shapely_points_list(trajectory_buffer.intersection(crosswalk_polygon))
+                                    closest_point_to_object = min([trajectory.linestring.project(point) for point in intersection_points])
                                     trajectory_heading = trajectory.get_heading_at_distance(closest_point_to_object)
                                     if math.degrees(get_minimum_angle_between_two_lines(self.crosswalks[crosswalk_id]['heading'], trajectory_heading)) < self.crossing_angle_max_limit:
-                                        collision_points.add_point(x=intersection_point.x, y=intersection_point.y, z=obj.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
+                                        collision_points.add_intersection_points(crosswalk_intersection_points, z=obj.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
                                         crosswalks_on_local_path.remove(crosswalk_id)
                                         break
 
