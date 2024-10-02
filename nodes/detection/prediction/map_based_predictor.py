@@ -22,6 +22,7 @@ class MapBasedPredictor:
         # Parameters
         self.prediction_horizon = rospy.get_param('~prediction_horizon')
         self.prediction_interval = rospy.get_param('~prediction_interval')
+        self.prediction_min_speed = rospy.get_param('~prediction_min_speed')
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
         self.distance_from_centerline = rospy.get_param('~distance_from_centerline')
         self.angle_threshold = rospy.get_param('~angle_threshold')
@@ -47,6 +48,10 @@ class MapBasedPredictor:
         num_timesteps = int(self.prediction_horizon // self.prediction_interval)
 
         for i, obj in enumerate(msg.objects):
+
+            object_speed = get_vector_norm_3d(obj.velocity.linear)
+            if object_speed < self.prediction_min_speed:
+                continue
 
             # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
             object_location = BasicPoint2d(obj.pose.position.x, obj.pose.position.y)
@@ -93,7 +98,6 @@ class MapBasedPredictor:
             # 2. CREATE MAP BASED TRAJECTORIES FOR OBJECT
             if selected_lanelet is not None:
 
-                object_speed = get_vector_norm_3d(obj.velocity.linear)
                 object_accel = get_vector_norm_3d(obj.acceleration.linear)
 
                 # Predict future positions and velocities

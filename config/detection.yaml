@@ -101,15 +101,17 @@ ema_tracker:
   max_euclidean_distance: 2.0
 
 naive_predictor:
-  prediction_horizon: 1.0
-  prediction_interval: 0.1
+  prediction_horizon: 2.0           # s
+  prediction_interval: 0.1          # s
+  prediction_min_speed: 1.0         # m/s
 
 map_based_predictor:
-  prediction_horizon: 4.0
-  prediction_interval: 0.1
+  prediction_horizon: 4.0           # s
+  prediction_interval: 0.1          # s
   distance_from_lanelet: 0.1        # m - outside of lanelet area
   distance_from_centerline: 1.0     # m - from centerline
   angle_threshold: 30.0             # degrees - object heading and lanelet heading
+  prediction_min_speed: 1.0         # m/s
 
 road_area_filter:
   filtering_method: within          # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)

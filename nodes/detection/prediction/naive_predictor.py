@@ -4,12 +4,14 @@ import rospy
 import numpy as np
 
 from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
+from helpers.geometry import get_vector_norm_3d
 
 class NaivePredictor:
     def __init__(self):
         # Parameters
         self.prediction_horizon = rospy.get_param('~prediction_horizon')
         self.prediction_interval = rospy.get_param('~prediction_interval')
+        self.prediction_min_speed = rospy.get_param('~prediction_min_speed')
 
         # Publishers
         self.predicted_objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -42,7 +44,7 @@ class NaivePredictor:
 
         # Create candidate trajectories
         for i, obj in enumerate(msg.objects):
-            if len(obj.candidate_trajectories.lanes) == 0:
+            if get_vector_norm_3d(obj.velocity.linear) > self.prediction_min_speed and len(obj.candidate_trajectories.lanes) == 0:
                 lane = Lane()
                 for j in range(num_timesteps):
                     wp = Waypoint()
