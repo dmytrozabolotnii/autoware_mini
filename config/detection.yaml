@@ -116,7 +116,7 @@ map_based_predictor:
 
 road_area_filter:
   filtering_method: within          # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
-  within_filtering_extent: 100      # m from current location of ego in x and y directions, objects further will not be filtered
+  filtering_extent: 100             # m from ego current location of ego in x and y directions, objects further are removed
 
 mqtt_traffic_light_detector:
   mqtt_host: mqtt.cloud.ut.ee

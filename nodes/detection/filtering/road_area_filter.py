@@ -11,8 +11,10 @@ from geometry_msgs.msg import Point, PoseStamped
 from shapely.geometry import shape
 from shapely.affinity import translate
 from shapely.ops import unary_union
-from shapely import prepare, dwithin, box, Polygon, Point as ShapelyPoint
+from shapely import prepare, dwithin, box, total_bounds, Polygon, Point as ShapelyPoint
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
+
+import time
 
 class RoadAreaFilter:
     def __init__(self):
@@ -20,7 +22,7 @@ class RoadAreaFilter:
         # get parameters
         self.road_area_file = rospy.get_param("~road_area_file")
         self.filtering_method = rospy.get_param("~filtering_method")
-        self.within_filtering_extent = rospy.get_param("~within_filtering_extent")
+        self.filtering_extent = rospy.get_param("~filtering_extent")
         self.coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
         self.utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         self.utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
@@ -44,9 +46,16 @@ class RoadAreaFilter:
         for feature in geojson_data['features']:
             geometry = shape(feature['geometry'])
             geometry = translate(geometry, xoff=-easting, yoff=-northing)
-            prepare(geometry)
             road_area.append(geometry)
-        self.road_area = np.array(road_area)
+        self.road_area = unary_union(road_area)
+        prepare(self.road_area)
+
+        # create inverted road area
+        if self.filtering_method == "within":
+            xmin, ymin, xmax, ymax = total_bounds(self.road_area)
+            fulle_extent = box(xmin, ymin, xmax, ymax)
+            self.not_road_area = fulle_extent.difference(self.road_area)
+            prepare(self.not_road_area)
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -98,20 +107,20 @@ class RoadAreaFilter:
         self.current_location = ShapelyPoint(msg.pose.position.x, msg.pose.position.y)
 
     def detected_objects_callback(self, msg):
-        current_location = self.current_location
+        start = time.time()
 
+        current_location = self.current_location
         if current_location is None:
             return
+        local_extent = box(current_location.x - self.filtering_extent, current_location.y - self.filtering_extent, current_location.x + self.filtering_extent, current_location.y + self.filtering_extent)
 
-        # get nearby road area blocks from within 200m
-        nearby_road_areas = self.road_area[dwithin(self.road_area, current_location, 200)]
-        if self.filtering_method == "within":
-            extent = box(current_location.x - self.within_filtering_extent, current_location.y - self.within_filtering_extent, current_location.x + self.within_filtering_extent, current_location.y + self.within_filtering_extent)
-            # create nearby area that is not road area, so we could use intersect (instead of within that is a lot slower)
-            nearby_not_road_area = extent.difference(unary_union(nearby_road_areas))
-            prepare(nearby_not_road_area)
+        if self.filtering_method == "centroid" or self.filtering_method == "intersects":
+            extracted_area = local_extent.intersection(self.road_area)
+        elif self.filtering_method == "within":
+            extracted_area = local_extent.intersection(self.not_road_area)
+        prepare(extracted_area)
 
-        # Create array objects
+        # Create detected objects array
         detected_objects = DetectedObjectArray()
         detected_objects.header = msg.header
 
@@ -123,13 +132,14 @@ class RoadAreaFilter:
             prepare(obj_geom)
 
             if self.filtering_method == "centroid" or self.filtering_method == "intersects":
-                if obj_geom.intersects(nearby_road_areas).any():
+                if obj_geom.intersects(extracted_area):
                     detected_objects.objects.append(obj)
             else:  # filtering_method == "within" / use intersects, but with area that is not road area
-                if not obj_geom.intersects(nearby_not_road_area):
+                if not obj_geom.intersects(extracted_area) and obj_geom.intersects(local_extent):
                     detected_objects.objects.append(obj)
 
         self.objects_pub.publish(detected_objects)
+        print(time.time() - start)
 
     def run(self):
         rospy.spin()
