@@ -116,11 +116,11 @@
 
     <group unless="$(eval predictor=='none')">
         <remap from="predicted_objects" to="final_objects" />
-        <node if="$(eval predictor=='naive' or predictor=='map_naive')" type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true" >
-            <remap if="$(eval predictor=='map_naive')" from="tracked_objects" to="predicted_objects_map" />
+        <node if="$(eval 'map' in predictor)" type="map_based_predictor.py" name="map_based_predictor" pkg="autoware_mini" output="screen" required="true">
+            <remap if="$(eval 'naive' in predictor)" from="predicted_objects" to="predicted_objects_map" />
         </node>
-        <node if="$(eval predictor=='map' or predictor=='map_naive')" type="map_based_predictor.py" name="map_based_predictor" pkg="autoware_mini" output="screen" required="true" >
-            <remap if="$(eval predictor=='map_naive')" from="predicted_objects" to="predicted_objects_map" />
+        <node if="$(eval 'naive' in predictor)" type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
+            <remap if="$(eval 'map' in predictor)" from="tracked_objects" to="predicted_objects_map" />
         </node>
         <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
             <remap from="detected_objects" to="predicted_objects" />
