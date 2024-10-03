@@ -161,9 +161,9 @@ def calculate_points_on_bezier_curve(start_point, control_point1, control_point2
     bezier_points = (1-t)**3 * p0 + 3*(1-t)**2 * t * p1 + 3*(1-t) * t**2 * p2 + t**3 * p3
     return bezier_points
 
-def get_smallest_angle_between_lines(angle1, angle2):
+def get_angle_between_two_headings(angle1, angle2):
     """
-    Get smallest angle between two lines that are defined by heading angles
+    Get angle between two heading angles
     :param angle1: angle 1 from -pi to pi
     :param angle2: angle 2 from -pi to pi
     :return: relative angle difference
@@ -172,5 +172,16 @@ def get_smallest_angle_between_lines(angle1, angle2):
     difference = abs(angle1 - angle2)
     if difference > math.pi:
         difference = 2*math.pi - difference
+    return difference
 
-    return min(difference, math.pi - difference)
+def get_minimum_angle_between_two_lines(angle1, angle2):
+    """
+    Get minimum angle difference between two lines defined by heading angles
+    :param angle1: angle 1 from -pi to pi
+    :param angle2: angle 2 from -pi to pi
+    :return: minimum angle difference
+    """
+    difference = get_angle_between_two_headings(angle1, angle2)
+    if difference > math.pi/2:
+        difference = math.pi - difference
+    return difference
