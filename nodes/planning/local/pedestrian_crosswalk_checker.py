@@ -106,7 +106,7 @@ class PedestrianCrosswalkChecker:
                                 if object_speed < self.stopping_speed_limit:
                                     break  # Stop checking other crosswalks for this object
                         # NON-INTERSECTING OBJECTS - CONSIDER TRAJECTORIES
-                        else:
+                        elif len(obj.candidate_trajectories.lanes) > 0:
                             object_width = get_polygon_width(object_polygon, object_heading)
                             for lane in obj.candidate_trajectories.lanes:
                                 trajectory = Path(lane.waypoints)
