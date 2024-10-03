@@ -29,6 +29,7 @@ class PedestrianCrosswalkChecker:
 
         # variables
         self.detected_objects = None
+        self.crosswalks_on_global_path = None
 
         # load lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
@@ -38,17 +39,33 @@ class PedestrianCrosswalkChecker:
         self.crosswalk_collision_pub = rospy.Publisher('crosswalk_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('lanelet2_global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('extracted_local_path', Lane, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/detection/final_objects', DetectedObjectArray, self.detected_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
     def detected_objects_callback(self, msg):
         self.detected_objects = msg.objects
 
-    def path_callback(self, msg):
-        detected_objects = self.detected_objects
+    def global_path_callback(self, msg):
 
-        if detected_objects is None:
-            rospy.logwarn_throttle(3, "%s - detected objects are not received!", rospy.get_name())
+        global_path_linestring = LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+        prepare(global_path_linestring)
+
+        crosswalks_on_global_path = []
+        for crosswalk_id, crosswalk in self.crosswalks.items():
+            if crosswalk['polygon'].intersects(global_path_linestring):
+                crosswalks_on_global_path.append(crosswalk_id)
+                crosswalk_intersection_points = convert_to_shapely_points_list(global_path_linestring.intersection(crosswalk['polygon']))
+                self.crosswalks[crosswalk_id]['intersection_points'] = crosswalk_intersection_points
+
+        self.crosswalks_on_global_path = crosswalks_on_global_path
+
+    def local_path_callback(self, msg):
+        detected_objects = self.detected_objects
+        crosswalks_on_global_path = self.crosswalks_on_global_path
+
+        if detected_objects is None or crosswalks_on_global_path is None:
+            rospy.logwarn_throttle(3, "%s - detected objects or crosswalks are not received!", rospy.get_name())
             return
 
         collision_points = CollisionPoints()
@@ -61,11 +78,9 @@ class PedestrianCrosswalkChecker:
 
             # extract crosswalks that intersect with local path
             crosswalks_on_local_path = []
-            for crosswalk_id, crosswalk in self.crosswalks.items():
-                if crosswalk['polygon'].intersects(local_path_linestring):
+            for crosswalk_id in crosswalks_on_global_path:
+                if self.crosswalks[crosswalk_id]['polygon'].intersects(local_path_linestring):
                     crosswalks_on_local_path.append(crosswalk_id)
-                    crosswalk_intersection_points = convert_to_shapely_points_list(local_path_linestring.intersection(crosswalk['polygon']))
-                    self.crosswalks[crosswalk_id]['intersection_points'] = crosswalk_intersection_points
 
             if len(crosswalks_on_local_path) > 0:
                 for obj in detected_objects:
