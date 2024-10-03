@@ -56,11 +56,11 @@ class MapBasedPredictor:
             # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
             object_location = BasicPoint2d(obj.pose.position.x, obj.pose.position.y)
             # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
-            lanelets_witihn_distance = findWithin2d(self.lanelet2_map.laneletLayer, object_location, self.distance_from_lanelet)
+            lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, object_location, self.distance_from_lanelet)
 
-            heading_differences = []
-            potential_lanelets = []
-            for d, lanelet in lanelets_witihn_distance:
+            min_heading_difference = math.inf
+            selected_lanelet = None
+            for d, lanelet in lanelets_within_distance:
 
                 # Skip crosswalks - don't want to snap predictions to crosswalks
                 if lanelet.attributes:
@@ -81,19 +81,9 @@ class MapBasedPredictor:
                 forward_point = linestring.interpolate(object_distance_from_lanelet_start + 0.1)
                 lanelet_heading = get_heading_between_two_points(trajectory_start_point, forward_point)
                 heading_difference_degrees = math.degrees(get_angle_between_two_headings(object_heading, lanelet_heading))
-                if heading_difference_degrees > self.angle_threshold:
-                    continue
-
-                heading_differences.append(heading_difference_degrees)
-                potential_lanelets.append(lanelet)
-
-            selected_lanelet = None
-            if len(heading_differences) > 0:
-                min_index = np.argmin(heading_differences)
-                selected_lanelet = potential_lanelets[min_index]
-                # TODO: Correct object indicator should be taken from the object, currently using closest lanelet
-                object_indicator = selected_lanelet.attributes["turn_direction"] if "turn_direction" in selected_lanelet.attributes else "straight"
-
+                if heading_difference_degrees < self.angle_threshold and heading_difference_degrees < min_heading_difference:
+                    min_heading_difference = heading_difference_degrees
+                    selected_lanelet = lanelet
 
             # 2. CREATE MAP BASED TRAJECTORIES FOR OBJECT
             if selected_lanelet is not None:
@@ -113,6 +103,9 @@ class MapBasedPredictor:
                 elif len(all_trajectories) == 1:
                     selected_trajectory = all_trajectories[0]
                 elif len(all_trajectories) > 1:
+                    # TODO: Correct object indicator should be taken from the object, currently using closest lanelet
+                    object_indicator = selected_lanelet.attributes["turn_direction"] if "turn_direction" in selected_lanelet.attributes else "straight"
+
                     # Evaluate all possible paths (based on car indicator and path turn directions) and select the best one - highest score!
                     all_trajectories_with_turn_directions = []
                     for i, trajectory in enumerate(all_trajectories):

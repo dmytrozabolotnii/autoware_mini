@@ -2,7 +2,6 @@
 
 import rospy
 import json
-import numpy as np
 
 from autoware_msgs.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
@@ -11,7 +10,7 @@ from geometry_msgs.msg import Point, PoseStamped
 from shapely.geometry import shape
 from shapely.affinity import translate
 from shapely.ops import unary_union
-from shapely import prepare, dwithin, box, total_bounds, Polygon, Point as ShapelyPoint
+from shapely import prepare, box, total_bounds, Polygon, Point as ShapelyPoint
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
 
 class RoadAreaFilter:
@@ -51,8 +50,8 @@ class RoadAreaFilter:
         # create inverted road area
         if self.filtering_method == "within":
             xmin, ymin, xmax, ymax = total_bounds(self.road_area)
-            fulle_extent = box(xmin, ymin, xmax, ymax)
-            self.not_road_area = fulle_extent.difference(self.road_area)
+            full_extent = box(xmin, ymin, xmax, ymax)
+            self.not_road_area = full_extent.difference(self.road_area)
             prepare(self.not_road_area)
 
         # detected objects publisher
@@ -102,7 +101,7 @@ class RoadAreaFilter:
         return road_area_markers
 
     def current_pose_callback(self, msg):
-        self.current_location = ShapelyPoint(msg.pose.position.x, msg.pose.position.y)
+        self.current_location = msg.pose.position
 
     def detected_objects_callback(self, msg):
 
