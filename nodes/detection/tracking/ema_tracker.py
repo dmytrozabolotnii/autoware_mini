@@ -16,6 +16,7 @@ class EMATracker:
         self.enable_missed_detection_propagation = rospy.get_param('~enable_missed_detection_propagation')
         self.detection_counter_threshold = rospy.get_param('~detection_counter_threshold')
         self.missed_counter_threshold = rospy.get_param('~missed_counter_threshold')
+        self.iou_threshold = rospy.get_param('~iou_threshold')
         self.velocity_gain = rospy.get_param('~velocity_gain')
         self.acceleration_gain = rospy.get_param('~acceleration_gain')
         self.association_method = rospy.get_param('~association_method')
@@ -83,8 +84,8 @@ class EMATracker:
             matched_track_indices, matched_detection_indicies = linear_sum_assignment(-iou)
             assert len(matched_track_indices) == len(matched_detection_indicies)
 
-            # Only keep those matches where the IOU is greater than 0.0
-            matches = iou[matched_track_indices, matched_detection_indicies] > 0.0
+            # Only keep those matches where the IOU is greater than threshold
+            matches = iou[matched_track_indices, matched_detection_indicies] > self.iou_threshold
             matched_track_indices = matched_track_indices[matches]
             matched_detection_indicies = matched_detection_indicies[matches]
             assert len(matched_track_indices) == len(matched_detection_indicies)

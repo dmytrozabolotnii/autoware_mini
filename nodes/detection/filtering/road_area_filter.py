@@ -5,12 +5,12 @@ import json
 
 from autoware_msgs.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import Point        
+from geometry_msgs.msg import Point, PoseStamped
 
 from shapely.geometry import shape
 from shapely.affinity import translate
 from shapely.ops import unary_union
-from shapely import prepare, Polygon, Point as ShapelyPoint
+from shapely import prepare, box, total_bounds, Polygon, Point as ShapelyPoint
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
 
 class RoadAreaFilter:
@@ -18,10 +18,15 @@ class RoadAreaFilter:
 
         # get parameters
         self.road_area_file = rospy.get_param("~road_area_file")
-        self.use_centroid_filtering = rospy.get_param("~use_centroid_filtering")
+        self.filtering_method = rospy.get_param("~filtering_method")
+        self.filtering_extent = rospy.get_param("~filtering_extent")
         self.coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
         self.utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         self.utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
+
+        assert self.filtering_method in ["centroid", "intersects", "within"], "filtering_method must be one of 'centroid', 'intersects', 'within'"
+
+        self.current_location = None
 
         # initialize coordinate_transformer
         if self.coordinate_transformer == "utm":
@@ -34,12 +39,20 @@ class RoadAreaFilter:
         with open(self.road_area_file, 'r') as f:
             geojson_data = json.load(f)
 
-        self.road_area = []
+        road_area = []
         for feature in geojson_data['features']:
             geometry = shape(feature['geometry'])
             geometry = translate(geometry, xoff=-easting, yoff=-northing)
-            self.road_area.append(geometry)
+            road_area.append(geometry)
+        self.road_area = unary_union(road_area)
         prepare(self.road_area)
+
+        # create inverted road area
+        if self.filtering_method == "within":
+            xmin, ymin, xmax, ymax = total_bounds(self.road_area)
+            full_extent = box(xmin, ymin, xmax, ymax)
+            self.not_road_area = full_extent.difference(self.road_area)
+            prepare(self.not_road_area)
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -49,6 +62,7 @@ class RoadAreaFilter:
 
         # Subscribers
         rospy.Subscriber('detected_objects_unfiltered', DetectedObjectArray, self.detected_objects_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
@@ -86,23 +100,41 @@ class RoadAreaFilter:
 
         return road_area_markers
 
+    def current_pose_callback(self, msg):
+        self.current_location = msg.pose.position
 
     def detected_objects_callback(self, msg):
 
-        # Create array objects
-        objects = DetectedObjectArray()
-        objects.header = msg.header
+        current_location = self.current_location
+        if current_location is None:
+            return
+        local_extent = box(current_location.x - self.filtering_extent, current_location.y - self.filtering_extent, current_location.x + self.filtering_extent, current_location.y + self.filtering_extent)
+
+        if self.filtering_method == "centroid" or self.filtering_method == "intersects":
+            extracted_area = local_extent.intersection(self.road_area)
+        elif self.filtering_method == "within":
+            extracted_area = local_extent.intersection(self.not_road_area)
+        prepare(extracted_area)
+
+        # Create detected objects array
+        detected_objects = DetectedObjectArray()
+        detected_objects.header = msg.header
 
         for obj in msg.objects:
-            if self.use_centroid_filtering:
+            if self.filtering_method == "centroid":
                 obj_geom = ShapelyPoint(obj.pose.position.x, obj.pose.position.y)
             else:
                 obj_geom = Polygon([(p.x, p.y) for p in obj.convex_hull.polygon.points])
             prepare(obj_geom)
-            if obj_geom.intersects(self.road_area).any():
-                objects.objects.append(obj)
 
-        self.objects_pub.publish(objects)
+            if self.filtering_method == "centroid" or self.filtering_method == "intersects":
+                if obj_geom.intersects(extracted_area):
+                    detected_objects.objects.append(obj)
+            else:  # filtering_method == "within" / use intersects, but with area that is not road area
+                if not obj_geom.intersects(extracted_area) and obj_geom.intersects(local_extent):
+                    detected_objects.objects.append(obj)
+
+        self.objects_pub.publish(detected_objects)
 
     def run(self):
         rospy.spin()

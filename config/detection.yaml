@@ -95,24 +95,28 @@ ema_tracker:
   enable_missed_detection_propagation: True
   detection_counter_threshold: 4
   missed_counter_threshold: 2
+  iou_threshold: 0.0
   velocity_gain: 0.1
   acceleration_gain: 0.0
   association_method: iou   # iou, euclidean
   max_euclidean_distance: 2.0
 
 naive_predictor:
-  prediction_horizon: 1.0
-  prediction_interval: 0.1
+  prediction_horizon: 2.0           # s
+  prediction_interval: 0.1          # s
+  prediction_min_speed: 1.0         # m/s
 
 map_based_predictor:
-  prediction_horizon: 4.0
-  prediction_interval: 0.1
+  prediction_horizon: 4.0           # s
+  prediction_interval: 0.1          # s
   distance_from_lanelet: 0.1        # m - outside of lanelet area
   distance_from_centerline: 1.0     # m - from centerline
   angle_threshold: 30.0             # degrees - object heading and lanelet heading
+  prediction_min_speed: 1.0         # m/s
 
 road_area_filter:
-  use_centroid_filtering: True
+  filtering_method: within          # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
+  filtering_extent: 100             # m from ego current location of ego in x and y directions, objects further are removed
 
 mqtt_traffic_light_detector:
   mqtt_host: mqtt.cloud.ut.ee

@@ -92,16 +92,19 @@ class DetectedObjectsVisualizer:
             markers.markers.append(marker)
 
             # candidate trajectories
-            if len(object.candidate_trajectories.lanes) > 0:
-                # extract and visualize object width - used in object detection
+            # if len(object.candidate_trajectories.lanes) > 0:
+            # extract and visualize object width - used in object detection
+            marker = Marker(header=header)
+            marker.ns = 'candidate_trajectories'
+            marker.id = object.id
+            marker.type = marker.LINE_LIST
+            if len(object.candidate_trajectories.lanes) == 0:
+                marker.action = marker.DELETE
+            else:
+                marker.action = marker.ADD
                 object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
                 object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
                 object_width = get_polygon_width(object_polygon, object_heading)
-                marker = Marker(header=header)
-                marker.ns = 'candidate_trajectories'
-                marker.id = object.id
-                marker.type = marker.LINE_LIST
-                marker.action = marker.ADD
                 marker.pose.orientation.w = 1.0
                 marker.scale.x = object_width
                 marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
@@ -112,7 +115,7 @@ class DetectedObjectsVisualizer:
                         p2 = lane.waypoints[i + 1].pose.pose.position
                         marker.points.append(Point(p1.x, p1.y, p1.z))
                         marker.points.append(Point(p2.x, p2.y, p2.z))
-                markers.markers.append(marker)
+            markers.markers.append(marker)
 
             # text
             marker = Marker(header=header)
