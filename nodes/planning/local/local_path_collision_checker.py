@@ -84,8 +84,8 @@ class LocalPathCollisionChecker:
                             intersection_points = shapely.get_coordinates(intersection_result)
 
                             # TODO simple hack to ignore trajectories from behind
-                            collision_distance = min([local_path.linestring.project(shapely.Point(point[0], point[1])) for point in intersection_points])
-                            if collision_distance < 0.01:
+                            collision_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in intersection_points])
+                            if math.isclose(collision_distance, 0):
                                 continue
 
                             # TODO currently assigning to trajectory intersection points the speed vectors from the object!
