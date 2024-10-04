@@ -44,12 +44,7 @@ class Lanelet2GlobalPlanner:
         self.lane_change_base_length = rospy.get_param("lane_change_base_length")
         self.lane_change_perlane_length = rospy.get_param("lane_change_perlane_length")
         self.waypoint_interval = rospy.get_param("waypoint_interval")
-
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
-        coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
-        use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-        utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-        utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
         # Internal variables
         self.lanelet_candidates = []
@@ -57,7 +52,7 @@ class Lanelet2GlobalPlanner:
         self.current_speed = None
         self.goal_point = None
 
-        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
+        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
 
         # traffic rules
         traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany,

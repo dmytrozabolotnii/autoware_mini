@@ -22,10 +22,6 @@ class PedestrianCrosswalkChecker:
         self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
         self.braking_safety_distance_crosswalk = rospy.get_param("~braking_safety_distance_crosswalk")
         self.crossing_angle_max_limit = rospy.get_param("~crossing_angle_max_limit")
-        coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
-        use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-        utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-        utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
@@ -33,7 +29,7 @@ class PedestrianCrosswalkChecker:
         self.crosswalks_on_global_path = None
 
         # load lanelet2 map
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.crosswalks = self.prepare_crosswalks(get_crosswalks(lanelet2_map))
 
         # publishers

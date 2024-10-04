@@ -2,9 +2,15 @@ from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
 from shapely.geometry import LineString, Polygon
 import numpy as np
+import rospy
+
+coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
+use_custom_origin = rospy.get_param("/localization/use_custom_origin")
+utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
+utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
 
-def load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon):
+def load_lanelet2_map(lanelet2_map_name):
     """
     Load a lanelet2 map from a file and return it
     :param lanelet2_map_name: name of the lanelet2 map file
@@ -14,6 +20,12 @@ def load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_orig
     :param utm_origin_lon: utm origin longitude
     :return: lanelet2 map
     """
+
+    # get parameters
+    coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
+    use_custom_origin = rospy.get_param("/localization/use_custom_origin")
+    utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
+    utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
     # Load the map using Lanelet2
     if coordinate_transformer == "utm":
