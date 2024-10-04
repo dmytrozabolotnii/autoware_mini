@@ -2,6 +2,7 @@
 
 import rospy
 import math
+import shapely
 from shapely import prepare
 from shapely.geometry import Polygon, LineString
 from autoware_msgs.msg import Lane, DetectedObjectArray
@@ -9,7 +10,7 @@ from sensor_msgs.msg import PointCloud2
 from helpers.geometry import get_vector_norm_3d
 from helpers.path import Path
 from helpers.collision import CollisionPoints
-from helpers.shapely import convert_to_shapely_points_list, get_polygon_width
+from helpers.shapely import get_polygon_width
 
 class LocalPathCollisionChecker:
 
@@ -56,7 +57,7 @@ class LocalPathCollisionChecker:
                 # 1) chek if object polygon intersects with local path buffer
                 if local_path_buffer.intersects(object_polygon):
                     intersection_result = object_polygon.intersection(local_path_buffer)
-                    intersection_points = convert_to_shapely_points_list(intersection_result)
+                    intersection_points = shapely.get_coordinates(intersection_result)
                     object_speed = get_vector_norm_3d(object.velocity.linear)
 
                     collision_points.add_intersection_points(intersection_points,
@@ -80,10 +81,10 @@ class LocalPathCollisionChecker:
 
                         if local_path_buffer.intersects(trajectory_buffer):
                             intersection_result = trajectory_buffer.intersection(local_path_buffer)
-                            intersection_points = convert_to_shapely_points_list(intersection_result)
+                            intersection_points = shapely.get_coordinates(intersection_result)
 
                             # TODO simple hack to ignore trajectories from behind
-                            collision_distance = min([local_path.linestring.project(point) for point in intersection_points])
+                            collision_distance = min([local_path.linestring.project(shapely.Point(point[0], point[1])) for point in intersection_points])
                             if collision_distance < 0.01:
                                 continue
 

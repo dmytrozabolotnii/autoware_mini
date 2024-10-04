@@ -36,8 +36,7 @@ class CollisionPoints:
 
     def add_intersection_points(self, intersection_points, z, vx, vy, vz, distance_to_stop, category):
         for point in intersection_points:
-            x = point.x
-            y = point.y
+            x, y = point
             self.add_point(x, y, z, vx, vy, vz, distance_to_stop, category)
 
     def create_message(self):
