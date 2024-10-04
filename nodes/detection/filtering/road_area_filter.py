@@ -2,15 +2,10 @@
 
 import rospy
 import json
-
+import shapely
 from autoware_msgs.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, PoseStamped
-
-from shapely.geometry import shape
-from shapely.affinity import translate
-from shapely.ops import unary_union
-from shapely import prepare, box, total_bounds, Polygon, Point as ShapelyPoint
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
 
 class RoadAreaFilter:
@@ -41,18 +36,18 @@ class RoadAreaFilter:
 
         road_area = []
         for feature in geojson_data['features']:
-            geometry = shape(feature['geometry'])
-            geometry = translate(geometry, xoff=-easting, yoff=-northing)
+            geometry = shapely.geometry.shape(feature['geometry'])
+            geometry = shapely.affinity.translate(geometry, xoff=-easting, yoff=-northing)
             road_area.append(geometry)
-        self.road_area = unary_union(road_area)
-        prepare(self.road_area)
+        self.road_area = shapely.unary_union(road_area)
+        shapely.prepare(self.road_area)
 
         # create inverted road area
         if self.filtering_method == "within":
-            xmin, ymin, xmax, ymax = total_bounds(self.road_area)
-            full_extent = box(xmin, ymin, xmax, ymax)
+            xmin, ymin, xmax, ymax = shapely.total_bounds(self.road_area)
+            full_extent = shapely.box(xmin, ymin, xmax, ymax)
             self.not_road_area = full_extent.difference(self.road_area)
-            prepare(self.not_road_area)
+            shapely.prepare(self.not_road_area)
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -67,7 +62,7 @@ class RoadAreaFilter:
         rospy.loginfo("%s - initialized", rospy.get_name())
 
     def get_road_area_markers(self):
-        boundary = unary_union(self.road_area)
+        boundary = shapely.unary_union(self.road_area)
         geometry = []
         for geom in boundary.geoms:
             geometry.append(geom.exterior.coords)
@@ -108,13 +103,13 @@ class RoadAreaFilter:
         current_location = self.current_location
         if current_location is None:
             return
-        local_extent = box(current_location.x - self.filtering_extent, current_location.y - self.filtering_extent, current_location.x + self.filtering_extent, current_location.y + self.filtering_extent)
+        local_extent = shapely.box(current_location.x - self.filtering_extent, current_location.y - self.filtering_extent, current_location.x + self.filtering_extent, current_location.y + self.filtering_extent)
 
         if self.filtering_method == "centroid" or self.filtering_method == "intersects":
             extracted_area = local_extent.intersection(self.road_area)
         elif self.filtering_method == "within":
             extracted_area = local_extent.intersection(self.not_road_area)
-        prepare(extracted_area)
+        shapely.prepare(extracted_area)
 
         # Create detected objects array
         detected_objects = DetectedObjectArray()
@@ -122,10 +117,10 @@ class RoadAreaFilter:
 
         for obj in msg.objects:
             if self.filtering_method == "centroid":
-                obj_geom = ShapelyPoint(obj.pose.position.x, obj.pose.position.y)
+                obj_geom = shapely.Point(obj.pose.position.x, obj.pose.position.y)
             else:
-                obj_geom = Polygon([(p.x, p.y) for p in obj.convex_hull.polygon.points])
-            prepare(obj_geom)
+                obj_geom = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.polygon.points])
+            shapely.prepare(obj_geom)
 
             if self.filtering_method == "centroid" or self.filtering_method == "intersects":
                 if obj_geom.intersects(extracted_area):

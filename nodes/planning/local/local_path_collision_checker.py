@@ -3,8 +3,6 @@
 import rospy
 import math
 import shapely
-from shapely import prepare
-from shapely.geometry import Polygon, LineString
 from autoware_msgs.msg import Lane, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from helpers.geometry import get_vector_norm_3d
@@ -48,11 +46,11 @@ class LocalPathCollisionChecker:
 
             # create buffer around local path
             local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
-            prepare(local_path_buffer)
+            shapely.prepare(local_path_buffer)
 
             for object in detected_objects:
                 # get the convex hulls and store as shapely polygons
-                object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
+                object_polygon = shapely.Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
 
                 # 1) chek if object polygon intersects with local path buffer
                 if local_path_buffer.intersects(object_polygon):
@@ -75,9 +73,9 @@ class LocalPathCollisionChecker:
                     object_width = get_polygon_width(object_polygon, object_heading)
 
                     for trajectory in object.candidate_trajectories.lanes:
-                        trajectory_linestring = LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in trajectory.waypoints])
+                        trajectory_linestring = shapely.LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in trajectory.waypoints])
                         trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="flat")
-                        prepare(trajectory_buffer)
+                        shapely.prepare(trajectory_buffer)
 
                         if local_path_buffer.intersects(trajectory_buffer):
                             intersection_result = trajectory_buffer.intersection(local_path_buffer)

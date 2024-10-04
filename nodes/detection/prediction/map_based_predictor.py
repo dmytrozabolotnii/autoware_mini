@@ -3,10 +3,10 @@
 import rospy
 import math
 import numpy as np
+import shapely
 import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
-from shapely.geometry import LineString, Point as ShapelyPoint
 from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
 from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_distance_between_two_points_2d, create_vector_from_heading_and_scalar, get_angle_between_two_headings
 from helpers.lanelet2 import load_lanelet2_map
@@ -63,8 +63,8 @@ class MapBasedPredictor:
                     if lanelet.attributes["subtype"] == "crosswalk":
                         continue
 
-                linestring = LineString([(p.x, p.y) for p in lanelet.centerline])
-                object_distance_from_lanelet_start = linestring.project(ShapelyPoint(object_location.x, object_location.y))
+                linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
+                object_distance_from_lanelet_start = linestring.project(shapely.Point(object_location.x, object_location.y))
                 trajectory_start_point = linestring.interpolate(object_distance_from_lanelet_start)
 
                 # Skip lanelet if distance from centerline over limit
@@ -110,8 +110,8 @@ class MapBasedPredictor:
                     selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
-                trajectory_linestring = LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
-                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(ShapelyPoint(object_location.x, object_location.y))
+                trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
+                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(shapely.Point(object_location.x, object_location.y))
 
                 lane = Lane()
                 for i, d in enumerate(distances):

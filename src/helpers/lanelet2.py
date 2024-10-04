@@ -1,6 +1,6 @@
 from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
-from shapely.geometry import LineString, Polygon
+import shapely
 import numpy as np
 import rospy
 
@@ -65,7 +65,7 @@ def get_stoplines(lanelet2_map):
         if line.attributes:
             if line.attributes["type"] == "stop_line":
                 # add stoline to dictionary and convert it to shapely LineString
-                stoplines[line.id] = LineString([(p.x, p.y) for p in line])
+                stoplines[line.id] = shapely.LineString([(p.x, p.y) for p in line])
 
     return stoplines
 

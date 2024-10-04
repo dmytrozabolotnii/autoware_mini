@@ -2,11 +2,10 @@
 
 import rospy
 import math
+import shapely
 import message_filters
 import threading
 import traceback
-from shapely.geometry import Point as ShapelyPoint
-
 from helpers.geometry import get_heading_from_orientation, get_heading_between_two_points, normalize_heading_error, get_point_using_heading_and_distance
 from helpers.path import Path
 
@@ -104,7 +103,7 @@ class StanleyFollower:
                 current_position.x += math.cos(current_heading) * current_velocity * self.simulate_cmd_delay
                 current_position.y += math.sin(current_heading) * current_velocity * self.simulate_cmd_delay
 
-            ego_distance_from_path_start = path.linestring.project(ShapelyPoint(current_position.x, current_position.y))
+            ego_distance_from_path_start = path.linestring.project(shapely.Point(current_position.x, current_position.y))
 
             # if "waypoint planner" is used and no global and local planner involved
             if ego_distance_from_path_start >= path.linestring.length:
@@ -113,7 +112,7 @@ class StanleyFollower:
                 return
 
             front_wheel_position = get_point_using_heading_and_distance(current_position, current_heading, self.wheel_base)
-            front_wheel_distance_from_path_start = path.linestring.project(ShapelyPoint(front_wheel_position.x, front_wheel_position.y, front_wheel_position.z))
+            front_wheel_distance_from_path_start = path.linestring.project(shapely.Point(front_wheel_position.x, front_wheel_position.y, front_wheel_position.z))
             front_wheel_on_path = path.linestring.interpolate(front_wheel_distance_from_path_start)
 
             lookahead_on_path = path.linestring.interpolate(front_wheel_distance_from_path_start + self.wheel_base/10)

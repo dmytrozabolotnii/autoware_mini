@@ -6,9 +6,8 @@ import cv2
 import threading
 import tf2_ros
 import onnxruntime
-
+import shapely
 from image_geometry import PinholeCameraModel
-from shapely.geometry import LineString
 
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import Image
@@ -97,7 +96,7 @@ class CameraTrafficLightDetector:
 
         # If there is a local path collect allt the stop line id's on the path
         if len(local_path_msg.waypoints) > 0:
-            local_path = LineString([(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in local_path_msg.waypoints])
+            local_path = shapely.LineString([(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in local_path_msg.waypoints])
 
             for linkId, stopline in self.stoplines.items():
                 # check if stopline intersects with local path

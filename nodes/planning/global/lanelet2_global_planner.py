@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 import math
-import copy
 import itertools
-
+import shapely
 import rospy
 import lanelet2
-import numpy as np
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import to2D, findWithin2d, length2d, distance as lanelet2_distance
-from shapely import distance, Point as ShapelyPoint
-
 from geometry_msgs.msg import PoseStamped, TwistStamped, Point
 from autoware_msgs.msg import Lane, Waypoint, WaypointState
 from std_msgs.msg import ColorRGBA
@@ -85,7 +81,7 @@ class Lanelet2GlobalPlanner:
             return
 
         # Using current pose as start point
-        start_point = ShapelyPoint(self.current_location.x, self.current_location.y)
+        start_point = shapely.Point(self.current_location.x, self.current_location.y)
         # Get nearest lanelets to start point
         start_lanelet_candidates = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(start_point.x, start_point.y), self.lanelet_search_radius)
         # If no lanelet found near start point, return
@@ -96,7 +92,7 @@ class Lanelet2GlobalPlanner:
         start_lanelet_candidates = [start_lanelet[1] for start_lanelet in start_lanelet_candidates]
         lanelet_candidates = [start_lanelet_candidates] + self.lanelet_candidates[1:]
         
-        new_goal = ShapelyPoint(msg.pose.position.x, msg.pose.position.y)
+        new_goal = shapely.Point(msg.pose.position.x, msg.pose.position.y)
         # Get nearest lanelets to goal point
         goal_lanelet_candidates = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(new_goal.x, new_goal.y), self.lanelet_search_radius)
         # If no lanelet found near goal point, return
@@ -135,11 +131,11 @@ class Lanelet2GlobalPlanner:
         start_on_path = global_path.linestring.interpolate(start_point_distance)
         new_goal_on_path = global_path.linestring.interpolate(new_goal_point_distance)
 
-        if distance(start_on_path, start_point) > self.distance_to_centerline_limit:
+        if shapely.distance(start_on_path, start_point) > self.distance_to_centerline_limit:
             rospy.logerr("%s - start point too far from centerline", rospy.get_name())
             return
 
-        if distance(new_goal_on_path, new_goal) > self.distance_to_centerline_limit:
+        if shapely.distance(new_goal_on_path, new_goal) > self.distance_to_centerline_limit:
             rospy.logerr("%s - goal point too far from centerline", rospy.get_name())
             return
 
@@ -164,10 +160,10 @@ class Lanelet2GlobalPlanner:
         rospy.loginfo("%s - global path published", rospy.get_name())
 
     def current_pose_callback(self, msg):
-        self.current_location = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
+        self.current_location = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
         if self.goal_point != None:
-            d = distance(self.current_location, self.goal_point)
+            d = shapely.distance(self.current_location, self.goal_point)
             if d < self.distance_to_goal_limit and self.current_speed < self.ego_vehicle_stopped_speed_limit:
                 self.goal_point = None
                 self.lanelet_candidates = []

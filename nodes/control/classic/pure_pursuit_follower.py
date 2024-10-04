@@ -5,8 +5,7 @@ import math
 import message_filters
 import threading
 import traceback
-from shapely.geometry import Point as ShapelyPoint
-from shapely import distance
+import shapely
 
 from helpers.geometry import get_heading_from_orientation, normalize_heading_error, get_heading_between_two_points
 from helpers.path import Path
@@ -104,7 +103,7 @@ class PurePursuitFollower:
                 current_position.x += math.cos(current_heading) * current_velocity * self.simulate_cmd_delay
                 current_position.y += math.sin(current_heading) * current_velocity * self.simulate_cmd_delay
 
-            current_position_shapely = ShapelyPoint(current_position.x, current_position.y)
+            current_position_shapely = shapely.Point(current_position.x, current_position.y)
             ego_distance_from_path_start = path.linestring.project(current_position_shapely)
 
             # if "waypoint planner" is used and no global and local planner involved
@@ -118,7 +117,7 @@ class PurePursuitFollower:
 
             # find lookahead_point on path
             lookahead_point = path.linestring.interpolate(ego_distance_from_path_start + lookahead_distance)
-            ego_distance_to_lookahead_point = distance(current_position_shapely, lookahead_point)
+            ego_distance_to_lookahead_point = shapely.distance(current_position_shapely, lookahead_point)
 
             # heading from quaternion in current pose orientation
             lookahead_heading = get_heading_between_two_points(current_position, lookahead_point)
