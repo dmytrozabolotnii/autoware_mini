@@ -35,8 +35,7 @@ class CollisionPoints:
         self._array = np.append(self._array, np.array([(x, y, z, vx, vy, vz, distance_to_stop, category)], dtype=DTYPE))
 
     def add_intersection_points(self, intersection_points, z, vx, vy, vz, distance_to_stop, category):
-        for point in intersection_points:
-            x, y = point
+        for x, y in intersection_points:
             self.add_point(x, y, z, vx, vy, vz, distance_to_stop, category)
 
     def create_message(self):
