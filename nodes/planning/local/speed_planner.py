@@ -4,9 +4,9 @@ import rospy
 import math
 import message_filters
 import traceback
+import shapely
 import numpy as np
 from ros_numpy import numpify
-from shapely.geometry import Point as ShapelyPoint
 from autoware_msgs.msg import Lane
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
@@ -45,7 +45,7 @@ class SpeedPlanner:
         self.current_speed = msg.twist.linear.x
 
     def current_pose_callback(self, msg):
-        self.current_position = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
+        self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
     def collision_points_and_path_callback(self, collision_points_msg, local_path_msg):
         try:
@@ -72,7 +72,7 @@ class SpeedPlanner:
             ego_distance_from_local_path_start = local_path.linestring.project(current_position)
 
             # extract object distances, velocities and braking distances
-            collision_points_shapely = [ShapelyPoint(x, y, z) for x, y, z, vx, vy, vz, distance_to_stop, category in collision_points]
+            collision_points_shapely = [shapely.Point(x, y, z) for x, y, z, vx, vy, vz, distance_to_stop, category in collision_points]
             object_distances = np.array([local_path.linestring.project(point) for point in collision_points_shapely])
             collision_points_path_headings = [local_path.get_heading_at_distance(distance) for distance in object_distances]
             object_velocities = np.array([project_vector_to_heading(heading, Vector3(vx, vy, vz)) 

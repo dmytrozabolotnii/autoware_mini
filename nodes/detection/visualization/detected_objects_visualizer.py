@@ -2,7 +2,7 @@
 
 import math
 import rospy
-from shapely.geometry import Polygon
+import shapely
 
 from autoware_msgs.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
@@ -102,7 +102,7 @@ class DetectedObjectsVisualizer:
                 marker.action = marker.DELETE
             else:
                 marker.action = marker.ADD
-                object_polygon = Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
+                object_polygon = shapely.Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
                 object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
                 object_width = get_polygon_width(object_polygon, object_heading)
                 marker.pose.orientation.w = 1.0

@@ -34,14 +34,13 @@ class CarlaTrafficLightDetector:
 
         # Node parameters
         self.use_transformer = rospy.get_param("/carla_localization/use_transformer")
-        coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
         use_custom_origin = rospy.get_param("/localization/use_custom_origin")
         utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # Load lanelet2 map
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
 
         # Coordinate transformer from simulation coordinates to UTM
         self.sim2utm_transformer = SimulationToUTMTransformer(use_custom_origin=use_custom_origin,

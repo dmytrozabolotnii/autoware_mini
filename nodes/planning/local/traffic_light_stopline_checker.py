@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from shapely.geometry import Point as ShapelyPoint
+import shapely
 from autoware_msgs.msg import Lane, TrafficLightResultArray
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from sensor_msgs.msg import PointCloud2
@@ -18,10 +18,6 @@ class TrafficLightStoplineChecker:
         self.tfl_force_stop_speed_limit = rospy.get_param("~tfl_force_stop_speed_limit")
         self.tfl_maximum_deceleration = rospy.get_param("~tfl_maximum_deceleration")
         self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
-        coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
-        use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-        utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-        utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
@@ -29,7 +25,7 @@ class TrafficLightStoplineChecker:
         self.current_position = None
         self.current_speed = None
 
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.all_stoplines = get_stoplines(lanelet2_map)
 
         # publishers
@@ -42,7 +38,7 @@ class TrafficLightStoplineChecker:
         rospy.Subscriber('/detection/traffic_light_status', TrafficLightResultArray, self.traffic_light_status_callback, queue_size=1, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
-        self.current_position = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
+        self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
     def current_velocity_callback(self, msg):
         self.current_speed = msg.twist.linear.x
@@ -74,7 +70,7 @@ class TrafficLightStoplineChecker:
                 # if RED and intersects with local path
                 if stopline_id in stopline_statuses and stopline_statuses[stopline_id] == 0 and stopline_linestring.intersects(local_path.linestring):
                     intersection_point = local_path.linestring.intersection(stopline_linestring)
-                    assert isinstance(intersection_point, ShapelyPoint), "Stop line and local path intersection point is not a ShapelyPoint"
+                    assert isinstance(intersection_point, shapely.Point), "Stop line and local path intersection point is not a shapely.Point"
                     
                     # check deceleration
                     distance_to_stopline = local_path.linestring.project(intersection_point)

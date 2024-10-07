@@ -1,12 +1,10 @@
 import math
+import shapely
 import numpy as np
 from scipy.interpolate import interp1d
 from autoware_msgs.msg import WaypointState, Waypoint
 from geometry_msgs.msg import Point, Pose
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
-from shapely.geometry import LineString, Point as ShapelyPoint
-from shapely import prepare
-
 
 class Path:
     def __init__(self, waypoints, velocities=False, blinkers=False):
@@ -14,8 +12,8 @@ class Path:
         self.waypoints = waypoints
         self._waypoints_xyz = np.array([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y, waypoint.pose.pose.position.z) for waypoint in self.waypoints])
 
-        self.linestring = LineString(self._waypoints_xyz)
-        prepare(self.linestring)
+        self.linestring = shapely.LineString(self._waypoints_xyz)
+        shapely.prepare(self.linestring)
 
         d = np.cumsum(np.sqrt(np.sum(np.diff(self._waypoints_xyz[:, :2], axis=0)**2, axis=1)))
         self._distances = np.insert(d, 0, 0)
@@ -167,7 +165,7 @@ class Path:
         :return: cross track error
         """
 
-        current_position = ShapelyPoint(current_position.x, current_position.y, current_position.z)
+        current_position = shapely.Point(current_position.x, current_position.y, current_position.z)
 
         ego_distance_from_path_start = self.linestring.project(current_position)
 

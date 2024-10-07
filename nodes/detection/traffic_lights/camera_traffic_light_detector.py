@@ -6,9 +6,8 @@ import cv2
 import threading
 import tf2_ros
 import onnxruntime
-
+import shapely
 from image_geometry import PinholeCameraModel
-from shapely.geometry import LineString
 
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import Image
@@ -54,15 +53,11 @@ class CameraTrafficLightDetector:
         self.min_roi_width = rospy.get_param("~min_roi_width")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.waypoint_interval = rospy.get_param("/planning/waypoint_interval")
-        coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
-        use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-        utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-        utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
 
         # Extract all stop lines and traffic lights from the lanelet2 map
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.stoplines = get_stoplines(lanelet2_map)
         self.trafficlights = get_stoplines_trafficlights(lanelet2_map)
 
@@ -101,7 +96,7 @@ class CameraTrafficLightDetector:
 
         # If there is a local path collect allt the stop line id's on the path
         if len(local_path_msg.waypoints) > 0:
-            local_path = LineString([(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in local_path_msg.waypoints])
+            local_path = shapely.LineString([(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in local_path_msg.waypoints])
 
             for linkId, stopline in self.stoplines.items():
                 # check if stopline intersects with local path

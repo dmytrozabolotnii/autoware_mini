@@ -3,7 +3,7 @@
 import rospy
 import threading
 import traceback
-from shapely.geometry import Point as ShapelyPoint
+import shapely
 from autoware_msgs.msg import Lane
 from geometry_msgs.msg import PoseStamped
 from helpers.path import Path
@@ -29,7 +29,7 @@ class LocalPathExtractor:
         rospy.Subscriber('global_path', Lane, self.path_callback, queue_size=None, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
-        self.current_position = ShapelyPoint(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
+        self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
     def path_callback(self, msg):
         output_frame = msg.header.frame_id
