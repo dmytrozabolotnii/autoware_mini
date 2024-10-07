@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="tfl_detector"        default="none"      doc="carla, mqtt, camera, mqtt_camera_fusion, yolo" />
+    <arg name="tfl_detector"        default="none"      doc="carla, mqtt, camera, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
     <arg name="tfl_cameras"         default="mako"      doc="mako, nvidia" />
     <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="for carla traffic light detector" />
     <arg name="onnx_path"           default="$(find autoware_mini)/data/models/traffic_lights/tlr_model.onnx" doc="onnx model path" />
@@ -14,7 +14,7 @@
     <!-- MQTT traffic light detector -->
     <node if="$(eval 'mqtt' in tfl_detector)" pkg="autoware_mini" type="mqtt_traffic_light_detector.py" name="mqtt_traffic_light_detector" output="screen" required="true">
         <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
-        <remap if="$(eval tfl_detector=='mqtt_camera_fusion')" from="traffic_light_status" to="mqtt/traffic_light_status"/>
+        <remap if="$(eval tfl_detector=='mqtt_camera_fusion' or tfl_detector=='mqtt_yolo_fusion')" from="traffic_light_status" to="mqtt/traffic_light_status"/>
     </node>
 
     <!-- Camera based traffic light detection -->
@@ -22,7 +22,7 @@
         
         <group if="$(eval tfl_cameras=='mako')">
             <!-- Traffic light ROI boxes from map -->
-            <group unless="$(eval tfl_detector=='yolo')">
+            <group unless="$(eval 'yolo' in tfl_detector)">
                 <!-- Camera FL -->
                 <node pkg="autoware_mini" type="camera_traffic_light_detector.py" name="camera_traffic_light_detector_left" output="screen" required="true" ns="camera_fl">
                     <remap from="camera_info" to="/camera_fl/camera_info"/>
@@ -42,7 +42,7 @@
             </group>
 
             <!-- Traffic light ROI boxes from yolo -->
-            <group if="$(eval tfl_detector=='yolo')">
+            <group if="$(eval 'yolo' in tfl_detector)">
                 <!-- Camera FL -->
                 <node pkg="autoware_mini" type="yolo_traffic_light_detector.py" name="camera_traffic_light_detector_left" output="screen" required="true" ns="camera_fl">
                     <remap from="camera_info" to="/camera_fl/camera_info"/>
@@ -64,7 +64,7 @@
 
         <group if="$(eval tfl_cameras=='nvidia')">
             <!-- Traffic light ROI boxes from map -->
-            <group unless="$(eval tfl_detector=='yolo')">
+            <group unless="$(eval 'yolo' in tfl_detector)">
                 <!-- Nvidia Front Right 120 FOV camera -->
                 <node pkg="autoware_mini" type="camera_traffic_light_detector.py" name="camera_traffic_light_detector_link1" output="screen" required="true" ns="interfacea_link1">
                     <remap from="camera_info" to="/interfacea/link1/camera_info"/>
@@ -85,7 +85,7 @@
             </group>
 
             <!-- Traffic light ROI boxes from yolo -->
-            <group if="$(eval tfl_detector=='yolo')">
+            <group if="$(eval 'yolo' in tfl_detector)">
                 <!-- Nvidia Front Right 120 FOV camera -->
                 <node pkg="autoware_mini" type="yolo_traffic_light_detector.py" name="camera_traffic_light_detector_link1" output="screen" required="true" ns="interfacea_link1">
                     <remap from="camera_info" to="/interfacea/link1/camera_info"/>
@@ -107,7 +107,7 @@
         </group>
         
         <node pkg="autoware_mini" type="traffic_light_majority_merger.py" name="traffic_light_majority_merger" output="screen" required="true" >
-            <remap if="$(eval tfl_detector=='mqtt_camera_fusion')" from="traffic_light_status" to="camera/traffic_light_status"/>
+            <remap if="$(eval tfl_detector=='mqtt_camera_fusion' or tfl_detector=='mqtt_yolo_fusion')" from="traffic_light_status" to="camera/traffic_light_status"/>
             <!-- Remaps for Mako cameras -->
             <remap if="$(eval tfl_cameras=='mako')" from="camera1/traffic_light_status" to="camera_fl/traffic_light_status"/>
             <remap if="$(eval tfl_cameras=='mako')" from="camera2/traffic_light_status" to="camera_fr/traffic_light_status"/>
@@ -116,7 +116,7 @@
             <remap if="$(eval tfl_cameras=='nvidia')" from="camera2/traffic_light_status" to="interfacea_link2/traffic_light_status"/>
         </node>
 
-        <node if="$(eval tfl_detector=='mqtt_camera_fusion')" pkg="autoware_mini" type="traffic_light_priority_merger.py" name="traffic_light_priority_merger" output="screen" required="true" >
+        <node if="$(eval tfl_detector=='mqtt_camera_fusion' or tfl_detector=='mqtt_yolo_fusion')" pkg="autoware_mini" type="traffic_light_priority_merger.py" name="traffic_light_priority_merger" output="screen" required="true" >
             <remap from="tfl_status_topic_1" to="mqtt/traffic_light_status"/>
             <remap from="tfl_status_topic_2" to="camera/traffic_light_status"/>
         </node>

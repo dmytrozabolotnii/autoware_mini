@@ -1,22 +1,24 @@
-import numpy as np
-import math
 import cv2
+import math
+import numpy as np
+import onnxruntime
 
 CATEGORY_NUM = 4
 
-class PostprocessYOLO(object):
-    """Class for post-processing the three outputs tensors from YOLOv3-608."""
+class YoloModel(object):
+    """Class for a traffic light detector YOLO model"""
 
     def __init__(self,
-                 yolo_masks,
-                 yolo_anchors,
-                 obj_threshold,
-                 nms_threshold,
-                 yolo_input_resolution):
-        """Initialize with all values that will be kept when processing several frames.
-        Assuming 3 outputs of the network in the case of (large) YOLOv3.
-
+                 yolo_path,
+                 yolo_masks=[(3, 4, 5), (0, 1, 2)],
+                 yolo_anchors=[(10, 14), (23, 27), (37, 58), (81, 82), (135, 169),(344, 319)],
+                 obj_threshold=0.1,
+                 nms_threshold=0.3,
+                 yolo_input_resolution=(608, 608)):
+        
+        """
         Keyword arguments:
+        yolo_path -- path of the onnx yolo model
         yolo_masks -- a list of 3 three-dimensional tuples for the YOLO masks
         yolo_anchors -- a list of 9 two-dimensional tuples for the YOLO anchors
         object_threshold -- threshold for object coverage, float value between 0 and 1
@@ -25,27 +27,76 @@ class PostprocessYOLO(object):
         input_resolution_yolo -- two-dimensional tuple with the target network's (spatial)
         input resolution in HW order
         """
+        self.yolo_model = onnxruntime.InferenceSession(yolo_path, providers=['CUDAExecutionProvider'])
+
+        # Yolo model warm-up
+        input_shape = self.yolo_model.get_inputs()[0].shape
+        dummy_input = np.random.rand(*input_shape).astype(np.float32)
+        self.yolo_model.run(None, {'000_net': dummy_input})
+
         self.masks = yolo_masks
         self.anchors = yolo_anchors
         self.object_threshold = obj_threshold
         self.nms_threshold = nms_threshold
         self.input_resolution_yolo = yolo_input_resolution
 
-    def process(self, outputs, resolution_raw):
+    def predict(self, image):
+        """Predicts traffic light bounding boxes, classes and scores based on a given image
+
+        Keyword arguments:
+        image -- given image
+        """
+        # preprocess image to correct format for YOLO 
+        preprocessed_image = self.preprocess_image(image)
+
+        # make a prediction
+        yolo_outputs = self.yolo_model.run(None, {'000_net': preprocessed_image})
+
+        # postprocess YOLO input
+        yolo_output_shapes = [(1,27,19,19), (1,27,38,38)] #shapes for tiny yolov3
+        yolo_outputs = [output.reshape(shape) for output, shape in zip(yolo_outputs, yolo_output_shapes)]
+
+        boxes, classes, scores = self.postprocess(yolo_outputs)
+
+        if len(boxes) > 0:
+            rois = self._convert_and_scale_boxes(boxes, image.shape[:2])
+            return rois, classes, scores
+        else:
+            return boxes, classes, scores
+
+    def preprocess_image(self, img):
+        """Converts image to a suitable format for YOLO model
+
+        Keyword arguments:
+        img -- input image
+        """
+        # Resize to match YOLO input dimensions
+        out_img = cv2.resize(img, self.input_resolution_yolo, interpolation=cv2.INTER_LINEAR)
+        # Normalize to [0,1]
+        out_img = out_img.astype("float") / 255.0
+        # HWC to CHW
+        out_img = np.transpose(out_img,[2,0,1])
+        # CHW to NCHW
+        out_img = np.expand_dims(out_img,axis = 0)
+        # Convert the image to row-major order, also known as "C order":
+        out_img = np.array(out_img, dtype = np.float32, order = 'C')
+
+        return out_img
+    
+    def postprocess(self, outputs):
         """Take the YOLOv3 outputs generated from a TensorRT forward pass, post-process them
         and return a list of bounding boxes for detected object together with their category
         and their confidences in separate lists.
 
         Keyword arguments:
         outputs -- outputs from a TensorRT engine in NCHW format
-        resolution_raw -- the original spatial resolution from the input PIL image in WH order
         """
         outputs_reshaped = list()
         for output in outputs:
             outputs_reshaped.append(self._reshape_output(output))
 
         boxes, categories, confidences = self._process_yolo_output(
-            outputs_reshaped, resolution_raw)
+            outputs_reshaped, self.input_resolution_yolo)
 
         return boxes, categories, confidences
 
@@ -242,54 +293,20 @@ class PostprocessYOLO(object):
         keep = np.array(keep)
         return keep
     
+    def _convert_and_scale_boxes(self, box, original_img_size):
+        """Convert yolo output of x_1 y_1 w h to x_1 y_1 x_2 y_2 and scale the boxes based on the original image size
 
-def preprocess_image_for_yolo(img, img_size):
-    # Resize to match YOLO input dimensions
-    out_img = cv2.resize(img, img_size, interpolation=cv2.INTER_LINEAR)
-    # Normalize to [0,1]
-    out_img = out_img.astype("float") / 255.0
-    # HWC to CHW
-    out_img = np.transpose(out_img,[2,0,1])
-    # CHW to NCHW
-    out_img = np.expand_dims(out_img,axis = 0)
-    # Convert the image to row-major order, also known as "C order":
-    out_img = np.array(out_img, dtype = np.float32, order = 'C')
+        Keyword arguments:
+        box -- a NumPy array containing yolo predicted box
+        original_img_size -- size of the original input image
+        """
 
-    return out_img
+        x_scale = original_img_size[1] / self.input_resolution_yolo[0]
+        y_scale = original_img_size[0] / self.input_resolution_yolo[1]
 
-def convert_and_scale_yolo_boxes(box, original_img_size, yolo_img_size):
-    # Convert yolo output of x_1 y_1 w h to x_1 y_1 x_2 y_2 and scale the boxes based on the original image size
+        x1 = box[:, 0] * x_scale
+        y1 = box[:, 1] * y_scale
+        x2 = (box[:, 0] + box[:, 2]) * x_scale
+        y2 = (box[:, 1] + box[:, 3]) * y_scale
 
-    x_scale = original_img_size[1] / yolo_img_size[0]
-    y_scale = original_img_size[0] / yolo_img_size[1]
-
-    x1 = box[:, 0] * x_scale
-    y1 = box[:, 1] * y_scale
-    x2 = (box[:, 0] + box[:, 2]) * x_scale
-    y2 = (box[:, 1] + box[:, 3]) * y_scale
-
-    return np.rint(np.array([x1, y1, x2, y2]).T).astype(int)
-
-def intersection_over_union(box1, box2):
-    """Implement intersection over union (IoU) between box1 and box2
-    :param box1: first box, list object with coordinates (x1, y1, x2, y2)
-    :param box2: second box, list object with coordinates (x1, y1, x2, y2)
-    :return iou: intersection over union
-    """
-
-    # Calculate the coordinates of intersection of box1 and box2. 
-    x1_inter = max(box1[0], box2[0])
-    y1_inter = max(box1[1], box2[1])
-    x2_inter = min(box1[2], box2[2])
-    y2_inter = min(box1[3], box2[3])
-    # Calculate intersection area.
-    inter_area = max(0, x2_inter - x1_inter) * max(0, y2_inter - y1_inter)
-    
-    # Calculate the Union area.
-    box1_area = (box1[3] - box1[1] ) * (box1[2] - box1[0])
-    box2_area = (box2[3] - box2[1] ) * (box2[2] - box2[0])
-    union_area = box1_area + box2_area - inter_area
-
-    # Compute the IoU  
-    iou = inter_area/union_area
-    return iou
+        return np.rint(np.array([x1, y1, x2, y2]).T).astype(int)

@@ -5,7 +5,6 @@ import numpy as np
 import cv2
 import threading
 import tf2_ros
-import onnxruntime
 
 from image_geometry import PinholeCameraModel
 from shapely.geometry import LineString
@@ -20,7 +19,8 @@ from cv_bridge import CvBridge
 
 from helpers.transform import transform_point
 from helpers.lanelet2 import get_stoplines, get_stoplines_trafficlights, load_lanelet2_map
-from helpers.yolo import PostprocessYOLO, preprocess_image_for_yolo, convert_and_scale_yolo_boxes, intersection_over_union
+from helpers.geometry import intersection_over_union
+from helpers.yolo import YoloModel
 
 # Classifier outputs 4 classes (LightState)
 CLASSIFIER_RESULT_TO_STRING = {
@@ -51,14 +51,6 @@ CLASSIFIER_RESULT_TO_TLRESULT = {
     3: 2    # UNKNOWN
 }
 
-YOLO_POSTPROCESSOR_ARGS = {"yolo_masks": [(3, 4, 5), (0, 1, 2)], # A list of 3 three-dimensional tuples for the YOLO masks
-                            "yolo_anchors": [(10, 14), (23, 27), (37, 58), (81, 82), (135, 169),  # A list of 9 two-dimensional tuples for the YOLO anchors
-                                            (344, 319)],
-                            "obj_threshold": 0.1,  # Threshold for object coverage, float value between 0 and 1
-
-                            "nms_threshold": 0.3,  # Threshold for non-max suppression algorithm, float value between 0 and 1
-                            "yolo_input_resolution": (608, 608)}
-
 class YoloTrafficLightDetector:
     def __init__(self):
 
@@ -85,13 +77,7 @@ class YoloTrafficLightDetector:
         self.stoplines = {k: v for k, v in self.stoplines.items() if k in self.trafficlights}
 
         self.bridge = CvBridge()
-        self.yolo_model = onnxruntime.InferenceSession(yolo_path, providers=['CUDAExecutionProvider'])
-        self.yolo_postprocessor = PostprocessYOLO(**YOLO_POSTPROCESSOR_ARGS)
-
-        # Yolo model warm-up
-        input_shape = self.yolo_model.get_inputs()[0].shape
-        dummy_input = np.random.rand(*input_shape).astype(np.float32)
-        self.yolo_model.run(None, {'000_net': dummy_input})
+        self.yolo_model = YoloModel(yolo_path)
 
         # Publishers
         self.tfl_status_pub = rospy.Publisher('traffic_light_status', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)
@@ -179,7 +165,7 @@ class YoloTrafficLightDetector:
 
             if len(map_rois) > 0:
                 # get yolo predictions
-                yolo_rois, classes, scores = self.get_yolo_predictions(image)
+                yolo_rois, classes, scores = self.yolo_model.predict(image)
 
                 # match yolo predictions with map ROIs
                 tfl_results, match_dict = self.match_map_and_yolo_rois(map_rois, yolo_rois, classes, scores)
@@ -238,25 +224,6 @@ class YoloTrafficLightDetector:
 
         return rois
     
-    def get_yolo_predictions(self, image):
-        # preprocess image to correct format for YOLO 
-        preprocessed_image = preprocess_image_for_yolo(image, YOLO_POSTPROCESSOR_ARGS["yolo_input_resolution"])
-
-        # make a prediction
-        yolo_outputs = self.yolo_model.run(None, {'000_net': preprocessed_image})
-
-        # postprocess YOLO input
-        yolo_output_shapes = [(1,27,19,19), (1,27,38,38)] #shapes for tiny yolov3
-        yolo_outputs = [output.reshape(shape) for output, shape in zip(yolo_outputs, yolo_output_shapes)]
-
-        boxes, classes, scores = self.yolo_postprocessor.process(yolo_outputs, YOLO_POSTPROCESSOR_ARGS["yolo_input_resolution"])
-
-        if len(boxes) > 0:
-            rois = convert_and_scale_yolo_boxes(boxes, image.shape[:2], YOLO_POSTPROCESSOR_ARGS["yolo_input_resolution"])
-            return rois, classes, scores
-        else:
-            return boxes, classes, scores
-        
     def match_map_and_yolo_rois(self, map_rois, yolo_rois, yolo_classes, yolo_scores):
         tfl_results = []
         match_dict = {}

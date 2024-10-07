@@ -149,7 +149,7 @@
     <include file="$(find autoware_mini)/launch/platform/bag.launch">
         <arg name="use_tf"               value="$(arg use_tf)" />
         <arg name="repub_camera_info"    value="$(arg repub_camera_info)" />
-        <arg name="use_nvidia_cameras"   value="$(eval ('camera' in tfl_detector or tfl_detector=='yolo') and tfl_cameras=='nvidia')" />
+        <arg name="use_nvidia_cameras"   value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='nvidia')" />
     </include>
 
     <!-- Rviz -->
