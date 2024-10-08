@@ -17,15 +17,12 @@ class YoloModel(object):
                  yolo_input_resolution=(608, 608)):
         
         """
-        Keyword arguments:
-        yolo_path -- path of the onnx yolo model
-        yolo_masks -- a list of 3 three-dimensional tuples for the YOLO masks
-        yolo_anchors -- a list of 9 two-dimensional tuples for the YOLO anchors
-        object_threshold -- threshold for object coverage, float value between 0 and 1
-        nms_threshold -- threshold for non-max suppression algorithm,
-        float value between 0 and 1
-        input_resolution_yolo -- two-dimensional tuple with the target network's (spatial)
-        input resolution in HW order
+        :param yolo_path: path of the onnx yolo model
+        :param yolo_masks: a list of 3 three-dimensional tuples for the YOLO masks
+        :param yolo_anchors: a list of 9 two-dimensional tuples for the YOLO anchors
+        :param object_threshold: threshold for object coverage, float value between 0 and 1
+        :param nms_threshold: threshold for non-max suppression algorithm, float value between 0 and 1
+        :param input_resolution_yolo: two-dimensional tuple with the target network's (spatial) input resolution in HW order
         """
         self.yolo_model = onnxruntime.InferenceSession(yolo_path, providers=['CUDAExecutionProvider'])
 
@@ -43,8 +40,8 @@ class YoloModel(object):
     def predict(self, image):
         """Predicts traffic light bounding boxes, classes and scores based on a given image
 
-        Keyword arguments:
-        image -- given image
+        :param image: given image
+        :return: a tuple of bounding boxes, classes and scores
         """
         # preprocess image to correct format for YOLO 
         preprocessed_image = self.preprocess_image(image)
@@ -67,13 +64,13 @@ class YoloModel(object):
     def preprocess_image(self, img):
         """Converts image to a suitable format for YOLO model
 
-        Keyword arguments:
-        img -- input image
+        :param img: input image
+        :return: preprocessed image
         """
         # Resize to match YOLO input dimensions
-        out_img = cv2.resize(img, self.input_resolution_yolo, interpolation=cv2.INTER_LINEAR)
+        out_img = cv2.resize(img, self.input_resolution_yolo, interpolation=cv2.INTER_AREA)
         # Normalize to [0,1]
-        out_img = out_img.astype("float") / 255.0
+        out_img = out_img.astype(np.float32) / 255.0
         # HWC to CHW
         out_img = np.transpose(out_img,[2,0,1])
         # CHW to NCHW
@@ -88,8 +85,7 @@ class YoloModel(object):
         and return a list of bounding boxes for detected object together with their category
         and their confidences in separate lists.
 
-        Keyword arguments:
-        outputs -- outputs from a TensorRT engine in NCHW format
+        :param outputs: outputs from a TensorRT engine in NCHW format
         """
         outputs_reshaped = list()
         for output in outputs:
@@ -104,26 +100,22 @@ class YoloModel(object):
         """Reshape a TensorRT output from NCHW to NHWC format (with expected C=255),
         and then return it in (height,width,3,85) dimensionality after further reshaping.
 
-        Keyword argument:
-        output -- an output from a TensorRT engine after inference
+        :param output: an output from a TensorRT engine after inference
         """
         output = np.transpose(output, [0, 2, 3, 1])
         _, height, width, _ = output.shape
-        dim1, dim2 = height, width
-        dim3 = 3
+
         # There are CATEGORY_NUM=80 object categories:
-        dim4 = (4 + 1 + CATEGORY_NUM)
-        return np.reshape(output, (dim1, dim2, dim3, dim4))
+        return np.reshape(output, (height, width, 3, 4 + 1 + CATEGORY_NUM))
 
     def _process_yolo_output(self, outputs_reshaped, resolution_raw):
         """Take in a list of three reshaped YOLO outputs in (height,width,3,85) shape and return
         return a list of bounding boxes for detected object together with their category and their
         confidences in separate lists.
 
-        Keyword arguments:
-        outputs_reshaped -- list of three reshaped YOLO outputs as NumPy arrays
+        :param outputs_reshaped: list of three reshaped YOLO outputs as NumPy arrays
         with shape (height,width,3,85)
-        resolution_raw -- the original spatial resolution from the input PIL image in WH order
+        :param resolution_raw: the original spatial resolution from the input PIL image in WH order
         """
 
         # E.g. in YOLOv3-608, there are three output tensors, which we associate with their
@@ -175,9 +167,8 @@ class YoloModel(object):
         corresponding YOLO mask and return the detected bounding boxes, the confidence,
         and the class probability in each cell/pixel.
 
-        Keyword arguments:
-        output_reshaped -- reshaped YOLO output as NumPy arrays with shape (height,width,3,85)
-        mask -- 2-dimensional tuple with mask specification for this output
+        :param output_reshaped: reshaped YOLO output as NumPy arrays with shape (height,width,3,85)
+        :param mask: 2-dimensional tuple with mask specification for this output
         """
 
         # Two in-line functions required for calculating the bounding box
@@ -228,12 +219,11 @@ class YoloModel(object):
         """Take in the unfiltered bounding box descriptors and discard each cell
         whose score is lower than the object threshold set during class initialization.
 
-        Keyword arguments:
-        boxes -- bounding box coordinates with shape (height,width,3,4); 4 for
+        :param boxes: bounding box coordinates with shape (height,width,3,4); 4 for
         x,y,height,width coordinates of the boxes
-        box_confidences -- bounding box confidences with shape (height,width,3,1); 1 for as
+        :param box_confidences: bounding box confidences with shape (height,width,3,1); 1 for as
         confidence scalar per element
-        box_class_probs -- class probabilities with shape (height,width,3,CATEGORY_NUM)
+        :param box_class_probs: class probabilities with shape (height,width,3,CATEGORY_NUM)
 
         """
         box_scores = box_confidences * box_class_probs
@@ -254,9 +244,9 @@ class YoloModel(object):
         keep (and display later).
 
         Keyword arguments:
-        boxes -- a NumPy array containing N bounding-box coordinates that survived filtering,
+        :param boxes: a NumPy array containing N bounding-box coordinates that survived filtering,
         with shape (N,4); 4 for x,y,height,width coordinates of the boxes
-        box_confidences -- a Numpy array containing the corresponding confidences with shape N
+        :param box_confidences: a Numpy array containing the corresponding confidences with shape N
         """
         x_coord = boxes[:, 0]
         y_coord = boxes[:, 1]
@@ -296,9 +286,8 @@ class YoloModel(object):
     def _convert_and_scale_boxes(self, box, original_img_size):
         """Convert yolo output of x_1 y_1 w h to x_1 y_1 x_2 y_2 and scale the boxes based on the original image size
 
-        Keyword arguments:
-        box -- a NumPy array containing yolo predicted box
-        original_img_size -- size of the original input image
+        :param box: a NumPy array containing yolo predicted box
+        :param original_img_size: size of the original input image
         """
 
         x_scale = original_img_size[1] / self.input_resolution_yolo[0]
