@@ -61,15 +61,11 @@ class YoloTrafficLightDetector:
         self.roi_extent = rospy.get_param("~roi_extent")
         self.min_roi_width = rospy.get_param("~min_roi_width")
         self.transform_timeout = rospy.get_param("~transform_timeout")
-        coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
-        use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-        utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-        utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
         self.iou_threshold = rospy.get_param("~iou_threshold")
 
         # Extract all stop lines and traffic lights from the lanelet2 map
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name, coordinate_transformer, use_custom_origin, utm_origin_lat, utm_origin_lon)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.stoplines = get_stoplines(lanelet2_map)
         self.trafficlights = get_stoplines_trafficlights(lanelet2_map)
 
