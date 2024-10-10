@@ -8,6 +8,12 @@
     <arg name="lanelet2_map_name"       default="tartu_demo.osm" />
     <arg name="map_name"                default="tartu_demo" />
     <arg name="load_goals"              default="true" />
+    
+    <!-- Carla Server parameters -->
+    <arg name='host'                    default='localhost' />
+    <arg name='port'                    default='2000' />
+    <arg name='timeout'                 default='100' />
+    <arg name='role_name'               default='ego_vehicle' />
 
     <group ns="planning">
 
@@ -50,7 +56,15 @@
         </node>
 
         <!-- Carla waypoints publisher -->
-        <node if="$(eval global_planner=='carla')" pkg='autoware_mini' type='carla_waypoints_publisher.py' name='carla_waypoints_publisher' output='screen' required="true" />
+        <group if="$(eval global_planner=='carla')">
+            <node pkg='autoware_mini' type='carla_waypoints_publisher.py' name='carla_waypoints_publisher' output='screen' required="true" />
+            <include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch">
+                <arg name='role_name' value='$(arg role_name)'/>
+                <arg name='host'      value='$(arg host)'/>
+                <arg name='port'      value='$(arg port)'/>
+                <arg name='timeout'   value='$(arg timeout)'/>
+            </include>
+        </group>
 
         <!-- Rule-based local planner -->
         <group if="$(eval local_planner=='rule')">

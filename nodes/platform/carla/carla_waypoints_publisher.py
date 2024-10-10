@@ -11,26 +11,65 @@ import rospy
 from autoware_msgs.msg import Lane
 from autoware_msgs.msg import Waypoint
 from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped
+
+from localization.SimulationToUTMTransformer import SimulationToUTMTransformer
+from localization.UTMToSimulationTransformer import UTMToSimulationTransformer
 
 
 class CarlaWaypointsPublisher():
 
     def __init__(self):
+
+        # Node parameters
+        use_custom_origin = rospy.get_param("/localization/use_custom_origin")
+        utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
+        utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
+
+        # Internal parameters
+        self.sim2utm_transformer = SimulationToUTMTransformer(use_custom_origin=use_custom_origin,
+                                                              origin_lat=utm_origin_lat,
+                                                              origin_lon=utm_origin_lon)
+        self.utm2sim_transformer = UTMToSimulationTransformer(use_custom_origin=use_custom_origin,
+                                                              origin_lat=utm_origin_lat,
+                                                              origin_lon=utm_origin_lon)
+        
         # Publishers
         self.waypoints_pub = rospy.Publisher('global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
+        self.goal_publisher = rospy.Publisher('/carla/ego_vehicle/goal', PoseStamped, queue_size=10, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('/carla/ego_vehicle/waypoints', Path, self.path_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.goal_callback, queue_size=None, tcp_nodelay=True)
 
     def path_callback(self, data):
         """
-        callback for path. Convert it to Autoware LaneArray and publish it
+        Callback for path. Convert it to Autoware LaneArray and publish it
         """
         msg = Lane()
         msg.header = data.header
-        msg.waypoints = [Waypoint(pose=pose) for pose in data.poses]
+
+        waypoints = []
+        for pose in data.poses:
+            pose.pose = self.sim2utm_transformer.transform_pose(pose.pose)
+            waypoints.append(Waypoint(pose=pose))
+
+        msg.waypoints = waypoints
 
         self.waypoints_pub.publish(msg)
+
+    def goal_callback(self, msg):
+        """
+        Converts goal point simulation coordinates to UTM coordinates
+        """
+        transformed_pose = self.utm2sim_transformer.transform_pose(msg.pose)
+
+        goal_msg = PoseStamped()
+        goal_msg.header.stamp = msg.header.stamp
+        goal_msg.header.frame_id = msg.header.frame_id
+        goal_msg.pose = transformed_pose
+
+        self.goal_publisher.publish(goal_msg)
 
     def run(self):
         rospy.spin()
