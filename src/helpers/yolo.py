@@ -68,7 +68,7 @@ class YoloModel(object):
         :return: preprocessed image
         """
         # Resize to match YOLO input dimensions
-        out_img = cv2.resize(img, self.input_resolution_yolo, interpolation=cv2.INTER_AREA)
+        out_img = cv2.resize(img, self.input_resolution_yolo, interpolation=cv2.INTER_LINEAR)
         # Normalize to [0,1]
         out_img = out_img.astype(np.float32) / 255.0
         # HWC to CHW
@@ -175,15 +175,7 @@ class YoloModel(object):
         # descriptors:
         def sigmoid(value):
             """Return the sigmoid of the input."""
-            return 1.0 / (1.0 + math.exp(-value))
-
-        def exponential(value):
-            """Return the exponential of the input."""
-            return math.exp(value)
-
-        # Vectorized calculation of above two functions:
-        sigmoid_v = np.vectorize(sigmoid)
-        exponential_v = np.vectorize(exponential)
+            return 1.0 / (1.0 + np.exp(-value))
 
         grid_h, grid_w, _, _ = output_reshaped.shape
 
@@ -191,12 +183,12 @@ class YoloModel(object):
 
         # Reshape to N, height, width, num_anchors, box_params:
         anchors_tensor = np.reshape(anchors, [1, 1, len(anchors), 2])
-        box_xy = sigmoid_v(output_reshaped[..., :2])
-        box_wh = exponential_v(output_reshaped[..., 2:4]) * anchors_tensor
-        box_confidence = sigmoid_v(output_reshaped[..., 4])
+        box_xy = sigmoid(output_reshaped[..., :2])
+        box_wh = np.exp(output_reshaped[..., 2:4]) * anchors_tensor
+        box_confidence = sigmoid(output_reshaped[..., 4])
 
         box_confidence = np.expand_dims(box_confidence, axis=-1)
-        box_class_probs = sigmoid_v(output_reshaped[..., 5:])
+        box_class_probs = sigmoid(output_reshaped[..., 5:])
 
         col = np.tile(np.arange(0, grid_w), grid_w).reshape(-1, grid_w)
         row = np.tile(np.arange(0, grid_h).reshape(-1, 1), grid_h)
