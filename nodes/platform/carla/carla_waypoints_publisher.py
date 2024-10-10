@@ -22,6 +22,7 @@ class CarlaWaypointsPublisher():
     def __init__(self):
 
         # Node parameters
+        self.speed_limit = rospy.get_param("speed_limit")
         use_custom_origin = rospy.get_param("/localization/use_custom_origin")
         utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
@@ -35,7 +36,7 @@ class CarlaWaypointsPublisher():
                                                               origin_lon=utm_origin_lon)
         
         # Publishers
-        self.waypoints_pub = rospy.Publisher('global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
+        self.waypoints_pub = rospy.Publisher('lane_change_global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
         self.goal_publisher = rospy.Publisher('/carla/ego_vehicle/goal', PoseStamped, queue_size=10, tcp_nodelay=True)
 
         # Subscribers
@@ -52,7 +53,9 @@ class CarlaWaypointsPublisher():
         waypoints = []
         for pose in data.poses:
             pose.pose = self.sim2utm_transformer.transform_pose(pose.pose)
-            waypoints.append(Waypoint(pose=pose))
+            waypoint = Waypoint(pose=pose)
+            waypoint.twist.twist.linear.x = self.speed_limit / 3.6
+            waypoints.append(waypoint)
 
         msg.waypoints = waypoints
 
@@ -62,12 +65,9 @@ class CarlaWaypointsPublisher():
         """
         Converts goal point simulation coordinates to UTM coordinates
         """
-        transformed_pose = self.utm2sim_transformer.transform_pose(msg.pose)
-
         goal_msg = PoseStamped()
-        goal_msg.header.stamp = msg.header.stamp
-        goal_msg.header.frame_id = msg.header.frame_id
-        goal_msg.pose = transformed_pose
+        goal_msg.header = msg.header
+        goal_msg.pose = self.utm2sim_transformer.transform_pose(msg.pose)
 
         self.goal_publisher.publish(goal_msg)
 

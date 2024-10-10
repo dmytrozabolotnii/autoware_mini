@@ -34,7 +34,7 @@ class PedestrianCrosswalkChecker:
         self.crosswalk_collision_pub = rospy.Publisher('crosswalk_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        rospy.Subscriber('lanelet2_global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Lane, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/detection/final_objects', DetectedObjectArray, self.detected_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
@@ -58,8 +58,12 @@ class PedestrianCrosswalkChecker:
         detected_objects = self.detected_objects
         crosswalks_on_global_path = self.crosswalks_on_global_path
 
-        if detected_objects is None or crosswalks_on_global_path is None:
-            rospy.logwarn_throttle(3, "%s - detected objects or crosswalks are not received!", rospy.get_name())
+        if crosswalks_on_global_path is None:
+            rospy.logwarn_throttle(3, "%s - global path not received!", rospy.get_name())
+            return
+
+        if detected_objects is None:
+            rospy.logwarn_throttle(3, "%s - detected objects not received!", rospy.get_name())
             return
 
         collision_points = CollisionPoints()
