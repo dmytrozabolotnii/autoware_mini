@@ -19,14 +19,14 @@ class TrafficLightPriorityMerger:
         # Subscribers
         topic_1_tfl_status = message_filters.Subscriber('tfl_status_topic_1', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)
         topic_2_tfl_status = message_filters.Subscriber('tfl_status_topic_2', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)
-        ts = message_filters.ApproximateTimeSynchronizer([topic_1_tfl_status, topic_2_tfl_status], queue_size=5, slop=0.1)
+        ts = message_filters.ApproximateTimeSynchronizer([topic_1_tfl_status, topic_2_tfl_status], queue_size=2, slop=0.05)
         ts.registerCallback(self.tfl_status_callback)
 
     def tfl_status_callback(self, topic_1_msg, topic_2_msg):
 
         try:
             merged_tfl_status_msg = TrafficLightResultArray()
-            merged_tfl_status_msg.header.stamp = topic_1_msg.header.stamp
+            merged_tfl_status_msg.header.stamp = min(topic_1_msg.header.stamp, topic_2_msg.header.stamp)
 
             # iterate over msg and add results to dictionary
             topic_2_tfl_results = {}

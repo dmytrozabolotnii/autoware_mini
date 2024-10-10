@@ -14,7 +14,7 @@
     <!-- MQTT traffic light detector -->
     <node if="$(eval 'mqtt' in tfl_detector)" pkg="autoware_mini" type="mqtt_traffic_light_detector.py" name="mqtt_traffic_light_detector" output="screen" required="true">
         <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
-        <remap if="$(eval'fusion' in tfl_detector)" from="traffic_light_status" to="mqtt/traffic_light_status"/>
+        <remap if="$(eval 'fusion' in tfl_detector)" from="traffic_light_status" to="mqtt/traffic_light_status"/>
     </node>
 
     <!-- Camera based traffic light detection -->
