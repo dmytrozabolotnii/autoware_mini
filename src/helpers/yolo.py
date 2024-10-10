@@ -9,7 +9,7 @@ class YoloModel(object):
     """Class for a traffic light detector YOLO model"""
 
     def __init__(self,
-                 yolo_path,
+                 onnx_path,
                  yolo_masks=[(3, 4, 5), (0, 1, 2)],
                  yolo_anchors=[(10, 14), (23, 27), (37, 58), (81, 82), (135, 169),(344, 319)],
                  obj_threshold=0.1,
@@ -17,14 +17,14 @@ class YoloModel(object):
                  yolo_input_resolution=(608, 608)):
         
         """
-        :param yolo_path: path of the onnx yolo model
+        :param onnx_path: path of the onnx yolo model
         :param yolo_masks: a list of 3 three-dimensional tuples for the YOLO masks
         :param yolo_anchors: a list of 9 two-dimensional tuples for the YOLO anchors
         :param object_threshold: threshold for object coverage, float value between 0 and 1
         :param nms_threshold: threshold for non-max suppression algorithm, float value between 0 and 1
         :param input_resolution_yolo: two-dimensional tuple with the target network's (spatial) input resolution in HW order
         """
-        self.yolo_model = onnxruntime.InferenceSession(yolo_path, providers=['CUDAExecutionProvider'])
+        self.yolo_model = onnxruntime.InferenceSession(onnx_path, providers=['CUDAExecutionProvider'])
 
         # Yolo model warm-up
         input_shape = self.yolo_model.get_inputs()[0].shape

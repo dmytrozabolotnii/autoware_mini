@@ -55,7 +55,7 @@ class YoloTrafficLightDetector:
     def __init__(self):
 
         # Node parameters
-        yolo_path = rospy.get_param("~yolo_path")
+        onnx_path = rospy.get_param("~onnx_path")
 
         self.rectify_image = rospy.get_param('~rectify_image')
         self.roi_extent = rospy.get_param("~roi_extent")
@@ -73,7 +73,7 @@ class YoloTrafficLightDetector:
         self.stoplines = {k: v for k, v in self.stoplines.items() if k in self.trafficlights}
 
         self.bridge = CvBridge()
-        self.yolo_model = YoloModel(yolo_path)
+        self.yolo_model = YoloModel(onnx_path)
 
         # Publishers
         self.tfl_status_pub = rospy.Publisher('traffic_light_status', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)
