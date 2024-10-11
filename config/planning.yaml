@@ -1,21 +1,21 @@
 current_pose_to_car_front: 4.0  # m
-braking_reaction_time: 1.6
-stopping_lateral_distance: 1.35           # m
-slowdown_lateral_distance: 1.60       # m
+braking_reaction_time: 1.6      # s
+stopping_lateral_distance: 1.35 # m
+slowdown_lateral_distance: 1.60 # m
 waypoint_interval: 1.0          # m
-default_acceleration: 1.0
-default_deceleration: 1.0
-max_deceleration: 10.0
-stopping_speed_limit: 1.0
-lane_change_base_length: 10.0    # m
-lane_change_perlane_length: 5.0    # m
+default_acceleration: 1.0       # m/s2
+default_deceleration: 1.0       # m/s2
+max_deceleration: 10.0          # m/s2
+stopping_speed_limit: 1.0       # m/s
+lane_change_base_length: 10.0   # m
+lane_change_perlane_length: 5.0 # m
+speed_limit: 50.0               # max velocity for route (km/h), will be replaced by speed taken from map
+output_frame: map
+distance_to_goal_limit: 5.0     # m
+ego_vehicle_stopped_speed_limit: 0.1
 
 lanelet2_global_planner:
-  output_frame: map
-  distance_to_goal_limit: 5.0
   distance_to_centerline_limit: 5.0
-  speed_limit: 50.0                 # max velocity for route (km/h), will be replaced by speed taken from map
-  ego_vehicle_stopped_speed_limit: 0.1
   lane_change: False
   lanelet_search_radius: 0.5
 

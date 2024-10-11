@@ -8,7 +8,7 @@
     <arg name="lanelet2_map_name"       default="tartu_demo.osm" />
     <arg name="map_name"                default="tartu_demo" />
     <arg name="load_goals"              default="true" />
-
+    
     <group ns="planning">
 
         <!-- Lanelet2 map visualizer -->
@@ -37,6 +37,14 @@
             </node>
         </group>
 
+        <!-- Carla waypoints publisher -->
+        <group if="$(eval global_planner=='carla')">
+            <node pkg='autoware_mini' type='carla_waypoints_publisher.py' name='carla_waypoints_publisher' output='screen' required="true" />
+            <include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch">
+                <arg name='timeout'   value='100'/>
+            </include>
+        </group>
+
         <!-- Path smoothing -->
         <node if="$(arg use_path_smoothing)" pkg="autoware_mini" type="path_smoothing.py" name="path_smoothing" output="screen" required="true" />
         <node unless="$(arg use_path_smoothing)" pkg="topic_tools" type="relay" args="/planning/lane_change_global_path /planning/global_path" name="global_path_relay" output="screen" required="true" />
@@ -48,9 +56,6 @@
         <node if="$(eval load_goals and eval('_' + '_import_' + '_(\'os\')').path.exists(find('autoware_mini') + '/data/maps/' + map_name + '_goals.yaml'))" pkg="autoware_mini" type="goal_publisher.py" name="goal_publisher" output="screen" required="true">
             <param name="goals_file" value="$(find autoware_mini)/data/maps/$(arg map_name)_goals.yaml" />
         </node>
-
-        <!-- Carla waypoints publisher -->
-        <node if="$(eval global_planner=='carla')" pkg='autoware_mini' type='carla_waypoints_publisher.py' name='carla_waypoints_publisher' output='screen' required="true" />
 
         <!-- Rule-based local planner -->
         <group if="$(eval local_planner=='rule')">
