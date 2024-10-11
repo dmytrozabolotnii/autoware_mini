@@ -6,7 +6,7 @@
     <arg name="detector"                default="lidar_cluster" doc="lidar_cluster, sim, carla"/>
     <arg name="use_lidar_center"        default="true"          doc="use velodyne lidar"/>
     <arg name="use_lidar_front"         default="false"         doc="use ouster lidar"/>
-    <arg name="tfl_detector"            default="camera"        doc="camera, mqtt, mqtt_camera_fusion" />
+    <arg name="tfl_detector"            default="camera"        doc="camera, mqtt, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
     <arg name="tfl_cameras"             default="mako"          doc="mako, nvidia" />
     <arg name="global_planner"          default="lanelet2"      doc="waypoints, lanelet2"/>
     <arg name="local_planner"           default="rule"          doc="rule"/>
@@ -28,8 +28,9 @@
     <arg name="record_bag"              default=""              doc="Name of the bag to record" />
     <arg name="record_topics"           default="(/detection/detected_objects|/detection/traffic_light_status|/localization/current_pose|/localization/current_velocity|/tf)" doc="Regexp of the topics to record, 'all' to record all" />
     <arg name="record_topics_option"    default="$(eval '--all' if record_topics == 'all' else '--regex ' + record_topics if record_topics != '' else '')" doc="rosbag record parameter" />
-    <arg name="benchmark_delay_topic"   default=""              doc="Name of the topic to benchmark" />
-    <arg name="loop"                    default="$(eval benchmark_delay_topic == '' and record_bag == '')" />
+    <arg name="benchmark_delay_topic"   default=""              doc="Name of the topic to benchmark for delay" />
+    <arg name="benchmark_hz_topic"      default=""              doc="Name of the topic to benchmark for hz" />
+    <arg name="loop"                    default="$(eval benchmark_delay_topic == '' and benchmark_hz_topic == '' and record_bag == '')" />
     <arg name="loop_option"             default="$(eval '--loop' if loop else '')" doc="rosbag play parameter" />
     <arg name="start"                   default=""              doc="Seconds from the start of the bag" />
     <arg name="start_option"            default="$(eval '--start ' + str(start) if start != '' else '')" doc="rosbag play parameter" />
@@ -95,6 +96,10 @@
         <remap from="/points_raw_center" to="/lidar_center/points_raw"/>
         <remap from="/points_raw_front" to="/lidar_front/points_raw"/>
         <remap from="/lidar_0/vlp32/pcl2" to="/lidar_center/points_raw"/>
+        <remap from="/interfacea/link4/camera_info" to="/interfaceb/link0/camera_info"/>
+        <remap from="/interfacea/link4/image/h264" to="/interfaceb/link0/image/h264"/>
+        <remap from="/interfacea/link4/image/h265" to="/interfaceb/link0/image/h265"/>
+        <remap from="/interfacea/link4/image/compressed" to="/interfaceb/link0/image/compressed"/>
         <!-- Remap camera_info's from bags to get latest intrinsics from calibration files: TODO: (Should republish mako camera infos as well ??) -->
         <remap from="/interfacea/link0/camera_info" to="/bag/interfacea/link0/camera_info" if="$(arg repub_camera_info)"/>
         <remap from="/interfacea/link1/camera_info" to="/bag/interfacea/link1/camera_info" if="$(arg repub_camera_info)"/>
@@ -103,8 +108,11 @@
         <remap from="/interfaceb/link0/camera_info" to="/bag/interfaceb/link0/camera_info" if="$(arg repub_camera_info)"/>
     </node>
 
-    <node if="$(eval benchmark_delay_topic != '')" pkg="rostopic" type="rostopic" name="delay" required="true" output="screen"
+    <node if="$(eval benchmark_delay_topic != '')" pkg="rostopic" type="rostopic" name="rostopic_delay" required="true" output="screen"
             args="delay $(arg benchmark_delay_topic)" />
+
+    <node if="$(eval benchmark_hz_topic != '')" pkg="rostopic" type="rostopic" name="rostopic_hz" required="true" output="screen"
+            args="hz $(arg benchmark_hz_topic)" />
 
     <node if="$(eval record_bag != '')" pkg="rosbag" type="record" name="recorder" required="true" output="screen"
             args="--output-name $(find autoware_mini)/data/bags/$(arg record_bag) $(arg record_topics_option) --exclude '(/bag/.*|/clock)'" />
@@ -149,7 +157,7 @@
     <include file="$(find autoware_mini)/launch/platform/bag.launch">
         <arg name="use_tf"               value="$(arg use_tf)" />
         <arg name="repub_camera_info"    value="$(arg repub_camera_info)" />
-        <arg name="use_nvidia_cameras"   value="$(eval 'camera' in tfl_detector and tfl_cameras=='nvidia')" />
+        <arg name="use_nvidia_cameras"   value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='nvidia')" />
     </include>
 
     <!-- Rviz -->
