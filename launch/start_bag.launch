@@ -96,6 +96,10 @@
         <remap from="/points_raw_center" to="/lidar_center/points_raw"/>
         <remap from="/points_raw_front" to="/lidar_front/points_raw"/>
         <remap from="/lidar_0/vlp32/pcl2" to="/lidar_center/points_raw"/>
+        <remap from="/interfacea/link4/camera_info" to="/interfaceb/link0/camera_info"/>
+        <remap from="/interfacea/link4/image/h264" to="/interfaceb/link0/image/h264"/>
+        <remap from="/interfacea/link4/image/h265" to="/interfaceb/link0/image/h265"/>
+        <remap from="/interfacea/link4/image/compressed" to="/interfaceb/link0/image/compressed"/>
         <!-- Remap camera_info's from bags to get latest intrinsics from calibration files: TODO: (Should republish mako camera infos as well ??) -->
         <remap from="/interfacea/link0/camera_info" to="/bag/interfacea/link0/camera_info" if="$(arg repub_camera_info)"/>
         <remap from="/interfacea/link1/camera_info" to="/bag/interfacea/link1/camera_info" if="$(arg repub_camera_info)"/>

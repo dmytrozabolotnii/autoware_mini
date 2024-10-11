@@ -74,10 +74,10 @@
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
                 </node>
                 
-                <!-- Nvidia Front Forward 120 FOV camera -->
+                <!-- Nvidia Front Forward 60 FOV camera -->
                 <node pkg="autoware_mini" type="camera_traffic_light_detector.py" name="camera_traffic_light_detector_link2" output="screen" required="true" ns="interfacea_link2">
-                    <remap from="camera_info" to="/interfacea/link2/camera_info"/>
-                    <remap from="image_raw" to="/interfacea/link2/image_rect"/>
+                    <remap from="camera_info" to="/interfaceb/link0/camera_info"/>
+                    <remap from="image_raw" to="/interfaceb/link0/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
                     <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
@@ -95,10 +95,10 @@
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
                 </node>
                 
-                <!-- Nvidia Front Forward 120 FOV camera -->
+                <!-- Nvidia Front Forward 60 FOV camera -->
                 <node pkg="autoware_mini" type="yolo_traffic_light_detector.py" name="camera_traffic_light_detector_link2" output="screen" required="true" ns="interfacea_link2">
-                    <remap from="camera_info" to="/interfacea/link2/camera_info"/>
-                    <remap from="image_raw" to="/interfacea/link2/image_rect"/>
+                    <remap from="camera_info" to="/interfaceb/link0/camera_info"/>
+                    <remap from="image_raw" to="/interfaceb/link0/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
                     <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
