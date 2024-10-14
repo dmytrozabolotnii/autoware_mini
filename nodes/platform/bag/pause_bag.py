@@ -35,7 +35,26 @@ class PauseBag:
                 rospy.loginfo(response.message)
             else:
                 rospy.logerr(response.message)
-    
+
+        elif msg.command == CarlaControl.STEP_ONCE:
+            # pause play, ignore error when already paused
+            response = self.pause_playback(True)
+            self.publish_carla_status(False)
+            # play for 0.1 seconds
+            response = self.pause_playback(False)
+            if not response.success:
+                rospy.logerr(response.message)
+                return
+            self.publish_carla_status(True)
+            rospy.sleep(0.1)
+            # pause again
+            response = self.pause_playback(True)
+            if not response.success:
+                rospy.logerr(response.message)
+                return
+            self.publish_carla_status(False)
+            rospy.loginfo("Stepped 0.1 seconds")
+
     def publish_carla_status(self, running):
         carla_status = CarlaStatus()
         carla_status.frame = 0
