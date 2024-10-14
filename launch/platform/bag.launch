@@ -17,6 +17,8 @@
         <arg name="repub_camera_info"           value="$(arg repub_camera_info)" />
     </include>
 
+    <node pkg="autoware_mini" type="pause_bag.py" name="pause_bag" output="screen" required="true"/>
+
     <group ns="vehicle">
         <rosparam command="load" file="$(find autoware_mini)/config/vehicle.yaml" />
     </group>
