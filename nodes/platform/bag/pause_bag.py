@@ -17,19 +17,24 @@ class PauseBag:
         rospy.Subscriber('/carla/control', CarlaControl, self.carla_control_callback, queue_size=None)
 
         # Services
-        rospy.wait_for_service('/player/pause_playback')
         self.pause_playback = rospy.ServiceProxy('/player/pause_playback', SetBool)
 
     def carla_control_callback(self, msg):
         if msg.command == CarlaControl.PLAY:
-            self.publish_carla_status(True)
             response = self.pause_playback(False)
-            rospy.loginfo(response.message)
+            if response.success:
+                self.publish_carla_status(True)
+                rospy.loginfo(response.message)
+            else:
+                rospy.logerr(response.message)
 
         elif msg.command == CarlaControl.PAUSE:
-            self.publish_carla_status(False)
             response = self.pause_playback(True)
-            rospy.loginfo(response.message)
+            if response.success:
+                self.publish_carla_status(False)
+                rospy.loginfo(response.message)
+            else:
+                rospy.logerr(response.message)
     
     def publish_carla_status(self, running):
         carla_status = CarlaStatus()
@@ -37,7 +42,6 @@ class PauseBag:
         carla_status.fixed_delta_seconds = 0.0
         carla_status.synchronous_mode = True
         carla_status.synchronous_mode_running = running
-
         self.carla_status_pub.publish(carla_status)
 
     def run(self):
