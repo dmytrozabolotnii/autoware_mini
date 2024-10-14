@@ -74,8 +74,8 @@
         <arg name="use_lidar"                           value="$(eval 'lidar' in detector and detector != 'lidar_vella')" />
         <arg name="use_radar"                           value="$(eval 'radar' in detector)" />
         <arg name="use_gnss"                            value="$(eval localizer == 'novatel')" />
-        <arg name="use_mako_cameras"                    value="$(eval 'camera' in tfl_detector and tfl_cameras=='mako')" />
-        <arg name="use_nvidia_cameras"                  value="$(eval 'camera' in tfl_detector and tfl_cameras=='nvidia')" />
+        <arg name="use_mako_cameras"                    value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='mako')" />
+        <arg name="use_nvidia_cameras"                  value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='nvidia')" />
         <arg name="use_manual_control"                  value="$(arg use_manual_control)" />
         <arg name="generate_traffic"                    value="$(arg generate_traffic)" />
         <arg name="use_scenario_runner"                 value="$(arg use_scenario_runner)" />
