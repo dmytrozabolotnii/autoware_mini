@@ -42,6 +42,7 @@ class LocalPathVisualizer:
 
         # lane.cost is used to determine the stopping point distance from path start
         stopping_point_distance = max(lane.cost, 0.0)
+        collision_point_category = lane.increment
 
         marker_array = MarkerArray()
 
@@ -49,7 +50,7 @@ class LocalPathVisualizer:
             points = [waypoint.pose.pose.position for waypoint in lane.waypoints]
             color = ColorRGBA(0.2, 1.0, 0.2, 0.3)
 
-            planner_status_text = "<div style='text-align: center; color: white;'>" + COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[lane.increment] + "</div>"
+            planner_status_text = "<div style='text-align: center; color: white;'>" + COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category] + "</div>"
 
             # local path with stopping_lateral_distance
             marker = Marker(header=lane.header)
@@ -105,16 +106,17 @@ class LocalPathVisualizer:
 
             self.published_waypoints = current_waypoints
 
-            if stopping_point_distance > 0.0 or lane.is_blocked:
+            if lane.is_blocked:
 
                 path = Path(lane.waypoints)
                 pose = path.get_pose_at_distance(stopping_point_distance)
 
-                color = ColorRGBA(0.9, 0.9, 0.9, 0.2)           # white - obstcle affecting ego speed in slowdown area
-                if lane.is_blocked:
-                    color = ColorRGBA(1.0, 1.0, 0.0, 0.5)       # yellow - obstacle in stopping area
-                    if lane.closest_object_velocity < self.stopping_speed_limit:
-                        color = ColorRGBA(1.0, 0.0, 0.0, 0.5)   # red - obstacle in front and very slow
+                if collision_point_category == CollisionPoints.GOAL_POINT:
+                    color = ColorRGBA(0.9, 0.9, 0.9, 0.2)       # white - goal point
+                elif lane.closest_object_velocity < self.stopping_speed_limit:
+                    color = ColorRGBA(1.0, 0.0, 0.0, 0.5)       # red - obstacle in front and very slow
+                else:
+                    color = ColorRGBA(1.0, 1.0, 0.0, 0.5)       # yellow - follow obstacle
 
                 # "Stopping point" - obstacle that currently causes the smallest target velocity
                 marker = Marker(header=lane.header)

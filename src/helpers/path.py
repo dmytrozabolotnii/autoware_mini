@@ -131,7 +131,7 @@ class Path:
         # if distance is negative for interpolate it is measured from the end of the linestring in reverse direction
 
         # point is not at the very beginning of the path
-        if distance - 0.1 > 0:
+        if distance >= 0.1:
             point_before = self.linestring.interpolate(distance - 0.1)
             heading = get_heading_between_two_points(point_before, point_location)
         # use forward point if distance is negative
