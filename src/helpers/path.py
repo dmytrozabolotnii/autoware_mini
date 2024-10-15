@@ -128,10 +128,16 @@ class Path:
 
         # Find the point on the path
         point_location = self.linestring.interpolate(distance)
-        # if distance is negative it is measured from the end of the linestring in reverse direction
-        point_before = self.linestring.interpolate(max(0, distance - 0.1))
+        # if distance is negative for interpolate it is measured from the end of the linestring in reverse direction
 
-        heading = get_heading_between_two_points(point_before, point_location)
+        # point is not at the very beginning of the path
+        if distance - 0.1 > 0:
+            point_before = self.linestring.interpolate(distance - 0.1)
+            heading = get_heading_between_two_points(point_before, point_location)
+        # use forward point if distance is negative
+        else:
+            point_after = self.linestring.interpolate(distance + 0.1)
+            heading = get_heading_between_two_points(point_location, point_after)
 
         pose = Pose(position = Point(x = point_location.x, y = point_location.y, z = point_location.z),
                     orientation = get_orientation_from_heading(heading))

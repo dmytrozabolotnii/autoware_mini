@@ -41,7 +41,7 @@ class LocalPathVisualizer:
     def local_path_callback(self, lane):
 
         # lane.cost is used to determine the stopping point distance from path start
-        stopping_point_distance = lane.cost
+        stopping_point_distance = max(lane.cost, 0.0)
 
         marker_array = MarkerArray()
 
@@ -105,7 +105,7 @@ class LocalPathVisualizer:
 
             self.published_waypoints = current_waypoints
 
-            if stopping_point_distance > 0.0:
+            if stopping_point_distance > 0.0 or lane.is_blocked:
 
                 path = Path(lane.waypoints)
                 pose = path.get_pose_at_distance(stopping_point_distance)
