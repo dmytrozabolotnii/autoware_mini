@@ -85,7 +85,7 @@ class PedestrianCrosswalkChecker:
                     object_centroid = shapely.Point(obj.pose.position.x, obj.pose.position.y)
                     object_distance_from_local_path_start = local_path_linestring.project(object_centroid)
                     # ignore objects behind the ego vehicle
-                    if math.isclose(object_distance_from_local_path_start, 0.0):
+                    if math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
                         continue
                     object_speed = get_vector_norm_3d(obj.velocity.linear)
                     object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.polygon.points])
