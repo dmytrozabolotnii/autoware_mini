@@ -45,7 +45,7 @@ traffic_light_stopline_checker:
   braking_safety_distance_stopline: 2     # m
   tfl_force_stop_speed_limit: 5.0         # km/h
   tfl_maximum_deceleration: 2.8           # m/s2
-local_path_collision_checker:
+object_collision_checker:
   braking_safety_distance_obstacle: 4     # m
 pedestrian_crosswalk_checker:
   braking_safety_distance_crosswalk: 6    # m

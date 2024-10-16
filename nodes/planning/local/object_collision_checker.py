@@ -24,7 +24,7 @@ class ObjectCollisionChecker:
 
         # subscribers
         rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/detection/predicted_objects_naive', DetectedObjectArray, self.detected_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/detection/detected_objects', DetectedObjectArray, self.detected_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
     def detected_objects_callback(self, msg):
         self.detected_objects = msg.objects

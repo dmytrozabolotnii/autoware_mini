@@ -64,7 +64,7 @@
             <node pkg="autoware_mini" type="traffic_light_stopline_checker.py" name="traffic_light_stopline_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
-            <node pkg="autoware_mini" type="local_path_collision_checker.py" name="local_path_collision_checker" output="screen" required="true" />
+            <node pkg="autoware_mini" type="object_collision_checker.py" name="object_collision_checker" output="screen" required="true" />
             <node pkg="autoware_mini" type="pedestrian_crosswalk_checker.py" name="pedestrian_crosswalk_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
