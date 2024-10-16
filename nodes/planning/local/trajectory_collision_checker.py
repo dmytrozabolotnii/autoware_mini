@@ -42,33 +42,23 @@ class TrajectoryCollisionChecker:
             return
 
         if len(msg.waypoints) > 0 and len(detected_objects) > 0:
-            local_path = Path(msg.waypoints)
-
-            # create buffer around local path
-            local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
+            local_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+            local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
             for object in detected_objects:
-                # get the convex hulls and store as shapely polygons
-                object_polygon = shapely.Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
-
-                # 2) check if object candidate trajectory intersects with local path buffer
                 if len(object.candidate_trajectories.lanes) > 0:
-
-                    object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
-                    object_width = get_polygon_width(object_polygon, object_heading)
 
                     for trajectory in object.candidate_trajectories.lanes:
                         trajectory_linestring = shapely.LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in trajectory.waypoints])
-                        trajectory_buffer = trajectory_linestring.buffer(object_width / 2, cap_style="flat")
-                        shapely.prepare(trajectory_buffer)
+                        shapely.prepare(trajectory_linestring)
 
-                        if local_path_buffer.intersects(trajectory_buffer):
-                            intersection_result = trajectory_buffer.intersection(local_path_buffer)
+                        if local_path_buffer.intersects(trajectory_linestring):
+                            intersection_result = trajectory_linestring.intersection(local_path_buffer)
                             intersection_points = shapely.get_coordinates(intersection_result)
 
                             # TODO simple hack to ignore trajectories from behind
-                            collision_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in intersection_points])
+                            collision_distance = min([local_path_linestring.project(shapely.Point(x, y)) for x, y in intersection_points])
                             if math.isclose(collision_distance, 0.0, abs_tol=0.001):
                                 continue
 
