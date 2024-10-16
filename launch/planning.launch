@@ -65,6 +65,7 @@
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
             <node pkg="autoware_mini" type="object_collision_checker.py" name="object_collision_checker" output="screen" required="true" />
+            <node pkg="autoware_mini" type="trajectory_collision_checker.py" name="trajectory_collision_checker" output="screen" required="true" />
             <node pkg="autoware_mini" type="pedestrian_crosswalk_checker.py" name="pedestrian_crosswalk_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>

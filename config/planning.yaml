@@ -50,3 +50,5 @@ object_collision_checker:
 pedestrian_crosswalk_checker:
   braking_safety_distance_crosswalk: 6    # m
   crossing_angle_max_limit: 70            # degrees
+trajectory_collision_checker:
+  braking_safety_distance_obstacle: 4     # m
