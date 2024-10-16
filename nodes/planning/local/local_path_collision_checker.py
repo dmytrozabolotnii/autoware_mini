@@ -83,7 +83,7 @@ class LocalPathCollisionChecker:
 
                             # TODO simple hack to ignore trajectories from behind
                             collision_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in intersection_points])
-                            if math.isclose(collision_distance, 0):
+                            if math.isclose(collision_distance, 0.0, abs_tol=0.001):
                                 continue
 
                             # TODO currently assigning to trajectory intersection points the speed vectors from the object!

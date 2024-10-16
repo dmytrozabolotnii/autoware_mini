@@ -80,19 +80,22 @@ class SpeedPlanner:
                                         in zip(collision_points_path_headings, collision_points)])
             object_braking_distances = collision_points['distance_to_stop']
 
-            # calculate target velocity for every collision pont
+            # calculate target velocity for every collision point
             # 'abs' is used to turn negative speed of approaching cars into positive, so that target distance would be smaller and thus target_speed will be decreased
             target_distances = object_distances - self.current_pose_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
             target_velocities = np.sqrt(np.maximum(0.0, np.maximum(0.0, object_velocities)**2 + 2 * self.default_deceleration * target_distances))
 
-            # find the closest collision point
-            min_value_index = np.argmin(target_velocities)
+            # find the collision point causing smallest target_velocity and being closest to ego vehicle
+            min_target_velocity = np.min(target_velocities)
+            mask = np.isclose(target_velocities, min_target_velocity)
+            adjusted_distances = np.where(mask, object_distances, np.inf)
+            min_value_index = np.argmin(adjusted_distances)
+
             closest_object_distance = object_distances[min_value_index] - ego_distance_from_local_path_start - self.current_pose_to_car_front
             closest_object_velocity = object_velocities[min_value_index]
             stopping_point_distance = object_distances[min_value_index] - object_braking_distances[min_value_index]
             collision_point_category = collision_points[min_value_index]["category"]
-            if collision_point_category != CollisionPoints.GOAL_POINT:
-                local_path_blocked = True
+            local_path_blocked = True
 
             # Recalculate target_velocity for all the waypoints using the closest object
             zero_speeds_onwards = False
