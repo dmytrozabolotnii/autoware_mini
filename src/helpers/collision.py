@@ -25,6 +25,7 @@ class CollisionPoints:
     COLLIDING_TRAJECTORY = 5
     OBJECT_ON_CROSSWALK = 6
     TRAJECTORY_ON_CROSSWALK = 7
+    YIELDING_TRAJECTORY = 8
 
     def __init__(self):
 

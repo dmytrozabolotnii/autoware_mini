@@ -230,6 +230,10 @@ def visualize_lineStringLayer(map):
                     points = [point for point in line]
                     stopline_marker = linestring_to_marker(points, "Stop line", line.id, WHITE, 0.5, rospy.Time.now())
                     marker_array.markers.append(stopline_marker)
+                elif line.attributes["type"] == "yield_line":
+                    points = [point for point in line]
+                    yieldline_marker = linestring_to_marker(points, "Yield line", line.id, YELLOW, 0.2, rospy.Time.now())
+                    marker_array.markers.append(yieldline_marker)
 
     return marker_array
 

@@ -107,7 +107,7 @@ naive_predictor:
   prediction_min_speed: 1.0         # m/s
 
 map_based_predictor:
-  prediction_horizon: 4.0           # s
+  prediction_horizon: 5.0           # s
   prediction_interval: 0.1          # s
   distance_from_lanelet: 0.1        # m - outside of lanelet area
   distance_from_centerline: 1.0     # m - from centerline

@@ -52,6 +52,20 @@ def get_crosswalks(lanelet2_map):
 
     return crosswalks
 
+def get_yield_lines(lanelet2_map):
+    """
+    Add all yield lines to a dictionary with yield_line id as key and yield_line as value
+    :param lanelet2_map: lanelet2 map
+    """
+
+    yield_lines = {}
+    for line in lanelet2_map.lineStringLayer:
+        if line.attributes:
+            if line.attributes["type"] == "yield_line":
+                yield_lines[line.id] = shapely.LineString([(p.x, p.y) for p in line])
+
+    return yield_lines
+
 
 def get_stoplines(lanelet2_map):
     """
