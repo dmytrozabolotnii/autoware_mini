@@ -67,7 +67,7 @@ class TrajectoryCollisionChecker:
             local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
-            # find if there are any yiled_lines on local_path and select th closest one
+            # find if there are any yiled_lines on local_path and select the closest one
             yield_line_distance = np.inf
             yield_line_point = None
             for yield_line in self.yield_lines_on_global_path:

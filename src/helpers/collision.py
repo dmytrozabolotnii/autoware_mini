@@ -26,6 +26,7 @@ class CollisionPoints:
     OBJECT_ON_CROSSWALK = 6
     TRAJECTORY_ON_CROSSWALK = 7
     YIELDING_TRAJECTORY = 8
+    STOP_LINE_FORCED_STOP = 9
 
     def __init__(self):
 
