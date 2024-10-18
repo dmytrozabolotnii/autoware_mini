@@ -92,7 +92,8 @@ class TrajectoryCollisionChecker:
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 
                             object_current_heading = get_heading_from_vector(obj.velocity.linear)
-                            object_distance_from_local_path_start = local_path.linestring.project(shapely.Point(obj.pose.position.x, obj.pose.position.y))
+                            object_current_location = shapely.Point(obj.pose.position.x, obj.pose.position.y)
+                            object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
                             object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
                             heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
 
@@ -121,7 +122,7 @@ class TrajectoryCollisionChecker:
                             # 2. CHECK COLLISION only the ones that are not included for yielding
                             # TODO implement time based collision checking and HACK should be removed
                             # HACK ignore trajectories from object in front of ego having similar heading with local path, so that 0 velocity could be used
-                            if object_distance_from_local_path_start > 0.1 and heading_difference < self.heading_alignment_limit:
+                            if heading_difference < self.heading_alignment_limit and local_path_buffer.intersects(object_current_location):
                                 continue
                             collision_points.add_intersection_points(trajectory_intersection_points,
                                                                     z = obj.pose.position.z,
