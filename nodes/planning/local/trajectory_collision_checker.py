@@ -8,7 +8,7 @@ from autoware_msgs.msg import Lane, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
-from helpers.lanelet2 import load_lanelet2_map, get_yield_lines
+from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.path import Path
 
 class TrajectoryCollisionChecker:
@@ -29,7 +29,7 @@ class TrajectoryCollisionChecker:
         self.yield_lines_on_global_path = None
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        self.all_yield_lines = get_yield_lines(lanelet2_map)
+        self.yield_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["yield", "yield_stop"])
 
         # publishers
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -47,7 +47,7 @@ class TrajectoryCollisionChecker:
         shapely.prepare(global_path_linestring)
 
         yield_lines_on_global_path = []
-        for id, yield_line in self.all_yield_lines.items():
+        for id, yield_line in self.yield_lines.items():
             if yield_line.intersects(global_path_linestring):
                 yield_lines_on_global_path.append(yield_line)
 
