@@ -61,17 +61,17 @@
         <group if="$(eval local_planner=='rule')">
             <node pkg="autoware_mini" type="local_path_extractor.py" name="local_path_extractor" output="screen" required="true" />
             <node pkg="autoware_mini" type="goal_stop_checker.py" name="goal_stop_checker" output="screen" required="true" />
-            <node pkg="autoware_mini" type="automatic_stop_behavior.py" name="automatic_stop_behavior" output="screen" required="true" >
-                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
-            </node>
+            <node pkg="autoware_mini" type="object_collision_checker.py" name="object_collision_checker" output="screen" required="true" />
             <node pkg="autoware_mini" type="traffic_light_stopline_checker.py" name="traffic_light_stopline_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
-            <node pkg="autoware_mini" type="object_collision_checker.py" name="object_collision_checker" output="screen" required="true" />
+            <node pkg="autoware_mini" type="pedestrian_crosswalk_checker.py" name="pedestrian_crosswalk_checker" output="screen" required="true" >
+                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+            </node>
             <node pkg="autoware_mini" type="trajectory_collision_checker.py" name="trajectory_collision_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
-            <node pkg="autoware_mini" type="pedestrian_crosswalk_checker.py" name="pedestrian_crosswalk_checker" output="screen" required="true" >
+            <node pkg="autoware_mini" type="automatic_stop_behavior.py" name="automatic_stop_behavior" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
             <node pkg="nodelet" type="nodelet" name="collision_points_merger" output="screen" required="true"
@@ -79,9 +79,11 @@
                 <rosparam param="input_topics">
                 [
                     /planning/goal_collision_points,
-                    /planning/local_path_collision_points,
+                    /planning/object_collision_points,
                     /planning/tfl_stopline_collision_points,
-                    /planning/crosswalk_collision_points
+                    /planning/crosswalk_collision_points,
+                    /planning/trajectory_collision_points,
+                    /planning/stop_line_collision_points
                 ]
                 </rosparam>
                 <remap from="~output" to="collision_points" />
