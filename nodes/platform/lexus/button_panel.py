@@ -17,7 +17,7 @@ class ButtonPanelNode:
 
         self.engage_pub = rospy.Publisher("engage", Bool, queue_size=10, tcp_nodelay=True)
         self.marker_pub = rospy.Publisher("/log/markers", Marker, queue_size=10, tcp_nodelay=True)
-        self.remove_stop_pub = rospy.Publisher('remove_stop', Bool, queue_size=1, tcp_nodelay=True)
+        self.go_drive_pub = rospy.Publisher('go_drive', Bool, queue_size=1, tcp_nodelay=True)
 
         rospy.Subscriber("/localization/current_pose", PoseStamped, self.pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber("/pacmod/enabled", Bool, self.enabled_callback, queue_size=1, tcp_nodelay=True)
@@ -44,7 +44,7 @@ class ButtonPanelNode:
                     rospy.logwarn("%s - did not publish engage, in cooldown", rospy.get_name())
             else:
                 # Disables forced stop on the stop lines
-                self.remove_stop_pub.publish(Bool(True))
+                self.go_drive_pub.publish(Bool(True))
         if msg.buttons[1] == 1 or msg.buttons[2] == 0 or msg.buttons[3] == 1 or msg.buttons[4] == 1 or msg.buttons[5] == 1:
             if self.pose_msg is not None:
                 marker = Marker()

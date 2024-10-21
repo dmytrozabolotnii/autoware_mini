@@ -4,4 +4,4 @@ rviz_service_call:
     buttons:
     - {service_name: "/planning/cancel_route", text: "Cancel Route"}
     - {service_name: "/localization/cancel_pose", text: "Cancel Pose"}
-    - {service_name: "/planning/call_remove_stop", text: "Remove Stop"}
+    - {service_name: "/planning/call_go_drive", text: "Go drive"}
