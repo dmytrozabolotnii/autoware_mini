@@ -24,7 +24,6 @@ class MapBasedPredictor:
         self.prediction_interval = rospy.get_param('~prediction_interval')
         self.prediction_min_speed = rospy.get_param('~prediction_min_speed')
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
-        self.distance_from_centerline = rospy.get_param('~distance_from_centerline')
         self.angle_threshold = rospy.get_param('~angle_threshold')
 
         lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
@@ -66,11 +65,6 @@ class MapBasedPredictor:
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
                 object_distance_from_lanelet_start = linestring.project(shapely.Point(object_location.x, object_location.y))
                 trajectory_start_point = linestring.interpolate(object_distance_from_lanelet_start)
-
-                # Skip lanelet if distance from centerline over limit
-                object_distance_from_centerline = get_distance_between_two_points_2d(trajectory_start_point, object_location)
-                if object_distance_from_centerline > self.distance_from_centerline:
-                    continue
 
                 # Skip lanelet if angle difference between object heading and lanelet heading is over limit
                 object_heading = get_heading_from_vector(obj.velocity.linear)
