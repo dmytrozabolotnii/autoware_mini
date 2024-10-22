@@ -1,13 +1,16 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="global_planner"          default="lanelet2"  doc="waypoints, lanelet2, carla" />
-    <arg name="local_planner"           default="rule"      doc="none, rule" />
-    <arg name="use_path_smoothing"      default="true" />
-    <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
-    <arg name="lanelet2_map_name"       default="tartu_demo.osm" />
-    <arg name="map_name"                default="tartu_demo" />
-    <arg name="load_goals"              default="true" />
+    <arg name="global_planner"              default="lanelet2"  doc="waypoints, lanelet2, carla" />
+    <arg name="local_planner"               default="rule"      doc="none, rule" />
+    <arg name="use_path_smoothing"          default="true" />
+    <arg name="waypoints_file"              default="waypoints_erm_utm_1m.csv" />
+    <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
+    <arg name="map_name"                    default="tartu_demo" />
+    <arg name="load_goals"                  default="true" />
+    <arg name="use_supercombo"              default="false" />
+    <arg name="supercombo_path"             default="$(find autoware_mini)/data/models/openpilot_supercombo/supercombo.onnx" />
+    <arg name="supercombo_metadata_path"    default="$(find autoware_mini)/data/models/openpilot_supercombo/supercombo_metadata.pkl" />
     
     <group ns="planning">
 
@@ -81,6 +84,15 @@
         </group>
 
         <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/global_path /planning/local_path" name="local_path_relay" output="screen" required="true" />
+
+        <node if="$(arg use_supercombo)" pkg="autoware_mini" type="openpilot_supercombo_planner.py" name="openpilot_supercombo_planner" output="screen" required="true">
+            <param name="supercombo_path" value="$(arg supercombo_path)" />
+            <param name="supercombo_metadata_path" value="$(arg supercombo_metadata_path)" />
+            <remap from="camera_info_fov60" to="/interfaceb/link0/camera_info"/>
+            <remap from="image_raw_fov60" to="/interfaceb/link0/image_rect"/>
+            <remap from="camera_info_fov120" to="/interfaceb/link0/camera_info"/>
+            <remap from="image_raw_fov120" to="/interfaceb/link0/image_rect"/>
+        </node>
 
         <!-- Config -->
         <rosparam command="load" file="$(find autoware_mini)/config/planning.yaml" />
