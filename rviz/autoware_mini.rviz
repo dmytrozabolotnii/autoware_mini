@@ -862,16 +862,7 @@ Visualization Manager:
                     Image right: true
                     Value: true
                   Nvidia:
-                    Camera Interface link1 Right: true
-                    Camera Interface link2 Forward: true
-                    Camera Interface link3 Backward: true
-                    Camera InterfaceB link 0 Base: true
-                    Camera Interfacea link 0 Left: true
-                    Image Interface link1 Right: true
-                    Image Interface link2 Forward: true
-                    Image Interface link3 Backward: true
-                    Image InterfaceB link0 Base: true
-                    Image Interfacea link0 Left: true
+                    "": true
                     Value: true
                   Points raw center: true
                   Points raw front: true
@@ -995,16 +986,7 @@ Visualization Manager:
                     Image right: true
                     Value: true
                   Nvidia:
-                    Camera Interface link1 Right: true
-                    Camera Interface link2 Forward: true
-                    Camera Interface link3 Backward: true
-                    Camera InterfaceB link 0 Base: true
-                    Camera Interfacea link 0 Left: true
-                    Image Interface link1 Right: true
-                    Image Interface link2 Forward: true
-                    Image Interface link3 Backward: true
-                    Image InterfaceB link0 Base: true
-                    Image Interfacea link0 Left: true
+                    "": true
                     Value: true
                   Points raw center: true
                   Points raw front: true
@@ -1128,7 +1110,10 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1258,7 +1243,10 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1388,7 +1376,10 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link2 Forward: true
@@ -1518,7 +1509,10 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1648,7 +1642,10 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
