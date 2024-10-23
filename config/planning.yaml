@@ -63,6 +63,3 @@ openpilot_supercombo_planner:
   use_wide_camera: True
   narrow_image_crop_factor: 0.85
   wide_image_crop_factor: 1.0
-
-supercombo_prediction_visualizer:
-  transform_timeout: 0.06
