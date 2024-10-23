@@ -26,6 +26,7 @@
         <arg name="use_remote_nvidia_driver"    value="$(arg use_nvidia_cameras)" />
         <!-- Rectify only nvidia camera images -->
         <arg name="rectify"                     value="$(arg use_nvidia_cameras)" />
+        <arg name="nvidia_encoder"              value="jpeg" />
     </include>
 
     <group ns="vehicle">
