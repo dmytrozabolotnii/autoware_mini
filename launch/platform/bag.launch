@@ -12,7 +12,7 @@
         <!-- Don't run remote nvidia driver in Bag mode -->
         <arg name="use_remote_nvidia_driver"    value="false" />
         <!-- Rectify only nvidia camera images -->
-        <arg name="rectify"                     value="$(arg use_nvidia_cameras)" />
+        <arg name="nvidia_rectify"              value="$(arg use_nvidia_cameras)" />
         <!-- Republish camera infos for nvidia cameras -->
         <arg name="repub_camera_info"           value="$(arg repub_camera_info)" />
     </include>

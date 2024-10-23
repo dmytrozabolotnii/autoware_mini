@@ -25,7 +25,7 @@
         <arg name="use_nvidia_cameras"          value="$(arg use_nvidia_cameras)" />
         <arg name="use_remote_nvidia_driver"    value="$(arg use_nvidia_cameras)" />
         <!-- Rectify only nvidia camera images -->
-        <arg name="rectify"                     value="$(arg use_nvidia_cameras)" />
+        <arg name="nvidia_rectify"              value="$(arg use_nvidia_cameras)" />
         <arg name="nvidia_encoder"              value="jpeg" />
         <arg name="nvidia_fps"                  value="10" />
     </include>
