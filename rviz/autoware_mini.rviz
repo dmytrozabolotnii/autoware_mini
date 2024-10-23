@@ -803,7 +803,7 @@ Visualization Manager:
                     Wheel: true
                 Detection:
                   Detected objects: true
-                  Let's go yield line: true
+                  Final objects: true
                   Lidar:
                     Center:
                       Points center ground: true
@@ -837,8 +837,21 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  "": true
+                  Collision points:
+                    All collision points: true
+                    Goal: true
+                    Local path: true
+                    Pedestrian crosswalk: true
+                    Traffic light stopline: true
+                    Value: true
+                  Global path: true
+                  Local path: true
+                  Smoothed path: true
                   Spupercombo plan: true
+                  Start and Goal lanelet markers: true
+                  Stop point: true
+                  Supercombo lanes: true
+                  Supercombo output visualization: true
                   Value: true
                 Sensing:
                   Mako:
@@ -847,22 +860,17 @@ Visualization Manager:
                     Image right: true
                     Value: true
                   Nvidia:
-                    Camera Interface link1 Right: true
-                    Camera Interface link2 Forward: true
-                    Camera Interface link3 Backward: true
-                    Camera InterfaceB link 0 Base: true
-                    Camera Interfacea link 0 Left: true
-                    Image Interface link1 Right: true
-                    Image Interface link2 Forward: true
-                    Image Interface link3 Backward: true
-                    Image InterfaceB link0 Base: true
-                    Image Interfacea link0 Left: true
+                    "": true
                     Value: true
                   Points raw center: true
                   Points raw front: true
                   Radar raw: true
                   Value: true
                 Simulation:
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Bicycle markers: true
                   Carla camera view: true
                   Carla image view: true
@@ -921,7 +929,7 @@ Visualization Manager:
                     Wheel: true
                 Detection:
                   Detected objects: true
-                  Let's go yield line: true
+                  Final objects: true
                   Lidar:
                     Center:
                       Points center ground: true
@@ -955,8 +963,21 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  "": true
+                  Collision points:
+                    All collision points: true
+                    Goal: true
+                    Local path: true
+                    Pedestrian crosswalk: true
+                    Traffic light stopline: true
+                    Value: true
+                  Global path: true
+                  Local path: true
+                  Smoothed path: true
                   Spupercombo plan: true
+                  Start and Goal lanelet markers: true
+                  Stop point: true
+                  Supercombo lanes: true
+                  Supercombo output visualization: true
                   Value: true
                 Sensing:
                   Mako:
@@ -965,22 +986,17 @@ Visualization Manager:
                     Image right: true
                     Value: true
                   Nvidia:
-                    Camera Interface link1 Right: true
-                    Camera Interface link2 Forward: true
-                    Camera Interface link3 Backward: true
-                    Camera InterfaceB link 0 Base: true
-                    Camera Interfacea link 0 Left: true
-                    Image Interface link1 Right: true
-                    Image Interface link2 Forward: true
-                    Image Interface link3 Backward: true
-                    Image InterfaceB link0 Base: true
-                    Image Interfacea link0 Left: true
+                    "": true
                     Value: true
                   Points raw center: true
                   Points raw front: true
                   Radar raw: true
                   Value: true
                 Simulation:
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Bicycle markers: true
                   Carla camera view: true
                   Carla image view: true
@@ -1043,7 +1059,7 @@ Visualization Manager:
                     Wheel: true
                 Detection:
                   Detected objects: true
-                  Let's go yield line: true
+                  Final objects: true
                   Lidar:
                     Center:
                       Points center ground: true
@@ -1077,12 +1093,28 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  "": true
+                  Collision points:
+                    All collision points: true
+                    Goal: true
+                    Local path: true
+                    Pedestrian crosswalk: true
+                    Traffic light stopline: true
+                    Value: true
+                  Global path: true
+                  Local path: true
+                  Smoothed path: true
                   Spupercombo plan: true
+                  Start and Goal lanelet markers: true
+                  Stop point: true
+                  Supercombo lanes: true
+                  Supercombo output visualization: true
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1100,6 +1132,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Bicycle markers: true
                   Carla camera view: true
                   Carla image view: true
@@ -1158,7 +1194,7 @@ Visualization Manager:
                     Wheel: true
                 Detection:
                   Detected objects: true
-                  Let's go yield line: true
+                  Final objects: true
                   Lidar:
                     Center:
                       Points center ground: true
@@ -1192,12 +1228,28 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  "": true
+                  Collision points:
+                    All collision points: true
+                    Goal: true
+                    Local path: true
+                    Pedestrian crosswalk: true
+                    Traffic light stopline: true
+                    Value: true
+                  Global path: true
+                  Local path: true
+                  Smoothed path: true
                   Spupercombo plan: true
+                  Start and Goal lanelet markers: true
+                  Stop point: true
+                  Supercombo lanes: true
+                  Supercombo output visualization: true
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1215,6 +1267,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Bicycle markers: true
                   Carla camera view: true
                   Carla image view: true
@@ -1273,7 +1329,7 @@ Visualization Manager:
                     Wheel: true
                 Detection:
                   Detected objects: true
-                  Let's go yield line: true
+                  Final objects: true
                   Lidar:
                     Center:
                       Points center ground: true
@@ -1307,12 +1363,28 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  "": true
+                  Collision points:
+                    All collision points: true
+                    Goal: true
+                    Local path: true
+                    Pedestrian crosswalk: true
+                    Traffic light stopline: true
+                    Value: true
+                  Global path: true
+                  Local path: true
+                  Smoothed path: true
                   Spupercombo plan: true
+                  Start and Goal lanelet markers: true
+                  Stop point: true
+                  Supercombo lanes: true
+                  Supercombo output visualization: true
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link2 Forward: true
@@ -1330,6 +1402,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Bicycle markers: true
                   Carla camera view: true
                   Carla image view: true
@@ -1388,7 +1464,7 @@ Visualization Manager:
                     Wheel: true
                 Detection:
                   Detected objects: true
-                  Let's go yield line: true
+                  Final objects: true
                   Lidar:
                     Center:
                       Points center ground: true
@@ -1422,12 +1498,28 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  "": true
+                  Collision points:
+                    All collision points: true
+                    Goal: true
+                    Local path: true
+                    Pedestrian crosswalk: true
+                    Traffic light stopline: true
+                    Value: true
+                  Global path: true
+                  Local path: true
+                  Smoothed path: true
                   Spupercombo plan: true
+                  Start and Goal lanelet markers: true
+                  Stop point: true
+                  Supercombo lanes: true
+                  Supercombo output visualization: true
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1445,6 +1537,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Bicycle markers: true
                   Carla camera view: true
                   Carla image view: true
@@ -1503,7 +1599,7 @@ Visualization Manager:
                     Wheel: true
                 Detection:
                   Detected objects: true
-                  Let's go yield line: true
+                  Final objects: true
                   Lidar:
                     Center:
                       Points center ground: true
@@ -1537,12 +1633,28 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  "": true
+                  Collision points:
+                    All collision points: true
+                    Goal: true
+                    Local path: true
+                    Pedestrian crosswalk: true
+                    Traffic light stopline: true
+                    Value: true
+                  Global path: true
+                  Local path: true
+                  Smoothed path: true
                   Spupercombo plan: true
+                  Start and Goal lanelet markers: true
+                  Stop point: true
+                  Supercombo lanes: true
+                  Supercombo output visualization: true
                   Value: true
                 Sensing:
                   Mako:
-                    "": true
+                    Camera left: true
+                    Camera right: true
+                    Image left: true
+                    Image right: true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1560,6 +1672,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Bicycle markers: true
                   Carla camera view: true
                   Carla image view: true
@@ -2258,9 +2374,17 @@ Visualization Manager:
           Marker Topic: /planning/supercombo_plan
           Name: Spupercombo plan
           Namespaces:
-            {}
+            Supercombo plan: true
           Queue Size: 100
           Value: true
+        - Class: rviz/MarkerArray
+          Enabled: false
+          Marker Topic: /planning/supercombo_lanes
+          Name: Supercombo lanes
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: false
       Enabled: true
       Name: Planning
     - Class: rviz/Group
@@ -2346,7 +2470,7 @@ Visualization Manager:
                 Wheel: true
             Detection:
               Detected objects: true
-              Let's go yield line: true
+              Final objects: true
               Lidar:
                 Center:
                   Points center ground: true
@@ -2380,10 +2504,25 @@ Visualization Manager:
               "": true
               Value: true
             Planning:
-              "": true
+              Collision points:
+                All collision points: true
+                Goal: true
+                Local path: true
+                Pedestrian crosswalk: true
+                Traffic light stopline: true
+                Value: true
+              Global path: true
+              Local path: true
+              Smoothed path: true
               Spupercombo plan: true
+              Start and Goal lanelet markers: true
+              Stop point: true
+              Supercombo lanes: true
+              Supercombo output visualization: true
               Value: true
             Sensing:
+              "":
+                "": true
               "":
                 "": true
                 Value: true

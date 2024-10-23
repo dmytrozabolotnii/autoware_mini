@@ -72,7 +72,7 @@ class SupercomboConstants:
 class SupercomboModel:
     """Class for the Openpilot supercombo model"""
 
-    def __init__(self, supercombo_path, supercombo_metadata_path):
+    def __init__(self, supercombo_path, supercombo_metadata_path, use_wide_camera, img_crop_size, wide_img_crop_size):
         self.supercombo_model = onnxruntime.InferenceSession(supercombo_path, providers=['CUDAExecutionProvider'])
 
         with open(supercombo_metadata_path, 'rb') as f:
@@ -82,7 +82,7 @@ class SupercomboModel:
         # Model input initializations
         self.desire = np.zeros((1, 25, 8), dtype=np.float16)
         self.traffic_convention = np.array([[0,1]], dtype=np.float16)
-        self.lateral_control_params = np.array([[0.2, 0.3]], dtype=np.float16)
+        self.lateral_control_params = np.array([[0.0, 0.3]], dtype=np.float16)
         self.prev_desired_curv = np.zeros((25, 1), dtype=np.float16)
         self.full_featres = np.zeros((99, 512), dtype=np.float16)
 
@@ -91,21 +91,29 @@ class SupercomboModel:
         self.img_input_height = 256
         self.img_crop_size = 2/3
         self.wide_img_crop_size = None
+        self.use_wide_camera = use_wide_camera
+        self.img_crop_size = img_crop_size
+        self.wide_img_crop_size = wide_img_crop_size
 
         self.output_parser = SupercomboOutputParser()
 
 
-    def predict(self, imgs, wide_imgs, prev_output):
+    def predict(self, imgs, wide_imgs, prev_output, speed):
         # Preprocess input images
         img1, img2 = imgs
         img1_yuv420 = self.convert_to_yuv420_6_channels(img1, self.img_crop_size)
         img2_yuv420 = self.convert_to_yuv420_6_channels(img2, self.img_crop_size)
         input_imgs = np.vstack((img1_yuv420, img2_yuv420))[np.newaxis, ...]
 
-        wide_img1, wide_img2 = wide_imgs
-        wide_img1_yuv420 = self.convert_to_yuv420_6_channels(wide_img1, self.wide_img_crop_size)
-        wide_img2_yuv420 = self.convert_to_yuv420_6_channels(wide_img2, self.wide_img_crop_size)
-        big_input_imgs = np.vstack((wide_img1_yuv420, wide_img2_yuv420))[np.newaxis, ...]
+        if self.use_wide_camera:
+            wide_img1, wide_img2 = wide_imgs
+            wide_img1_yuv420 = self.convert_to_yuv420_6_channels(wide_img1, self.wide_img_crop_size)
+            wide_img2_yuv420 = self.convert_to_yuv420_6_channels(wide_img2, self.wide_img_crop_size)
+            big_input_imgs = np.vstack((wide_img1_yuv420, wide_img2_yuv420))[np.newaxis, ...]
+        else:
+            big_input_imgs = np.zeros((1, 12, 128, 256), dtype=np.uint8)
+
+        self.lateral_control_params[0] = speed
 
         # Update model inputs with with output data from the previous prediction
         if prev_output is not None:
@@ -169,7 +177,7 @@ class SupercomboModel:
         :return: 6-channel image in YUV420 format
         """
 
-        if crop_size is not None:
+        if crop_size is not None or crop_size < 1:
             image = self.crop_images(image, crop_size)
         
         # Resize the image to 256x512 as required
