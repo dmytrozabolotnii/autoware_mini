@@ -27,6 +27,7 @@
         <!-- Rectify only nvidia camera images -->
         <arg name="rectify"                     value="$(arg use_nvidia_cameras)" />
         <arg name="nvidia_encoder"              value="jpeg" />
+        <arg name="nvidia_fps"                  value="10" />
     </include>
 
     <group ns="vehicle">
