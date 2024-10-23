@@ -29,16 +29,16 @@ class AutomaticStopBehavior:
         self.stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["yield_stop"])
 
         # publishers
-        self.go_drive_pub = rospy.Publisher('go_drive', Bool, queue_size=1, tcp_nodelay=True)
+        self.lets_go_pub = rospy.Publisher('lets_go', Bool, queue_size=1, tcp_nodelay=True)
         self.stop_line_collision_pub = rospy.Publisher('stop_line_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('lanelet2_global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('go_drive', Bool, self.go_drive_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('lets_go', Bool, self.lets_go_callback, queue_size=1, tcp_nodelay=True)
 
         # Services
-        rospy.Service('call_go_drive', Empty, self.call_go_drive_callback)
+        rospy.Service('service_lets_go', Empty, self.lets_go_handler)
 
 
     def global_path_callback(self, msg):
@@ -99,15 +99,15 @@ class AutomaticStopBehavior:
         collision_points_msg.header = msg.header
         self.stop_line_collision_pub.publish(collision_points_msg)
 
-    def go_drive_callback(self, msg):
+    def lets_go_callback(self, msg):
         # reset timer and set current closest stop line id as the one to be removed
         self.timer = rospy.Time.now()
         self.ignore_stop_line_id = self.current_closest_stop_line_id
         rospy.loginfo("Removed forced stop for stopline id %s for 10 seconds", self.ignore_stop_line_id)
 
     # service call to simulate Go button press from rviz
-    def call_go_drive_callback(self, msg):
-        self.go_drive_pub.publish(Bool(True))
+    def lets_go_handler(self, msg):
+        self.lets_go_pub.publish(Bool(True))
         return EmptyResponse()
 
     def run(self):
