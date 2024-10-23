@@ -56,10 +56,11 @@ class AutomaticStopBehavior:
 
 
         stop_lines_on_global_path = self.stop_lines_on_global_path
-        collision_points = CollisionPoints()
 
         if stop_lines_on_global_path is None:
             return
+
+        collision_points = CollisionPoints()
 
         local_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
         shapely.prepare(local_path_linestring)
@@ -76,7 +77,7 @@ class AutomaticStopBehavior:
                 if id != self.ignore_stop_line_id:
                     collision_points.add_point(x = stop_line_intersection_result.x,
                                                 y = stop_line_intersection_result.y,
-                                                z = 50,                     # TODO
+                                                z = stop_line.coords[0][2],
                                                 vx = 0.0,
                                                 vy = 0.0, 
                                                 vz = 0.0,
@@ -103,7 +104,7 @@ class AutomaticStopBehavior:
         # reset timer and set current closest stop line id as the one to be removed
         self.timer = rospy.Time.now()
         self.ignore_stop_line_id = self.current_closest_stop_line_id
-        rospy.loginfo("Removed forced stop for stopline id %s for 10 seconds", self.ignore_stop_line_id)
+        rospy.loginfo("Removed forced stop for stopline id %s for %s seconds", self.ignore_stop_line_id, self.keep_stop_line_for)
 
     # service call to simulate Go button press from rviz
     def lets_go_handler(self, msg):

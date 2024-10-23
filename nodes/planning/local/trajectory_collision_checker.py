@@ -56,11 +56,12 @@ class TrajectoryCollisionChecker:
     def path_callback(self, msg):
 
         detected_objects = self.detected_objects
-        collision_points = CollisionPoints()
-        
+
         if detected_objects is None:
             rospy.logwarn_throttle(3, "%s - detected objects not received!", rospy.get_name())
             return
+
+        collision_points = CollisionPoints()
 
         if len(msg.waypoints) > 0 and len(detected_objects) > 0:
             local_path = Path(msg.waypoints)
@@ -105,7 +106,7 @@ class TrajectoryCollisionChecker:
                             #    - trajectory_intersection after yiled line within 40m
                             #    - ignore objects that align with the local_path (for example car in front)
                             if yield_line_point is not None \
-                                and 0 < trajectory_intersection_distance - yield_line_distance < self.yielding_distance_limit \
+                                and yield_line_distance < trajectory_intersection_distance and trajectory_intersection_distance - yield_line_distance < self.yielding_distance_limit \
                                 and heading_difference > self.heading_alignment_limit:
 
                                 collision_points.add_point(x = yield_line_point.x,

@@ -64,7 +64,7 @@ def get_stop_lines_using_subtype(lanelet2_map, subtype):
     for line in lanelet2_map.lineStringLayer:
         if "type" in line.attributes and line.attributes["type"] == "stop_line":
             if "subtype" in line.attributes and line.attributes["subtype"] in subtype:
-                lines[line.id] = shapely.LineString([(p.x, p.y) for p in line])
+                lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
     return lines
 
 
