@@ -5,7 +5,7 @@ import shapely
 import numpy as np
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.collision import CollisionPoints
-from std_msgs.msg import Bool
+from std_msgs.msg import Int32
 from autoware_msgs.msg import Lane
 from sensor_msgs.msg import PointCloud2
 from std_srvs.srv import Empty, EmptyResponse
@@ -21,21 +21,21 @@ class AutomaticStopBehavior:
 
         # variables
         self.stop_lines_on_global_path = None
-        self.current_closest_stop_line_id = None
-        self.ignore_stop_line_id = None
+        self.current_closest_stop_line_id = -1
+        self.ignore_stop_line_id = -1
         self.timer = rospy.Time.now()
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["yield_stop"])
 
         # publishers
-        self.lets_go_pub = rospy.Publisher('lets_go', Bool, queue_size=1, tcp_nodelay=True)
+        self.lets_go_pub = rospy.Publisher('lets_go', Int32, queue_size=1, tcp_nodelay=True)
         self.stop_line_collision_pub = rospy.Publisher('stop_line_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('lanelet2_global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('lets_go', Bool, self.lets_go_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('lets_go', Int32, self.lets_go_callback, queue_size=1, tcp_nodelay=True)
 
         # Services
         rospy.Service('service_lets_go', Empty, self.lets_go_handler)
@@ -66,7 +66,7 @@ class AutomaticStopBehavior:
         shapely.prepare(local_path_linestring)
 
         stop_line_distance = np.inf
-        closest_stop_line_id = None
+        closest_stop_line_id = -1
 
         for id, stop_line in stop_lines_on_global_path.items():
             if stop_line.intersects(local_path_linestring):
@@ -92,15 +92,19 @@ class AutomaticStopBehavior:
 
         self.current_closest_stop_line_id = closest_stop_line_id
 
-        # set ignore_stop_line_id to None if it current closest stopline changes or the timer has expired
-        if self.ignore_stop_line_id != None and (self.current_closest_stop_line_id != self.ignore_stop_line_id or self.timer + rospy.Duration(self.keep_stop_line_for) < rospy.Time.now()):
-            self.ignore_stop_line_id = None
+        # set ignore_stop_line_id to -1 if it current closest stopline changes or the timer has expired
+        if self.ignore_stop_line_id != -1 and (self.current_closest_stop_line_id != self.ignore_stop_line_id or self.timer + rospy.Duration(self.keep_stop_line_for) < rospy.Time.now()):
+            self.ignore_stop_line_id = -1
+            self.lets_go_pub.publish(Int32(self.ignore_stop_line_id))
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header
         self.stop_line_collision_pub.publish(collision_points_msg)
 
     def lets_go_callback(self, msg):
+        if msg.data == -1:
+            return
+
         # reset timer and set current closest stop line id as the one to be removed
         self.timer = rospy.Time.now()
         self.ignore_stop_line_id = self.current_closest_stop_line_id
@@ -108,7 +112,7 @@ class AutomaticStopBehavior:
 
     # service call to simulate Go button press from rviz
     def lets_go_handler(self, msg):
-        self.lets_go_pub.publish(Bool(True))
+        self.lets_go_pub.publish(Int32(self.current_closest_stop_line_id))
         return EmptyResponse()
 
     def run(self):
