@@ -36,9 +36,9 @@ class PedestrianCrosswalkChecker:
         # subscribers
         rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Lane, self.local_path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/detection/predicted_objects_naive', DetectedObjectArray, self.detected_objects_naive_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/detection/predicted_objects', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
-    def detected_objects_naive_callback(self, msg):
+    def predicted_objects_callback(self, msg):
         self.detected_objects = msg.objects
 
     def global_path_callback(self, msg):

@@ -37,9 +37,9 @@ class TrajectoryCollisionChecker:
         # subscribers
         rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('lanelet2_global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.detected_objects_map_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.predicted_objects_map_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
-    def detected_objects_map_callback(self, msg):
+    def predicted_objects_map_callback(self, msg):
         self.detected_objects = msg.objects
 
     def global_path_callback(self, msg):
