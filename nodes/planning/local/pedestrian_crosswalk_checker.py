@@ -44,6 +44,7 @@ class PedestrianCrosswalkChecker:
     def global_path_callback(self, msg):
 
         global_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+        global_path_linestring = global_path_linestring.simplify(0.01)
         shapely.prepare(global_path_linestring)
 
         crosswalks_on_global_path = []

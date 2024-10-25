@@ -19,7 +19,7 @@ class ButtonPanelNode:
         self.engage_pub = rospy.Publisher("engage", Bool, queue_size=10, tcp_nodelay=True)
         self.marker_pub = rospy.Publisher("/log/markers", Marker, queue_size=10, tcp_nodelay=True)
 
-        self.service_lets_go = rospy.ServiceProxy('service_lets_go', Empty)
+        self.service_lets_go = rospy.ServiceProxy('/planning/service_lets_go', Empty)
 
         rospy.Subscriber("/localization/current_pose", PoseStamped, self.pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber("/pacmod/enabled", Bool, self.enabled_callback, queue_size=1, tcp_nodelay=True)

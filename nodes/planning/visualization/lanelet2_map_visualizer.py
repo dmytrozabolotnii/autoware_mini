@@ -69,17 +69,17 @@ class Lanelet2MapVisualizer:
                       len(self.lanelet2_map.laneletLayer), len(self.lanelet2_map.regulatoryElementLayer), lanelet2_map_name)
 
     def lets_go_callback(self, msg):
-            marker_array = MarkerArray()
-            marker = Marker()
-            marker.action = Marker.DELETEALL
+        marker_array = MarkerArray()
+        marker = Marker()
+        marker.action = Marker.DELETEALL
+        marker_array.markers.append(marker)
+
+        if msg.data != -1:
+            points = [Point(x=x, y=y, z=z + 0.01) for x, y, z in self.yield_stop_lines[msg.data].coords]
+            marker = linestring_to_marker(points, "Yield line", msg.data, GREEN, 0.5, rospy.Time.now())
             marker_array.markers.append(marker)
 
-            if msg.data != -1:
-                points = [Point(x=x, y=y, z=z + 0.01) for x, y, z in self.yield_stop_lines[msg.data].coords]
-                marker = linestring_to_marker(points, "Yield line", msg.data, GREEN, 0.5, rospy.Time.now())
-                marker_array.markers.append(marker)
-
-            self.yield_stop_line_markers_pub.publish(marker_array)
+        self.yield_stop_line_markers_pub.publish(marker_array)
 
     def traffic_light_status_callback(self, msg):
         marker_array = MarkerArray()
@@ -248,11 +248,13 @@ def visualize_lineStringLayer(map):
                     if "subtype" in line.attributes:
                         if line.attributes["subtype"]=="traffic_light":
                             marker = linestring_to_marker(points, "Traffic light stop lines", line.id, WHITE, 0.5, rospy.Time.now())
+                            marker_array.markers.append(marker)
                         elif line.attributes["subtype"]=="yield_stop":
                             marker = linestring_to_marker(points, "Yield stop line", line.id, RED, 0.5, rospy.Time.now())
+                            marker_array.markers.append(marker)
                         elif line.attributes["subtype"]=="yield":
                             marker = linestring_to_marker(points, "Yield line", line.id, YELLOW, 0.3, rospy.Time.now())
-                    marker_array.markers.append(marker)
+                            marker_array.markers.append(marker)
 
     return marker_array
 

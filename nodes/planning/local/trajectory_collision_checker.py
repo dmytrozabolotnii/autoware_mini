@@ -26,7 +26,7 @@ class TrajectoryCollisionChecker:
 
         # variables
         self.detected_objects = None
-        self.yield_lines_on_global_path = None
+        self.yield_lines_on_global_path = []
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.yield_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["yield", "yield_stop"])
@@ -35,11 +35,11 @@ class TrajectoryCollisionChecker:
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.predicted_objects_map_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
 
-    def predicted_objects_map_callback(self, msg):
+    def predicted_objects_callback(self, msg):
         self.detected_objects = msg.objects
 
     def global_path_callback(self, msg):
@@ -57,6 +57,7 @@ class TrajectoryCollisionChecker:
     def path_callback(self, msg):
 
         detected_objects = self.detected_objects
+        yield_lines_on_global_path = self.yield_lines_on_global_path
 
         if detected_objects is None:
             rospy.logwarn_throttle(3, "%s - detected objects not received!", rospy.get_name())
@@ -72,7 +73,7 @@ class TrajectoryCollisionChecker:
             # find if there are any yiled_lines on local_path and select the closest one
             yield_line_distance = np.inf
             yield_line_point = None
-            for yield_line in self.yield_lines_on_global_path:
+            for yield_line in yield_lines_on_global_path:
                 if yield_line.intersects(local_path.linestring):
                     yield_line_intersection_result = yield_line.intersection(local_path.linestring)
                     assert isinstance(yield_line_intersection_result, shapely.geometry.Point), "local_path and yield_line intersection is not shapely Point!"
