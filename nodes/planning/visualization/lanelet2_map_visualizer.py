@@ -50,7 +50,6 @@ class Lanelet2MapVisualizer:
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.yield_stop_lines = get_stop_lines_using_subtype(self.lanelet2_map, subtype=["yield_stop"])
-        self.lets_go_yield_line_id = -1
 
         # Visualize the Lanelet2 map
         marker_array = visualize_lanelet2_map(self.lanelet2_map)
@@ -70,7 +69,6 @@ class Lanelet2MapVisualizer:
                       len(self.lanelet2_map.laneletLayer), len(self.lanelet2_map.regulatoryElementLayer), lanelet2_map_name)
 
     def lets_go_callback(self, msg):
-        if msg.data != self.lets_go_yield_line_id:
             marker_array = MarkerArray()
             marker = Marker()
             marker.action = Marker.DELETEALL
@@ -81,7 +79,6 @@ class Lanelet2MapVisualizer:
                 marker = linestring_to_marker(points, "Yield line", msg.data, GREEN, 0.5, rospy.Time.now())
                 marker_array.markers.append(marker)
 
-            self.lets_go_yield_line_id = msg.data
             self.yield_stop_line_markers_pub.publish(marker_array)
 
     def traffic_light_status_callback(self, msg):

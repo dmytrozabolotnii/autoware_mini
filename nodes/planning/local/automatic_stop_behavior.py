@@ -33,7 +33,7 @@ class AutomaticStopBehavior:
         self.stop_line_collision_pub = rospy.Publisher('stop_line_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        rospy.Subscriber('lanelet2_global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('lets_go', Int32, self.lets_go_callback, queue_size=1, tcp_nodelay=True)
 
@@ -43,6 +43,7 @@ class AutomaticStopBehavior:
 
     def global_path_callback(self, msg):
         global_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+        global_path_linestring = global_path_linestring.simplify(0.01)
         shapely.prepare(global_path_linestring)
 
         stop_lines_on_global_path = {}
@@ -108,7 +109,7 @@ class AutomaticStopBehavior:
         # reset timer and set current closest stop line id as the one to be removed
         self.timer = rospy.Time.now()
         self.ignore_stop_line_id = self.current_closest_stop_line_id
-        rospy.loginfo("Removed forced stop for stopline id %s for %s seconds", self.ignore_stop_line_id, self.keep_stop_line_for)
+        rospy.loginfo("Removed forced stop for stopline id %d for %d seconds", self.ignore_stop_line_id, self.keep_stop_line_for)
 
     # service call to simulate Go button press from rviz
     def lets_go_handler(self, msg):

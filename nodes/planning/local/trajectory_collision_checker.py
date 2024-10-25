@@ -36,7 +36,7 @@ class TrajectoryCollisionChecker:
 
         # subscribers
         rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('lanelet2_global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.predicted_objects_map_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
     def predicted_objects_map_callback(self, msg):
@@ -44,6 +44,7 @@ class TrajectoryCollisionChecker:
 
     def global_path_callback(self, msg):
         global_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+        global_path_linestring = global_path_linestring.simplify(0.01)
         shapely.prepare(global_path_linestring)
 
         yield_lines_on_global_path = []
