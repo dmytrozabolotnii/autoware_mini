@@ -67,6 +67,21 @@ def get_stop_lines_using_subtype(lanelet2_map, subtype):
                 lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
     return lines
 
+def get_traffic_light_stop_lines(lanelet2_map):
+    """
+    Get all stop lines that are associated with traffic lights
+    :param lanelet2_map: lanelet2 map
+    :return: {line_id: line, ...}
+    """
+
+    lines = {}
+    for reg_el in lanelet2_map.regulatoryElementLayer:
+        if reg_el.attributes["subtype"] == "traffic_light":
+            for line in reg_el.parameters["ref_line"]:
+                lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
+    return lines
+
+# TODO: Add function to get all stop lines that are associated with traffic lights join with next function
 
 def get_stoplines_api_id(lanelet2_map):
     """

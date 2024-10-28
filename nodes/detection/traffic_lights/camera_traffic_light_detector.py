@@ -18,7 +18,7 @@ from autoware_msgs.msg import Lane
 from cv_bridge import CvBridge, CvBridgeError
 
 from helpers.transform import transform_point
-from helpers.lanelet2 import get_stop_lines_using_subtype, get_stoplines_trafficlights, load_lanelet2_map
+from helpers.lanelet2 import get_traffic_light_stop_lines, get_stoplines_trafficlights, load_lanelet2_map
 
 # Classifier outputs 4 classes (LightState)
 CLASSIFIER_RESULT_TO_STRING = {
@@ -58,7 +58,7 @@ class CameraTrafficLightDetector:
 
         # Extract all stop lines and traffic lights from the lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        self.stoplines = get_stop_lines_using_subtype(lanelet2_map, subtype=["traffic_light"])
+        self.stoplines = get_traffic_light_stop_lines(lanelet2_map)
         self.trafficlights = get_stoplines_trafficlights(lanelet2_map)
 
         # remove stoplines that have no traffic lights. If stopline_id is not in self.trafficlights then it has no traffic lights
