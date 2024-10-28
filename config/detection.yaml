@@ -103,7 +103,7 @@ ema_tracker:
 
 naive_predictor:
   prediction_horizon: 2.0           # s
-  prediction_interval: 0.1          # s
+  prediction_interval: 2.0          # s
   prediction_min_speed: 1.0         # m/s
 
 map_based_predictor:
