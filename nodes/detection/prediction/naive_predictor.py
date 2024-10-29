@@ -31,8 +31,8 @@ class NaivePredictor:
             tracked_objects_array[i]['velocity'] = (obj.velocity.linear.x, obj.velocity.linear.y) 
             tracked_objects_array[i]['acceleration'] = (obj.acceleration.linear.x, obj.acceleration.linear.y)
 
-        # Predict future positions and velocities
-        num_timesteps = int(self.prediction_horizon // self.prediction_interval)
+        # Predict future positions and velocities - includes also initial step, thus + 1
+        num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
         predicted_objects_array = np.empty((num_timesteps, len(msg.objects)), dtype=[
             ('centroid', np.float32, (2,)),
             ('velocity', np.float32, (2,)),

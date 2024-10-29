@@ -103,14 +103,13 @@ ema_tracker:
 
 naive_predictor:
   prediction_horizon: 2.0           # s
-  prediction_interval: 0.1          # s
+  prediction_interval: 2.0          # s
   prediction_min_speed: 1.0         # m/s
 
 map_based_predictor:
-  prediction_horizon: 4.0           # s
+  prediction_horizon: 5.0           # s
   prediction_interval: 0.1          # s
-  distance_from_lanelet: 0.1        # m - outside of lanelet area
-  distance_from_centerline: 1.0     # m - from centerline
+  distance_from_lanelet: 0.0        # m - outside of lanelet area
   angle_threshold: 30.0             # degrees - object heading and lanelet heading
   prediction_min_speed: 1.0         # m/s
 

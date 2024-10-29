@@ -7,7 +7,7 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from sensor_msgs.msg import PointCloud2
 from helpers.path import Path
 from helpers.collision import CollisionPoints
-from helpers.lanelet2 import load_lanelet2_map, get_stoplines
+from helpers.lanelet2 import load_lanelet2_map, get_traffic_light_stop_lines
 
 class TrafficLightStoplineChecker:
 
@@ -26,7 +26,7 @@ class TrafficLightStoplineChecker:
         self.current_speed = None
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        self.all_stoplines = get_stoplines(lanelet2_map)
+        self.all_stoplines = get_traffic_light_stop_lines(lanelet2_map)
 
         # publishers
         self.traffic_light_stopline_pub = rospy.Publisher('tfl_stopline_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)

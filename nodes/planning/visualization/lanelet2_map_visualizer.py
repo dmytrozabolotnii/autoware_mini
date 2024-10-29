@@ -6,9 +6,9 @@ import time
 from autoware_msgs.msg import TrafficLightResultArray
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point
-from std_msgs.msg import ColorRGBA
+from std_msgs.msg import ColorRGBA, Int32
 
-from helpers.lanelet2 import load_lanelet2_map
+from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 
 # used for traffic lights
 RED = ColorRGBA(1.0, 0.0, 0.0, 0.8)
@@ -49,20 +49,37 @@ class Lanelet2MapVisualizer:
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        self.yield_stop_lines = get_stop_lines_using_subtype(self.lanelet2_map, subtype=["yield_stop"])
 
         # Visualize the Lanelet2 map
         marker_array = visualize_lanelet2_map(self.lanelet2_map)
 
         # create MarkerArray publisher
-        markers_pub = rospy.Publisher('lanelet2_map_markers', MarkerArray, queue_size=10, latch=True, tcp_nodelay=True)
+        markers_pub = rospy.Publisher('lanelet2_map_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
         markers_pub.publish(marker_array)
 
-        # Special publisher for stop line markers
-        self.stop_line_markers_pub = rospy.Publisher('stop_line_markers', MarkerArray, queue_size=10, latch=True, tcp_nodelay=True)
+        # Special publishers for stop line markers: traffic_lights and yielding
+        self.tfl_stop_line_markers_pub = rospy.Publisher('tfl_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
+        self.yield_stop_line_markers_pub = rospy.Publisher('yield_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
+
         rospy.Subscriber("/detection/traffic_light_status", TrafficLightResultArray, self.traffic_light_status_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/planning/lets_go', Int32, self.lets_go_callback, queue_size=1, tcp_nodelay=True)
 
         rospy.loginfo("%s - map loaded with %i lanelets and %i regulatory elements from file: %s", rospy.get_name(),
                       len(self.lanelet2_map.laneletLayer), len(self.lanelet2_map.regulatoryElementLayer), lanelet2_map_name)
+
+    def lets_go_callback(self, msg):
+        marker_array = MarkerArray()
+        marker = Marker()
+        marker.action = Marker.DELETEALL
+        marker_array.markers.append(marker)
+
+        if msg.data != -1:
+            points = [Point(x=x, y=y, z=z + 0.01) for x, y, z in self.yield_stop_lines[msg.data].coords]
+            marker = linestring_to_marker(points, "Yield line", msg.data, GREEN, 0.5, rospy.Time.now())
+            marker_array.markers.append(marker)
+
+        self.yield_stop_line_markers_pub.publish(marker_array)
 
     def traffic_light_status_callback(self, msg):
         marker_array = MarkerArray()
@@ -105,7 +122,7 @@ class Lanelet2MapVisualizer:
             # record the state of this stop line
             states[result.lane_id] = result.recognition_result_str
 
-        self.stop_line_markers_pub.publish(marker_array)
+        self.tfl_stop_line_markers_pub.publish(marker_array)
 
     def run(self):
         rospy.spin()
@@ -228,8 +245,16 @@ def visualize_lineStringLayer(map):
                 # select stop lines
                 if line.attributes["type"] == "stop_line":
                     points = [point for point in line]
-                    stopline_marker = linestring_to_marker(points, "Stop line", line.id, WHITE, 0.5, rospy.Time.now())
-                    marker_array.markers.append(stopline_marker)
+                    if "subtype" in line.attributes:
+                        if line.attributes["subtype"]=="traffic_light":
+                            marker = linestring_to_marker(points, "Traffic light stop lines", line.id, WHITE, 0.5, rospy.Time.now())
+                            marker_array.markers.append(marker)
+                        elif line.attributes["subtype"]=="yield_stop":
+                            marker = linestring_to_marker(points, "Yield stop line", line.id, RED, 0.5, rospy.Time.now())
+                            marker_array.markers.append(marker)
+                        elif line.attributes["subtype"]=="yield":
+                            marker = linestring_to_marker(points, "Yield line", line.id, YELLOW, 0.3, rospy.Time.now())
+                            marker_array.markers.append(marker)
 
     return marker_array
 

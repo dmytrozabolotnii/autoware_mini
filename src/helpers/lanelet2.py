@@ -52,23 +52,36 @@ def get_crosswalks(lanelet2_map):
 
     return crosswalks
 
-
-def get_stoplines(lanelet2_map):
+def get_stop_lines_using_subtype(lanelet2_map, subtype):
     """
-    Add all stop lines to a dictionary with stop_line id as key and stop_line as value
+    Get all lines with a specific subtype
     :param lanelet2_map: lanelet2 map
-    :return: {stop_line_id: stopline, ...}
+    :param subtype: list of subtype's to search for
+    :return: {line_id: line, ...}
     """
 
-    stoplines = {}
+    lines = {}
     for line in lanelet2_map.lineStringLayer:
-        if line.attributes:
-            if line.attributes["type"] == "stop_line":
-                # add stoline to dictionary and convert it to shapely LineString
-                stoplines[line.id] = shapely.LineString([(p.x, p.y) for p in line])
+        if "type" in line.attributes and line.attributes["type"] == "stop_line":
+            if "subtype" in line.attributes and line.attributes["subtype"] in subtype:
+                lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
+    return lines
 
-    return stoplines
+def get_traffic_light_stop_lines(lanelet2_map):
+    """
+    Get all stop lines that are associated with traffic lights
+    :param lanelet2_map: lanelet2 map
+    :return: {line_id: line, ...}
+    """
 
+    lines = {}
+    for reg_el in lanelet2_map.regulatoryElementLayer:
+        if reg_el.attributes["subtype"] == "traffic_light":
+            for line in reg_el.parameters["ref_line"]:
+                lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
+    return lines
+
+# TODO: Add function to get all stop lines that are associated with traffic lights join with next function
 
 def get_stoplines_api_id(lanelet2_map):
     """
