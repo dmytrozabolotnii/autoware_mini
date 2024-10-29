@@ -40,7 +40,7 @@ class MapBasedPredictor:
 
     def tracked_objects_callback(self, msg):
 
-        num_timesteps = int(self.prediction_horizon // self.prediction_interval)
+        num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
 
         for i, obj in enumerate(msg.objects):
 
