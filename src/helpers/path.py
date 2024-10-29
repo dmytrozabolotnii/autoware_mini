@@ -165,24 +165,13 @@ class Path:
     def get_cross_track_error(self, current_position):
         """
         Get cross track error - calc distance from track and get the sign
-        https://robotics.stackexchange.com/questions/22989/what-is-wrong-with-my-stanley-controller-for-car-steering-control
-        
         :param current_pose: current pose
         :return: cross track error
         """
 
         current_position = shapely.Point(current_position.x, current_position.y, current_position.z)
 
-        ego_distance_from_path_start = self.linestring.project(current_position)
-
-        # if distance is negative it is measured from the end of the linestring in reverse direction
-        pos1 = self.linestring.interpolate(max(0, ego_distance_from_path_start - 0.1))
-        pos2 = self.linestring.interpolate(ego_distance_from_path_start + 0.1)
-
-        numerator = (pos2.x - pos1.x) * (pos1.y - current_position.y) - (pos1.x - current_position.x) * (pos2.y - pos1.y)
-        denominator = math.sqrt((pos2.x - pos1.x) ** 2 + (pos2.y - pos1.y) ** 2)
-
-        return numerator / denominator
+        return calculate_cross_track_error(self.linestring, current_position)
 
 
 def get_blinker_state(steering_state):
@@ -200,3 +189,25 @@ def get_blinker_state(steering_state):
         return 0, 0
     else:
         return 0, 0
+
+
+def calculate_cross_track_error(linsetring, position):
+    """
+    Calculate cross track error - calc distance from track and get the sign
+    https://robotics.stackexchange.com/questions/22989/what-is-wrong-with-my-stanley-controller-for-car-steering-control
+
+    :param linsetring: shapely linestring
+    :param position: current position
+    :return: cross track error
+    """
+
+    ego_distance_from_path_start = linsetring.project(position)
+
+    # if distance is negative it is measured from the end of the linestring in reverse direction
+    pos1 = linsetring.interpolate(max(0, ego_distance_from_path_start - 0.1))
+    pos2 = linsetring.interpolate(ego_distance_from_path_start + 0.1)
+
+    numerator = (pos2.x - pos1.x) * (pos1.y - position.y) - (pos1.x - position.x) * (pos2.y - pos1.y)
+    denominator = math.sqrt((pos2.x - pos1.x) ** 2 + (pos2.y - pos1.y) ** 2)
+
+    return numerator / denominator

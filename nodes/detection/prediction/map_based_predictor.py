@@ -4,11 +4,13 @@ import rospy
 import math
 import numpy as np
 import shapely
+import shapely.ops
 import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
 from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
-from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_distance_between_two_points_2d, create_vector_from_heading_and_scalar, get_angle_between_two_headings
+from helpers.path import calculate_cross_track_error
+from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, create_vector_from_heading_and_scalar, get_angle_between_two_headings
 from helpers.lanelet2 import load_lanelet2_map
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
@@ -105,15 +107,18 @@ class MapBasedPredictor:
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
                 trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
-                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(shapely.Point(object_location.x, object_location.y))
+                cross_track_shift = -calculate_cross_track_error(trajectory_linestring, shapely.Point(obj.pose.position.x, obj.pose.position.y, obj.pose.position.z))
+                offset_trajectory_linestring = trajectory_linestring.offset_curve(cross_track_shift, join_style=1)
+                object_distance_from_offset_trajectory_start = offset_trajectory_linestring.project(shapely.Point(object_location.x, object_location.y))
 
                 lane = Lane()
                 for i, d in enumerate(distances):
                     wp = Waypoint()
-                    p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + d)
+                    p = offset_trajectory_linestring.interpolate(object_distance_from_offset_trajectory_start + d)
+                    z = trajectory_linestring.interpolate(object_distance_from_offset_trajectory_start + d).z
                     wp.pose.pose.position.x = p.x
                     wp.pose.pose.position.y = p.y
-                    wp.pose.pose.position.z = p.z
+                    wp.pose.pose.position.z = z
                     # TODO Recalculating velocity vector based on lanelet heading at the object location.
                     # Wrong when lanelet changes direction (turns), but good enough for now?
                     speed_x, speed_y = create_vector_from_heading_and_scalar(lanelet_heading, velocities[i])
