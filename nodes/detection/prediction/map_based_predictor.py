@@ -27,6 +27,7 @@ class MapBasedPredictor:
         self.prediction_min_speed = rospy.get_param('~prediction_min_speed')
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
         self.angle_threshold = rospy.get_param('~angle_threshold')
+        self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
 
         lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
 
@@ -106,19 +107,24 @@ class MapBasedPredictor:
                     selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
-                trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
-                cross_track_shift = -calculate_cross_track_error(trajectory_linestring, shapely.Point(obj.pose.position.x, obj.pose.position.y, obj.pose.position.z))
-                offset_trajectory_linestring = trajectory_linestring.offset_curve(cross_track_shift, join_style=1)
-                object_distance_from_offset_trajectory_start = offset_trajectory_linestring.project(shapely.Point(object_location.x, object_location.y))
+                centerline_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
+                if self.use_offset_for_prediction:
+                    cross_track_offset = -calculate_cross_track_error(centerline_linestring, shapely.Point(obj.pose.position.x, obj.pose.position.y, obj.pose.position.z))
+                    offset_linestring = centerline_linestring.offset_curve(cross_track_offset, join_style=1)
+                    object_distance_from_linestring_start = offset_linestring.project(shapely.Point(object_location.x, object_location.y))
+                else:
+                    object_distance_from_linestring_start = centerline_linestring.project(shapely.Point(object_location.x, object_location.y))
 
                 lane = Lane()
                 for i, d in enumerate(distances):
                     wp = Waypoint()
-                    p = offset_trajectory_linestring.interpolate(object_distance_from_offset_trajectory_start + d)
-                    z = trajectory_linestring.interpolate(object_distance_from_offset_trajectory_start + d).z
+                    if self.use_offset_for_prediction:
+                        p = offset_linestring.interpolate(object_distance_from_linestring_start + d)
+                    else:
+                        p = centerline_linestring.interpolate(object_distance_from_linestring_start + d)
                     wp.pose.pose.position.x = p.x
                     wp.pose.pose.position.y = p.y
-                    wp.pose.pose.position.z = z
+                    wp.pose.pose.position.z = obj.pose.position.z
                     # TODO Recalculating velocity vector based on lanelet heading at the object location.
                     # Wrong when lanelet changes direction (turns), but good enough for now?
                     speed_x, speed_y = create_vector_from_heading_and_scalar(lanelet_heading, velocities[i])
