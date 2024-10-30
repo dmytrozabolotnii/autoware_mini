@@ -49,7 +49,8 @@ class CameraTrafficLightDetector:
         onnx_path = rospy.get_param("~onnx_path")
 
         self.rectify_image = rospy.get_param('~rectify_image')
-        self.roi_extent = rospy.get_param("~roi_extent")
+        self.roi_width_extent = rospy.get_param("~roi_width_extent")
+        self.roi_height_extent = rospy.get_param("~roi_height_extent")
         self.min_roi_width = rospy.get_param("~min_roi_width")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.waypoint_interval = rospy.get_param("/planning/waypoint_interval")
@@ -197,8 +198,8 @@ class CameraTrafficLightDetector:
                         break
                     
                     # convert the extent in meters to extent in pixels
-                    extent_x_px = self.camera_model.fx() * self.roi_extent / point_camera.z
-                    extent_y_px = self.camera_model.fy() * self.roi_extent / point_camera.z
+                    extent_x_px = self.camera_model.fx() * self.roi_width_extent / point_camera.z
+                    extent_y_px = self.camera_model.fy() * self.roi_height_extent / point_camera.z
 
                     us.extend([u + extent_x_px, u - extent_x_px])
                     vs.extend([v + extent_y_px, v - extent_y_px])
