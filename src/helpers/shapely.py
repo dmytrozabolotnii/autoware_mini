@@ -1,4 +1,3 @@
-import math
 from shapely.affinity import rotate
 
 
