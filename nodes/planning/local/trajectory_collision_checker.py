@@ -9,6 +9,7 @@ from sensor_msgs.msg import PointCloud2
 from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
+from helpers.shapely import get_polygon_width
 from helpers.path import Path
 
 class TrajectoryCollisionChecker:
@@ -22,6 +23,7 @@ class TrajectoryCollisionChecker:
         self.braking_safety_distance_obstacle = rospy.get_param("~braking_safety_distance_obstacle")
         self.yielding_distance_limit = rospy.get_param("~yielding_distance_limit")
         self.heading_alignment_limit = rospy.get_param("~heading_alignment_limit")
+        self.use_object_width = rospy.get_param("/planning/use_object_width")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
@@ -83,14 +85,25 @@ class TrajectoryCollisionChecker:
                         yield_line_point = yield_line_intersection_result
 
             for obj in detected_objects:
+
                 if len(obj.candidate_trajectories.lanes) > 0:
 
-                    for trajectory in obj.candidate_trajectories.lanes:
-                        trajectory_linestring = shapely.LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in trajectory.waypoints])
-                        shapely.prepare(trajectory_linestring)
+                    if self.use_object_width:
+                        object_polygon = shapely.geometry.Polygon([(p.x, p.y) for p in obj.convex_hull.polygon.points])
+                        object_heading = get_heading_from_vector(obj.velocity.linear)
+                        object_width = get_polygon_width(object_polygon, object_heading)
 
-                        if local_path_buffer.intersects(trajectory_linestring):
-                            trajectory_intersection_result = trajectory_linestring.intersection(local_path_buffer)
+                    for trajectory in obj.candidate_trajectories.lanes:
+
+                        trajectory_to_check = shapely.LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in trajectory.waypoints])
+                        shapely.prepare(trajectory_to_check)
+
+                        if self.use_object_width:
+                            trajectory_to_check = trajectory_to_check.buffer(object_width / 2, cap_style="flat")
+                            shapely.prepare(trajectory_to_check)
+
+                        if local_path_buffer.intersects(trajectory_to_check):
+                            trajectory_intersection_result = trajectory_to_check.intersection(local_path_buffer)
                             trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 

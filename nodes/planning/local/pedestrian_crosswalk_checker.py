@@ -20,6 +20,7 @@ class PedestrianCrosswalkChecker:
         self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
         self.braking_safety_distance_crosswalk = rospy.get_param("~braking_safety_distance_crosswalk")
         self.crossing_angle_max_limit = rospy.get_param("~crossing_angle_max_limit")
+        self.use_object_width = rospy.get_param("/planning/use_object_width")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
@@ -94,6 +95,8 @@ class PedestrianCrosswalkChecker:
                     object_projection_on_path = local_path_linestring.interpolate(object_distance_from_local_path_start)
                     object_projection_on_path_heading = get_heading_between_two_points(object_centroid, object_projection_on_path)
                     object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_projection_on_path_heading))
+                    if self.use_object_width:
+                        object_width = get_polygon_width(object_polygon, object_heading)
 
                     for crosswalk in crosswalks_on_local_path[:]:
 
@@ -105,16 +108,20 @@ class PedestrianCrosswalkChecker:
                                 crosswalks_on_local_path.remove(crosswalk)
                                 if object_speed < self.stopping_speed_limit:
                                     break  # Stop checking other crosswalks for this object
+
                         # NON-INTERSECTING OBJECTS - CONSIDER TRAJECTORIES
                         elif len(obj.candidate_trajectories.lanes) > 0:
-                            object_width = get_polygon_width(object_polygon, object_heading)
                             for lane in obj.candidate_trajectories.lanes:
                                 trajectory = Path(lane.waypoints)
-                                trajectory_buffer = trajectory.linestring.buffer(object_width / 2, cap_style="flat")
-                                shapely.prepare(trajectory_buffer)
-                                if trajectory_buffer.intersects(crosswalk['polygon']):
+                                trajectory_to_check = trajectory.linestring
+
+                                if self.use_object_width:
+                                    trajectory_to_check = trajectory.linestring.buffer(object_width / 2, cap_style="flat")
+                                    shapely.prepare(trajectory_to_check)
+
+                                if trajectory_to_check.intersects(crosswalk['polygon']):
                                     # find closest point along the object'ss trajectory to the crosswalk and get the heading from there!
-                                    intersection_points = shapely.get_coordinates(trajectory_buffer.intersection(crosswalk['polygon']))
+                                    intersection_points = shapely.get_coordinates(trajectory_to_check.intersection(crosswalk['polygon']))
                                     closest_point_to_object = min([trajectory.linestring.project(shapely.Point(x, y)) for x, y in intersection_points])
                                     trajectory_heading = trajectory.get_heading_at_distance(closest_point_to_object)
                                     if math.degrees(get_minimum_angle_between_two_lines(crosswalk['heading'], trajectory_heading)) < self.crossing_angle_max_limit:
