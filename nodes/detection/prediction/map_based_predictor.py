@@ -4,12 +4,11 @@ import rospy
 import math
 import numpy as np
 import shapely
-import shapely.ops
 import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
 from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
-from helpers.path import calculate_cross_track_error
+from helpers.shapely import calculate_cross_track_error
 from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, create_vector_from_heading_and_scalar, get_angle_between_two_headings
 from helpers.lanelet2 import load_lanelet2_map
 
