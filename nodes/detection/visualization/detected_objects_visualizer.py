@@ -105,12 +105,13 @@ class DetectedObjectsVisualizer:
             else:
                 marker.action = marker.ADD
                 marker.pose.orientation.w = 1.0
-                marker.scale.x = 0.2
                 marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
                 if self.use_object_width:
                     object_polygon = shapely.Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
                     object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
                     marker.scale.x = get_polygon_width(object_polygon, object_heading)
+                else:
+                    marker.scale.x = 0.2
                 # visualize possible multiple trajectories
                 for lane in object.candidate_trajectories.lanes:
                     for i in range(len(lane.waypoints) - 1):
