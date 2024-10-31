@@ -8,7 +8,7 @@ import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
 from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
-from helpers.shapely import calculate_cross_track_error
+from helpers.path import calculate_cross_track_error
 from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, create_vector_from_heading_and_scalar, get_angle_between_two_headings
 from helpers.lanelet2 import load_lanelet2_map
 
@@ -106,21 +106,16 @@ class MapBasedPredictor:
                     selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
-                centerline_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
+                trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
                 if self.use_offset_for_prediction:
-                    cross_track_offset = -calculate_cross_track_error(centerline_linestring, shapely.Point(obj.pose.position.x, obj.pose.position.y, obj.pose.position.z))
-                    offset_linestring = centerline_linestring.offset_curve(cross_track_offset, join_style=1)
-                    object_distance_from_offset_linestring_start = offset_linestring.project(shapely.Point(object_location.x, object_location.y))
-                else:
-                    object_distance_from_centerline_linestring_start = centerline_linestring.project(shapely.Point(object_location.x, object_location.y))
+                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, shapely.Point(obj.pose.position.x, obj.pose.position.y, obj.pose.position.z))
+                    trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style=1)
+                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(shapely.Point(object_location.x, object_location.y))
 
                 lane = Lane()
                 for i, d in enumerate(distances):
                     wp = Waypoint()
-                    if self.use_offset_for_prediction:
-                        p = offset_linestring.interpolate(object_distance_from_offset_linestring_start + d)
-                    else:
-                        p = centerline_linestring.interpolate(object_distance_from_centerline_linestring_start + d)
+                    p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + d)
                     wp.pose.pose.position.x = p.x
                     wp.pose.pose.position.y = p.y
                     wp.pose.pose.position.z = obj.pose.position.z
