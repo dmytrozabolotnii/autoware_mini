@@ -117,16 +117,14 @@ class MapBasedPredictor:
                 for i, d in enumerate(distances):
                     wp = Waypoint()
                     p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + d)
-                    wp.pose.pose.position.x = p.x
-                    wp.pose.pose.position.y = p.y
-                    wp.pose.pose.position.z = obj.pose.position.z
+                    wp.position.x = p.x
+                    wp.position.y = p.y
+                    wp.position.z = obj.pose.position.z
                     # TODO Recalculating velocity vector based on lanelet heading at the object location.
                     # Wrong when lanelet changes direction (turns), but good enough for now?
-                    speed_x, speed_y = create_vector_from_heading_and_scalar(lanelet_heading, velocities[i])
-                    wp.twist.twist.linear.x = speed_x
-                    wp.twist.twist.linear.y = speed_y
+                    wp.speed = velocities[i]
                     lane.waypoints.append(wp)
-                obj.candidate_trajectories.lanes.append(lane)
+                obj.candidate_trajectories.paths.append(lane)
 
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)

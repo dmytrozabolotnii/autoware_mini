@@ -6,6 +6,9 @@ float32 speed
 float32 left_width
 float32 right_width
 
+# lanechange_state
+uint8 lanechange_state
+
 # blinker
 uint8 blinker_state
 uint8 STR_LEFT=1

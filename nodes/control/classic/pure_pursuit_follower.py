@@ -8,7 +8,7 @@ import traceback
 import shapely
 
 from helpers.geometry import get_heading_from_orientation, normalize_heading_error, get_heading_between_two_points
-from helpers.path import Path
+from helpers.path import PathWrapper
 
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
@@ -65,7 +65,7 @@ class PurePursuitFollower:
             closest_object_velocity = 0.0
             stopping_point_distance = 0.0
         else:
-            path = Path(path_msg.waypoints, velocities=True, blinkers=True)
+            path = PathWrapper(path_msg.waypoints, velocities=True, blinkers=True)
             closest_object_velocity = path_msg.closest_object_velocity
             stopping_point_distance = path_msg.stopping_point_distance
 

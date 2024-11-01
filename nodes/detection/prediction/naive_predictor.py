@@ -50,17 +50,17 @@ class NaivePredictor:
                 continue
 
             # Skip prediction if candidate trajectories already exist
-            if len(obj.candidate_trajectories.lanes) > 0:
+            if len(obj.candidate_trajectories.paths) > 0:
                 continue
 
             lane = Lane()
             for j in range(num_timesteps):
                 wp = Waypoint()
-                wp.pose.pose.position.x, wp.position.y = predicted_objects_array[j][i]['centroid']
-                wp.pose.pose.position.z = obj.pose.position.z
+                wp.position.x, wp.position.y = predicted_objects_array[j][i]['centroid']
+                wp.position.z = obj.pose.position.z
                 wp.linear.x, wp.linear.y = predicted_objects_array[j][i]['velocity']
                 lane.waypoints.append(wp)
-            obj.candidate_trajectories.lanes.append(lane)
+            obj.candidate_trajectories.paths.append(lane)
 
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)

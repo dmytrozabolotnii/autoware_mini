@@ -9,8 +9,7 @@ receive a path from carla_ros_waypoint_publisher and convert it to autoware
 """
 import rospy
 import shapely
-from autoware_mini.msg import Lane
-from autoware_mini.msg import Waypoint
+from autoware_mini.msg import Path, Waypoint
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from std_srvs.srv import Empty, EmptyResponse
@@ -43,7 +42,7 @@ class CarlaWaypointsPublisher():
         self.current_speed = None
         
         # Publishers
-        self.waypoints_pub = rospy.Publisher('lane_change_global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
+        self.waypoints_pub = rospy.Publisher('lane_change_global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
         self.goal_publisher = rospy.Publisher('/carla/ego_vehicle/goal', PoseStamped, queue_size=10, tcp_nodelay=True)
 
         # Subscribers
@@ -68,7 +67,7 @@ class CarlaWaypointsPublisher():
         for pose in data.poses:
             pose.pose = self.sim2utm_transformer.transform_pose(pose.pose)
             waypoint = Waypoint(pose=pose)
-            waypoint.twist.twist.linear.x = self.speed_limit / 3.6
+            waypoint.speed = self.speed_limit / 3.6
             waypoints.append(waypoint)
 
         msg.waypoints = waypoints
@@ -98,12 +97,12 @@ class CarlaWaypointsPublisher():
             if d < self.distance_to_goal_limit and self.current_speed < self.ego_vehicle_stopped_speed_limit:
                 self.goal_point = None
 
-                lane = Lane()        
-                lane.header.frame_id = self.output_frame
-                lane.header.stamp = rospy.Time.now()
-                lane.waypoints = []
+                path = Path()        
+                path.header.frame_id = self.output_frame
+                path.header.stamp = rospy.Time.now()
+                path.waypoints = []
 
-                self.waypoints_pub.publish(lane)
+                self.waypoints_pub.publish(path)
                 rospy.loginfo("%s - goal reached, clearing path!", rospy.get_name())
 
     def current_velocity_callback(self, msg):
@@ -112,12 +111,12 @@ class CarlaWaypointsPublisher():
     def cancel_route_callback(self, msg):
         self.goal_point = None
 
-        lane = Lane()        
-        lane.header.frame_id = self.output_frame
-        lane.header.stamp = rospy.Time.now()
-        lane.waypoints = []
+        path = Path()
+        path.header.frame_id = self.output_frame
+        path.header.stamp = rospy.Time.now()
+        path.waypoints = []
 
-        self.waypoints_pub.publish(lane)
+        self.waypoints_pub.publish(path)
         rospy.loginfo("%s - route cancelled!", rospy.get_name())
         return EmptyResponse()
 

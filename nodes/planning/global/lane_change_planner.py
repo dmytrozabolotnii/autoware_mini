@@ -5,7 +5,7 @@ import numpy as np
 import math
 
 from geometry_msgs.msg import Point
-from autoware_msgs.msg import Lane, Waypoint
+from autoware_mini.msg import Path, Waypoint
 
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading, \
     get_heading_from_orientation, get_point_using_heading_and_distance, \
@@ -22,42 +22,41 @@ class LaneChangePlanner:
         self.lane_change_perlane_length = rospy.get_param("lane_change_perlane_length")
 
         # Publishers
-        self.lane_change_path_pub = rospy.Publisher('lane_change_global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
+        self.lane_change_path_pub = rospy.Publisher('lane_change_global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('lanelet2_global_path', Lane, self.global_path_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('lanelet2_global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
 
 
     def global_path_callback(self, msg):
-        lane = Lane()
-        lane.header = msg.header
+        path = Path()
+        path.header = msg.header
 
         waypoints = self.create_lane_change_paths(msg.waypoints)
         if waypoints is None:
             rospy.logerr("%s - path contained an impossible lane change!", rospy.get_name())
         else:
-            lane.waypoints = waypoints
-        self.lane_change_path_pub.publish(lane)
+            path.waypoints = waypoints
+        self.lane_change_path_pub.publish(path)
 
     def create_lane_change_paths(self, waypoints):
         idx = 0
         while idx < len(waypoints):
             # Check for lane change
-            if waypoints[idx].wpstate.lanechange_state > 0:
+            if waypoints[idx].lanechange_state > 0:
                 start_idx = idx
                 end_idx = None
 
                 # Check that the lane change waypoint is not the last waypoint of the path
                 if start_idx + 1 == len(waypoints):
                     return None
-                
-                start_point = waypoints[start_idx].pose.pose.position
+                start_point = waypoints[start_idx].position
 
                 # Calculate a point 1 unit away in the driving direction for lane change angle calculation
-                start_point_heading = get_heading_from_orientation(waypoints[start_idx].pose.pose.orientation)
-                other_point = get_point_using_heading_and_distance(waypoints[start_idx].pose.pose.position, start_point_heading, 1)
+                start_point_heading = waypoints[start_idx].heading
+                other_point = get_point_using_heading_and_distance(waypoints[start_idx].position, start_point_heading, 1)
 
-                steering_state = waypoints[start_idx].wpstate.steering_state
+                blinker_state = waypoints[start_idx].blinker_state
 
                 # Skip all lane change waypoints
                 while idx < len(waypoints) and waypoints[idx].wpstate.lanechange_state > 0:
@@ -66,7 +65,7 @@ class LaneChangePlanner:
 
                 # Skip all non lane change waypoints until enough distance to perform lane change
                 while idx < len(waypoints):
-                    current_point = waypoints[idx].pose.pose.position
+                    current_point = waypoints[idx].position
                     # Get the diagonal distance of the lane change
                     d = get_distance_between_two_points_2d(start_point, current_point)
 
@@ -90,7 +89,7 @@ class LaneChangePlanner:
 
                 # Replace section of waypoints with spline
                 spline = self.calculate_lane_change_spline(waypoints[start_idx], waypoints[end_idx], 
-                                                           given_lanechange_length, steering_state)
+                                                           given_lanechange_length, blinker_state)
 
                 waypoints = waypoints[:start_idx] + spline + waypoints[end_idx+1:]
 
@@ -102,22 +101,22 @@ class LaneChangePlanner:
 
         return waypoints
 
-    def calculate_lane_change_spline(self, start_waypoint, end_waypoint, lanechange_length, steering_state):
+    def calculate_lane_change_spline(self, start_waypoint, end_waypoint, lanechange_length, blinker_state):
 
         ##################################################################
         # Calculate Bezier curve control points p0, p1, p2, p3
         ##################################################################
 
-        start_heading = get_heading_from_orientation(start_waypoint.pose.pose.orientation)
-        control_point1 = get_point_using_heading_and_distance(start_waypoint.pose.pose.position, start_heading, lanechange_length / 3)
+        start_heading = get_heading_from_orientation(start_waypoint.orientation)
+        control_point1 = get_point_using_heading_and_distance(start_waypoint.position, start_heading, lanechange_length / 3)
 
-        end_heading = get_heading_from_orientation(end_waypoint.pose.pose.orientation)
-        control_point2 = get_point_using_heading_and_distance(end_waypoint.pose.pose.position, end_heading + math.pi, lanechange_length / 3)
+        end_heading = get_heading_from_orientation(end_waypoint.orientation)
+        control_point2 = get_point_using_heading_and_distance(end_waypoint.position, end_heading + math.pi, lanechange_length / 3)
 
         bezier_points = calculate_points_on_bezier_curve(
-            start_waypoint.pose.pose.position,
+            start_waypoint.position,
             control_point1, control_point2, 
-            end_waypoint.pose.pose.position,
+            end_waypoint.position,
             int(lanechange_length // self.waypoint_interval)
         )
 
@@ -133,19 +132,19 @@ class LaneChangePlanner:
         distance_datapoints  = np.array([0, lane_change_wp_distances[-1]])
         
         # Speed interpolation
-        speed_datapoints = np.array([start_waypoint.twist.twist.linear.x, end_waypoint.twist.twist.linear.x])
+        speed_datapoints = np.array([start_waypoint.speed, end_waypoint.speed])
         speed = np.interp(lane_change_wp_distances, distance_datapoints, speed_datapoints)
 
         # Left lane width interpolation
-        lw_datapoints = np.array([start_waypoint.dtlane.lw, end_waypoint.dtlane.lw])
+        lw_datapoints = np.array([start_waypoint.left_width, end_waypoint.left_width])
         lw = np.interp(lane_change_wp_distances, distance_datapoints, lw_datapoints)
 
         # Right lane width interpolation
-        lw_datapoints = np.array([start_waypoint.dtlane.rw, end_waypoint.dtlane.rw])
+        lw_datapoints = np.array([start_waypoint.right_width, end_waypoint.right_width])
         rw = np.interp(lane_change_wp_distances, distance_datapoints, lw_datapoints)
 
         # z-coordinate interpolation
-        z_datapoints = np.array([start_waypoint.pose.pose.position.z, end_waypoint.pose.pose.position.z])
+        z_datapoints = np.array([start_waypoint.position.z, end_waypoint.position.z])
         z_coords = np.interp(lane_change_wp_distances, distance_datapoints, z_datapoints)
 
         waypoints = []
@@ -158,15 +157,14 @@ class LaneChangePlanner:
                 heading = get_heading_between_two_points(point, next_point)
 
             waypoint = Waypoint()
-            waypoint.pose.pose.position.x = bezier_points[i, 0]
-            waypoint.pose.pose.position.y = bezier_points[i, 1]
-            waypoint.pose.pose.position.z = z_coords[i]
-            waypoint.pose.pose.orientation = get_orientation_from_heading(heading)
-            waypoint.twist.twist.linear.x = speed[i]
-            waypoint.wpstate.steering_state = steering_state
-            waypoint.wpstate.lanechange_state = 0
-            waypoint.dtlane.lw = lw[i]
-            waypoint.dtlane.rw = rw[i]
+            waypoint.position.x = bezier_points[i, 0]
+            waypoint.position.y = bezier_points[i, 1]
+            waypoint.position.z = z_coords[i]
+            waypoint.heading = heading
+            waypoint.speed = speed[i]
+            waypoint.blinker_state = blinker_state
+            waypoint.left_width = lw[i]
+            waypoint.right_width = rw[i]
             
             waypoints.append(waypoint)
 

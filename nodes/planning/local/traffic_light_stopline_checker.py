@@ -2,10 +2,10 @@
 
 import rospy
 import shapely
-from autoware_msgs.msg import Lane, TrafficLightResultArray
+from autoware_mini.msg import Path, TrafficLightResultArray
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from sensor_msgs.msg import PointCloud2
-from helpers.path import Path
+from helpers.path import PathWrapper
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_traffic_light_stop_lines
 
@@ -34,7 +34,7 @@ class TrafficLightStoplineChecker:
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/detection/traffic_light_status', TrafficLightResultArray, self.traffic_light_status_callback, queue_size=1, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
@@ -50,7 +50,7 @@ class TrafficLightStoplineChecker:
         
         self.stopline_statuses = stopline_statuses
 
-    def path_callback(self, msg):
+    def local_path_callback(self, msg):
 
         current_position = self.current_position
         current_speed = self.current_speed
@@ -63,7 +63,7 @@ class TrafficLightStoplineChecker:
         collision_points = CollisionPoints()
 
         if len(msg.waypoints) > 0 and len(stopline_statuses) > 0:
-            local_path = Path(msg.waypoints)
+            local_path = PathWrapper(msg.waypoints)
             ego_distance_from_local_path_start = local_path.linestring.project(current_position)
 
             for stopline_id, stopline_linestring in self.all_stoplines.items():

@@ -2,15 +2,15 @@ import math
 import shapely
 import numpy as np
 from scipy.interpolate import interp1d
-from autoware_msgs.msg import WaypointState, Waypoint
+from autoware_mini.msg import Waypoint
 from geometry_msgs.msg import Point, Pose
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
 
-class Path:
+class PathWrapper:
     def __init__(self, waypoints, velocities=False, blinkers=False):
 
         self.waypoints = waypoints
-        self._waypoints_xyz = np.array([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y, waypoint.pose.pose.position.z) for waypoint in self.waypoints])
+        self._waypoints_xyz = np.array([(waypoint.position.x, waypoint.position.y, waypoint.position.z) for waypoint in self.waypoints])
 
         self.linestring = shapely.LineString(self._waypoints_xyz)
         shapely.prepare(self.linestring)
@@ -19,13 +19,13 @@ class Path:
         self._distances = np.insert(d, 0, 0)
 
         if velocities:
-            v = np.array([waypoint.twist.twist.linear.x for waypoint in self.waypoints])
+            v = np.array([waypoint.speed for waypoint in self.waypoints])
             distance_to_velocity_interpolator = interp1d(self._distances, v, kind='linear', bounds_error=False, fill_value=0.0)
             self._distance_to_velocity_interpolator = distance_to_velocity_interpolator
 
         if blinkers:
-            b = np.array([(waypoint.wpstate.steering_state) for waypoint in self.waypoints])
-            distance_to_blinker_interpolator = interp1d(self._distances, (b).astype(np.float) , kind='previous', bounds_error=False, fill_value=WaypointState.STR_STRAIGHT)
+            b = np.array([(waypoint.blinker_state) for waypoint in self.waypoints])
+            distance_to_blinker_interpolator = interp1d(self._distances, (b).astype(np.float) , kind='previous', bounds_error=False, fill_value=Waypoint.STR_STRAIGHT)
             self._distance_to_blinker_interpolator = distance_to_blinker_interpolator
 
     def get_waypoint_index_at_distance(self, distance, side="left"):
@@ -50,8 +50,7 @@ class Path:
         if copy:
             # for each new waypoint copy only the necessary parts
             for waypoint in self.waypoints[index_start:index_end]:
-                new_waypoint = Waypoint(pose = waypoint.pose, wpstate = waypoint.wpstate)
-                new_waypoint.twist.twist.linear.x = waypoint.twist.twist.linear.x
+                new_waypoint = Waypoint(position = waypoint.position, heading = waypoint.heading, speed = waypoint.speed)
                 waypoints.append(new_waypoint)
         else:
             waypoints = self.waypoints[index_start:index_end]
@@ -76,19 +75,19 @@ class Path:
 
         if trim:
             # modify start and end of the path by shifting waypoints to exact locations determined by distances
-            waypoints[0].twist.twist.linear.x = float(self._distance_to_velocity_interpolator(distance_start))
-            waypoints[0].wpstate.steering_state = int(self._distance_to_blinker_interpolator(distance_start))
+            waypoints[0].speed = float(self._distance_to_velocity_interpolator(distance_start))
+            waypoints[0].blinker_state = int(self._distance_to_blinker_interpolator(distance_start))
             start_wp_pose = self.linestring.interpolate(distance_start)
             # z will remain the same
-            waypoints[0].pose.pose.position.x = start_wp_pose.x
-            waypoints[0].pose.pose.position.y = start_wp_pose.y
+            waypoints[0].position.x = start_wp_pose.x
+            waypoints[0].position.y = start_wp_pose.y
 
-            waypoints[-1].twist.twist.linear.x = float(self._distance_to_velocity_interpolator(distance_end))
-            waypoints[-1].wpstate.steering_state = int(self._distance_to_blinker_interpolator(distance_end))
+            waypoints[-1].speed = float(self._distance_to_velocity_interpolator(distance_end))
+            waypoints[-1].blinker_state = int(self._distance_to_blinker_interpolator(distance_end))
             end_wp_pose = self.linestring.interpolate(distance_end)
             # z will remain the same
-            waypoints[-1].pose.pose.position.x = end_wp_pose.x
-            waypoints[-1].pose.pose.position.y = end_wp_pose.y
+            waypoints[-1].position.x = end_wp_pose.x
+            waypoints[-1].position.y = end_wp_pose.y
 
         return waypoints
 
@@ -112,7 +111,7 @@ class Path:
         assert hasattr(self, '_distance_to_blinker_interpolator'), "Blinker interpolator not available, check that path was initialized with blinkers=True"
         current_pose_blinker_state = int(self._distance_to_blinker_interpolator(ego_distance_from_path_start))
 
-        if current_pose_blinker_state != WaypointState.STR_STRAIGHT:
+        if current_pose_blinker_state != Waypoint.STR_STRAIGHT:
             return get_blinker_state(current_pose_blinker_state)
         else:
             lookahead_blinker_state = int(self._distance_to_blinker_interpolator(blinker_lookahead_distance))
@@ -180,11 +179,11 @@ def get_blinker_state(steering_state):
     :return: LampCmd (l, r) included in VehicleCmd
     """
 
-    if steering_state == WaypointState.STR_LEFT:
+    if steering_state == Waypoint.STR_LEFT:
         return 1, 0
-    elif steering_state == WaypointState.STR_RIGHT:
+    elif steering_state == Waypoint.STR_RIGHT:
         return 0, 1
-    elif steering_state == WaypointState.STR_STRAIGHT:
+    elif steering_state == Waypoint.STR_STRAIGHT:
         return 0, 0
     else:
         return 0, 0

@@ -4,13 +4,13 @@ import rospy
 import math
 import shapely
 import numpy as np
-from autoware_msgs.msg import Lane, DetectedObjectArray
+from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.shapely import get_polygon_width
-from helpers.path import Path
+from helpers.path import PathWrapper
 
 class TrajectoryCollisionChecker:
 
@@ -38,14 +38,14 @@ class TrajectoryCollisionChecker:
 
         # subscribers
         rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
-        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
 
     def predicted_objects_callback(self, msg):
         self.detected_objects = msg.objects
 
     def global_path_callback(self, msg):
-        global_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+        global_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
         global_path_linestring = global_path_linestring.simplify(0.01)
         shapely.prepare(global_path_linestring)
 
@@ -56,7 +56,7 @@ class TrajectoryCollisionChecker:
 
         self.yield_lines_on_global_path = yield_lines_on_global_path
 
-    def path_callback(self, msg):
+    def local_path_callback(self, msg):
 
         detected_objects = self.detected_objects
         yield_lines_on_global_path = self.yield_lines_on_global_path
@@ -68,7 +68,7 @@ class TrajectoryCollisionChecker:
         collision_points = CollisionPoints()
 
         if len(msg.waypoints) > 0 and len(detected_objects) > 0:
-            local_path = Path(msg.waypoints)
+            local_path = PathWrapper(msg.waypoints)
             local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
@@ -86,16 +86,16 @@ class TrajectoryCollisionChecker:
 
             for obj in detected_objects:
 
-                if len(obj.candidate_trajectories.lanes) > 0:
+                if len(obj.candidate_trajectories.paths) > 0:
 
                     if self.use_object_width:
-                        object_polygon = shapely.geometry.Polygon([(p.x, p.y) for p in obj.convex_hull.polygon.points])
-                        object_heading = get_heading_from_vector(obj.velocity.linear)
+                        object_polygon = shapely.geometry.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                        object_heading = get_heading_from_vector(obj.velocity)
                         object_width = get_polygon_width(object_polygon, object_heading)
 
-                    for trajectory in obj.candidate_trajectories.lanes:
+                    for trajectory in obj.candidate_trajectories.paths:
 
-                        trajectory_to_check = shapely.LineString([(p.pose.pose.position.x, p.pose.pose.position.y, p.pose.pose.position.z) for p in trajectory.waypoints])
+                        trajectory_to_check = shapely.LineString([(p.position.x, p.position.y, p.position.z) for p in trajectory.waypoints])
                         shapely.prepare(trajectory_to_check)
 
                         if self.use_object_width:
@@ -107,7 +107,7 @@ class TrajectoryCollisionChecker:
                             trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 
-                            object_current_heading = get_heading_from_vector(obj.velocity.linear)
+                            object_current_heading = get_heading_from_vector(obj.velocity)
                             object_current_location = shapely.Point(obj.pose.position.x, obj.pose.position.y)
                             object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
                             object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)

@@ -6,7 +6,7 @@ import numpy as np
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.collision import CollisionPoints
 from std_msgs.msg import Int32
-from autoware_msgs.msg import Lane
+from autoware_mini.msg import Path
 from sensor_msgs.msg import PointCloud2
 from std_srvs.srv import Empty, EmptyResponse
 
@@ -33,8 +33,8 @@ class AutomaticStopBehavior:
         self.stop_line_collision_pub = rospy.Publisher('stop_line_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('extracted_local_path', Lane, self.path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('lets_go', Int32, self.lets_go_callback, queue_size=1, tcp_nodelay=True)
 
         # Services
@@ -42,7 +42,7 @@ class AutomaticStopBehavior:
 
 
     def global_path_callback(self, msg):
-        global_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+        global_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
         global_path_linestring = global_path_linestring.simplify(0.01)
         shapely.prepare(global_path_linestring)
 
@@ -53,8 +53,7 @@ class AutomaticStopBehavior:
 
         self.stop_lines_on_global_path = stop_lines_on_global_path
 
-    def path_callback(self, msg):
-
+    def local_path_callback(self, msg):
 
         stop_lines_on_global_path = self.stop_lines_on_global_path
 
@@ -63,7 +62,7 @@ class AutomaticStopBehavior:
 
         collision_points = CollisionPoints()
 
-        local_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+        local_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
         shapely.prepare(local_path_linestring)
 
         stop_line_distance = np.inf

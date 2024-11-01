@@ -7,10 +7,10 @@ import traceback
 import shapely
 import numpy as np
 from ros_numpy import numpify
-from autoware_msgs.msg import Lane
+from autoware_mini.msg import Path
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
-from helpers.path import Path
+from helpers.path import PathWrapper
 from helpers.collision import CollisionPoints
 from helpers.geometry import project_vector_to_heading, get_distance_between_two_points_2d
 
@@ -29,14 +29,14 @@ class SpeedPlanner:
         self.current_speed = None
 
         # publishers
-        self.local_path_pub = rospy.Publisher('local_path', Lane, queue_size=1, tcp_nodelay=True)
+        self.local_path_pub = rospy.Publisher('local_path', Path, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
 
         collision_points_sub = message_filters.Subscriber('collision_points', PointCloud2, tcp_nodelay=True)
-        local_path_sub = message_filters.Subscriber('extracted_local_path', Lane, tcp_nodelay=True)
+        local_path_sub = message_filters.Subscriber('extracted_local_path', Path, tcp_nodelay=True)
 
         ts = message_filters.TimeSynchronizer([collision_points_sub, local_path_sub], queue_size=4)
         ts.registerCallback(self.collision_points_and_path_callback)
@@ -68,7 +68,7 @@ class SpeedPlanner:
             stopping_point_distance = 0.0
 
             # create local path
-            local_path = Path(local_path_msg.waypoints)
+            local_path = PathWrapper(local_path_msg.waypoints)
             ego_distance_from_local_path_start = local_path.linestring.project(current_position)
 
             # extract object distances, velocities and braking distances
@@ -104,30 +104,30 @@ class SpeedPlanner:
 
                 # once we get zero speed, keep it that way
                 if zero_speeds_onwards:
-                    wp.twist.twist.linear.x = 0.0
+                    wp.speed = 0.0
                     continue
 
                 if i > 0:
-                    target_distance_object -= get_distance_between_two_points_2d(local_path.waypoints[i-1].pose.pose.position, local_path.waypoints[i].pose.pose.position)
+                    target_distance_object -= get_distance_between_two_points_2d(local_path.waypoints[i-1].position, local_path.waypoints[i].position)
                 target_velocity_object = np.sqrt(np.maximum(0.0, np.maximum(0.0, closest_object_velocity)**2 + 2 * self.default_deceleration * target_distance_object))
 
                 # overwrite target velocity of wp
-                wp.twist.twist.linear.x = min(target_velocity_object, wp.twist.twist.linear.x)
+                wp.speed = min(target_velocity_object, wp.speed)
 
                 # from stop point onwards all speeds are set to zero
-                if math.isclose(wp.twist.twist.linear.x, 0.0):
+                if math.isclose(wp.speed, 0.0):
                     zero_speeds_onwards = True
 
             # Update the lane message with the calculated values
-            lane = Lane()
-            lane.header = local_path_msg.header
-            lane.waypoints = local_path.waypoints
-            lane.closest_object_distance = closest_object_distance
-            lane.closest_object_velocity = closest_object_velocity
-            lane.is_blocked = local_path_blocked
-            lane.cost = stopping_point_distance
-            lane.increment = collision_point_category
-            self.local_path_pub.publish(lane)
+            path = Path()
+            path.header = local_path_msg.header
+            path.waypoints = local_path.waypoints
+            path.closest_object_distance = closest_object_distance
+            path.closest_object_velocity = closest_object_velocity
+            path.is_blocked = local_path_blocked
+            path.stopping_point_distance = stopping_point_distance
+            path.collision_point_category = collision_point_category
+            self.local_path_pub.publish(path)
 
         except Exception as e:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
