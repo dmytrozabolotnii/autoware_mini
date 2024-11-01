@@ -113,9 +113,9 @@ class SupercomboPredictionVisualizer:
         t.header.frame_id = "base_link"
         t.child_frame_id = "openpilot"
 
-        t.transform.translation.x = 1.91
+        t.transform.translation.x = 2.41 #nvidia cam +0.5
         t.transform.translation.y = 0.09
-        t.transform.translation.z = 1.17
+        t.transform.translation.z = 0.87 #nvidia cam -0.3
         t.transform.rotation = orientation
 
         self.tf_broadcaster.sendTransform(t)
