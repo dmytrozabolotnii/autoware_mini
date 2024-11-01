@@ -168,7 +168,7 @@ class EMATracker:
             for idx in missed_track_indices:
                 obj = self.tracked_objects[idx]
                 obj.pose.position.x, obj.pose.position.y = self.tracked_objects_array['centroid'][idx]
-                for p in obj.convex_hull.polygon.points:
+                for p in obj.convex_hull.points:
                     p.x += position_change[idx][0]
                     p.y += position_change[idx][1]
 

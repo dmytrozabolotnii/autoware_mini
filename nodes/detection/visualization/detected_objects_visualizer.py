@@ -108,7 +108,7 @@ class DetectedObjectsVisualizer:
                 marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
                 if self.use_object_width:
                     object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
-                    object_heading = math.degrees(math.atan2(obj.velocity.linear.y, obj.velocity.linear.x))
+                    object_heading = math.degrees(math.atan2(obj.velocity.y, obj.velocity.x))
                     marker.scale.x = get_polygon_width(object_polygon, object_heading)
                 else:
                     marker.scale.x = 0.2

@@ -5,7 +5,7 @@ import rospy
 import numpy as np
 
 from helpers.geometry import get_vector_norm_3d
-from autoware_mini.msg import DetectedObjectArray, Lane, Waypoint
+from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
 class NaivePredictor:
     def __init__(self):
@@ -46,21 +46,21 @@ class NaivePredictor:
         # Create candidate trajectories
         for i, obj in enumerate(msg.objects):
             # Skip prediction for near stationary objects
-            if get_vector_norm_3d(obj.velocity.linear) < self.prediction_min_speed:
+            if get_vector_norm_3d(obj.velocity) < self.prediction_min_speed:
                 continue
 
             # Skip prediction if candidate trajectories already exist
             if len(obj.candidate_trajectories.paths) > 0:
                 continue
 
-            lane = Lane()
+            path = Path()
             for j in range(num_timesteps):
                 wp = Waypoint()
                 wp.position.x, wp.position.y = predicted_objects_array[j][i]['centroid']
                 wp.position.z = obj.pose.position.z
-                wp.linear.x, wp.linear.y = predicted_objects_array[j][i]['velocity']
-                lane.waypoints.append(wp)
-            obj.candidate_trajectories.paths.append(lane)
+                wp.velocity.x, wp.velocity.y = predicted_objects_array[j][i]['velocity']
+                path.waypoints.append(wp)
+            obj.candidate_trajectories.paths.append(path)
 
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)
