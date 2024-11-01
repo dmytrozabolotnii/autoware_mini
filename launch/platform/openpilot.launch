@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="use_openpilot"       default="true" />
+    <arg name="use_openpilot"       default="false" />
     <arg name="openpilot_ip"        default="127.0.0.1" />
     <arg name="openpilot_port"      default="27098" />
 
