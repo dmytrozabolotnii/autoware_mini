@@ -14,6 +14,8 @@ from helpers.geometry import get_orientation_from_heading
 
 class DetectedObjectsVisualizer:
     def __init__(self):
+
+        self.use_object_width = rospy.get_param('/planning/use_object_width')
         self.published_ids = set()
 
         self.markers_pub = rospy.Publisher('detected_objects_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
@@ -102,12 +104,14 @@ class DetectedObjectsVisualizer:
                 marker.action = marker.DELETE
             else:
                 marker.action = marker.ADD
-                object_polygon = shapely.Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
-                object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
-                object_width = get_polygon_width(object_polygon, object_heading)
                 marker.pose.orientation.w = 1.0
-                marker.scale.x = object_width
                 marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
+                if self.use_object_width:
+                    object_polygon = shapely.Polygon([(p.x, p.y) for p in object.convex_hull.polygon.points])
+                    object_heading = math.degrees(math.atan2(object.velocity.linear.y, object.velocity.linear.x))
+                    marker.scale.x = get_polygon_width(object_polygon, object_heading)
+                else:
+                    marker.scale.x = 0.2
                 # visualize possible multiple trajectories
                 for lane in object.candidate_trajectories.lanes:
                     for i in range(len(lane.waypoints) - 1):

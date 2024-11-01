@@ -8,7 +8,8 @@ import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
 from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
-from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_distance_between_two_points_2d, create_vector_from_heading_and_scalar, get_angle_between_two_headings
+from helpers.path import calculate_cross_track_error
+from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, create_vector_from_heading_and_scalar, get_angle_between_two_headings
 from helpers.lanelet2 import load_lanelet2_map
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
@@ -25,6 +26,7 @@ class MapBasedPredictor:
         self.prediction_min_speed = rospy.get_param('~prediction_min_speed')
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
         self.angle_threshold = rospy.get_param('~angle_threshold')
+        self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
 
         lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
 
@@ -86,7 +88,7 @@ class MapBasedPredictor:
                 distances = np.cumsum(np.insert(velocities[:-1] * self.prediction_interval, 0, 0))
 
                 # get all possible paths (lanelet branching), from selected lanelet to max distance
-                all_trajectories = self.graph.possiblePaths(selected_lanelet, distances[-1])
+                all_trajectories = self.graph.possiblePaths(selected_lanelet, object_distance_from_lanelet_start + distances[-1])
 
                 if len(all_trajectories) == 0:
                     continue
@@ -105,6 +107,10 @@ class MapBasedPredictor:
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
                 trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
+                trajectory_linestring = trajectory_linestring.simplify(0.01, preserve_topology=True)
+                if self.use_offset_for_prediction:
+                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, shapely.Point(obj.pose.position.x, obj.pose.position.y, obj.pose.position.z))
+                    trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style=1)
                 object_distance_from_trajectory_linestring_start = trajectory_linestring.project(shapely.Point(object_location.x, object_location.y))
 
                 lane = Lane()
@@ -113,7 +119,7 @@ class MapBasedPredictor:
                     p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + d)
                     wp.pose.pose.position.x = p.x
                     wp.pose.pose.position.y = p.y
-                    wp.pose.pose.position.z = p.z
+                    wp.pose.pose.position.z = obj.pose.position.z
                     # TODO Recalculating velocity vector based on lanelet heading at the object location.
                     # Wrong when lanelet changes direction (turns), but good enough for now?
                     speed_x, speed_y = create_vector_from_heading_and_scalar(lanelet_heading, velocities[i])
