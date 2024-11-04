@@ -63,6 +63,7 @@ class YoloTrafficLightDetector:
         self.transform_timeout = rospy.get_param("~transform_timeout")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
         self.iou_threshold = rospy.get_param("~iou_threshold")
+        self.camera_delay_compensation = rospy.get_param("~camera_delay_compensation")
 
         # Extract all stop lines and traffic lights from the lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
@@ -128,7 +129,7 @@ class YoloTrafficLightDetector:
             stoplines_on_path = self.stoplines_on_path
             transform_from_frame = self.transform_from_frame
 
-        image_time_stamp = camera_image_msg.header.stamp
+        image_time_stamp = camera_image_msg.header.stamp  - rospy.Duration.from_sec(self.camera_delay_compensation)
         transform_to_frame = camera_image_msg.header.frame_id
 
         tfl_status = TrafficLightResultArray()
