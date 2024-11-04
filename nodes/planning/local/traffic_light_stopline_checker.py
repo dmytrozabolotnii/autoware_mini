@@ -46,8 +46,8 @@ class TrafficLightStoplineChecker:
     def traffic_light_status_callback(self, msg):
         stopline_statuses = {}
         for result in msg.results:
-            stopline_statuses[result.lane_id] = result.recognition_result
-        
+            stopline_statuses[result.stopline_id] = result.recognition_result
+
         self.stopline_statuses = stopline_statuses
 
     def local_path_callback(self, msg):

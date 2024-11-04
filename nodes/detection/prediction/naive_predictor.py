@@ -58,7 +58,8 @@ class NaivePredictor:
                 wp = Waypoint()
                 wp.position.x, wp.position.y = predicted_objects_array[j][i]['centroid']
                 wp.position.z = obj.pose.position.z
-                wp.velocity.x, wp.velocity.y = predicted_objects_array[j][i]['velocity']
+                # TODO - Should the whole node be transformed to using speed as map based predictor?
+                wp.speed = (predicted_objects_array[j][i]['velocity'][0]**2 + predicted_objects_array[j][i]['velocity'][1]**2)**0.5
                 path.waypoints.append(wp)
             obj.candidate_trajectories.paths.append(path)
 
