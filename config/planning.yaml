@@ -59,10 +59,6 @@ trajectory_collision_checker:
 automatic_stop_behavior:
   braking_safety_distance_stop_line: 0.1      # m
   keep_stop_line_for: 15.0                    # s
-openpilot_supercombo_planner:
-  use_wide_camera: True
-  narrow_image_crop_factor: 0.85
-  wide_image_crop_factor: 1.0
 
 supercombo_prediction_visualizer:
   transform_timeout: 0.06

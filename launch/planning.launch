@@ -8,10 +8,6 @@
     <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
     <arg name="map_name"                    default="tartu_demo" />
     <arg name="load_goals"                  default="true" />
-    <arg name="use_supercombo"              default="true" />
-    <arg name="use_supercombo_locally"      default="false" />
-    <arg name="supercombo_path"             default="$(find autoware_mini)/data/models/openpilot_supercombo/supercombo.onnx" />
-    <arg name="supercombo_metadata_path"    default="$(find autoware_mini)/data/models/openpilot_supercombo/supercombo_metadata.pkl" />
     
     <group ns="planning">
 
@@ -85,15 +81,6 @@
         </group>
 
         <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/global_path /planning/local_path" name="local_path_relay" output="screen" required="true" />
-        <!-- 
-        <node if="$(args use_supercombo_locally)" pkg="autoware_mini" type="openpilot_supercombo_planner.py" name="openpilot_supercombo_planner" output="screen" required="true">
-            <param name="supercombo_path" value="$(arg supercombo_path)" />
-            <param name="supercombo_metadata_path" value="$(arg supercombo_metadata_path)" />
-            <remap from="camera_info_fov60" to="/interfaceb/link0/camera_info"/>
-            <remap from="image_raw_fov60" to="/interfaceb/link0/image_rect"/>
-            <remap from="camera_info_fov120" to="/interfaceb/link0/camera_info"/>
-            <remap from="image_raw_fov120" to="/interfaceb/link0/image_rect"/>
-        </node> -->
 
         <node pkg="autoware_mini" type="supercombo_prediction_visualizer.py" name="supercombo_prediction_visualizer" output="screen" required="true" /> 
 

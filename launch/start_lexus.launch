@@ -68,11 +68,7 @@
         <arg name="use_camera_fr"       value="$(eval 'camera' in tfl_detector and tfl_cameras=='mako')" />
         <arg name="use_nvidia_cameras"  value="$(eval 'camera' in tfl_detector and tfl_cameras=='nvidia')" />
         <arg name="use_radar_fc"        value="$(eval 'radar' in detector)" />
-    </include>
-
-    <!-- Openpilot -->
-    <include file="$(find autoware_mini)/launch/platform/openpilot.launch">
-        <arg name="use_openpilot"            value="$(arg use_openpilot)" />
+        <arg name="use_openpilot"       value="$(arg use_openpilot)" />
     </include>
 
     <!-- Rviz -->
