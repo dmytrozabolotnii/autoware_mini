@@ -130,8 +130,8 @@ traffic_light_majority_merger:
   
 camera_fl:
   camera_traffic_light_detector_left:
-    roi_width_extent: 0.6  # ROI box width extension amount in meters
-    roi_height_extent: 0.6  # ROI box heigth extension amount in meters
+    roi_width_extent: 0.65  # ROI box width extension amount in meters
+    roi_height_extent: 0.55  # ROI box heigth extension amount in meters
     min_roi_width: 50  # minimum ROI width in pixels, when classification makes sense
     rectify_image: False  # the distortions of Mako cameras are so small they don't matter
     transform_timeout: 0.06
@@ -140,8 +140,8 @@ camera_fl:
 
 camera_fr:
   camera_traffic_light_detector_right:
-    roi_width_extent: 0.6  # ROI box width extension amount in meters
-    roi_height_extent: 0.6  # ROI box height extension amount in meters
+    roi_width_extent: 0.65  # ROI box width extension amount in meters
+    roi_height_extent: 0.55  # ROI box height extension amount in meters
     min_roi_width: 50  # minimum ROI width in pixels, when classification makes sense
     rectify_image: False  # the distortions of Mako cameras are so small they don't matter
     transform_timeout: 0.06
@@ -150,8 +150,8 @@ camera_fr:
 
 interfacea_link1:
   camera_traffic_light_detector_link1:
-    roi_width_extent: 0.6  # ROI box width extension amount in meters
-    roi_height_extent: 0.6  # ROI box height extension amount in meters
+    roi_width_extent: 0.65  # ROI box width extension amount in meters
+    roi_height_extent: 0.55  # ROI box height extension amount in meters
     min_roi_width: 15  # minimum ROI width in pixels, when classification makes sense
     rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06
@@ -160,8 +160,8 @@ interfacea_link1:
 
 interfacea_link2:
   camera_traffic_light_detector_link2:
-    roi_width_extent: 0.6  # ROI box width extension amount in meters
-    roi_height_extent: 0.6  # ROI box height extension amount in meters
+    roi_width_extent: 0.65  # ROI box width extension amount in meters
+    roi_height_extent: 0.55  # ROI box height extension amount in meters
     min_roi_width: 15  # minimum ROI width in pixels, when classification makes sense
     rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06
