@@ -2,17 +2,18 @@
 
 import rospy
 import numpy as np
+import tf2_ros
 import shapely
 import threading
 from lanelet2.geometry import approximatedLength2d
 from autoware_msgs.msg import Lane
 from std_msgs.msg import Float32MultiArray, UInt32MultiArray, ColorRGBA
 from geometry_msgs.msg import PoseStamped, Point
-from helpers.path import Path
-
 from visualization_msgs.msg import MarkerArray, Marker
 
 from helpers.lanelet2 import load_lanelet2_map
+from helpers.transform import transform_point
+from helpers.geometry import get_heading_from_orientation, get_point_using_heading_and_distance, split_linestring_by_point_and_heading
 
 class LaneBoundaryMatcher:
 
@@ -22,18 +23,24 @@ class LaneBoundaryMatcher:
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        self.lookahead_distance = 42.1875
+        self.transform_timeout = 0.06
+        self.base_link_openpilot_dist = 2.41
 
         # variables
-        self.supercombo_lane_lines = None
         self.global_path_lanelet_ids = None
         self.lanelet_polygons = None
         self.lanelet_centerline_waypoints = None
         self.current_lanelet_idx = 0
         self.current_position = None
+        self.current_heading = None
+        self.current_timestamp = None
         self.new_global_path = None
         self.approximated_lanelet_lengths = None
-
+        
         self.lock = threading.Lock()
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # publishers
         self.correction_pub = rospy.Publisher('lateral_position_correction', Lane, queue_size=1, tcp_nodelay=True)
@@ -45,21 +52,31 @@ class LaneBoundaryMatcher:
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
-        self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y)
+        self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.y)
+        self.current_heading = get_heading_from_orientation(msg.pose.orientation)
+        self.current_timestamp = msg.header.stamp
 
     def lane_line_callback(self, msg):
-        self.supercombo_lane_lines = np.array(msg.data).reshape(msg.layout.dim[0].size, msg.layout.dim[1].size, msg.layout.dim[2].size)
+        supercombo_lane_lines = np.array(msg.data).reshape(msg.layout.dim[0].size, msg.layout.dim[1].size, msg.layout.dim[2].size)
 
         if self.lanelet_polygons is None or self.current_position is None or self.new_global_path is None or self.approximated_lanelet_lengths is None:
             return
         
         with self.lock:
             current_position = self.current_position
+            current_heading = self.current_heading
+            current_timestamp = self.current_timestamp
             lanelet_polygons = self.lanelet_polygons
             global_path_lanelet_ids = self.global_path_lanelet_ids
             current_lanelet_idx = self.current_lanelet_idx
             approximated_lanelet_lengths = self.approximated_lanelet_lengths
             self.new_global_path = False
+
+        try:
+            transform = self.tf_buffer.lookup_transform("map", "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
+        except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
+            rospy.logwarn("%s - %s", rospy.get_name(), e)
+            return
         
         # find the current lanelet
         while not lanelet_polygons[current_lanelet_idx].contains(current_position):
@@ -71,7 +88,8 @@ class LaneBoundaryMatcher:
         right_lane_points = []
         left_lane_points = []
         idx = current_lanelet_idx
-        total_length = 0
+        current_centerline = shapely.LineString([(point.x, point.y) for point in self.lanelet2_map.laneletLayer.get(global_path_lanelet_ids[idx]).centerline])
+        total_length = -current_centerline.project(current_position)
 
         # take left and right boundaries from lanelets that are 50 m or closer on the global path
         while total_length < 50:
@@ -85,7 +103,42 @@ class LaneBoundaryMatcher:
             total_length += approximated_lanelet_lengths[lanelet_id]
             idx += 1
 
-        self.publish_lanelet_bounds(right_lane_points, left_lane_points)
+
+        openpilot_point = get_point_using_heading_and_distance(current_position, current_heading, self.base_link_openpilot_dist)
+
+        # trim the start of lane boundaries
+        right_lane_bound = split_linestring_by_point_and_heading(shapely.LineString(right_lane_points), openpilot_point, current_heading)
+        left_lane_bound = split_linestring_by_point_and_heading(shapely.LineString(left_lane_points), openpilot_point, current_heading)
+
+        # endpoint of lane boundary matching
+        lookahead_point = get_point_using_heading_and_distance(current_position, current_heading, self.lookahead_distance + self.base_link_openpilot_dist)
+
+        # trim the end of lane boundaries
+        right_lane_bound = split_linestring_by_point_and_heading(right_lane_bound, lookahead_point, current_heading - np.pi)
+        left_lane_bound = split_linestring_by_point_and_heading(left_lane_bound, lookahead_point, current_heading - np.pi)
+
+        supercombo_lane_points = []
+        for i in range(1, 4):
+            lane_points = []
+            for x, y, z, t in supercombo_lane_lines[i].T:
+                if x > self.lookahead_distance:
+                    break
+                point = transform_point(Point(x, y, z), transform)
+                lane_points.append((point.x, point.y, point.z))
+
+            supercombo_lane_points.append(lane_points)
+
+        # Visualization for debugging
+        lanes_marker_array = MarkerArray()
+        marker1, marker2 = self.publish_lanelet_bounds(shapely.LineString(supercombo_lane_points[0]), shapely.LineString(supercombo_lane_points[1]), True)
+        lanes_marker_array.markers.append(marker1)
+        lanes_marker_array.markers.append(marker2)
+
+        marker1, marker2 = self.publish_lanelet_bounds(right_lane_bound, left_lane_bound)
+        lanes_marker_array.markers.append(marker1)
+        lanes_marker_array.markers.append(marker2)
+        
+        self.lanelet_bounds_pub.publish(lanes_marker_array)
 
 
         if not self.new_global_path:
@@ -121,48 +174,54 @@ class LaneBoundaryMatcher:
         self.approximated_lanelet_lengths = approximated_lanelet_lengths
 
 
-    def publish_lanelet_bounds(self, right_lane_points, left_lane_points):
+    def publish_lanelet_bounds(self, right_lane_bound, left_lane_bound, supercombo=False):
         # For debugging
-        lanes_marker_array = MarkerArray()
+
+        if supercombo:
+            color = ColorRGBA(0.0, 1.0, 0.7, 1.0)
+            id_start = 0
+        else:
+            color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
+            id_start = 2
 
         points = []
-        for x, y, z in right_lane_points:
+        for x, y, z in right_lane_bound.coords:
             point = Point(x=x,y=y, z=z)
             points.append(point)
 
-        marker = Marker()
-        marker.header.frame_id = "map"
-        marker.header.stamp = rospy.Time.now()
-        marker.ns = "right bound"
-        marker.id = 0
-        marker.type = Marker.LINE_STRIP
-        marker.action = Marker.ADD
-        marker.pose.orientation.w = 1.0
-        marker.scale.x = 0.1
-        marker.color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
-        marker.points = points
-        lanes_marker_array.markers.append(marker)
+        marker1 = Marker()
+        marker1.header.frame_id = "map"
+        marker1.header.stamp = rospy.Time.now()
+        marker1.ns = "right bound"
+        marker1.id = id_start
+        marker1.type = Marker.LINE_STRIP
+        marker1.action = Marker.ADD
+        marker1.pose.orientation.w = 1.0
+        marker1.scale.x = 0.1
+        marker1.color = color
+        marker1.points = points
 
         points = []
-        for x, y, z in left_lane_points:
+        for x, y, z in left_lane_bound.coords:
             point = Point(x=x,y=y, z=z)
             points.append(point)
 
-        marker = Marker()
-        marker.header.frame_id = "map"
-        marker.header.stamp = rospy.Time.now()
-        marker.ns = "left bound"
-        marker.id = 1
-        marker.type = Marker.LINE_STRIP
-        marker.action = Marker.ADD
-        marker.pose.orientation.w = 1.0
-        marker.scale.x = 0.1
-        marker.color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
-        marker.points = points
-        lanes_marker_array.markers.append(marker)
+        marker2 = Marker()
+        marker2.header.frame_id = "map"
+        marker2.header.stamp = rospy.Time.now()
+        marker2.ns = "left bound"
+        marker2.id = id_start + 1
+        marker2.type = Marker.LINE_STRIP
+        marker2.action = Marker.ADD
+        marker2.pose.orientation.w = 1.0
+        marker2.scale.x = 0.1
+        marker2.color = color
+        marker2.points = points
+
+        return marker1, marker2
         
-        self.lanelet_bounds_pub.publish(lanes_marker_array)
-
+        
+        
 
     def run(self):
         rospy.spin()
