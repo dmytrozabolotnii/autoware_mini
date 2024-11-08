@@ -9,8 +9,6 @@ Panels:
         - /Detection1
         - /Detection1/Lidar1
         - /Detection1/Detected objects1/Namespaces1
-        - /Detection1/Traffic lights1
-        - /Planning1
         - /Planning1
         - /Planning1/Global path1/Namespaces1
         - /Planning1/Smoothed path1/Namespaces1
@@ -815,7 +813,6 @@ Visualization Manager:
                   Value: true
                 Planning:
                   "": true
-                  Supercombo lanes: true
                   Value: true
                 Sensing:
                   Mako:
@@ -824,7 +821,16 @@ Visualization Manager:
                     Image right: true
                     Value: true
                   Nvidia:
-                    "": true
+                    Camera Interface link1 Right: true
+                    Camera Interface link2 Forward: true
+                    Camera Interface link3 Backward: true
+                    Camera InterfaceB link 0 Base: true
+                    Camera Interfacea link 0 Left: true
+                    Image Interface link1 Right: true
+                    Image Interface link2 Forward: true
+                    Image Interface link3 Backward: true
+                    Image InterfaceB link0 Base: true
+                    Image Interfacea link0 Left: true
                     Value: true
                   Points raw center: true
                   Points raw front: true
@@ -893,7 +899,6 @@ Visualization Manager:
                   Value: true
                 Planning:
                   "": true
-                  Supercombo lanes: true
                   Value: true
                 Sensing:
                   Mako:
@@ -902,7 +907,16 @@ Visualization Manager:
                     Image right: true
                     Value: true
                   Nvidia:
-                    "": true
+                    Camera Interface link1 Right: true
+                    Camera Interface link2 Forward: true
+                    Camera Interface link3 Backward: true
+                    Camera InterfaceB link 0 Base: true
+                    Camera Interfacea link 0 Left: true
+                    Image Interface link1 Right: true
+                    Image Interface link2 Forward: true
+                    Image Interface link3 Backward: true
+                    Image InterfaceB link0 Base: true
+                    Image Interfacea link0 Left: true
                     Value: true
                   Points raw center: true
                   Points raw front: true
@@ -975,14 +989,10 @@ Visualization Manager:
                   Value: true
                 Planning:
                   "": true
-                  Supercombo lanes: true
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1062,14 +1072,10 @@ Visualization Manager:
                   Value: true
                 Planning:
                   "": true
-                  Supercombo lanes: true
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1149,14 +1155,10 @@ Visualization Manager:
                   Value: true
                 Planning:
                   "": true
-                  Supercombo lanes: true
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link2 Forward: true
@@ -1236,14 +1238,10 @@ Visualization Manager:
                   Value: true
                 Planning:
                   "": true
-                  Supercombo lanes: true
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1323,14 +1321,10 @@ Visualization Manager:
                   Value: true
                 Planning:
                   "": true
-                  Supercombo lanes: true
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1721,12 +1715,7 @@ Visualization Manager:
           Marker Topic: /detection/tracked_objects_markers
           Name: Tracked objects
           Namespaces:
-            bounding_box: true
-            bounding_box: true
-            centroid: true
-            convex_hull: true
-            speed: true
-            text: true
+            {}
           Queue Size: 100
           Value: false
         - Class: rviz/MarkerArray
@@ -2034,18 +2023,18 @@ Visualization Manager:
           Value: false
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /planning/supercombo_plan
+          Marker Topic: /planning/supercombo_plan_markers
           Name: Supercombo plan
           Namespaces:
-            {}
+            Supercombo plan: true
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /planning/supercombo_lanes
+          Marker Topic: /planning/supercombo_lanes_markers
           Name: Supercombo lanes
           Namespaces:
-            {}
+            Supercombo lane: true
           Queue Size: 100
           Value: true
       Enabled: true
@@ -2085,9 +2074,7 @@ Visualization Manager:
           Marker Topic: /vehicle/bicycle_markers
           Name: Bicycle markers
           Namespaces:
-            {}
-            {}
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/Camera
@@ -2142,7 +2129,6 @@ Visualization Manager:
               Value: true
             Planning:
               "": true
-              Supercombo lanes: true
               Value: true
             Sensing:
               Mako:

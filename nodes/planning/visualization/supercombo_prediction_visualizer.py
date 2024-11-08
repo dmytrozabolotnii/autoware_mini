@@ -16,8 +16,8 @@ class SupercomboPredictionVisualizer:
         self.transform_timeout = rospy.get_param("~transform_timeout")
 
         # Publishers
-        self.supercombo_plan_pub = rospy.Publisher('supercombo_plan', MarkerArray, queue_size=10, tcp_nodelay=True)
-        self.supercombo_lanes_pub = rospy.Publisher('supercombo_lanes', MarkerArray, queue_size=10, tcp_nodelay=True)
+        self.supercombo_plan_pub = rospy.Publisher('supercombo_plan_markers', MarkerArray, queue_size=10, tcp_nodelay=True)
+        self.supercombo_lanes_pub = rospy.Publisher('supercombo_lanes_markers', MarkerArray, queue_size=10, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('/openpilot/position', Float32MultiArray, self.position_callback, queue_size=None, tcp_nodelay=True)
