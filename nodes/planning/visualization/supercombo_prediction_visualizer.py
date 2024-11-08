@@ -6,6 +6,8 @@ from std_msgs.msg import ColorRGBA, Float32MultiArray
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import MarkerArray, Marker
 
+from rospy.numpy_msg import numpy_msg
+
 NO_TRAVERSAL_LIMIT = 2**64-1
 
 class SupercomboPredictionVisualizer:
@@ -20,12 +22,12 @@ class SupercomboPredictionVisualizer:
         self.supercombo_lanes_pub = rospy.Publisher('supercombo_lanes_markers', MarkerArray, queue_size=10, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('/openpilot/position', Float32MultiArray, self.position_callback, queue_size=None, tcp_nodelay=True)
-        rospy.Subscriber('/openpilot/lane_lines', Float32MultiArray, self.lane_lines_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('/openpilot/position', numpy_msg(Float32MultiArray), self.position_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('/openpilot/lane_lines', numpy_msg(Float32MultiArray), self.lane_lines_callback, queue_size=None, tcp_nodelay=True)
 
 
     def position_callback(self, msg):
-        position = np.array(msg.data).reshape(msg.layout.dim[0].size, msg.layout.dim[1].size)
+        position = msg.data.reshape(msg.layout.dim[0].size, msg.layout.dim[1].size)
 
         plan_points = []
         for x, y, z, t in position.T:
@@ -51,7 +53,7 @@ class SupercomboPredictionVisualizer:
 
 
     def lane_lines_callback(self, msg):
-        lane_lines = np.array(msg.data).reshape(msg.layout.dim[0].size, msg.layout.dim[1].size, msg.layout.dim[2].size)
+        lane_lines = msg.data.reshape(msg.layout.dim[0].size, msg.layout.dim[1].size, msg.layout.dim[2].size)
 
         lanes_marker_array = MarkerArray()
 
