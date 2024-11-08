@@ -20,7 +20,7 @@
     <arg name="max_speed"               default="40" />
     <arg name="detection_range"         default=""                  doc="enter a value in meters to enable it" />
     <arg name="more_visualizations"     default="false"             doc="By default visualize only the final detections" />
-    <arg name="use_openpilot"           default="true" />
+    <arg name="use_openpilot"           default="false" />
     
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
