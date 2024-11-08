@@ -2,13 +2,9 @@
 
 import rospy
 import numpy as np
-import tf2_ros
 from std_msgs.msg import ColorRGBA, Float32MultiArray
-from geometry_msgs.msg import Point, TransformStamped, Quaternion
+from geometry_msgs.msg import Point
 from visualization_msgs.msg import MarkerArray, Marker
-
-from helpers.transform import transform_point
-from tf.transformations import quaternion_from_euler
 
 NO_TRAVERSAL_LIMIT = 2**64-1
 
@@ -27,32 +23,19 @@ class SupercomboPredictionVisualizer:
         rospy.Subscriber('/openpilot/position', Float32MultiArray, self.position_callback, queue_size=None, tcp_nodelay=True)
         rospy.Subscriber('/openpilot/lane_lines', Float32MultiArray, self.lane_lines_callback, queue_size=None, tcp_nodelay=True)
 
-        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.publish_camera_to_supercombo_tf()
-
 
     def position_callback(self, msg):
-        try:
-            transform = self.tf_buffer.lookup_transform("base_link", "openpilot", rospy.Time.now(), rospy.Duration(self.transform_timeout))
-        except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-            rospy.logwarn("%s - %s", rospy.get_name(), e)
-            return
-
-
         position = np.array(msg.data).reshape(msg.layout.dim[0].size, msg.layout.dim[1].size)
 
         plan_points = []
         for x, y, z, t in position.T:
             point_supercombo = Point(x=x,y=y,z=z)
-            point_base_link = transform_point(point_supercombo, transform)
-            plan_points.append(point_base_link)
+            plan_points.append(point_supercombo)
 
         plan_marker_array = MarkerArray()
 
         marker = Marker()
-        marker.header.frame_id = "base_link"
+        marker.header.frame_id = "openpilot"
         marker.header.stamp = rospy.Time.now()
         marker.ns = "Supercombo plan"
         marker.id = 0
@@ -68,12 +51,6 @@ class SupercomboPredictionVisualizer:
 
 
     def lane_lines_callback(self, msg):
-        try:
-            transform = self.tf_buffer.lookup_transform("base_link", "openpilot", rospy.Time.now(), rospy.Duration(self.transform_timeout))
-        except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-            rospy.logwarn("%s - %s", rospy.get_name(), e)
-            return
-
         lane_lines = np.array(msg.data).reshape(msg.layout.dim[0].size, msg.layout.dim[1].size, msg.layout.dim[2].size)
 
         lanes_marker_array = MarkerArray()
@@ -82,11 +59,10 @@ class SupercomboPredictionVisualizer:
             lane_points = []
             for x, y, z, t in lane_lines[i].T:
                 point_supercombo = Point(x=x,y=y,z=z)
-                point_base_link = transform_point(point_supercombo, transform)
-                lane_points.append(point_base_link)
+                lane_points.append(point_supercombo)
 
             marker = Marker()
-            marker.header.frame_id = "base_link"
+            marker.header.frame_id = "openpilot"
             marker.header.stamp = rospy.Time.now()
             marker.ns = "Supercombo lane"
             marker.id = i+1
@@ -100,26 +76,6 @@ class SupercomboPredictionVisualizer:
         
         self.supercombo_lanes_pub.publish(lanes_marker_array)
         return
-
-
-    def publish_camera_to_supercombo_tf(self):
-        
-        t = TransformStamped()
-
-        x, y, z, w = quaternion_from_euler(np.pi, 0.0, 0.0, axes='rxyz')
-        orientation = Quaternion(x, y, z, w)
-
-        t.header.stamp = rospy.Time.now()
-        t.header.frame_id = "base_link"
-        t.child_frame_id = "openpilot"
-
-        t.transform.translation.x = 2.41 #nvidia cam +0.5
-        t.transform.translation.y = 0.09
-        t.transform.translation.z = 0.87 #nvidia cam -0.3
-        t.transform.rotation = orientation
-
-        self.tf_broadcaster.sendTransform(t)
-
 
     def run(self):
         rospy.spin()
