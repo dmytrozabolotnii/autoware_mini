@@ -15,6 +15,7 @@
     <arg name="tracker"                 default="$(eval 'ema' if scenario_name != '' else 'none')"  doc="none, ema"/>
     <arg name="predictor"               default="none"          doc="none, naive, map, map_naive"/>
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
+    <arg name="use_openpilot"           default="false" />
 
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -42,6 +43,7 @@
         <arg name="waypoints_file"      value="$(arg waypoints_file)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
+        <arg name="use_openpilot"       value="$(arg use_openpilot)" />
     </include>
 
     <!-- Control -->

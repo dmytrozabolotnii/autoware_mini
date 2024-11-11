@@ -59,6 +59,3 @@ trajectory_collision_checker:
 automatic_stop_behavior:
   braking_safety_distance_stop_line: 0.1      # m
   keep_stop_line_for: 15.0                    # s
-
-supercombo_prediction_visualizer:
-  transform_timeout: 0.06

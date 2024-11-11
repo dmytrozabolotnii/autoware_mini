@@ -10,20 +10,17 @@ from rospy.numpy_msg import numpy_msg
 
 NO_TRAVERSAL_LIMIT = 2**64-1
 
-class SupercomboPredictionVisualizer:
+class OpenPilotPredictionVisualizer:
 
     def __init__(self):
 
-        # Parameters
-        self.transform_timeout = rospy.get_param("~transform_timeout")
-
         # Publishers
-        self.supercombo_plan_pub = rospy.Publisher('supercombo_plan_markers', MarkerArray, queue_size=10, tcp_nodelay=True)
-        self.supercombo_lanes_pub = rospy.Publisher('supercombo_lanes_markers', MarkerArray, queue_size=10, tcp_nodelay=True)
+        self.openpilot_plan_pub = rospy.Publisher('openpilot_plan_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
+        self.openpilot_lanes_pub = rospy.Publisher('openpilot_lanes_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('/openpilot/position', numpy_msg(Float32MultiArray), self.position_callback, queue_size=None, tcp_nodelay=True)
-        rospy.Subscriber('/openpilot/lane_lines', numpy_msg(Float32MultiArray), self.lane_lines_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('/openpilot/position', numpy_msg(Float32MultiArray), self.position_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/openpilot/lane_lines', numpy_msg(Float32MultiArray), self.lane_lines_callback, queue_size=1, tcp_nodelay=True)
 
 
     def position_callback(self, msg):
@@ -31,15 +28,15 @@ class SupercomboPredictionVisualizer:
 
         plan_points = []
         for x, y, z, t in position.T:
-            point_supercombo = Point(x=x,y=y,z=z)
-            plan_points.append(point_supercombo)
+            point_openpilot= Point(x=x,y=y,z=z)
+            plan_points.append(point_openpilot)
 
         plan_marker_array = MarkerArray()
 
         marker = Marker()
         marker.header.frame_id = "openpilot"
         marker.header.stamp = rospy.Time.now()
-        marker.ns = "Supercombo plan"
+        marker.ns = "Openpilot plan"
         marker.id = 0
         marker.type = Marker.LINE_STRIP
         marker.action = Marker.ADD
@@ -49,7 +46,7 @@ class SupercomboPredictionVisualizer:
         marker.points = plan_points
         plan_marker_array.markers.append(marker)
 
-        self.supercombo_plan_pub.publish(plan_marker_array)
+        self.openpilot_plan_pub.publish(plan_marker_array)
 
 
     def lane_lines_callback(self, msg):
@@ -60,13 +57,13 @@ class SupercomboPredictionVisualizer:
         for i in range(4):
             lane_points = []
             for x, y, z, t in lane_lines[i].T:
-                point_supercombo = Point(x=x,y=y,z=z)
-                lane_points.append(point_supercombo)
+                point_openpilot = Point(x=x,y=y,z=z)
+                lane_points.append(point_openpilot)
 
             marker = Marker()
             marker.header.frame_id = "openpilot"
             marker.header.stamp = rospy.Time.now()
-            marker.ns = "Supercombo lane"
+            marker.ns = "Openpilot lane"
             marker.id = i+1
             marker.type = Marker.LINE_STRIP
             marker.action = Marker.ADD
@@ -76,13 +73,13 @@ class SupercomboPredictionVisualizer:
             marker.points = lane_points
             lanes_marker_array.markers.append(marker)
         
-        self.supercombo_lanes_pub.publish(lanes_marker_array)
+        self.openpilot_lanes_pub.publish(lanes_marker_array)
         return
 
     def run(self):
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('supercombo_prediction_visualizer')
-    node = SupercomboPredictionVisualizer()
+    rospy.init_node('openpilot_prediction_visualizer')
+    node = OpenPilotPredictionVisualizer()
     node.run()

@@ -8,6 +8,7 @@
     <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
     <arg name="map_name"                    default="tartu_demo" />
     <arg name="load_goals"                  default="true" />
+    <arg name="use_openpilot"               default="false" />
     
     <group ns="planning">
 
@@ -82,7 +83,7 @@
 
         <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/global_path /planning/local_path" name="local_path_relay" output="screen" required="true" />
 
-        <node pkg="autoware_mini" type="supercombo_prediction_visualizer.py" name="supercombo_prediction_visualizer" output="screen" required="true" /> 
+        <node if="$(arg use_openpilot)" pkg="autoware_mini" type="openpilot_prediction_visualizer.py" name="openpilot_prediction_visualizer" output="screen" required="true" /> 
 
         <node if="$(eval use_supercombo and use_supercombo_locally)" pkg="autoware_mini" type="openpilot_supercombo_planner.py" name="openpilot_supercombo_planner" output="screen" required="true">
             <param name="supercombo_path" value="$(arg supercombo_path)" />
