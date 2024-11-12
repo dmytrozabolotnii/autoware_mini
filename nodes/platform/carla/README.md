@@ -46,7 +46,7 @@ ROS node for ground truth localization.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/carla/odometry` | `nav_msgs/Odometry` | Odometry message containing the current pose and velocity of the ego vehicle in the simulation coordinates.
+| `/carla/ego_vehicle/odometry` | `nav_msgs/Odometry` | Odometry message containing the current pose and velocity of the ego vehicle in the simulation coordinates.
 
 
 #### Published Topics
@@ -74,7 +74,7 @@ No parameters.
 | ---- | ---- | ----------- |
 | `/gps/fix` | `sensor_msgs/NavSatFix` | GNSS fix |
 | `/gps/fix_forward` | `sensor_msgs/NavSatFix` | Forward GNSS fix |
-| `/carla/odometry` | `nav_msgs/Odometry` | Carla odometry |
+| `/carla/ego_vehicle/odometry` | `nav_msgs/Odometry` | Carla odometry |
 
 
 #### Published Topics

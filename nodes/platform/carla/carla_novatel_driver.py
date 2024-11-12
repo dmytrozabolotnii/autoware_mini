@@ -32,7 +32,7 @@ class CarlaNovatelDriver():
         # Subscribers
         gnss_sub = message_filters.Subscriber('/gps/fix', NavSatFix, queue_size=2, tcp_nodelay=True)
         gnss_forward_sub = message_filters.Subscriber('/gps/fix_forward', NavSatFix, queue_size=2, tcp_nodelay=True)
-        odometry_sub = message_filters.Subscriber('/carla/odometry', Odometry, queue_size=2, tcp_nodelay=True)
+        odometry_sub = message_filters.Subscriber('/carla/ego_vehicle/odometry', Odometry, queue_size=2, tcp_nodelay=True)
         ts = message_filters.ApproximateTimeSynchronizer([gnss_sub, gnss_forward_sub, odometry_sub], queue_size=10, slop=0.05)
         ts.registerCallback(self.sync_callback)
 
