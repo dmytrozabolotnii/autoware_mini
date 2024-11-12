@@ -22,9 +22,12 @@ class OpenPilotPredictionVisualizer:
         rospy.Subscriber('/openpilot/position', numpy_msg(Float32MultiArray), self.position_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/openpilot/lane_lines', numpy_msg(Float32MultiArray), self.lane_lines_callback, queue_size=1, tcp_nodelay=True)
 
+    def float32_multiarray_to_numpy(self, multiarray):
+        dims = tuple(map(lambda x: x.size, multiarray.layout.dim))
+        return np.array(multiarray.data, dtype=float).reshape(dims).astype(np.float32)
 
     def position_callback(self, msg):
-        position = msg.data.reshape(msg.layout.dim[0].size, msg.layout.dim[1].size)
+        position = self.float32_multiarray_to_numpy(msg)
 
         plan_points = []
         for x, y, z, t in position.T:
@@ -50,7 +53,7 @@ class OpenPilotPredictionVisualizer:
 
 
     def lane_lines_callback(self, msg):
-        lane_lines = msg.data.reshape(msg.layout.dim[0].size, msg.layout.dim[1].size, msg.layout.dim[2].size)
+        lane_lines = self.float32_multiarray_to_numpy(msg)
 
         lanes_marker_array = MarkerArray()
 
