@@ -91,8 +91,9 @@ class Lanelet2MapVisualizer:
         states = {}
         for result in msg.results:
             # check if we have already outputted the status of this stopline
-            if result.stopline_id in states and states[result.stopline_id] != result.recognition_result_str:
-                rospy.logwarn("%s - multiple traffic lights with different states on the same stop line %d: %s != %s", rospy.get_name(), result.stopline_id, states[result.stopline_id], result.recognition_result_str)
+            if result.stopline_id in states:
+                if states[result.stopline_id] != result.recognition_result_str:
+                    rospy.logwarn("%s - multiple traffic lights with different states on the same stop line %d: %s != %s", rospy.get_name(), result.stopline_id, states[result.stopline_id], result.recognition_result_str)
                 continue
 
             # fetch the stop line data

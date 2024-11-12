@@ -19,7 +19,8 @@ class RoadAreaFilter:
         self.utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         self.utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
-        assert self.filtering_method in ["centroid", "intersects", "within"], "filtering_method must be one of 'centroid', 'intersects', 'within'"
+        if self.filtering_method not in ["centroid", "intersects", "within"]:
+            raise ValueError(f"{rospy.get_name()} - 'filtering_method' must be one of 'centroid', 'intersects' or 'within', not '{self.filtering_method}'")
 
         self.current_location = None
 
