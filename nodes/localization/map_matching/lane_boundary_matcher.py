@@ -6,10 +6,11 @@ import tf2_ros
 import shapely
 import threading
 from lanelet2.geometry import approximatedLength2d
-from autoware_msgs.msg import Lane
 from std_msgs.msg import Float32MultiArray, UInt32MultiArray, ColorRGBA
-from geometry_msgs.msg import PoseStamped, Point
+from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Quaternion, Pose
 from visualization_msgs.msg import MarkerArray, Marker
+from ros_numpy import numpify, msgify
+from tf.transformations import quaternion_from_euler, quaternion_matrix
 
 from helpers.lanelet2 import load_lanelet2_map
 from helpers.transform import transform_point
@@ -22,8 +23,15 @@ class LaneBoundaryMatcher:
         # parameters
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
+        self.only_lateral_correction = True
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        self.lookahead_distance = 42.1875
+        if self.only_lateral_correction:
+            self.cutoff_length = 8
+            self.lookahead_distance = 3
+        else:
+            self.cutoff_length = 50
+            self.lookahead_distance = 42.1875
+        self.correction_trshold = 1.2
         self.transform_timeout = 0.06
         self.base_link_openpilot_dist = 2.41
 
@@ -37,24 +45,39 @@ class LaneBoundaryMatcher:
         self.current_timestamp = None
         self.new_global_path = None
         self.approximated_lanelet_lengths = None
+
+        self.localization_corrections = {'x':0, 'y':0, 'z':0, 'roll':0, 'pitch':0, 'yaw':0}
+        self.transform_matrix = None
         
         self.lock = threading.Lock()
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
+        self.publish_base_link_correction_tf(**self.localization_corrections)
+
         # publishers
-        self.correction_pub = rospy.Publisher('lateral_position_correction', Lane, queue_size=1, tcp_nodelay=True)
+        self.current_pose_pub = rospy.Publisher('current_pose', PoseStamped, queue_size=1, tcp_nodelay=True)
         self.lanelet_bounds_pub = rospy.Publisher('lanelet_bounds_match', MarkerArray, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('/openpilot/lane_lines', Float32MultiArray, self.lane_line_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('global_path_lenelet_ids', UInt32MultiArray, self.global_path_callback, queue_size=None, tcp_nodelay=True)
-        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/planning/global_path_lenelet_ids', UInt32MultiArray, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('current_pose_gnss', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
         self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.y)
         self.current_heading = get_heading_from_orientation(msg.pose.orientation)
         self.current_timestamp = msg.header.stamp
+
+        current_pose_matrix = numpify(msg.pose)
+        corrected_current_pose_matrix = self.transform_matrix.dot(current_pose_matrix)
+
+        corrected_current_pose = PoseStamped()
+        corrected_current_pose.header = msg.header
+        corrected_current_pose.pose = msgify(Pose, corrected_current_pose_matrix)
+        self.current_pose_pub.publish(corrected_current_pose)
+        
 
     def lane_line_callback(self, msg):
         supercombo_lane_lines = np.array(msg.data).reshape(msg.layout.dim[0].size, msg.layout.dim[1].size, msg.layout.dim[2].size)
@@ -73,7 +96,8 @@ class LaneBoundaryMatcher:
             self.new_global_path = False
 
         try:
-            transform = self.tf_buffer.lookup_transform("map", "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
+            transform_openpilot = self.tf_buffer.lookup_transform("openpilot", "base_link", current_timestamp, rospy.Duration(self.transform_timeout))
+            transform_map = self.tf_buffer.lookup_transform("map", "base_link_gnss", current_timestamp, rospy.Duration(self.transform_timeout))
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
             return
@@ -91,8 +115,8 @@ class LaneBoundaryMatcher:
         current_centerline = shapely.LineString([(point.x, point.y) for point in self.lanelet2_map.laneletLayer.get(global_path_lanelet_ids[idx]).centerline])
         total_length = -current_centerline.project(current_position)
 
-        # take left and right boundaries from lanelets that are 50 m or closer on the global path
-        while total_length < 50:
+        # take close left and right boundaries from lanelets
+        while total_length < self.cutoff_length:
             lanelet_id = global_path_lanelet_ids[idx]
             for point in self.lanelet2_map.laneletLayer.get(lanelet_id).rightBound:
                 right_lane_points.append((point.x, point.y, point.z))
@@ -117,20 +141,45 @@ class LaneBoundaryMatcher:
         right_lane_bound = split_linestring_by_point_and_heading(right_lane_bound, lookahead_point, current_heading - np.pi)
         left_lane_bound = split_linestring_by_point_and_heading(left_lane_bound, lookahead_point, current_heading - np.pi)
 
+
+        right_lane_bound_openpilot = []
+        left_lane_bound_openpilot = []
+        for x, y, z in right_lane_points:
+            point = transform_point(Point(x, y, z), transform_map)
+            right_lane_bound_openpilot.append((point.x, point.y, point.z))
+        for x, y, z in left_lane_points:
+            point = transform_point(Point(x, y, z), transform_map)
+            left_lane_bound_openpilot.append((point.x, point.y, point.z))
+
         supercombo_lane_points = []
         for i in range(1, 4):
             lane_points = []
             for x, y, z, t in supercombo_lane_lines[i].T:
                 if x > self.lookahead_distance:
                     break
-                point = transform_point(Point(x, y, z), transform)
+                point = transform_point(Point(x, y, z), transform_openpilot)
                 lane_points.append((point.x, point.y, point.z))
-
+                
             supercombo_lane_points.append(lane_points)
 
+        avg_y_diff_left, avg_y_diff_right, avg_z_diff_left, avg_z_diff_right = self.find_average_distance(supercombo_lane_points, 
+                                                                   shapely.LineString(left_lane_bound_openpilot), 
+                                                                   shapely.LineString(right_lane_bound_openpilot))
+        
+        if avg_y_diff_left > self.correction_trshold or avg_y_diff_right > self.correction_trshold:
+            return
+        
+
+        self.localization_corrections['y'] = (avg_y_diff_left + avg_y_diff_right) / 2
+        self.publish_base_link_correction_tf(**self.localization_corrections)
+        
+        #print("LEFT", avg_y_diff_left, avg_z_diff_left)
+        #print("RIGHT", avg_y_diff_right, avg_z_diff_right)
+
+        """
         # Visualization for debugging
         lanes_marker_array = MarkerArray()
-        marker1, marker2 = self.publish_lanelet_bounds(shapely.LineString(supercombo_lane_points[0]), shapely.LineString(supercombo_lane_points[1]), True)
+        marker1, marker2 = self.publish_lanelet_bounds(shapely.LineString(supercombo_lane_points[1]), shapely.LineString(supercombo_lane_points[0]), True)
         lanes_marker_array.markers.append(marker1)
         lanes_marker_array.markers.append(marker2)
 
@@ -140,9 +189,10 @@ class LaneBoundaryMatcher:
         
         self.lanelet_bounds_pub.publish(lanes_marker_array)
 
-
+        """
         if not self.new_global_path:
             self.current_lanelet_idx = current_lanelet_idx
+        
 
 
     def global_path_callback(self, msg):
@@ -172,6 +222,27 @@ class LaneBoundaryMatcher:
         self.lanelet_polygons = lanelet_polys
         self.current_lanelet_idx = 0
         self.approximated_lanelet_lengths = approximated_lanelet_lengths
+
+    def find_average_distance(self, supercombo_lane_points, left_lane_bound, right_lane_bound):
+        left_y_diffs = []
+        left_z_diffs = [] 
+        for x, y, z in supercombo_lane_points[0]:
+            point = left_lane_bound.intersection(shapely.LineString([(x, -10), (x, 10)]))
+            left_y_diffs.append(point.y - y)
+            left_z_diffs.append(point.z - z)
+
+        right_y_diffs = []
+        right_z_diffs = []
+        for x, y, z in supercombo_lane_points[1]:
+            point = right_lane_bound.intersection(shapely.LineString([(x, -10), (x, 10)]))
+            right_y_diffs.append(point.y - y)
+            right_z_diffs.append(point.z - z)
+
+
+        #left_boundary_distances = [shapely.Point(x,y,z).distance(left_lane_bound) for x, y, z in supercombo_lane_points[0]]
+        #right_boundary_distances = [shapely.Point(x,y,z).distance(right_lane_bound) for x, y, z in supercombo_lane_points[1]]
+
+        return np.mean(left_y_diffs), np.mean(right_y_diffs), np.mean(left_z_diffs), np.mean(right_z_diffs)
 
 
     def publish_lanelet_bounds(self, right_lane_bound, left_lane_bound, supercombo=False):
@@ -219,10 +290,32 @@ class LaneBoundaryMatcher:
         marker2.points = points
 
         return marker1, marker2
-        
-        
-        
+    
+    def publish_base_link_correction_tf(self, x, y, z, roll, pitch, yaw):
+        t = TransformStamped()
 
+        x_q, y_q, z_q, w_q = quaternion_from_euler(roll, pitch, yaw, axes='rxyz')
+        orientation = Quaternion(x_q, y_q, z_q, w_q)
+
+        t.header.stamp = rospy.Time.now()
+        t.header.frame_id = "base_link_gnss"
+        t.child_frame_id = "base_link"
+
+        t.transform.translation.x = x
+        t.transform.translation.y = y
+        t.transform.translation.z = z
+        t.transform.rotation = orientation
+
+        self.tf_broadcaster.sendTransform(t)
+
+        matrix = quaternion_matrix([x_q, y_q, z_q, w_q])
+        matrix[0, 3] = x
+        matrix[1, 3] = y
+        matrix[2, 3] = z
+
+        self.transform_matrix = matrix
+
+        
     def run(self):
         rospy.spin()
 

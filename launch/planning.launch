@@ -95,11 +95,6 @@
 
         <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/global_path /planning/local_path" name="local_path_relay" output="screen" required="true" />
 
-         <!-- Lane boundary matcher -->
-        <node pkg="autoware_mini" type="lane_boundary_matcher.py" name="lane_boundary_matcher" output="screen" required="true">
-            <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
-        </node>
-
         <!-- Config -->
         <rosparam command="load" file="$(find autoware_mini)/config/planning.yaml" />
 

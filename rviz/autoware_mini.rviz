@@ -4,6 +4,7 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Map1/Lanelet2 map1/Namespaces1
         - /Detection1/Lidar1
         - /Detection1/Detected objects1/Namespaces1
         - /Detection1/Predicted objects1/Namespaces1
@@ -766,6 +767,7 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
+                "": true
                 Control:
                   "": true
                   Value: true
@@ -854,6 +856,7 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
+                "": true
                 Control:
                   "": true
                   Value: true
@@ -946,6 +949,7 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
+                "": true
                 Control:
                   "": true
                   Value: true
@@ -1031,6 +1035,7 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
+                "": true
                 Control:
                   "": true
                   Value: true
@@ -1116,6 +1121,7 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
+                "": true
                 Control:
                   "": true
                   Value: true
@@ -1201,6 +1207,7 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
+                "": true
                 Control:
                   "": true
                   Value: true
@@ -1286,6 +1293,7 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
+                "": true
                 Control:
                   "": true
                   Value: true
@@ -1800,6 +1808,7 @@ Visualization Manager:
           Name: Let's go yield line
           Namespaces:
             {}
+            {}
           Queue Size: 100
           Value: true
       Enabled: true
@@ -2082,6 +2091,7 @@ Visualization Manager:
           Name: Bicycle markers
           Namespaces:
             {}
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Camera
@@ -2095,6 +2105,7 @@ Visualization Manager:
           Unreliable: false
           Value: false
           Visibility:
+            "": true
             Control:
               Current pose: true
               Follower markers: true
@@ -2281,7 +2292,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: -0.004999999888241291
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -2291,7 +2302,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.0010000000474974513
-      Scale: 20
+      Scale: 35.24683380126953
       Target Frame: base_link
       X: 0
       Y: 0
