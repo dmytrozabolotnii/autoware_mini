@@ -15,7 +15,6 @@ from std_msgs.msg import ColorRGBA, Header
 from geometry_msgs.msg import Point32, Quaternion
 
 from helpers.geometry import get_orientation_from_heading
-from helpers.timer import Timer
 
 BLUE80P = ColorRGBA(0.0, 0.0, 1.0, 0.8)
 
