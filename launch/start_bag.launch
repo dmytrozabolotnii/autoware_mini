@@ -39,7 +39,7 @@
     <arg name="rate"                    default=""              doc="Bag speed parameteer, defaults to 1.0 i.e. the normal speed" />
     <arg name="rate_option"             default="$(eval '--rate ' + str(rate) if rate != '' else '')" doc="rosbag play parameter" />
     <arg name="repub_camera_info"       default="true"          doc="Republish camera_info topics using camera intrinsics files" />
-    <arg name="use_openpilot"           default="false" />
+    <arg name="use_openpilot"           default="true" />
 
     <!-- Use simulation time from bag -->
     <param name="/use_sim_time" value="true" />
