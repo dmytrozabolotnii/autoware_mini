@@ -15,7 +15,7 @@ No parameters.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `/global_path` | `autoware_msgs/Lane` | The global path to be visualized. |
+| `/global_path` | `autoware_mini/Path` | The global path to be visualized. |
 
 
 #### Published Topics
@@ -46,7 +46,7 @@ This node visualizes the Lanelet2 map. It loads the map using Lanelet2 and creat
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `/detection/traffic_light_status` | `autoware_msgs/TrafficLightResultArray` | The topic the node listens to for traffic light status messages. |
+| `/detection/traffic_light_status` | `autoware_mini/TrafficLightResultArray` | The topic the node listens to for traffic light status messages. |
 
 
 #### Published Topics
@@ -78,7 +78,7 @@ A ROS node that visualizes the local path and other relevant information.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/local_path` | `autoware_msgs/Lane` | The local path to visualize |
+| `/local_path` | `autoware_mini/Path` | The local path to visualize |
 
 
 #### Published Topics
@@ -103,8 +103,8 @@ No parameters.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/planning/local_path` | `autoware_msgs/Lane` | Local path published by the planning module |
-| `/control/vehicle_cmd` | `autoware_msgs/VehicleCmd` | Vehicle command published by the control module |
+| `/planning/local_path` | `autoware_mini/Path` | Local path published by the planning module |
+| `/control/vehicle_cmd` | `autoware_mini/VehicleCmd` | Vehicle command published by the control module |
 | `/localization/current_velocity` | `geometry_msgs/TwistStamped` | Current velocity published by the localization module |
 
 

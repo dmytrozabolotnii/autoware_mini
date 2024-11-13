@@ -3,7 +3,7 @@
 import rospy
 import json
 import shapely
-from autoware_msgs.msg import DetectedObjectArray
+from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, PoseStamped
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
@@ -19,7 +19,8 @@ class RoadAreaFilter:
         self.utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         self.utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
-        assert self.filtering_method in ["centroid", "intersects", "within"], "filtering_method must be one of 'centroid', 'intersects', 'within'"
+        if self.filtering_method not in ["centroid", "intersects", "within"]:
+            raise ValueError(f"{rospy.get_name()} - 'filtering_method' must be one of 'centroid', 'intersects' or 'within', not '{self.filtering_method}'")
 
         self.current_location = None
 
@@ -119,7 +120,7 @@ class RoadAreaFilter:
             if self.filtering_method == "centroid":
                 obj_geom = shapely.Point(obj.pose.position.x, obj.pose.position.y)
             else:
-                obj_geom = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.polygon.points])
+                obj_geom = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
             shapely.prepare(obj_geom)
 
             if self.filtering_method == "centroid" or self.filtering_method == "intersects":

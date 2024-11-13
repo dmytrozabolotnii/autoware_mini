@@ -12,8 +12,8 @@ from image_geometry import PinholeCameraModel
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CameraInfo
-from autoware_msgs.msg import TrafficLightResult, TrafficLightResultArray
-from autoware_msgs.msg import Lane
+from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
+from autoware_mini.msg import Path
 
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -81,7 +81,7 @@ class CameraTrafficLightDetector:
         # Subscribers
         self.stoplines_on_path = None
         self.lock = threading.Lock()
-        rospy.Subscriber('/planning/local_path', Lane, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/planning/local_path', Path, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         rospy.Subscriber('image_raw', Image, self.camera_image_callback, queue_size=1, buff_size=2**26, tcp_nodelay=True)
 
     def camera_info_callback(self, camera_info_msg):
@@ -96,12 +96,12 @@ class CameraTrafficLightDetector:
 
         # If there is a local path collect allt the stop line id's on the path
         if len(local_path_msg.waypoints) > 0:
-            local_path = shapely.LineString([(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in local_path_msg.waypoints])
+            local_path = shapely.LineString([(wp.position.x, wp.position.y) for wp in local_path_msg.waypoints])
 
-            for linkId, stopline in self.stoplines.items():
+            for stopline_id, stopline in self.stoplines.items():
                 # check if stopline intersects with local path
                 if local_path.intersects(stopline):
-                    stoplines_on_path.append(linkId)
+                    stoplines_on_path.append(stopline_id)
 
         with self.lock:
             self.stoplines_on_path = stoplines_on_path
@@ -160,11 +160,11 @@ class CameraTrafficLightDetector:
                 scores = np.max(predictions, axis=1)
                 
                 # extract results in sync with rois
-                for cl, (linkId, plId, _, _, _, _) in zip(classes, rois):
+                for cl, (stopline_id, tfl_id, _, _, _, _) in zip(classes, rois):
 
                     tfl_result = TrafficLightResult()
-                    tfl_result.light_id = plId
-                    tfl_result.lane_id = linkId
+                    tfl_result.light_id = tfl_id
+                    tfl_result.stopline_id = stopline_id
                     tfl_result.recognition_result = CLASSIFIER_RESULT_TO_TLRESULT[cl]
                     tfl_result.recognition_result_str = CLASSIFIER_RESULT_TO_STRING[cl]
 

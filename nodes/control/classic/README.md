@@ -28,7 +28,7 @@ A ROS node which implements the pure pursuit control algorithm. The node subscri
 
 | Name                     | Type                           | Description                                        |
 | ------------------------| ------------------------------| -------------------------------------------------- |
-| `/planning/local_path`   | `autoware_msgs/Lane`           | The planned path.                                  |
+| `/planning/local_path`   | `autoware_mini/Path`           | The planned path.                                  |
 | `/localization/current_pose`    | [`geometry_msgs/PoseStamped`](http://docs.ros.org/en/noetic/api/geometry_msgs/html/msg/PoseStamped.html) | The current pose of the vehicle.                  |
 | `/localization/current_velocity`| [`geometry_msgs/TwistStamped`](http://docs.ros.org/en/noetic/api/geometry_msgs/html/msg/TwistStamped.html)   | The current velocity of the vehicle.              |
 
@@ -36,7 +36,7 @@ A ROS node which implements the pure pursuit control algorithm. The node subscri
 
 | Name                  | Type                      | Description                                            |
 | ----------------------| -------------------------| ------------------------------------------------------ |
-| `vehicle_cmd`        | `autoware_msgs/VehicleCmd` | The vehicle commands (steering angle and velocity).    |
+| `vehicle_cmd`        | `autoware_mini/VehicleCmd` | The vehicle commands (steering angle and velocity).    |
 | `follower_markers`   | `visualization_msgs/MarkerArray` | if `publish_debug_info` is enabled: follower-specific visualization topic that helps to understand some basic internal workings |
 | `follower_debug`     | `Float32MultiArray` | if `publish_debug_info` is enabled: `processing time`, `current_heading`, `lookahead_heading`, `heading_error`, `cross_track_error` and `target_velocity` are outputted |
 
@@ -51,7 +51,7 @@ A ROS node which implements the pure pursuit control algorithm. The node subscri
 
 ## stanley_follower
 
-ROS node that receives a local path (Lane message) and a vehicle status (current_pose and current_velocity) and calculates the desired vehicle steering angle and throttle/brake command using Stanley control law. The implementation is based on the blog post [Three Methods of Vehicle Lateral Control: Pure Pursuit, Stanley and MPC](https://www.shuffleai.blog/blog/Three_Methods_of_Vehicle_Lateral_Control.html).
+ROS node that receives a local path (Path message) and a vehicle status (current_pose and current_velocity) and calculates the desired vehicle steering angle and throttle/brake command using Stanley control law. The implementation is based on the blog post [Three Methods of Vehicle Lateral Control: Pure Pursuit, Stanley and MPC](https://www.shuffleai.blog/blog/Three_Methods_of_Vehicle_Lateral_Control.html).
 
 #### Parameters
 
@@ -73,7 +73,7 @@ ROS node that receives a local path (Lane message) and a vehicle status (current
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/planning/local_path` | `autoware_msgs/Lane` | Local path received from the path planner |
+| `/planning/local_path` | `autoware_mini/Path` | Local path received from the path planner |
 | `/localization/current_pose` | `geometry_msgs/PoseStamped` | Current pose of the vehicle |
 | `/localization/current_velocity` | `geometry_msgs/TwistStamped` | Current velocity of the vehicle |
 
@@ -81,7 +81,7 @@ ROS node that receives a local path (Lane message) and a vehicle status (current
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/vehicle_cmd` | `autoware_msgs/VehicleCmd` | Command for steering angle and throttle/brake |
+| `/vehicle_cmd` | `autoware_mini/VehicleCmd` | Command for steering angle and throttle/brake |
 | `~follower_markers` | `visualization_msgs/MarkerArray` | if `publish_debug_info` is enabled: debug markers for visualization |
 | `~follower_debug` | `std_msgs/Float32MultiArray` | if `publish_debug_info` is enabled: `processing time`, `current_heading`, `track_heading`, `heading_error`, `cross_track_error` and `target_velocity` data is published |
 

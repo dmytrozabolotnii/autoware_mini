@@ -7,12 +7,12 @@ import message_filters
 import threading
 import traceback
 from helpers.geometry import get_heading_from_orientation, get_heading_between_two_points, normalize_heading_error, get_point_using_heading_and_distance
-from helpers.path import Path
+from helpers.path import PathWrapper
 
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
 from std_msgs.msg import ColorRGBA, Float32MultiArray
-from autoware_msgs.msg import Lane, VehicleCmd
+from autoware_mini.msg import Path, VehicleCmd, Gear
 
 class StanleyFollower:
     def __init__(self):
@@ -45,7 +45,7 @@ class StanleyFollower:
             self.follower_debug_pub = rospy.Publisher('follower_debug', Float32MultiArray, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('/planning/local_path', Lane, self.path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/planning/local_path', Path, self.path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         current_pose_sub = message_filters.Subscriber('/localization/current_pose', PoseStamped, queue_size=1, tcp_nodelay=True)
         current_velocity_sub = message_filters.Subscriber('/localization/current_velocity', TwistStamped, queue_size=1, tcp_nodelay=True)
         ts = message_filters.TimeSynchronizer([current_pose_sub, current_velocity_sub], queue_size=2)
@@ -63,9 +63,9 @@ class StanleyFollower:
             closest_object_velocity = 0.0
             stopping_point_distance = 0.0
         else:
-            path = Path(path_msg.waypoints, velocities=True, blinkers=True)
+            path = PathWrapper(path_msg.waypoints, velocities=True, blinkers=True)
             closest_object_velocity = path_msg.closest_object_velocity
-            stopping_point_distance = path_msg.cost
+            stopping_point_distance = path_msg.stopping_point_distance
 
         with self.lock:
             self.path = path
@@ -180,6 +180,8 @@ class StanleyFollower:
         # blinkers
         vehicle_cmd.lamp_cmd.l = left_blinker 
         vehicle_cmd.lamp_cmd.r = right_blinker 
+        # gear
+        vehicle_cmd.gear_cmd.gear = Gear.DRIVE
         # velocity and steering
         vehicle_cmd.ctrl_cmd.linear_velocity = target_velocity
         vehicle_cmd.ctrl_cmd.linear_acceleration = acceleration

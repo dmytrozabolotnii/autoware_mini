@@ -4,9 +4,7 @@ import rospy
 import csv
 import math
 
-from autoware_msgs.msg import Lane, Waypoint
-
-from helpers.geometry import get_orientation_from_heading
+from autoware_mini.msg import Path, Waypoint
 
 class WaypointLoader:
     def __init__(self):
@@ -18,7 +16,7 @@ class WaypointLoader:
         self.wp_right_width = rospy.get_param("~wp_right_width")
 
         # Publishers
-        self.waypoints_pub = rospy.Publisher('global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
+        self.waypoints_pub = rospy.Publisher('global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
 
         self.waypoints = self.load_waypoints(self.waypoints_file)
         self.publish_waypoints()  
@@ -40,7 +38,7 @@ class WaypointLoader:
             waypoints = []
 
             for row in reader:
-                # skip empty rows, if no data at all - no waypoints are returned and empty lane is published
+                # skip empty rows, if no data at all - no waypoints are returned and empty path is published
                 if not row:
                     continue
                 # create waypoint
@@ -49,25 +47,25 @@ class WaypointLoader:
                 # x, y, z, yaw, velocity, change_flag, steering_flag, accel_flag, stop_flag, event_flag
                 # set waypoint values
                 waypoint.gid = wp_id
-                waypoint.pose.pose.position.x = float(row[0])
-                waypoint.pose.pose.position.y = float(row[1])
-                waypoint.pose.pose.position.z = float(row[2])
+                waypoint.position.x = float(row[0])
+                waypoint.position.y = float(row[1])
+                waypoint.position.z = float(row[2])
 
-                # convert yaw (contains heading in waypoints file) to quaternion
-                waypoint.pose.pose.orientation = get_orientation_from_heading(math.radians(float(row[3])))
+                # convert the heading in waypoints file to radians
+                waypoint.heading = math.radians(float(row[3]))
                 # set waypoint velocity
-                waypoint.twist.twist.linear.x = float(row[4])
+                waypoint.speed = float(row[4])
 
                 # set waypoint flags
                 waypoint.change_flag = int(row[5])
-                waypoint.wpstate.steering_state = int(row[6])
-                waypoint.wpstate.accel_state = int(row[7])
-                waypoint.wpstate.stop_state = int(row[8])
-                waypoint.wpstate.event_state = int(row[9])
+                waypoint.blinker_state = int(row[6])
+                #waypoint.wpstate.accel_state = int(row[7])
+                #waypoint.wpstate.stop_state = int(row[8])
+                #waypoint.wpstate.event_state = int(row[9])
 
                 # set waypoint width
-                waypoint.dtlane.lw = self.wp_left_width
-                waypoint.dtlane.rw = self.wp_right_width
+                waypoint.left_width = self.wp_left_width
+                waypoint.right_width = self.wp_right_width
 
                 waypoints.append(waypoint)
 
@@ -76,13 +74,13 @@ class WaypointLoader:
         return waypoints
 
     def publish_waypoints(self):
-        lane = Lane()
+        path = Path()
         
-        lane.header.frame_id = self.output_frame
-        lane.header.stamp = rospy.Time.now()
-        lane.waypoints = self.waypoints
+        path.header.frame_id = self.output_frame
+        path.header.stamp = rospy.Time.now()
+        path.waypoints = self.waypoints
         
-        self.waypoints_pub.publish(lane)
+        self.waypoints_pub.publish(path)
 
 
     def run(self):

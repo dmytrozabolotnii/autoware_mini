@@ -2,7 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped, Point
-from autoware_msgs.msg import DetectedObjectArray
+from autoware_mini.msg import DetectedObjectArray
 from helpers.geometry import get_point_using_heading_and_distance, get_heading_from_orientation, get_distance_between_two_points_2d
 
 class DetectionRangeFilter:
@@ -41,7 +41,7 @@ class DetectionRangeFilter:
         objects.header = msg.header
 
         for obj in msg.objects:
-            for point in obj.convex_hull.polygon.points:
+            for point in obj.convex_hull.points:
                 distance = get_distance_between_two_points_2d(car_front, point)
                 if distance < self.detection_range:
                     objects.objects.append(obj)

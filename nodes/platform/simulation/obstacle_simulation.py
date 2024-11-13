@@ -4,7 +4,7 @@ import rospy
 import threading
 
 from geometry_msgs.msg import PointStamped, Point32
-from autoware_msgs.msg import DetectedObjectArray, DetectedObject
+from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from std_msgs.msg import ColorRGBA
 
 class ObstacleSimulation:
@@ -35,14 +35,11 @@ class ObstacleSimulation:
 
         # if not, create a new 
         obj = DetectedObject()
-        obj.header.frame_id = msg.header.frame_id
-
         obj.id = self.id
         obj.label = 'unknown'
         obj.color = ColorRGBA(1.0, 1.0, 1.0, 0.8)
         obj.valid = True
 
-        obj.space_frame = msg.header.frame_id
         obj.pose.position.x = msg.point.x
         obj.pose.position.y = msg.point.y
         obj.pose.position.z = msg.point.z
@@ -55,7 +52,7 @@ class ObstacleSimulation:
         obj.dimensions.z = 1.0
         obj.pose_reliable = True
 
-        obj.convex_hull.polygon.points = [
+        obj.convex_hull.points = [
             Point32(msg.point.x - 0.5, msg.point.y - 0.5, msg.point.z),
             Point32(msg.point.x - 0.5, msg.point.y + 0.5, msg.point.z),
             Point32(msg.point.x + 0.5, msg.point.y + 0.5, msg.point.z),
@@ -90,12 +87,6 @@ class ObstacleSimulation:
         msg.header.stamp = stamp
         msg.header.frame_id = 'map'
         msg.objects = self.objects
-
-        # overwrite object timestamp
-        for o in msg.objects:
-            o.header.stamp = stamp
-            assert o.header.frame_id == msg.header.frame_id, "object frame_id does not match message frame_id"
-
         self.objects_pub.publish(msg)
 
 if __name__ == '__main__':

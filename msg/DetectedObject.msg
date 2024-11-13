@@ -1,0 +1,27 @@
+uint32                          id
+string                          label
+float32                         score   #Score as defined by the detection, Optional
+std_msgs/ColorRGBA              color   # Define this object specific color
+bool                            valid   # Defines if this object is valid, or invalid as defined by the filtering
+
+################ 3D BB
+geometry_msgs/Pose              pose
+geometry_msgs/Vector3           dimensions
+#geometry_msgs/Vector3           variance
+geometry_msgs/Vector3           velocity
+geometry_msgs/Vector3           acceleration
+
+#sensor_msgs/PointCloud2         pointcloud
+
+geometry_msgs/Polygon           convex_hull
+PathArray                       candidate_trajectories
+
+bool                            pose_reliable
+bool                            velocity_reliable
+bool                            acceleration_reliable
+
+############### Indicator information
+#uint8                          indicator_state # INDICATOR_LEFT = 0, INDICATOR_RIGHT = 1, INDICATOR_BOTH = 2, INDICATOR_NONE = 3
+
+############### Behavior State of the Detected Object
+#uint8                           behavior_state # FORWARD_STATE = 0, STOPPING_STATE = 1, BRANCH_LEFT_STATE = 2, BRANCH_RIGHT_STATE = 3, YIELDING_STATE = 4, ACCELERATING_STATE = 5, SLOWDOWN_STATE = 6

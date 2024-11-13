@@ -15,7 +15,7 @@ No parameters.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/detected_objects` | `autoware_msgs/DetectedObjectArray `| Detected objects to be visualized. |
+| `/detected_objects` | `autoware_mini/DetectedObjectArray `| Detected objects to be visualized. |
 
 
 #### Published Topics

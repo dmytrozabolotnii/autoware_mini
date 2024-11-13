@@ -28,7 +28,7 @@ A Python ROS node for interfacing with Autoware's SSC.
 | Name | Type | Description |
 | --- | --- | --- |
 | `engage` | `std_msgs/Bool` | Command to engage/disengage. |
-| `vehicle_cmd` | `autoware_msgs/VehicleCmd` | Command for vehicle motion. |
+| `vehicle_cmd` | `autoware_mini/VehicleCmd` | Command for vehicle motion. |
 | `/ssc/module_states` | `automotive_navigation_msgs/ModuleState` | Module states feedback. Used to check the active state of SSC. |
 | `/ssc/curvature_feedback` | `automotive_platform_msgs/CurvatureFeedback` | Curvature feedback. |
 | `/ssc/throttle_feedback` | `automotive_platform_msgs/ThrottleFeedback` | Throttle feedback. |
@@ -45,7 +45,7 @@ A Python ROS node for interfacing with Autoware's SSC.
 | `/ssc/arbitrated_steering_commands` | `automotive_platform_msgs/SteerMode` | Steering command to SSC. |
 | `/ssc/turn_signal_command` | `automotive_platform_msgs/TurnSignalCommand` | Turn signal command to SSC. |
 | `/ssc/gear_select` | `automotive_platform_msgs/GearCommand` | Gear commands to SSC. |
-| `vehicle_status` | `autoware_msgs/VehicleStatus` | Status information from SSC. |
+| `vehicle_status` | `autoware_mini/VehicleStatus` | Status information from SSC. |
 
 ## button_panel
 

@@ -2,7 +2,7 @@
 
 import rospy
 import numpy as np
-from autoware_msgs.msg import Lane, Waypoint
+from autoware_mini.msg import Path, Waypoint
 from helpers.geometry import get_orientation_from_heading
 
 
@@ -22,10 +22,10 @@ class PathSmoothing:
         self.output_debug_info = rospy.get_param("~output_debug_info")
 
         # Publishers
-        self.smoothed_path_pub = rospy.Publisher('global_path', Lane, queue_size=10, latch=True, tcp_nodelay=True)
+        self.smoothed_path_pub = rospy.Publisher('global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('lane_change_global_path', Lane, self.global_path_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('lane_change_global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
 
 
     def global_path_callback(self, msg):
@@ -36,13 +36,13 @@ class PathSmoothing:
 
         # extract all waypoint attributes with one loop
         waypoints_array = np.array([(
-                wp.pose.pose.position.x,
-                wp.pose.pose.position.y,
-                wp.pose.pose.position.z,
-                wp.wpstate.steering_state,
-                wp.twist.twist.linear.x,
-                wp.dtlane.lw,
-                wp.dtlane.rw
+                wp.position.x,
+                wp.position.y,
+                wp.position.z,
+                wp.blinker_state,
+                wp.speed,
+                wp.left_width,
+                wp.right_width
             ) for wp in msg.waypoints])
 
         smoothed_path_array = self.smooth_global_path(waypoints_array)
@@ -140,25 +140,25 @@ class PathSmoothing:
         return smoothed_path_array
 
     def publish_smoothed_path(self, smoothed_path, output_frame):
-        # create lane message
-        lane = Lane()
-        lane.header.frame_id = output_frame
-        lane.header.stamp = rospy.Time.now()
-        lane.waypoints = [self.create_waypoint(*wp) for wp in smoothed_path]
+        # create path message
+        path = Path()
+        path.header.frame_id = output_frame
+        path.header.stamp = rospy.Time.now()
+        path.waypoints = [self.create_waypoint(*wp) for wp in smoothed_path]
 
-        self.smoothed_path_pub.publish(lane)
+        self.smoothed_path_pub.publish(path)
 
     def create_waypoint(self, x, y, z, blinker, speed, lw, rw, yaw):
         # create waypoint
         waypoint = Waypoint()
-        waypoint.pose.pose.position.x = x
-        waypoint.pose.pose.position.y = y
-        waypoint.pose.pose.position.z = z
-        waypoint.wpstate.steering_state = int(blinker)
-        waypoint.twist.twist.linear.x = speed
-        waypoint.pose.pose.orientation = get_orientation_from_heading(yaw)
-        waypoint.dtlane.lw = lw
-        waypoint.dtlane.rw = rw
+        waypoint.position.x = x
+        waypoint.position.y = y
+        waypoint.position.z = z
+        waypoint.blinker_state = int(blinker)
+        waypoint.speed = speed
+        waypoint.heading = yaw
+        waypoint.left_width = lw
+        waypoint.right_width = rw
 
         return waypoint
 

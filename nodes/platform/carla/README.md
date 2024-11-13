@@ -2,7 +2,7 @@
 
 ## carla_detector
 
-ROS node for converting ground truth detections from the CARLA simulator and publishing them as `autoware_msgs::DetectedObjectArray` messages.
+ROS node for converting ground truth detections from the CARLA simulator and publishing them as `autoware_mini::DetectedObjectArray` messages.
 
 
 #### Parameters
@@ -23,7 +23,7 @@ ROS node for converting ground truth detections from the CARLA simulator and pub
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `detected_objects` | `autoware_msgs::DetectedObjectArray` | Publishes converted object detections as a `DetectedObjectArray` message. |
+| `detected_objects` | `autoware_mini::DetectedObjectArray` | Publishes converted object detections as a `DetectedObjectArray` message. |
 
 
 
@@ -46,7 +46,7 @@ ROS node for ground truth localization.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/carla/odometry` | `nav_msgs/Odometry` | Odometry message containing the current pose and velocity of the ego vehicle in the simulation coordinates.
+| `/carla/ego_vehicle/odometry` | `nav_msgs/Odometry` | Odometry message containing the current pose and velocity of the ego vehicle in the simulation coordinates.
 
 
 #### Published Topics
@@ -74,7 +74,7 @@ No parameters.
 | ---- | ---- | ----------- |
 | `/gps/fix` | `sensor_msgs/NavSatFix` | GNSS fix |
 | `/gps/fix_forward` | `sensor_msgs/NavSatFix` | Forward GNSS fix |
-| `/carla/odometry` | `nav_msgs/Odometry` | Carla odometry |
+| `/carla/ego_vehicle/odometry` | `nav_msgs/Odometry` | Carla odometry |
 
 
 #### Published Topics
@@ -114,7 +114,7 @@ ROS node that detects traffic lights from the Carla simulator and publishes the 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `traffic_light_status` | `autoware_msgs/TrafficLightResultArray` | The Autoware traffic light status topic. |
+| `traffic_light_status` | `autoware_mini/TrafficLightResultArray` | The Autoware traffic light status topic. |
 
 
 
@@ -134,7 +134,7 @@ This node receives Autoware messages and Carla messages, and publishes Ackermann
 
 | Name                     | Type                              | Description                                    |
 | ------------------------| ----------------------------------| -----------------------------------------------|
-| `/control/vehicle_cmd`   | `autoware_msgs/VehicleCmd`        | The control message containing vehicle commands |
+| `/control/vehicle_cmd`   | `autoware_mini/VehicleCmd`        | The control message containing vehicle commands |
 | `/carla/ego_vehicle/vehicle_info` | `carla_msgs/CarlaEgoVehicleInfo` | The information message containing vehicle information |
 | `/carla/ego_vehicle/vehicle_status` | `carla_msgs/CarlaEgoVehicleStatus` | The status message containing vehicle status |
 
@@ -145,7 +145,7 @@ This node receives Autoware messages and Carla messages, and publishes Ackermann
 | -------------------------------- | ----------------------------------| -----------------------------------|
 | `/carla/ego_vehicle/ackermann_cmd`| `ackermann_msgs/AckermannDrive`   | The ackermann drive command message |
 | `/carla/ego_vehicle/target_speed`| `std_msgs/Float64`                | The target speed message (currently used only by scenario runner) |
-| `/vehicle/vehicle_status`        | `autoware_msgs/VehicleStatus`     | The vehicle status message         |
+| `/vehicle/vehicle_status`        | `autoware_mini/VehicleStatus`     | The vehicle status message         |
 
 
 
@@ -170,4 +170,4 @@ No parameters.
 
 | Name                  | Type               | Description                    |
 | --------------------- | ------------------ | ------------------------------ |
-| `/global_path`          | `autoware_msgs/LaneArray` | The converted path in Autoware format |
+| `/global_path`          | `autoware_mini/LaneArray` | The converted path in Autoware format |

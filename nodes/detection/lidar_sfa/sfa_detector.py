@@ -9,7 +9,7 @@ from ros_numpy import numpify
 
 from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import ColorRGBA
-from autoware_msgs.msg import DetectedObjectArray, DetectedObject
+from autoware_mini.msg import DetectedObjectArray, DetectedObject
 
 import onnxruntime
 
@@ -122,7 +122,7 @@ class SFADetector:
         detected_objects_array.header.frame_id = self.output_frame
 
         final_detections = self.detect(points)
-        detected_objects_array.objects = self.generate_autoware_objects(final_detections, pointcloud.header, transform)
+        detected_objects_array.objects = self.generate_autoware_objects(final_detections, transform)
         self.detected_object_array_pub.publish(detected_objects_array)
 
     def detect(self, points):
@@ -214,14 +214,12 @@ class SFADetector:
     def get_yaw(self, direction):
         return -np.arctan2(direction[:, 0:1], direction[:, 1:2])
 
-    def generate_autoware_objects(self, detections, header, transform):
+    def generate_autoware_objects(self, detections, transform):
 
         """
         Generate Autoware DetectedObject from Detections
         :param detections: SFA detections
-        :param header: time stamp corresponding to poinctloud msg
-        :param tf_matrix: 4x4 homogenous transformation matrix to go from lidar frame to output frame
-        :param tf_rot: quaternion representing rotation to go from lidar frame to output frame
+        :param transform: transformation matrix to go from lidar frame to output frame
         :return: AutowareDetectedObject
         """
         detected_objects_list = []
@@ -229,8 +227,6 @@ class SFADetector:
 
             detected_object = DetectedObject()
             detected_object.id = i
-            detected_object.header.frame_id = self.output_frame
-            detected_object.header.stamp = header.stamp
             detected_object.label = CLASS_NAMES[cls_id]
             detected_object.color = LIGHT_BLUE
             detected_object.valid = True
@@ -247,7 +243,7 @@ class SFADetector:
             detected_object.dimensions.y = width
             detected_object.dimensions.z = height
             # Populate convex hull
-            detected_object.convex_hull = create_hull(detected_object, self.output_frame, header.stamp)
+            detected_object.convex_hull = create_hull(detected_object)
 
             detected_objects_list.append(detected_object)
         return detected_objects_list

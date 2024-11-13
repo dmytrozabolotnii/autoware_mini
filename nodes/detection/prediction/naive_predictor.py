@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
+import math
 import rospy
 import numpy as np
 
-from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
 from helpers.geometry import get_vector_norm_3d
+from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
 class NaivePredictor:
     def __init__(self):
@@ -28,8 +29,8 @@ class NaivePredictor:
         ])
         for i, obj in enumerate(msg.objects):
             tracked_objects_array[i]['centroid'] = (obj.pose.position.x, obj.pose.position.y)
-            tracked_objects_array[i]['velocity'] = (obj.velocity.linear.x, obj.velocity.linear.y) 
-            tracked_objects_array[i]['acceleration'] = (obj.acceleration.linear.x, obj.acceleration.linear.y)
+            tracked_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y) 
+            tracked_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
 
         # Predict future positions and velocities - includes also initial step, thus + 1
         num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
@@ -45,21 +46,21 @@ class NaivePredictor:
         # Create candidate trajectories
         for i, obj in enumerate(msg.objects):
             # Skip prediction for near stationary objects
-            if get_vector_norm_3d(obj.velocity.linear) < self.prediction_min_speed:
+            if get_vector_norm_3d(obj.velocity) < self.prediction_min_speed:
                 continue
 
             # Skip prediction if candidate trajectories already exist
-            if len(obj.candidate_trajectories.lanes) > 0:
+            if len(obj.candidate_trajectories.paths) > 0:
                 continue
 
-            lane = Lane()
+            path = Path()
             for j in range(num_timesteps):
                 wp = Waypoint()
-                wp.pose.pose.position.x, wp.pose.pose.position.y = predicted_objects_array[j][i]['centroid']
-                wp.pose.pose.position.z = obj.pose.position.z
-                wp.twist.twist.linear.x, wp.twist.twist.linear.y = predicted_objects_array[j][i]['velocity']
-                lane.waypoints.append(wp)
-            obj.candidate_trajectories.lanes.append(lane)
+                wp.position.x, wp.position.y = predicted_objects_array[j][i]['centroid']
+                wp.position.z = obj.pose.position.z
+                wp.speed = (predicted_objects_array[j][i]['velocity'][0]**2 + predicted_objects_array[j][i]['velocity'][1]**2)**0.5
+                path.waypoints.append(wp)
+            obj.candidate_trajectories.paths.append(path)
 
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)

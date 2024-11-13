@@ -5,7 +5,7 @@ import message_filters
 import numpy as np
 import traceback
 
-from autoware_msgs.msg import TrafficLightResult, TrafficLightResultArray
+from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
 TRAFFIC_LIGHT_RESULT_TO_STRING = {
     0: "RED",    # and yellow
@@ -39,18 +39,18 @@ class TrafficLightMajorityMerger:
             tfl_status_counts = {}
             for msg in [camera1_tfl_status, camera2_tfl_status]:
                 for result in msg.results:
-                    if result.lane_id not in tfl_status_counts:
+                    if result.stopline_id not in tfl_status_counts:
                         # create list with 3 zeros (3 possible states in TrafficLightResult)
-                        tfl_status_counts[result.lane_id] = [0] * 3
-                    tfl_status_counts[result.lane_id][result.recognition_result] += 1
+                        tfl_status_counts[result.stopline_id] = [0] * 3
+                    tfl_status_counts[result.stopline_id][result.recognition_result] += 1
 
             # find max_count and decide for result
-            for lane_id, status_list in tfl_status_counts.items():
+            for stopline_id, status_list in tfl_status_counts.items():
                 # always prefer min value of the results: 0 - red / yellow < 1 - green < 2 - unknown
                 merged_result = np.argmax(status_list)
 
                 new_msg = TrafficLightResult()
-                new_msg.lane_id = lane_id
+                new_msg.stopline_id = stopline_id
                 new_msg.recognition_result = merged_result
                 new_msg.recognition_result_str = TRAFFIC_LIGHT_RESULT_TO_STRING[merged_result] + self.id_string
                 merged_tfl_status_msg.results.append(new_msg)

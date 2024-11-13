@@ -8,7 +8,7 @@ import message_filters
 from tf2_ros import Buffer, TransformListener, TransformException
 
 from geometry_msgs.msg import TwistStamped
-from autoware_msgs.msg import DetectedObject, DetectedObjectArray
+from autoware_mini.msg import DetectedObject, DetectedObjectArray
 from radar_msgs.msg import RadarTracks
 from std_msgs.msg import ColorRGBA
 
@@ -90,8 +90,6 @@ class RadarDetector:
 
                 # Detected object
                 detected_object = DetectedObject()
-                detected_object.header.frame_id = self.output_frame
-                detected_object.header.stamp = tracks.header.stamp
                 detected_object.id = integer_id
                 detected_object.label = RADAR_CLASSIFICATION[track.classification]
                 detected_object.color = RED
@@ -99,12 +97,12 @@ class RadarDetector:
                 detected_object.pose.position = transform_point(track.position, source_frame_to_output_tf)
                 detected_object.pose.orientation.w = 1.0
                 detected_object.pose_reliable = True
-                detected_object.velocity.linear = self.transform_velocity(track.velocity, ego_speed.twist.linear, source_frame_to_output_tf)
+                detected_object.velocity = self.transform_velocity(track.velocity, ego_speed.twist.linear, source_frame_to_output_tf)
                 detected_object.velocity_reliable = True
-                detected_object.acceleration.linear = transform_vector3(track.acceleration, source_frame_to_output_tf)
+                detected_object.acceleration = transform_vector3(track.acceleration, source_frame_to_output_tf)
                 detected_object.acceleration_reliable = True
                 detected_object.dimensions = track.size
-                detected_object.convex_hull = create_hull(detected_object, self.output_frame, tracks.header.stamp)
+                detected_object.convex_hull = create_hull(detected_object)
 
                 detected_objects_array.objects.append(detected_object)
 

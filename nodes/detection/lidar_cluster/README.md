@@ -29,7 +29,7 @@ ROS node that clusters point cloud data and publishes detected objects.
 
 | Name | Type | Description |
 | ----- | ----- | ------------ |
-| `/detected_objects` | `autoware_msgs/DetectedObjectArray` | Detected objects. Each object includes its label, position, orientation, dimensions, and color. The `valid` flag indicates whether the object is valid. If `enable_pointcloud` is true, each object also includes a point cloud representing the cluster of points belonging to that object. |
+| `/detected_objects` | `autoware_mini/DetectedObjectArray` | Detected objects. Each object includes its label, position, orientation, dimensions, and color. The `valid` flag indicates whether the object is valid. If `enable_pointcloud` is true, each object also includes a point cloud representing the cluster of points belonging to that object. |
 
 
 

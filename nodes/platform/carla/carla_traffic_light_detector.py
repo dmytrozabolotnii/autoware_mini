@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 
 from carla_msgs.msg import CarlaTrafficLightStatus, CarlaTrafficLightStatusList, CarlaTrafficLightInfoList
-from autoware_msgs.msg import TrafficLightResult, TrafficLightResultArray
+from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
 from localization.SimulationToUTMTransformer import SimulationToUTMTransformer
 from helpers.lanelet2 import get_stoplines_center, load_lanelet2_map
@@ -116,7 +116,7 @@ class CarlaTrafficLightDetector:
 
                 tfl_result = TrafficLightResult()
                 tfl_result.light_id = light_id
-                tfl_result.lane_id = stopline_id
+                tfl_result.stopline_id = stopline_id
                 tfl_result.recognition_result = CARLA_TO_AUTOWARE_TFL_MAP[light.state]
                 tfl_result.recognition_result_str = CARLA_TO_AUTOWARE_TFL_STR[light.state]
                 tfl_status.results.append(tfl_result)

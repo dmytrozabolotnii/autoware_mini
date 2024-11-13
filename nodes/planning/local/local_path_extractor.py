@@ -4,9 +4,9 @@ import rospy
 import threading
 import traceback
 import shapely
-from autoware_msgs.msg import Lane
+from autoware_mini.msg import Path
 from geometry_msgs.msg import PoseStamped
-from helpers.path import Path
+from helpers.path import PathWrapper
 
 class LocalPathExtractor:
 
@@ -22,23 +22,23 @@ class LocalPathExtractor:
         self.output_frame = None
 
         # publishers
-        self.local_path_pub = rospy.Publisher('extracted_local_path', Lane, queue_size=1, tcp_nodelay=True)
+        self.local_path_pub = rospy.Publisher('extracted_local_path', Path, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('global_path', Lane, self.path_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
         self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
-    def path_callback(self, msg):
+    def global_path_callback(self, msg):
         output_frame = msg.header.frame_id
 
         if len(msg.waypoints) == 0:
             global_path = None
             rospy.loginfo("%s - Empty global path received", rospy.get_name())
         else:
-            global_path = Path(msg.waypoints)
+            global_path = PathWrapper(msg.waypoints)
             rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(global_path.waypoints))
 
         self.output_frame = output_frame
@@ -50,7 +50,7 @@ class LocalPathExtractor:
             global_path = self.global_path
             output_frame = self.output_frame
 
-            local_path = Lane()
+            local_path = Path()
             local_path.header.frame_id = output_frame
             local_path.header.stamp = rospy.Time.now()
 

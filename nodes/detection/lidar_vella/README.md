@@ -27,4 +27,4 @@ ROS node that converts the Vella track messages to Autoware Detected Object mess
 
 | Name         | Type                               | Description                                          |
 | ------------ | ---------------------------------- | ---------------------------------------------------- |
-| `/detected_objects`  | `autoware_msgs/DetectedObjectArray` | Autoware DetectedObjectArray generated from Vella tracks. |
+| `/detected_objects`  | `autoware_mini/DetectedObjectArray` | Autoware DetectedObjectArray generated from Vella tracks. |

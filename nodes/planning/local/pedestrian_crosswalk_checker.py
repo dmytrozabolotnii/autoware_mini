@@ -3,13 +3,13 @@
 import math
 import rospy
 import shapely
-from autoware_msgs.msg import Lane, DetectedObjectArray
+from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_heading_between_two_points, get_angle_between_two_headings, get_minimum_angle_between_two_lines
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
 from helpers.shapely import get_polygon_width
-from helpers.path import Path
+from helpers.path import PathWrapper
 
 class PedestrianCrosswalkChecker:
 
@@ -35,8 +35,8 @@ class PedestrianCrosswalkChecker:
         self.crosswalk_collision_pub = rospy.Publisher('crosswalk_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        rospy.Subscriber('global_path', Lane, self.global_path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('extracted_local_path', Lane, self.local_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/detection/predicted_objects', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
     def predicted_objects_callback(self, msg):
@@ -44,7 +44,7 @@ class PedestrianCrosswalkChecker:
 
     def global_path_callback(self, msg):
 
-        global_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+        global_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
         global_path_linestring = global_path_linestring.simplify(0.01)
         shapely.prepare(global_path_linestring)
 
@@ -71,7 +71,7 @@ class PedestrianCrosswalkChecker:
         collision_points = CollisionPoints()
         if len(msg.waypoints) > 0 and len(self.crosswalks) > 0 and len(detected_objects) > 0:
 
-            local_path_linestring = shapely.LineString([(waypoint.pose.pose.position.x, waypoint.pose.pose.position.y) for waypoint in msg.waypoints])
+            local_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
             shapely.prepare(local_path_linestring)
             local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
             shapely.prepare(local_path_buffer)
@@ -89,9 +89,9 @@ class PedestrianCrosswalkChecker:
                     # ignore objects behind the ego vehicle
                     if math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
                         continue
-                    object_speed = get_vector_norm_3d(obj.velocity.linear)
-                    object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.polygon.points])
-                    object_heading = get_heading_from_vector(obj.velocity.linear)
+                    object_speed = get_vector_norm_3d(obj.velocity)
+                    object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                    object_heading = get_heading_from_vector(obj.velocity)
                     object_projection_on_path = local_path_linestring.interpolate(object_distance_from_local_path_start)
                     object_projection_on_path_heading = get_heading_between_two_points(object_centroid, object_projection_on_path)
                     object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_projection_on_path_heading))
@@ -110,9 +110,9 @@ class PedestrianCrosswalkChecker:
                                     break  # Stop checking other crosswalks for this object
 
                         # NON-INTERSECTING OBJECTS - CONSIDER TRAJECTORIES
-                        elif len(obj.candidate_trajectories.lanes) > 0:
-                            for lane in obj.candidate_trajectories.lanes:
-                                trajectory = Path(lane.waypoints)
+                        elif len(obj.candidate_trajectories.paths) > 0:
+                            for path in obj.candidate_trajectories.paths:
+                                trajectory = PathWrapper(path.waypoints)
                                 trajectory_to_check = trajectory.linestring
 
                                 if self.use_object_width:

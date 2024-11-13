@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
-from autoware_msgs.msg import DetectedObjectArray
+from autoware_mini.msg import DetectedObjectArray
 from helpers.detection import calculate_iou, get_axis_oriented_bounding_box
 
 class EMATracker:
@@ -49,8 +49,8 @@ class EMATracker:
         for i, obj in enumerate(detected_objects):
             detected_objects_array[i]['centroid'] = (obj.pose.position.x, obj.pose.position.y)
             detected_objects_array[i]['bbox'] = get_axis_oriented_bounding_box(obj)
-            detected_objects_array[i]['velocity'] = (obj.velocity.linear.x, obj.velocity.linear.y) 
-            detected_objects_array[i]['acceleration'] = (obj.acceleration.linear.x, obj.acceleration.linear.y)
+            detected_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y) 
+            detected_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
             detected_objects_array[i]['missed_counter'] = 0
             detected_objects_array[i]['detection_counter'] = 1
         assert len(detected_objects) == len(detected_objects_array)
@@ -133,10 +133,10 @@ class EMATracker:
             detected_obj = detected_objects[detection_idx]
             detected_obj.id = tracked_obj.id
             if not detected_obj.velocity_reliable:
-                detected_obj.velocity.linear.x, detected_obj.velocity.linear.y = detected_objects_array['velocity'][detection_idx]
+                detected_obj.velocity.x, detected_obj.velocity.y = detected_objects_array['velocity'][detection_idx]
                 detected_obj.velocity_reliable = True
             if not detected_obj.acceleration_reliable:
-                detected_obj.acceleration.linear.x, detected_obj.acceleration.linear.y = detected_objects_array['acceleration'][detection_idx]
+                detected_obj.acceleration.x, detected_obj.acceleration.y = detected_objects_array['acceleration'][detection_idx]
                 detected_obj.acceleration_reliable = True
             self.tracked_objects[track_idx] = detected_obj
         self.tracked_objects_array[['centroid', 'bbox', 'velocity', 'acceleration']][matched_track_indices] = \
@@ -168,7 +168,7 @@ class EMATracker:
             for idx in missed_track_indices:
                 obj = self.tracked_objects[idx]
                 obj.pose.position.x, obj.pose.position.y = self.tracked_objects_array['centroid'][idx]
-                for p in obj.convex_hull.polygon.points:
+                for p in obj.convex_hull.points:
                     p.x += position_change[idx][0]
                     p.y += position_change[idx][1]
 

@@ -8,7 +8,7 @@ import rospy
 import message_filters
 
 from std_msgs.msg import Bool, Header
-from autoware_msgs.msg import VehicleCmd, VehicleStatus, Gear
+from autoware_mini.msg import VehicleCmd, VehicleStatus, Gear
 from automotive_platform_msgs.msg import SpeedMode, SteerMode, TurnSignalCommand, GearCommand,\
      CurvatureFeedback, ThrottleFeedback, BrakeFeedback, GearFeedback, SteeringFeedback, VelocityAccelCov
 from automotive_navigation_msgs.msg import ModuleState

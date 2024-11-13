@@ -10,12 +10,11 @@ from numpy.lib.recfunctions import structured_to_unstructured
 from ros_numpy import numpify, msgify
 
 from sensor_msgs.msg import PointCloud2
-from autoware_msgs.msg import DetectedObjectArray, DetectedObject
+from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from std_msgs.msg import ColorRGBA, Header
 from geometry_msgs.msg import Point32, Quaternion
 
 from helpers.geometry import get_orientation_from_heading
-from helpers.timer import Timer
 
 BLUE80P = ColorRGBA(0.0, 0.0, 1.0, 0.8)
 
@@ -60,11 +59,11 @@ class ClusterDetector:
             # transform points to target frame
             points = points.dot(tf_matrix.T)
 
-        # prepare header for all objects
-        header = Header(stamp=msg.header.stamp, frame_id=self.output_frame)
-
         # create detected objects
-        objects = DetectedObjectArray(header=header)
+        objects = DetectedObjectArray()
+        objects.header.stamp = msg.header.stamp
+        objects.header.frame_id = self.output_frame
+
         if len(labels) == 0:
             num_clusters = 0
         else:
@@ -107,12 +106,11 @@ class ClusterDetector:
                 assert False, "wrong bounding_box_type: " + self.bounding_box_type
 
             # create DetectedObject
-            object = DetectedObject(header=header)
+            object = DetectedObject()
             object.id = i
             object.label = "unknown"
             object.color = BLUE80P
             object.valid = True
-            object.space_frame = self.output_frame
             object.pose.position.x = center_x
             object.pose.position.y = center_y
             object.pose.position.z = center_z
@@ -134,7 +132,7 @@ class ClusterDetector:
             # create convex hull
             if self.enable_convex_hull:
                 hull_points = cv2.convexHull(points2d)[:,0,:]
-                object.convex_hull.polygon.points = [Point32(x, y, center_z) for x, y in hull_points]
+                object.convex_hull.points = [Point32(x, y, center_z) for x, y in hull_points]
 
             objects.objects.append(object)
 
