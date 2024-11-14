@@ -7,6 +7,8 @@ from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, PoseStamped
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
+from helpers.geometry import get_distance_between_two_points_2d
+import time
 
 class RoadAreaFilter:
     def __init__(self):
@@ -23,38 +25,25 @@ class RoadAreaFilter:
             raise ValueError(f"{rospy.get_name()} - 'filtering_method' must be one of 'centroid', 'intersects' or 'within', not '{self.filtering_method}'")
 
         self.current_location = None
+        self.cut_out_location = None
+
+        self.map_update_distance = 250
 
         # initialize coordinate_transformer
         if self.coordinate_transformer == "utm":
             self.transformer = WGS84ToUTMTransformer(False, self.utm_origin_lat, self.utm_origin_lon)
-        easting, northing = self.transformer.transform_lat_lon(self.utm_origin_lat, self.utm_origin_lon, 0)
+        self.easting, self.northing = self.transformer.transform_lat_lon(self.utm_origin_lat, self.utm_origin_lon, 0)
 
         rospy.loginfo("%s - loading road area from file %s", rospy.get_name(), self.road_area_file)
 
         # Read the GeoJSON file
         with open(self.road_area_file, 'r') as f:
-            geojson_data = json.load(f)
-
-        road_area = []
-        for feature in geojson_data['features']:
-            geometry = shapely.geometry.shape(feature['geometry'])
-            geometry = shapely.affinity.translate(geometry, xoff=-easting, yoff=-northing)
-            road_area.append(geometry)
-        self.road_area = shapely.unary_union(road_area)
-        shapely.prepare(self.road_area)
-
-        # create inverted road area
-        if self.filtering_method == "within":
-            xmin, ymin, xmax, ymax = shapely.total_bounds(self.road_area)
-            full_extent = shapely.box(xmin, ymin, xmax, ymax)
-            self.not_road_area = full_extent.difference(self.road_area)
-            shapely.prepare(self.not_road_area)
+            self.geojson_data = json.load(f)
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
 
         self.road_area_pub = rospy.Publisher('road_area', MarkerArray, queue_size=1, tcp_nodelay=True, latch=True)
-        self.road_area_pub.publish(self.get_road_area_markers())
 
         # Subscribers
         rospy.Subscriber('detected_objects_unfiltered', DetectedObjectArray, self.detected_objects_callback, queue_size=1, tcp_nodelay=True)
@@ -62,14 +51,14 @@ class RoadAreaFilter:
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
-    def get_road_area_markers(self):
-        boundary = shapely.unary_union(self.road_area)
+    def get_road_area_markers(self, road_area):
         geometry = []
-        for geom in boundary.geoms:
+        for geom in road_area.geoms:
             geometry.append(geom.exterior.coords)
             for interior in geom.interiors:
                 geometry.append(interior.coords)
 
+        # TODO delete all markers before OR create one marker only
         road_area_markers = MarkerArray()
         for i, polygon in enumerate(geometry):
             marker = Marker()
@@ -97,9 +86,40 @@ class RoadAreaFilter:
         return road_area_markers
 
     def current_pose_callback(self, msg):
+
+        point_utm_local = shapely.geometry.Point(msg.pose.position.x, msg.pose.position.y)
+        point_utm = shapely.affinity.translate(point_utm_local, xoff=self.easting, yoff=self.northing)
+
+        if self.cut_out_location is not None:
+            print(get_distance_between_two_points_2d(self.cut_out_location, msg.pose.position))
+        if self.cut_out_location is None or get_distance_between_two_points_2d(self.cut_out_location, msg.pose.position) > self.map_update_distance:
+            print(" **************   extract  ******************")
+            t2 = time.time()
+            road_area = []
+            for feature in self.geojson_data['features']:
+                geometry = shapely.geometry.shape(feature['geometry'])
+                if geometry.dwithin(point_utm, self.map_update_distance):
+                    geometry = shapely.affinity.translate(geometry, xoff=-self.easting, yoff=-self.northing)
+                    road_area.append(geometry)
+            road_area = shapely.unary_union(road_area)
+            shapely.prepare(road_area)
+
+            # create inverted road area
+            if self.filtering_method == "within":
+                xmin, ymin, xmax, ymax = shapely.total_bounds(road_area)
+                full_extent = shapely.box(xmin, ymin, xmax, ymax)
+                not_road_area = full_extent.difference(road_area)
+                shapely.prepare(not_road_area)
+                self.not_road_area = not_road_area
+
+            self.cut_out_location = msg.pose.position
+            self.road_area = road_area
+            self.road_area_pub.publish(self.get_road_area_markers(road_area))
+
         self.current_location = msg.pose.position
 
     def detected_objects_callback(self, msg):
+        start_time = time.time()
 
         current_location = self.current_location
         if current_location is None:
@@ -131,6 +151,7 @@ class RoadAreaFilter:
                     detected_objects.objects.append(obj)
 
         self.objects_pub.publish(detected_objects)
+        print(time.time() - start_time)
 
     def run(self):
         rospy.spin()
