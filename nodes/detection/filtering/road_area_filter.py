@@ -58,8 +58,12 @@ class RoadAreaFilter:
             for interior in geom.interiors:
                 geometry.append(interior.coords)
 
-        # TODO delete all markers before OR create one marker only
         road_area_markers = MarkerArray()
+        # delete all markers before update
+        marker = Marker()
+        marker.action = Marker.DELETEALL
+        road_area_markers.markers.append(marker)
+
         for i, polygon in enumerate(geometry):
             marker = Marker()
             marker.header.frame_id = "map"
