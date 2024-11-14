@@ -8,8 +8,6 @@ from visualization_msgs.msg import MarkerArray, Marker
 
 from rospy.numpy_msg import numpy_msg
 
-NO_TRAVERSAL_LIMIT = 2**64-1
-
 class OpenPilotPredictionVisualizer:
 
     def __init__(self):
@@ -22,12 +20,8 @@ class OpenPilotPredictionVisualizer:
         rospy.Subscriber('/openpilot/position', numpy_msg(Float32MultiArray), self.position_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/openpilot/lane_lines', numpy_msg(Float32MultiArray), self.lane_lines_callback, queue_size=1, tcp_nodelay=True)
 
-    def float32_multiarray_to_numpy(self, multiarray):
-        dims = tuple(map(lambda x: x.size, multiarray.layout.dim))
-        return np.array(multiarray.data, dtype=float).reshape(dims).astype(np.float32)
-
     def position_callback(self, msg):
-        position = self.float32_multiarray_to_numpy(msg)
+        position = float32_multiarray_to_numpy(msg)
 
         plan_points = []
         for x, y, z, t in position.T:
@@ -53,7 +47,7 @@ class OpenPilotPredictionVisualizer:
 
 
     def lane_lines_callback(self, msg):
-        lane_lines = self.float32_multiarray_to_numpy(msg)
+        lane_lines = float32_multiarray_to_numpy(msg)
 
         lanes_marker_array = MarkerArray()
 
@@ -77,10 +71,13 @@ class OpenPilotPredictionVisualizer:
             lanes_marker_array.markers.append(marker)
         
         self.openpilot_lanes_pub.publish(lanes_marker_array)
-        return
 
     def run(self):
         rospy.spin()
+
+def float32_multiarray_to_numpy(multiarray):
+    dims = tuple(map(lambda x: x.size, multiarray.layout.dim))
+    return np.array(multiarray.data, dtype=float).reshape(dims).astype(np.float32)
 
 if __name__ == '__main__':
     rospy.init_node('openpilot_prediction_visualizer')
