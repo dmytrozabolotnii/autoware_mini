@@ -59,33 +59,30 @@ class RoadAreaFilter:
                 geometry.append(interior.coords)
 
         road_area_markers = MarkerArray()
-        # delete all markers before update
         marker = Marker()
-        marker.action = Marker.DELETEALL
-        road_area_markers.markers.append(marker)
-
-        for i, polygon in enumerate(geometry):
-            marker = Marker()
-            marker.header.frame_id = "map"
-            marker.header.stamp = rospy.Time.now()
-            marker.ns = "Road area"
-            marker.id = i
-            marker.type = Marker.LINE_STRIP
-            marker.action = Marker.ADD
-            marker.pose.orientation.w = 1.0
-            marker.scale.x = 0.1
-            marker.scale.y = 0.1
-            marker.scale.z = 0.1
-            marker.color.a = 1.0
-            marker.color.r = 0.9
-            marker.color.g = 0.1
-            marker.color.b = 0.1
+        marker.header.frame_id = "map"
+        marker.header.stamp = rospy.Time.now()
+        marker.ns = "Road area"
+        marker.id = 0
+        marker.type = Marker.LINE_LIST
+        marker.action = Marker.ADD
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
+        marker.color.a = 1.0
+        marker.color.r = 0.9
+        marker.color.g = 0.1
+        marker.color.b = 0.1
     
-            for x, y, z in polygon:
-                p = Point(x, y, z)
-                marker.points.append(p)
-
-            road_area_markers.markers.append(marker)
+        for polygon in geometry:
+            for i in range(len(polygon)-1):
+                point = polygon[i]
+                marker.points.append(Point(x=point[0], y=point[1], z=0.0))
+                point = polygon[i+1]
+                marker.points.append(Point(x=point[0], y=point[1], z=0.0))
+            
+        road_area_markers.markers.append(marker)
 
         return road_area_markers
 
