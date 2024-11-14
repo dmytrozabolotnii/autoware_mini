@@ -50,7 +50,13 @@ class PathWrapper:
         if copy:
             # for each new waypoint copy only the necessary parts
             for waypoint in self.waypoints[index_start:index_end]:
-                new_waypoint = Waypoint(position = waypoint.position, heading = waypoint.heading, speed = waypoint.speed)
+                new_waypoint = Waypoint(position=waypoint.position,
+                                        heading=waypoint.heading,
+                                        speed=waypoint.speed, 
+                                        left_width=waypoint.left_width,
+                                        right_width=waypoint.right_width,
+                                        lanechange_state=waypoint.lanechange_state,
+                                        blinker_state=waypoint.blinker_state)
                 waypoints.append(new_waypoint)
         else:
             waypoints = self.waypoints[index_start:index_end]

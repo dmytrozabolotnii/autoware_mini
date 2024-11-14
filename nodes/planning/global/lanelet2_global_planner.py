@@ -91,7 +91,7 @@ class Lanelet2GlobalPlanner:
         # Extract lanelet objects from candidates
         start_lanelet_candidates = [start_lanelet[1] for start_lanelet in start_lanelet_candidates]
         lanelet_candidates = [start_lanelet_candidates] + self.lanelet_candidates[1:]
-        
+
         new_goal = shapely.Point(msg.pose.position.x, msg.pose.position.y)
         # Get nearest lanelets to goal point
         goal_lanelet_candidates = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(new_goal.x, new_goal.y), self.lanelet_search_radius)
@@ -109,7 +109,7 @@ class Lanelet2GlobalPlanner:
         if path is None:
             rospy.logerr("%s - no route found, try new goal!", rospy.get_name())
             return
-        
+
         # Publish target lanelets for visualization
         start_lanelet = path[0]
         goal_lanelet = path[-1]
@@ -120,9 +120,9 @@ class Lanelet2GlobalPlanner:
         if waypoints is None:
             rospy.logerr("%s - route contained an impossible lane change!", rospy.get_name())
             return
-        
+
         global_path = PathWrapper(waypoints, velocities=True, blinkers=True)
-        
+
         # Find distance to start and goal waypoints
         start_point_distance = global_path.linestring.project(start_point)
         new_goal_point_distance = global_path.linestring.project(new_goal)
@@ -151,7 +151,7 @@ class Lanelet2GlobalPlanner:
         self.goal_point = new_goal_on_path
         self.lanelet_candidates = lanelet_candidates
         rospy.logdebug("Lanelet candidates: " + str(list(map(len, lanelet_candidates))))
-        
+
         # Trim the global path 
         trimmed_waypoints = global_path.extract_waypoints(start_point_distance, new_goal_point_distance, trim=True, copy=True)
 
@@ -179,7 +179,7 @@ class Lanelet2GlobalPlanner:
         self.publish_waypoints([])
         rospy.loginfo("%s - route cancelled!", rospy.get_name())
         return EmptyResponse()
-    
+
     def get_shortest_path_with_route(self, lanelet_candidates):
         shortest_path = None
         shortest_route = None
@@ -226,7 +226,7 @@ class Lanelet2GlobalPlanner:
             else:
                 blinker = None
                 lanechange_state = 0
-                
+
             # Make sure we have enough space to perform the lane change
             if lanechange_state > 0:
                 following_lanelet = lanelet
@@ -288,7 +288,7 @@ class Lanelet2GlobalPlanner:
                 waypoints.append(waypoint)
 
         return waypoints
-    
+
     def publish_waypoints(self, waypoints):
 
         path = Path()
@@ -299,7 +299,7 @@ class Lanelet2GlobalPlanner:
         self.waypoints_pub.publish(path)
 
     def publish_target_lanelets(self, start_lanelet, goal_lanelet):
-        
+
         marker_array = MarkerArray()
 
         # create correct ones
@@ -318,7 +318,7 @@ class Lanelet2GlobalPlanner:
         marker_array.markers.append(marker)
 
         self.target_lane_pub.publish(marker_array)
-    
+
     def create_target_lanelet_marker(self):
         marker = Marker()
         marker.header.frame_id = self.output_frame
@@ -329,7 +329,7 @@ class Lanelet2GlobalPlanner:
         marker.scale.x = 0.3
         marker.scale.y = 0.3
         return marker
-    
+
     def run(self):
         rospy.spin()
 
