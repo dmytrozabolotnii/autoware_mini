@@ -96,7 +96,7 @@ class Lanelet2MapVisualizer:
             marker_array.markers = [marker] + lanelet_markers.markers + linestring_markers.markers + reg_el_markers.markers
 
             # create MarkerArray publisher
-            self.lanelet2_map_markers_pub.publish(lanelet_markers)
+            self.lanelet2_map_markers_pub.publish(marker_array)
 
     def lets_go_callback(self, msg):
         marker_array = MarkerArray()
