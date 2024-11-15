@@ -17,6 +17,7 @@ class RoadAreaFilter:
         self.filtering_method = rospy.get_param("~filtering_method")
         self.filtering_extent = rospy.get_param("~filtering_extent")
         self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
+        self.local_path_length = rospy.get_param("/planning/local_path_length")
         self.coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
         self.utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         self.utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
@@ -81,7 +82,7 @@ class RoadAreaFilter:
         point_utm_local = shapely.geometry.Point(msg.pose.position.x, msg.pose.position.y)
         point_utm = shapely.affinity.translate(point_utm_local, xoff=self.easting, yoff=self.northing)
 
-        if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) >= (self.map_extraction_distance - self.filtering_extent):
+        if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) >= (self.map_extraction_distance - self.local_path_length):
             self.map_extraction_location = msg.pose.position
             road_area = []
             for feature in self.geojson_data['features']:

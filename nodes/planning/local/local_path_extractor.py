@@ -14,7 +14,7 @@ class LocalPathExtractor:
 
         # parameters
         self.publish_rate = rospy.get_param("~publish_rate")
-        self.local_path_length = rospy.get_param("~local_path_length")
+        self.local_path_length = rospy.get_param("/planning/local_path_length")
 
         # variables
         self.current_position = None

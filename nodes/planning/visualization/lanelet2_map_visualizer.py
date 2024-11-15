@@ -5,10 +5,14 @@ import time
 
 from autoware_mini.msg import TrafficLightResultArray
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PoseStamped
 from std_msgs.msg import ColorRGBA, Int32
+from lanelet2.core import BasicPoint2d
+from lanelet2.geometry import findWithin2d, distance, to2D
 
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
+from helpers.geometry import get_distance_between_two_points_2d
+from helpers.timer import Timer
 
 # used for traffic lights
 RED = ColorRGBA(1.0, 0.0, 0.0, 0.8)
@@ -47,26 +51,66 @@ class Lanelet2MapVisualizer:
     
         # Parameters
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        self.local_path_length = rospy.get_param("/planning/local_path_length")
 
-        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        self.yield_stop_lines = get_stop_lines_using_subtype(self.lanelet2_map, subtype=["yield_stop"])
+        self.map_extraction_distance = 500
+        
+        t = Timer()
 
-        # Visualize the Lanelet2 map
-        marker_array = visualize_lanelet2_map(self.lanelet2_map)
+        self.current_location = None
+        self.map_extraction_location = None
 
-        # create MarkerArray publisher
-        markers_pub = rospy.Publisher('lanelet2_map_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
-        markers_pub.publish(marker_array)
+        self.loaded_lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        t("load_lanelet2_map")
+        self.yield_stop_lines = get_stop_lines_using_subtype(self.loaded_lanelet2_map, subtype=["yield_stop"])
+        t("get_stop_lines_using_subtype")
 
         # Special publishers for stop line markers: traffic_lights and yielding
         self.tfl_stop_line_markers_pub = rospy.Publisher('tfl_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
         self.yield_stop_line_markers_pub = rospy.Publisher('yield_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
+        self.lanelet2_map_markers_pub = rospy.Publisher('lanelet2_map_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
 
         rospy.Subscriber("/detection/traffic_light_status", TrafficLightResultArray, self.traffic_light_status_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/planning/lets_go', Int32, self.lets_go_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
         rospy.loginfo("%s - map loaded with %i lanelets and %i regulatory elements from file: %s", rospy.get_name(),
-                      len(self.lanelet2_map.laneletLayer), len(self.lanelet2_map.regulatoryElementLayer), lanelet2_map_name)
+                      len(self.loaded_lanelet2_map.laneletLayer), len(self.loaded_lanelet2_map.regulatoryElementLayer), lanelet2_map_name)
+        t("init finished")
+        print(t)
+
+    def current_pose_callback(self, msg):
+        t = Timer()
+        if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) > (self.map_extraction_distance - 2*self.local_path_length):
+            self.map_extraction_location = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
+
+            filtered_lanelets = findWithin2d(self.loaded_lanelet2_map.laneletLayer, self.map_extraction_location, self.map_extraction_distance)
+            filtered_linestrings = findWithin2d(self.loaded_lanelet2_map.lineStringLayer, self.map_extraction_location, self.map_extraction_distance)
+            filtered_regulatory_elements = []
+            for reg_el in self.loaded_lanelet2_map.regulatoryElementLayer:
+                if reg_el.attributes["subtype"] == "traffic_light":
+                    for line in reg_el.parameters["ref_line"]:
+                        if distance(to2D(line), self.map_extraction_location) <= self.map_extraction_distance:
+                            filtered_regulatory_elements.append(reg_el)
+                            break
+
+            # Visualize different parts of the map
+            lanelet_markers = visualize_laneltLayer(filtered_lanelets)
+            linestring_markers = visualize_lineStringLayer(filtered_linestrings)
+            reg_el_markers = visualize_regulatoryElementLayer(filtered_regulatory_elements)
+
+           # conactenate the MarkerArrays with delete all at front
+            marker_array = MarkerArray()
+            marker = Marker()
+            marker.action = Marker.DELETEALL
+            marker_array.markers = [marker] + lanelet_markers.markers + linestring_markers.markers + reg_el_markers.markers
+
+            t("incb visualize_lanelet2_map")
+
+            # create MarkerArray publisher
+            self.lanelet2_map_markers_pub.publish(lanelet_markers)
+            t("incb publish markers")
+            print(t)
 
     def lets_go_callback(self, msg):
         marker_array = MarkerArray()
@@ -97,7 +141,7 @@ class Lanelet2MapVisualizer:
                 continue
 
             # fetch the stop line data
-            stop_line = self.lanelet2_map.lineStringLayer.get(result.stopline_id)
+            stop_line = self.loaded_lanelet2_map.lineStringLayer.get(result.stopline_id)
             points = [Point(x=p.x, y=p.y, z=p.z + 0.01) for p in stop_line]
 
             # choose the color of stopline based on the traffic light state
@@ -136,27 +180,12 @@ def get_multiplier():
         return 1.0
 
 
-def visualize_lanelet2_map(map):
+def visualize_laneltLayer(filtered_lanelets):
 
     # Create a MarkerArray
     marker_array = MarkerArray()
 
-    # Visualize different parts of the map
-    lanelet_markers = visualize_laneltLayer(map)
-    reg_el_markers = visualize_regulatoryElementLayer(map)
-    linestring_markers = visualize_lineStringLayer(map)
-
-    # conactenate the MarkerArrays
-    marker_array.markers = lanelet_markers.markers + reg_el_markers.markers + linestring_markers.markers
-    return marker_array
-
-
-def visualize_laneltLayer(map):
-
-    # Create a MarkerArray
-    marker_array = MarkerArray()
-
-    for lanelet in map.laneletLayer:
+    for _, lanelet in filtered_lanelets:
 
         stamp = rospy.Time.now()
 
@@ -188,13 +217,13 @@ def visualize_laneltLayer(map):
 
     return marker_array
 
-def visualize_regulatoryElementLayer(map):
+def visualize_regulatoryElementLayer(filtered_regulatory_elements):
     
     # Create a MarkerArray
     marker_array = MarkerArray()
 
     # Iterate over all the regulatory elements
-    for reg_el in map.regulatoryElementLayer:
+    for reg_el in filtered_regulatory_elements:
         # Check if the regulatory element is a traffic light group
         if reg_el.attributes["subtype"] == "traffic_light":
             stamp = rospy.Time.now()
@@ -236,11 +265,11 @@ def visualize_regulatoryElementLayer(map):
     return marker_array
 
 
-def visualize_lineStringLayer(map):
+def visualize_lineStringLayer(filtered_linestrings):
 
     marker_array = MarkerArray()
 
-    for line in map.lineStringLayer:
+    for _, line in filtered_linestrings:
             # if has attributes
             if line.attributes:
                 # select stop lines
