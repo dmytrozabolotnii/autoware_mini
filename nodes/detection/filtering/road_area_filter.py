@@ -8,7 +8,6 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, PoseStamped
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
 from helpers.geometry import get_distance_between_two_points_2d
-import time
 
 class RoadAreaFilter:
     def __init__(self):
@@ -17,6 +16,7 @@ class RoadAreaFilter:
         self.road_area_file = rospy.get_param("~road_area_file")
         self.filtering_method = rospy.get_param("~filtering_method")
         self.filtering_extent = rospy.get_param("~filtering_extent")
+        self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
         self.coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
         self.utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
         self.utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
@@ -25,9 +25,7 @@ class RoadAreaFilter:
             raise ValueError(f"{rospy.get_name()} - 'filtering_method' must be one of 'centroid', 'intersects' or 'within', not '{self.filtering_method}'")
 
         self.current_location = None
-        self.cut_out_location = None
-
-        self.map_update_distance = 250
+        self.map_extraction_location = None
 
         # initialize coordinate_transformer
         if self.coordinate_transformer == "utm":
@@ -52,11 +50,6 @@ class RoadAreaFilter:
         rospy.loginfo("%s - initialized", rospy.get_name())
 
     def get_road_area_markers(self, road_area):
-        geometry = []
-        for geom in road_area.geoms:
-            geometry.append(geom.exterior.coords)
-            for interior in geom.interiors:
-                geometry.append(interior.coords)
 
         road_area_markers = MarkerArray()
         marker = Marker()
@@ -74,16 +67,13 @@ class RoadAreaFilter:
         marker.color.r = 0.9
         marker.color.g = 0.1
         marker.color.b = 0.1
-    
-        for polygon in geometry:
-            for i in range(len(polygon)-1):
-                point = polygon[i]
-                marker.points.append(Point(x=point[0], y=point[1], z=0.0))
-                point = polygon[i+1]
-                marker.points.append(Point(x=point[0], y=point[1], z=0.0))
-            
-        road_area_markers.markers.append(marker)
 
+        for geom in road_area.geoms:
+            marker.points.extend(create_coords_for_line_list(geom.exterior.coords))
+            for interior in geom.interiors:
+                marker.points.extend(create_coords_for_line_list(interior.coords))
+
+        road_area_markers.markers.append(marker)
         return road_area_markers
 
     def current_pose_callback(self, msg):
@@ -91,15 +81,12 @@ class RoadAreaFilter:
         point_utm_local = shapely.geometry.Point(msg.pose.position.x, msg.pose.position.y)
         point_utm = shapely.affinity.translate(point_utm_local, xoff=self.easting, yoff=self.northing)
 
-        if self.cut_out_location is not None:
-            print(get_distance_between_two_points_2d(self.cut_out_location, msg.pose.position))
-        if self.cut_out_location is None or get_distance_between_two_points_2d(self.cut_out_location, msg.pose.position) > self.map_update_distance:
-            print(" **************   extract  ******************")
-            t2 = time.time()
+        if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) >= (self.map_extraction_distance - self.filtering_extent):
+            self.map_extraction_location = msg.pose.position
             road_area = []
             for feature in self.geojson_data['features']:
                 geometry = shapely.geometry.shape(feature['geometry'])
-                if geometry.dwithin(point_utm, self.map_update_distance):
+                if geometry.dwithin(point_utm, self.map_extraction_distance):
                     geometry = shapely.affinity.translate(geometry, xoff=-self.easting, yoff=-self.northing)
                     road_area.append(geometry)
             road_area = shapely.unary_union(road_area)
@@ -113,14 +100,12 @@ class RoadAreaFilter:
                 shapely.prepare(not_road_area)
                 self.not_road_area = not_road_area
 
-            self.cut_out_location = msg.pose.position
             self.road_area = road_area
             self.road_area_pub.publish(self.get_road_area_markers(road_area))
 
         self.current_location = msg.pose.position
 
     def detected_objects_callback(self, msg):
-        start_time = time.time()
 
         current_location = self.current_location
         if current_location is None:
@@ -152,10 +137,16 @@ class RoadAreaFilter:
                     detected_objects.objects.append(obj)
 
         self.objects_pub.publish(detected_objects)
-        print(time.time() - start_time)
 
     def run(self):
         rospy.spin()
+
+def create_coords_for_line_list(coords):
+    line_list = []
+    for i in range(len(coords)-1):
+        line_list.append(Point(x=coords[i][0], y=coords[i][1], z=coords[i][2]))
+        line_list.append(Point(x=coords[i+1][0], y=coords[i+1][1], z=coords[i+1][2]))
+    return line_list
 
 if __name__ == '__main__':
     rospy.init_node('road_area_filter', log_level=rospy.INFO)
