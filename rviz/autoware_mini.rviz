@@ -4,7 +4,7 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Map1/Lanelet2 map1/Namespaces1
+        - /Detection1
         - /Detection1/Lidar1
         - /Detection1/Detected objects1/Namespaces1
         - /Detection1/Predicted objects1/Namespaces1
@@ -659,7 +659,7 @@ Visualization Manager:
           Marker Topic: /detection/road_area_markers
           Name: Road area
           Namespaces:
-            Road area: true
+            {}
           Queue Size: 100
           Value: true
       Enabled: true
@@ -835,7 +835,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  "": true
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Value: true
                 System:
                   Current pose: true
@@ -924,7 +927,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  "": true
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Value: true
                 System:
                   Current pose: true
@@ -1014,7 +1020,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  "": true
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Value: true
                 System:
                   Current pose: true
@@ -1100,7 +1109,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  "": true
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Value: true
                 System:
                   Current pose: true
@@ -1186,7 +1198,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  "": true
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Value: true
                 System:
                   Current pose: true
@@ -1272,7 +1287,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  "": true
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Value: true
                 System:
                   Current pose: true
@@ -1358,7 +1376,10 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  "": true
+                  Bicycle markers: true
+                  Carla camera view: true
+                  Carla image view: true
+                  Carla route: true
                   Value: true
                 System:
                   Current pose: true
@@ -1808,7 +1829,6 @@ Visualization Manager:
           Name: Let's go yield line
           Namespaces:
             {}
-            {}
           Queue Size: 100
           Value: true
       Enabled: true
@@ -2091,7 +2111,6 @@ Visualization Manager:
           Name: Bicycle markers
           Namespaces:
             {}
-            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Camera
@@ -2188,11 +2207,8 @@ Visualization Manager:
               Stop point: true
               Value: true
             Sensing:
-              Mako:
-                Camera left: true
-                Camera right: true
-                Image left: true
-                Image right: true
+              "":
+                "": true
                 Value: true
               Nvidia:
                 Camera Interface link1 Right: true
@@ -2292,7 +2308,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -0.004999999888241291
+      Angle: 0
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -2302,7 +2318,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.0010000000474974513
-      Scale: 35.24683380126953
+      Scale: 18.333024978637695
       Target Frame: base_link
       X: 0
       Y: 0
