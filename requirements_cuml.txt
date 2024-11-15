@@ -1,4 +1,7 @@
 --extra-index-url https://pypi.nvidia.com/
 cubinlinker-cu11==0.3
-ptxcompiler-cu11==0.7
+ptxcompiler-cu11==0.7.0.post1
 cuml-cu11 == 23.4.1
+numexpr==2.7.3
+numba==0.56.4
+importlib-metadata==6.6.0
