@@ -12,7 +12,6 @@ from lanelet2.geometry import findWithin2d, distance, to2D
 
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.geometry import get_distance_between_two_points_2d
-from helpers.timer import Timer
 
 # used for traffic lights
 RED = ColorRGBA(1.0, 0.0, 0.0, 0.8)
@@ -52,18 +51,11 @@ class Lanelet2MapVisualizer:
         # Parameters
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
         self.local_path_length = rospy.get_param("/planning/local_path_length")
+        self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
 
-        self.map_extraction_distance = 500
-        
-        t = Timer()
-
-        self.current_location = None
         self.map_extraction_location = None
-
-        self.loaded_lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        t("load_lanelet2_map")
-        self.yield_stop_lines = get_stop_lines_using_subtype(self.loaded_lanelet2_map, subtype=["yield_stop"])
-        t("get_stop_lines_using_subtype")
+        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        self.yield_stop_lines = get_stop_lines_using_subtype(self.lanelet2_map, subtype=["yield_stop"])
 
         # Special publishers for stop line markers: traffic_lights and yielding
         self.tfl_stop_line_markers_pub = rospy.Publisher('tfl_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
@@ -75,19 +67,17 @@ class Lanelet2MapVisualizer:
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
         rospy.loginfo("%s - map loaded with %i lanelets and %i regulatory elements from file: %s", rospy.get_name(),
-                      len(self.loaded_lanelet2_map.laneletLayer), len(self.loaded_lanelet2_map.regulatoryElementLayer), lanelet2_map_name)
-        t("init finished")
-        print(t)
+                      len(self.lanelet2_map.laneletLayer), len(self.lanelet2_map.regulatoryElementLayer), lanelet2_map_name)
 
     def current_pose_callback(self, msg):
-        t = Timer()
+
         if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) > (self.map_extraction_distance - 2*self.local_path_length):
             self.map_extraction_location = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
 
-            filtered_lanelets = findWithin2d(self.loaded_lanelet2_map.laneletLayer, self.map_extraction_location, self.map_extraction_distance)
-            filtered_linestrings = findWithin2d(self.loaded_lanelet2_map.lineStringLayer, self.map_extraction_location, self.map_extraction_distance)
+            filtered_lanelets = findWithin2d(self.lanelet2_map.laneletLayer, self.map_extraction_location, self.map_extraction_distance)
+            filtered_linestrings = findWithin2d(self.lanelet2_map.lineStringLayer, self.map_extraction_location, self.map_extraction_distance)
             filtered_regulatory_elements = []
-            for reg_el in self.loaded_lanelet2_map.regulatoryElementLayer:
+            for reg_el in self.lanelet2_map.regulatoryElementLayer:
                 if reg_el.attributes["subtype"] == "traffic_light":
                     for line in reg_el.parameters["ref_line"]:
                         if distance(to2D(line), self.map_extraction_location) <= self.map_extraction_distance:
@@ -105,12 +95,8 @@ class Lanelet2MapVisualizer:
             marker.action = Marker.DELETEALL
             marker_array.markers = [marker] + lanelet_markers.markers + linestring_markers.markers + reg_el_markers.markers
 
-            t("incb visualize_lanelet2_map")
-
             # create MarkerArray publisher
             self.lanelet2_map_markers_pub.publish(lanelet_markers)
-            t("incb publish markers")
-            print(t)
 
     def lets_go_callback(self, msg):
         marker_array = MarkerArray()
@@ -141,7 +127,7 @@ class Lanelet2MapVisualizer:
                 continue
 
             # fetch the stop line data
-            stop_line = self.loaded_lanelet2_map.lineStringLayer.get(result.stopline_id)
+            stop_line = self.lanelet2_map.lineStringLayer.get(result.stopline_id)
             points = [Point(x=p.x, y=p.y, z=p.z + 0.01) for p in stop_line]
 
             # choose the color of stopline based on the traffic light state

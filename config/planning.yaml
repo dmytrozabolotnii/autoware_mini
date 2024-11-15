@@ -21,6 +21,9 @@ lanelet2_global_planner:
   lane_change: False
   lanelet_search_radius: 0.5
 
+lanelet2_map_visualizer:
+  map_extraction_distance: 500  # m - distance from ego vehicle to extract map data
+
 waypoint_loader:
   output_frame: map
   wp_left_width: 1.4
