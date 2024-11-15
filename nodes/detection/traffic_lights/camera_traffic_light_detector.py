@@ -15,7 +15,7 @@ from sensor_msgs.msg import CameraInfo
 from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 from autoware_mini.msg import Path
 
-from cv_bridge import CvBridge, CvBridgeError
+from cv_bridge import CvBridge
 
 from helpers.transform import transform_point
 from helpers.lanelet2 import get_traffic_light_stop_lines, get_stoplines_trafficlights, load_lanelet2_map
@@ -49,11 +49,13 @@ class CameraTrafficLightDetector:
         onnx_path = rospy.get_param("~onnx_path")
 
         self.rectify_image = rospy.get_param('~rectify_image')
-        self.roi_extent = rospy.get_param("~roi_extent")
+        self.roi_width_extent = rospy.get_param("~roi_width_extent")
+        self.roi_height_extent = rospy.get_param("~roi_height_extent")
         self.min_roi_width = rospy.get_param("~min_roi_width")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.waypoint_interval = rospy.get_param("/planning/waypoint_interval")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        self.camera_delay_compensation = rospy.get_param("~camera_delay_compensation")
 
 
         # Extract all stop lines and traffic lights from the lanelet2 map
@@ -120,7 +122,7 @@ class CameraTrafficLightDetector:
             stoplines_on_path = self.stoplines_on_path
             transform_from_frame = self.transform_from_frame
 
-        image_time_stamp = camera_image_msg.header.stamp
+        image_time_stamp = camera_image_msg.header.stamp - rospy.Duration.from_sec(self.camera_delay_compensation)
         transform_to_frame = camera_image_msg.header.frame_id
 
         tfl_status = TrafficLightResultArray()
@@ -197,8 +199,8 @@ class CameraTrafficLightDetector:
                         break
                     
                     # convert the extent in meters to extent in pixels
-                    extent_x_px = self.camera_model.fx() * self.roi_extent / point_camera.z
-                    extent_y_px = self.camera_model.fy() * self.roi_extent / point_camera.z
+                    extent_x_px = self.camera_model.fx() * self.roi_width_extent / point_camera.z
+                    extent_y_px = self.camera_model.fy() * self.roi_height_extent / point_camera.z
 
                     us.extend([u + extent_x_px, u - extent_x_px])
                     vs.extend([v + extent_y_px, v - extent_y_px])
