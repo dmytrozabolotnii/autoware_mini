@@ -138,7 +138,7 @@ class Lanelet2MapVisualizer:
 
             # fetch the stop line data
             stop_line = self.lanelet2_map.lineStringLayer.get(result.stopline_id)
-            points = [Point(x=p.x, y=p.y, z=p.z + 0.01) for p in stop_line]
+            coords = create_coords_for_line_list([Point(x=p.x, y=p.y, z=p.z + 0.01) for p in stop_line])
 
             # choose the color of stopline based on the traffic light state
             if result.recognition_result in TRAFFIC_LIGHT_STATE_TO_MARKER_COLOR:
@@ -152,12 +152,12 @@ class Lanelet2MapVisualizer:
                 color = ColorRGBA(color.r, color.g, color.b, color.a * get_multiplier())
 
             # create linestring marker
-            stopline_marker = linestring_to_marker(points, "Stop line", stop_line.id, color, 0.5, rospy.Time.now())
+            stopline_marker = linestring_to_marker(coords, "Stop line", stop_line.id, color, 0.5, rospy.Time.now())
 
             marker_array.markers.append(stopline_marker)
 
             # create traffic light status marker
-            text_marker = text_to_marker(result.recognition_result_str, points, "Status text", stop_line.id, WHITE100, 0.5, rospy.Time.now())
+            text_marker = text_to_marker(result.recognition_result_str, coords, "Status text", stop_line.id, WHITE100, 0.5, rospy.Time.now())
             marker_array.markers.append(text_marker)
 
             # record the state of this stop line
@@ -279,14 +279,14 @@ def visualize_lineStringLayer(linestrings):
                 # select stop lines
                 if line.attributes["type"] == "stop_line":
                     # points = [point for point in line]
-                    points_line_list = create_coords_for_line_list(line)
+                    coords = create_coords_for_line_list(line)
                     if "subtype" in line.attributes:
                         if line.attributes["subtype"]=="traffic_light":
-                            points_traffic_light.extend(points_line_list)
+                            points_traffic_light.extend(coords)
                         elif line.attributes["subtype"]=="yield_stop":
-                            points_yield_stop.extend(points_line_list)
+                            points_yield_stop.extend(coords)
                         elif line.attributes["subtype"]=="yield":
-                            points_yield.extend(points_line_list)
+                            points_yield.extend(coords)
 
     marker_array.markers.append(linestring_to_marker(points_traffic_light, "Traffic light stop lines", 0, WHITE, 0.5, rospy.Time.now()))
     marker_array.markers.append(linestring_to_marker(points_yield_stop, "Yield stop line", 0, RED, 0.5, rospy.Time.now()))
@@ -295,11 +295,11 @@ def visualize_lineStringLayer(linestrings):
     return marker_array
 
 def create_coords_for_line_list(line):
-    line_list = []
+    coords = []
     for i in range(len(line)-1):
-        line_list.append(line[i])
-        line_list.append(line[i+1])
-    return line_list
+        coords.append(line[i])
+        coords.append(line[i+1])
+    return coords
 
 
 def linestring_to_marker(points, namespace, id, color, scale, stamp):
