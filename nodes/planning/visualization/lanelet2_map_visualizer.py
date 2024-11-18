@@ -68,6 +68,8 @@ class Lanelet2MapVisualizer:
 
         if self.use_map_extraction:
             rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
+            # for filtering trafiiclight stopline statuses
+            self.filtered_linestrings = None
         else:
             lanelet_markers = visualize_laneltLayer(self.lanelet2_map.laneletLayer)
             linestring_markers = visualize_lineStringLayer(self.lanelet2_map.lineStringLayer)
@@ -107,6 +109,7 @@ class Lanelet2MapVisualizer:
 
             # create MarkerArray publisher
             self.lanelet2_map_markers_pub.publish(marker_array)
+            self.filtered_linestrings = filtered_linestrings
 
     def lets_go_callback(self, msg):
         marker_array = MarkerArray()
@@ -135,6 +138,12 @@ class Lanelet2MapVisualizer:
                 if states[result.stopline_id] != result.recognition_result_str:
                     rospy.logwarn("%s - multiple traffic lights with different states on the same stop line %d: %s != %s", rospy.get_name(), result.stopline_id, states[result.stopline_id], result.recognition_result_str)
                 continue
+
+            if self.use_map_extraction and self.filtered_linestrings is not None:
+                # Check if the linestring with the target ID is in the filtered list
+                stopline_present = any(linestring.id == result.stopline_id for _, linestring in self.filtered_linestrings)
+                if not stopline_present:
+                    continue
 
             # fetch the stop line data
             stop_line = self.lanelet2_map.lineStringLayer.get(result.stopline_id)
