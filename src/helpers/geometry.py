@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import shapely
+from shapely.ops import split
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import Point, Quaternion
 
@@ -235,3 +236,9 @@ def split_linestring_by_point_and_heading(line, point, heading, length=10):
         segment = split_segments
 
     return segment
+
+def split_linestring_with_two_lines(main_linestring, cutting_line1, cutting_line2):
+    split1 = split(main_linestring, cutting_line1).geoms[1]
+    split2 = split(split1, cutting_line2).geoms[0]
+
+    return split2

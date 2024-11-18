@@ -4,6 +4,9 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /System1
+        - /System1/TF1
+        - /System1/TF1/Frames1
         - /Detection1
         - /Detection1/Lidar1
         - /Detection1/Detected objects1/Namespaces1
@@ -63,12 +66,60 @@ Visualization Manager:
     - Class: rviz/Group
       Displays:
         - Class: rviz/TF
-          Enabled: false
+          Enabled: true
           Filter (blacklist): ""
           Filter (whitelist): ""
           Frame Timeout: 15
           Frames:
             All Enabled: false
+            base_footprint:
+              Value: false
+            base_link:
+              Value: true
+            base_link_gnss:
+              Value: true
+            camera0:
+              Value: false
+            camera1:
+              Value: false
+            camera2:
+              Value: false
+            camera3:
+              Value: false
+            camera4:
+              Value: false
+            camera_fl:
+              Value: false
+            camera_fr:
+              Value: false
+            imu:
+              Value: false
+            interfacea_link0:
+              Value: false
+            interfacea_link1:
+              Value: false
+            interfacea_link2:
+              Value: false
+            interfacea_link3:
+              Value: false
+            interfaceb_link0:
+              Value: false
+            lexus_model:
+              Value: false
+            lidar:
+              Value: false
+            lidar_0:
+              Value: false
+            lidar_center:
+              Value: false
+            lidar_front/os_sensor:
+              Value: false
+            map:
+              Value: false
+            openpilot:
+              Value: false
+            radar_fc:
+              Value: false
           Marker Alpha: 1
           Marker Scale: 1.5
           Name: TF
@@ -76,33 +127,62 @@ Visualization Manager:
           Show Axes: true
           Show Names: true
           Tree:
-            {}
+            map:
+              base_link_gnss:
+                base_link:
+                  base_footprint:
+                    {}
+                  imu:
+                    {}
+                  lexus_model:
+                    {}
+                  lidar_center:
+                    camera_fl:
+                      {}
+                    camera_fr:
+                      {}
+                    interfaceb_link0:
+                      camera4:
+                        {}
+                      interfacea_link0:
+                        camera0:
+                          {}
+                      interfacea_link1:
+                        camera1:
+                          {}
+                      interfacea_link2:
+                        camera2:
+                          {}
+                      interfacea_link3:
+                        camera3:
+                          {}
+                    lidar:
+                      {}
+                    lidar_0:
+                      {}
+                    lidar_front/os_sensor:
+                      {}
+                  openpilot:
+                    {}
+                  radar_fc:
+                    {}
           Update Interval: 0
-          Value: false
+          Value: true
         - Alpha: 1
           Class: rviz/RobotModel
           Collision Enabled: false
-          Enabled: true
+          Enabled: false
           Links:
             All Links Enabled: true
             Expand Joint Details: false
             Expand Link Details: false
             Expand Tree: false
             Link Tree Style: Links in Alphabetic Order
-            base_link:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-            lexus_model:
-              Alpha: 1
-              Show Axes: false
-              Show Trail: false
-              Value: true
           Name: Lexus model
           Robot Description: robot_description
           TF Prefix: ""
           Update Interval: 0
-          Value: true
+          Value: false
           Visual Enabled: true
         - Alpha: 1
           Axes Length: 1
@@ -767,7 +847,6 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
-                "": true
                 Control:
                   "": true
                   Value: true
@@ -835,10 +914,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -859,7 +935,6 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
-                "": true
                 Control:
                   "": true
                   Value: true
@@ -927,10 +1002,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -955,7 +1027,6 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
-                "": true
                 Control:
                   "": true
                   Value: true
@@ -1020,10 +1091,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1044,7 +1112,6 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
-                "": true
                 Control:
                   "": true
                   Value: true
@@ -1109,10 +1176,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1133,7 +1197,6 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
-                "": true
                 Control:
                   "": true
                   Value: true
@@ -1198,10 +1261,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1222,7 +1282,6 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
-                "": true
                 Control:
                   "": true
                   Value: true
@@ -1287,10 +1346,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1311,7 +1367,6 @@ Visualization Manager:
               Unreliable: false
               Value: false
               Visibility:
-                "": true
                 Control:
                   "": true
                   Value: true
@@ -1376,10 +1431,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -2124,7 +2176,6 @@ Visualization Manager:
           Unreliable: false
           Value: false
           Visibility:
-            "": true
             Control:
               Current pose: true
               Follower markers: true
@@ -2188,6 +2239,7 @@ Visualization Manager:
                 Value: true
               Value: true
             Grid: true
+            Lane bounds matching: true
             Map:
               "": true
               Value: true
@@ -2207,8 +2259,11 @@ Visualization Manager:
               Stop point: true
               Value: true
             Sensing:
-              "":
-                "": true
+              Mako:
+                Camera left: true
+                Camera right: true
+                Image left: true
+                Image right: true
                 Value: true
               Nvidia:
                 Camera Interface link1 Right: true
@@ -2308,20 +2363,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
-      Class: rviz/TopDownOrtho
+      Class: rviz/ThirdPersonFollower
+      Distance: 6.916015148162842
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Field of View: 0.7853981852531433
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.0010000000474974513
-      Scale: 18.333024978637695
-      Target Frame: base_link
-      X: 0
-      Y: 0
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.4403981864452362
+      Target Frame: base_link_gnss
+      Yaw: 3.1904027462005615
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho
