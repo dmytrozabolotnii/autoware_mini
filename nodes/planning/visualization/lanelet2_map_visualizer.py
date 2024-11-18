@@ -191,7 +191,6 @@ def visualize_laneltLayer(lanelets):
 
         stamp = rospy.Time.now()
 
-        # TODO bicycle_lane, bus_lane, emergency_lane, parking_lane, pedestrian_lane, sidewalk, special_lane, traffic_island, traffic_lane, traffic_zone, walkway        
         if lanelet.attributes["subtype"] == "road":
             left_boundary_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.leftBound]))
             right_boundary_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.rightBound]))
@@ -208,10 +207,10 @@ def visualize_laneltLayer(lanelets):
             bus_lane_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.centerline]))
 
     left_boundary_marker = linestring_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
-    right_boundary_marker = linestring_to_marker(right_boundary_points, "Right boundary", 1, GREY, 0.1, stamp)
-    centerline_marker = linestring_to_marker(centerline_points, "Centerline", 2, CYAN, 1.5, stamp)
-    crosswalk_marker = linestring_to_marker(crosswalk_points, "Crosswalk", 3, ORANGE, 0.3, stamp)
-    bus_lane_marker = linestring_to_marker(bus_lane_points, "Bus lane", 4, BLUE, 0.3, stamp)
+    right_boundary_marker = linestring_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
+    centerline_marker = linestring_to_marker(centerline_points, "Centerline", 0, CYAN, 1.5, stamp)
+    crosswalk_marker = linestring_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 0.3, stamp)
+    bus_lane_marker = linestring_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 0.3, stamp)
 
     marker_array.markers.append(left_boundary_marker)
     marker_array.markers.append(right_boundary_marker)
@@ -263,9 +262,6 @@ def visualize_regulatoryElementLayer(regulatory_elements):
 
                     marker_array.markers.append(marker)
                     bulb_z -= tfl_height/6
-
-        # TODO stop line, yield line, speed limit, etc.
-
     return marker_array
 
 
@@ -293,8 +289,8 @@ def visualize_lineStringLayer(linestrings):
                             points_yield.extend(points_line_list)
 
     marker_array.markers.append(linestring_to_marker(points_traffic_light, "Traffic light stop lines", 0, WHITE, 0.5, rospy.Time.now()))
-    marker_array.markers.append(linestring_to_marker(points_yield_stop, "Yield stop line", 1, RED, 0.5, rospy.Time.now()))
-    marker_array.markers.append(linestring_to_marker(points_yield, "Yield line", 2, YELLOW, 0.3, rospy.Time.now()))
+    marker_array.markers.append(linestring_to_marker(points_yield_stop, "Yield stop line", 0, RED, 0.5, rospy.Time.now()))
+    marker_array.markers.append(linestring_to_marker(points_yield, "Yield line", 0, YELLOW, 0.3, rospy.Time.now()))
 
     return marker_array
 
