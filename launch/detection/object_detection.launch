@@ -120,7 +120,7 @@
         <node if="$(eval 'naive' in predictor)" type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
             <remap from="tracked_objects" to="predicted_objects_map" />
         </node>
-        <node type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
+        <node type="predicted_trajectory_visualizer.py" name="predicted_trajectory_visualizer" pkg="autoware_mini" output="screen" required="true">
             <remap from="detected_objects" to="predicted_objects" />
             <remap from="detected_objects_markers" to="predicted_objects_markers" />
         </node>
