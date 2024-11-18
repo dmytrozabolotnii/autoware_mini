@@ -52,7 +52,6 @@
         <arg name="waypoints_file"      value="$(arg waypoints_file)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
-        <arg name="use_openpilot"       value="$(arg use_openpilot)" />
     </include>
 
     <!-- Control -->

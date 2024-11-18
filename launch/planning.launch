@@ -8,7 +8,6 @@
     <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
     <arg name="map_name"                    default="tartu_demo" />
     <arg name="load_goals"                  default="true" />
-    <arg name="use_openpilot"               default="false" />
     
     <group ns="planning">
 
@@ -82,8 +81,6 @@
         </group>
 
         <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/global_path /planning/local_path" name="local_path_relay" output="screen" required="true" />
-
-        <node if="$(arg use_openpilot)" pkg="autoware_mini" type="openpilot_prediction_visualizer.py" name="openpilot_prediction_visualizer" output="screen" required="true" /> 
 
         <!-- Config -->
         <rosparam command="load" file="$(find autoware_mini)/config/planning.yaml" />
