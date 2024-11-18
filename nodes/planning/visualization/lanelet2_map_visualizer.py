@@ -181,35 +181,43 @@ def visualize_laneltLayer(lanelets):
     # Create a MarkerArray
     marker_array = MarkerArray()
 
+    left_boundary_points = []
+    right_boundary_points = []
+    centerline_points = []
+    crosswalk_points = []
+    bus_lane_points = []
+
     for lanelet in lanelets:
 
         stamp = rospy.Time.now()
 
         # TODO bicycle_lane, bus_lane, emergency_lane, parking_lane, pedestrian_lane, sidewalk, special_lane, traffic_island, traffic_lane, traffic_zone, walkway        
         if lanelet.attributes["subtype"] == "road":
-        
-            # Create markers for the left, right boundary and centerline
-            left_boundary_marker = linestring_to_marker(lanelet.leftBound, "Left boundary", lanelet.id, GREY, 0.1, stamp)
-            right_boundary_marker = linestring_to_marker(lanelet.rightBound, "Right boundary", lanelet.id, GREY, 0.1, stamp)
-            centerline_marker = linestring_to_marker(lanelet.centerline, "Centerline", lanelet.id, CYAN, 1.5, stamp)
-
-            # Add the markers to the MarkerArray
-            marker_array.markers.append(left_boundary_marker)
-            marker_array.markers.append(right_boundary_marker)
-            marker_array.markers.append(centerline_marker)
+            left_boundary_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.leftBound]))
+            right_boundary_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.rightBound]))
+            centerline_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.centerline]))
 
         elif lanelet.attributes["subtype"] == "crosswalk":
-
-            points = [point for point in lanelet.leftBound]
-            points += [point for point in lanelet.rightBound.invert()]
-            points.append(lanelet.leftBound[0])
-
-            crosswalk_marker = linestring_to_marker(points, "Crosswalk", lanelet.id, ORANGE, 0.3, stamp)
-            marker_array.markers.append(crosswalk_marker)
+            # create "polygon points" from crosswalk lanelet and then create line list from them
+            points = [Point(point.x, point.y, point.z) for point in lanelet.leftBound]
+            points += [Point(point.x, point.y, point.z) for point in lanelet.rightBound.invert()]
+            points.append(Point(lanelet.leftBound[0].x, lanelet.leftBound[0].y, lanelet.leftBound[0].z))
+            crosswalk_points.extend(create_coords_for_line_list(points))
 
         elif lanelet.attributes["subtype"] == "bus_lane":
-            centerline_marker = linestring_to_marker(lanelet.centerline, "Centerline", lanelet.id, BLUE, 1.5, stamp)
-            marker_array.markers.append(centerline_marker)
+            bus_lane_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.centerline]))
+
+    left_boundary_marker = linestring_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
+    right_boundary_marker = linestring_to_marker(right_boundary_points, "Right boundary", 1, GREY, 0.1, stamp)
+    centerline_marker = linestring_to_marker(centerline_points, "Centerline", 2, CYAN, 1.5, stamp)
+    crosswalk_marker = linestring_to_marker(crosswalk_points, "Crosswalk", 3, ORANGE, 0.3, stamp)
+    bus_lane_marker = linestring_to_marker(bus_lane_points, "Bus lane", 4, BLUE, 0.3, stamp)
+
+    marker_array.markers.append(left_boundary_marker)
+    marker_array.markers.append(right_boundary_marker)
+    marker_array.markers.append(centerline_marker)
+    marker_array.markers.append(crosswalk_marker)
+    marker_array.markers.append(bus_lane_marker)
 
     return marker_array
 
@@ -265,27 +273,40 @@ def visualize_lineStringLayer(linestrings):
 
     marker_array = MarkerArray()
 
+    points_traffic_light = []
+    points_yield_stop = []
+    points_yield = []
+
     for line in linestrings:
             # if has attributes
             if line.attributes:
                 # select stop lines
                 if line.attributes["type"] == "stop_line":
-                    points = [point for point in line]
+                    # points = [point for point in line]
+                    points_line_list = create_coords_for_line_list(line)
                     if "subtype" in line.attributes:
                         if line.attributes["subtype"]=="traffic_light":
-                            marker = linestring_to_marker(points, "Traffic light stop lines", line.id, WHITE, 0.5, rospy.Time.now())
-                            marker_array.markers.append(marker)
+                            points_traffic_light.extend(points_line_list)
                         elif line.attributes["subtype"]=="yield_stop":
-                            marker = linestring_to_marker(points, "Yield stop line", line.id, RED, 0.5, rospy.Time.now())
-                            marker_array.markers.append(marker)
+                            points_yield_stop.extend(points_line_list)
                         elif line.attributes["subtype"]=="yield":
-                            marker = linestring_to_marker(points, "Yield line", line.id, YELLOW, 0.3, rospy.Time.now())
-                            marker_array.markers.append(marker)
+                            points_yield.extend(points_line_list)
+
+    marker_array.markers.append(linestring_to_marker(points_traffic_light, "Traffic light stop lines", 0, WHITE, 0.5, rospy.Time.now()))
+    marker_array.markers.append(linestring_to_marker(points_yield_stop, "Yield stop line", 1, RED, 0.5, rospy.Time.now()))
+    marker_array.markers.append(linestring_to_marker(points_yield, "Yield line", 2, YELLOW, 0.3, rospy.Time.now()))
 
     return marker_array
 
+def create_coords_for_line_list(line):
+    line_list = []
+    for i in range(len(line)-1):
+        line_list.append(line[i])
+        line_list.append(line[i+1])
+    return line_list
 
-def linestring_to_marker(linestring, namespace, id, color, scale, stamp):
+
+def linestring_to_marker(points, namespace, id, color, scale, stamp):
     """
     Creates a Marker from a LineString
     :param linestring: LineString
@@ -301,16 +322,12 @@ def linestring_to_marker(linestring, namespace, id, color, scale, stamp):
     marker.header.stamp = stamp
     marker.ns = namespace
     marker.id = id
-    marker.type = marker.LINE_STRIP
+    marker.type = marker.LINE_LIST
     marker.action = marker.ADD
     marker.scale.x = scale
     marker.color = color
     marker.pose.orientation.w = 1.0
-
-    # Add the points to the marker
-    for point in linestring:
-        marker.points.append(point)
-
+    marker.points = points
     return marker
 
 def text_to_marker(text, linestring, namespace, id, color, scale, stamp):
