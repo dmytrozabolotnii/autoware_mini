@@ -14,9 +14,33 @@ from ros_numpy import numpify, msgify
 from tf.transformations import quaternion_from_euler, quaternion_matrix
 
 from helpers.lanelet2 import load_lanelet2_map
-from helpers.transform import transform_point, transform_to_matrix
-from helpers.geometry import get_heading_from_orientation, get_point_using_heading_and_distance, split_linestring_by_point_and_heading, split_linestring_with_two_lines
+from helpers.transform import transform_to_matrix
+from helpers.geometry import get_heading_from_orientation, split_linestring_with_two_lines
 
+class StreamingRollingAverage:
+    def __init__(self, window_size):
+        self.window_size = window_size
+        self.window = np.zeros(window_size)  # Pre-allocate a fixed-size window
+        self.index = 0  # Index to track the circular buffer
+        self.count = 1  # Number of elements added so far
+        self.total = 0  # Running total of the window
+    
+    def add(self, value):
+        # Subtract the value that is being replaced
+        self.total -= self.window[self.index]
+        
+        # Add the new value to the total and update the window
+        self.window[self.index] = value
+        self.total += value
+        
+        # Update the circular index and count
+        self.index = (self.index + 1) % self.window_size
+        self.count = min(self.count + 1, self.window_size)
+        
+    def get(self):
+        # Return the current rolling average
+        return self.total / self.count
+        
 class LaneBoundaryMatcher:
 
     def __init__(self):
@@ -38,6 +62,7 @@ class LaneBoundaryMatcher:
         self.yaw_correction_treshold = rospy.get_param("~yaw_correction_treshold")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.base_link_openpilot_dist = rospy.get_param("~base_link_openpilot_dist")
+        self.smoothing_lambda_factor = 0.01
 
         # variables
         self.global_path_lanelet_ids = None
@@ -49,7 +74,9 @@ class LaneBoundaryMatcher:
         self.new_global_path = None
         self.approximated_lanelet_lengths = None
 
-        self.localization_corrections = {'x':0, 'y':0, 'z':0, 'roll':0, 'pitch':0, 'yaw':0, 'stamp':None}
+        self.localization_corrections = {'x':StreamingRollingAverage(100), 'y':StreamingRollingAverage(100), 'z':StreamingRollingAverage(100), 
+                                         'roll':StreamingRollingAverage(100), 'pitch':StreamingRollingAverage(100), 'yaw':StreamingRollingAverage(100), 
+                                         'stamp':None}
         self.transform_matrix = np.eye(4)
         
         self.lock = threading.Lock()
@@ -57,7 +84,7 @@ class LaneBoundaryMatcher:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        self.publish_base_link_correction_tf(**self.localization_corrections, init=True)
+        self.publish_base_link_correction_tf(self.localization_corrections, init=True)
 
         # publishers
         self.current_pose_pub = rospy.Publisher('current_pose', PoseStamped, queue_size=1, tcp_nodelay=True)
@@ -186,16 +213,18 @@ class LaneBoundaryMatcher:
             #print("Avg hausdorff", obj1, obj2)
 
             # if the calculated correction is too big then don't use the correction
-            if y > self.y_correction_treshold or z > self.z_correction_treshold or yaw > self.yaw_correction_treshold:
+            if (abs(self.localization_corrections['y'].get() - y) > self.y_correction_treshold or 
+                abs(self.localization_corrections['z'].get() - z) > self.z_correction_treshold or 
+                abs(self.localization_corrections['yaw'].get() - yaw) > self.yaw_correction_treshold):
                 return
 
             # update the localization correction and publish the updated transform
-            self.localization_corrections['y'] = y
-            self.localization_corrections['z'] = z
-            self.localization_corrections['yaw'] = yaw
+            self.localization_corrections['y'].add(y)
+            self.localization_corrections['z'].add(z)
+            self.localization_corrections['yaw'].add(yaw)
 
         self.localization_corrections['stamp'] = current_timestamp
-        self.publish_base_link_correction_tf(**self.localization_corrections)
+        self.publish_base_link_correction_tf(self.localization_corrections)
 
         # Visualization for debugging
         lanes_marker_array = MarkerArray()
@@ -331,28 +360,30 @@ class LaneBoundaryMatcher:
 
         return marker1, marker2
     
-    def publish_base_link_correction_tf(self, x, y, z, roll, pitch, yaw, stamp, init=False):
+    def publish_base_link_correction_tf(self, localization_corrections, init=False):
         t = TransformStamped()
 
-        x_q, y_q, z_q, w_q = quaternion_from_euler(roll, pitch, yaw, axes='rxyz')
+        x_q, y_q, z_q, w_q = quaternion_from_euler(localization_corrections["roll"].get(), 
+                                                   localization_corrections["pitch"].get(), 
+                                                   localization_corrections["yaw"].get(), axes='rxyz')
         orientation = Quaternion(x_q, y_q, z_q, w_q)
 
         if init:
             t.header.stamp = rospy.Time.now()
         else:
-            t.header.stamp = stamp
+            t.header.stamp = localization_corrections["stamp"]
         t.header.frame_id = "base_link_gnss"
         t.child_frame_id = "base_link"
 
-        t.transform.translation.x = x
-        t.transform.translation.y = y
-        t.transform.translation.z = z
+        t.transform.translation.x = localization_corrections["x"].get()
+        t.transform.translation.y = localization_corrections["y"].get()
+        t.transform.translation.z = localization_corrections["z"].get()
         t.transform.rotation = orientation
 
         matrix = quaternion_matrix([x_q, y_q, z_q, w_q])
-        matrix[0, 3] = x
-        matrix[1, 3] = y
-        matrix[2, 3] = z
+        matrix[0, 3] = localization_corrections["x"].get()
+        matrix[1, 3] = localization_corrections["y"].get()
+        matrix[2, 3] = localization_corrections["z"].get()
 
         if init:
             static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
