@@ -7,6 +7,7 @@
     <arg name="use_camera_fr"       default="false" />
     <arg name="use_radar_fc"        default="false" />
     <arg name="use_nvidia_cameras"  default="false" />
+    <arg name="use_openpilot"       default="false" />
 
     <!-- remap to let /radar_fc/vehicle_motion subscribe to /localization/current_velocity      -->
     <remap from="/radar_fc/vehicle_motion" to="/localization/current_velocity" />
@@ -28,6 +29,7 @@
         <arg name="nvidia_rectify"              value="$(arg use_nvidia_cameras)" />
         <arg name="nvidia_encoder"              value="jpeg" />
         <arg name="nvidia_fps"                  value="10" />
+        <arg name="use_openpilot"               value="$(arg use_openpilot)" />
     </include>
 
     <group ns="vehicle">

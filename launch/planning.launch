@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="global_planner"          default="lanelet2"  doc="waypoints, lanelet2, carla" />
-    <arg name="local_planner"           default="rule"      doc="none, rule" />
-    <arg name="use_path_smoothing"      default="true" />
-    <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
-    <arg name="lanelet2_map_name"       default="tartu_demo.osm" />
-    <arg name="map_name"                default="tartu_demo" />
-    <arg name="load_goals"              default="true" />
+    <arg name="global_planner"              default="lanelet2"  doc="waypoints, lanelet2, carla" />
+    <arg name="local_planner"               default="rule"      doc="none, rule" />
+    <arg name="use_path_smoothing"          default="true" />
+    <arg name="waypoints_file"              default="waypoints_erm_utm_1m.csv" />
+    <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
+    <arg name="map_name"                    default="tartu_demo" />
+    <arg name="load_goals"                  default="true" />
     
     <group ns="planning">
 

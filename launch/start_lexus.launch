@@ -20,6 +20,7 @@
     <arg name="max_speed"               default="40" />
     <arg name="detection_range"         default=""                  doc="enter a value in meters to enable it" />
     <arg name="more_visualizations"     default="false"             doc="By default visualize only the final detections" />
+    <arg name="use_openpilot"           default="false" />
     
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -67,6 +68,7 @@
         <arg name="use_camera_fr"       value="$(eval 'camera' in tfl_detector and tfl_cameras=='mako')" />
         <arg name="use_nvidia_cameras"  value="$(eval 'camera' in tfl_detector and tfl_cameras=='nvidia')" />
         <arg name="use_radar_fc"        value="$(eval 'radar' in detector)" />
+        <arg name="use_openpilot"       value="$(arg use_openpilot)" />
     </include>
 
     <!-- Rviz -->
