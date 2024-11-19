@@ -39,7 +39,6 @@
     <arg name="rate"                    default=""              doc="Bag speed parameteer, defaults to 1.0 i.e. the normal speed" />
     <arg name="rate_option"             default="$(eval '--rate ' + str(rate) if rate != '' else '')" doc="rosbag play parameter" />
     <arg name="repub_camera_info"       default="true"          doc="Republish camera_info topics using camera intrinsics files" />
-    <arg name="use_openpilot"           default="true" />
 
     <!-- Use simulation time from bag -->
     <param name="/use_sim_time" value="true" />
@@ -78,8 +77,6 @@
         <remap from="/planning/local_path_markers" to="/bag/planning/local_path_markers" if="$(arg use_planning)"/>
         <remap from="/planning/stop_line_markers" to="/bag/planning/stop_line_markers" if="$(arg use_planning)"/>
         <remap from="/planning/target_lane_markers" to="/bag/planning/target_lane_markers" if="$(arg use_planning)"/>
-        <remap from="/openpilot/plan_markers" to="/bag/openpilot/plan_markers" if="$(arg use_openpilot)"/>
-        <remap from="/openpilot/plan_markers" to="/bag/openpilot/plan_markers" if="$(arg use_openpilot)"/>
         <remap from="/detection/traffic_light_status" to="/bag/detection/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/detection/camera_fl/traffic_light_status" to="/bag/detection/camera_fl/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/detection/camera_fl/traffic_light_roi" to="/bag/detection/camera_fl/traffic_light_roi" if="$(arg use_detection)"/>
@@ -165,7 +162,6 @@
         <arg name="use_tf"               value="$(arg use_tf)" />
         <arg name="repub_camera_info"    value="$(arg repub_camera_info)" />
         <arg name="use_nvidia_cameras"   value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='nvidia')" />
-        <arg name="use_openpilot"        value="$(arg use_openpilot)" />
     </include>
 
     <!-- Rviz -->

@@ -3,7 +3,6 @@
     <arg name="use_tf"              default="true" />
     <arg name="repub_camera_info"   default="false" />
     <arg name="use_nvidia_cameras"  default="false" />
-    <arg name="use_openpilot"       default="true" />
 
     <!-- Vehicle platform -->
     <include file="$(find vehicle_platform)/launch/platform.launch">
@@ -16,7 +15,6 @@
         <arg name="nvidia_rectify"              value="$(arg use_nvidia_cameras)" />
         <!-- Republish camera infos for nvidia cameras -->
         <arg name="repub_camera_info"           value="$(arg repub_camera_info)" />
-        <arg name="use_openpilot"               value="$(arg use_openpilot)" />
     </include>
 
     <node pkg="autoware_mini" type="pause_bag.py" name="pause_bag" output="screen" required="true"/>
