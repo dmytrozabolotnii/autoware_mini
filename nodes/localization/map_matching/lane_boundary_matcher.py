@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+import scipy.optimize
 import rospy
 import numpy as np
 import tf2_ros
 import shapely
 import threading
+import scipy
 from lanelet2.geometry import approximatedLength2d
-from scipy.optimize import minimize
 from std_msgs.msg import Float32MultiArray, UInt32MultiArray, ColorRGBA
 from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Quaternion, Pose
 from visualization_msgs.msg import MarkerArray, Marker
@@ -22,7 +23,7 @@ class StreamingRollingAverage:
         self.window_size = window_size
         self.window = np.zeros(window_size)  # Pre-allocate a fixed-size window
         self.index = 0  # Index to track the circular buffer
-        self.count = 1  # Number of elements added so far
+        self.count = 1  # Number of elements added so far, initialization at 1 to avoid division by 0
         self.total = 0  # Running total of the window
     
     def add(self, value):
@@ -62,7 +63,7 @@ class LaneBoundaryMatcher:
         self.yaw_correction_treshold = rospy.get_param("~yaw_correction_treshold")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.base_link_openpilot_dist = rospy.get_param("~base_link_openpilot_dist")
-        self.smoothing_lambda_factor = 0.01
+        self.window_size = rospy.get_param("~window_size")
 
         # variables
         self.global_path_lanelet_ids = None
@@ -74,9 +75,8 @@ class LaneBoundaryMatcher:
         self.new_global_path = None
         self.approximated_lanelet_lengths = None
 
-        self.localization_corrections = {'x':StreamingRollingAverage(100), 'y':StreamingRollingAverage(100), 'z':StreamingRollingAverage(100), 
-                                         'roll':StreamingRollingAverage(100), 'pitch':StreamingRollingAverage(100), 'yaw':StreamingRollingAverage(100), 
-                                         'stamp':None}
+        self.localization_corrections = {c : StreamingRollingAverage(self.window_size) for c in ['x', 'y', 'z', 'roll', 'pitch', 'yaw']}
+        self.localization_corrections['stamp'] = None
         self.transform_matrix = np.eye(4)
         
         self.lock = threading.Lock()
@@ -184,20 +184,23 @@ class LaneBoundaryMatcher:
                                                     shapely.LineString(right_lane_bound_bl))
             
             if differences is None:
+                self.publish_empty_bounds()
                 return
             
             avg_y_diff_left, avg_y_diff_right, avg_z_diff_left, avg_z_diff_right = differences
 
             # if the difference between map and openpilot lane boundaries is too big then don't use the correction
             if avg_y_diff_left > self.y_correction_treshold or avg_y_diff_right > self.y_correction_treshold:
+                self.publish_empty_bounds()
                 return
 
             if avg_z_diff_left > self.z_correction_treshold or avg_z_diff_right > self.z_correction_treshold:
+                self.publish_empty_bounds()
                 return
             
             # update the localization correction and publish the updated transform
-            self.localization_corrections['y'] = (avg_y_diff_left + avg_y_diff_right) / 2
-            self.localization_corrections['z'] = (avg_z_diff_left + avg_z_diff_right) / 2
+            self.localization_corrections['y'].add((avg_y_diff_left + avg_y_diff_right) / 2)
+            self.localization_corrections['z'].add((avg_z_diff_left + avg_z_diff_right) / 2)
 
 
         else:
@@ -205,17 +208,19 @@ class LaneBoundaryMatcher:
             trimmed_right_lane_bound_bl = split_linestring_with_two_lines(shapely.LineString(right_lane_bound_bl), splitter_line1, splitter_line2)
             trimmed_left_lane_bound_bl = split_linestring_with_two_lines(shapely.LineString(left_lane_bound_bl), splitter_line1, splitter_line2)
 
-            result = minimize(self.objective_function, np.array([0, 0, 0]), method='Nelder-Mead', args=(trimmed_left_lane_bound_bl, trimmed_right_lane_bound_bl, supercombo_lane_points_homogeneous))
-            #print(result["x"])
+            if trimmed_right_lane_bound_bl is None or trimmed_left_lane_bound_bl is None:
+                self.publish_empty_bounds()
+                return
+
+
+            result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), method='Nelder-Mead', args=(trimmed_left_lane_bound_bl, trimmed_right_lane_bound_bl, supercombo_lane_points_homogeneous))
             y, z, yaw = result["x"]
-            #obj1 = self.objective_function((0, 0, 0), trimmed_left_lane_bound_bl, trimmed_right_lane_bound_bl, supercombo_lane_points_homogeneous)
-            #obj2 = self.objective_function((y, z, yaw), trimmed_left_lane_bound_bl, trimmed_right_lane_bound_bl, supercombo_lane_points_homogeneous)
-            #print("Avg hausdorff", obj1, obj2)
 
             # if the calculated correction is too big then don't use the correction
             if (abs(self.localization_corrections['y'].get() - y) > self.y_correction_treshold or 
                 abs(self.localization_corrections['z'].get() - z) > self.z_correction_treshold or 
                 abs(self.localization_corrections['yaw'].get() - yaw) > self.yaw_correction_treshold):
+                self.publish_empty_bounds()
                 return
 
             # update the localization correction and publish the updated transform
@@ -359,6 +364,51 @@ class LaneBoundaryMatcher:
         marker2.points = points
 
         return marker1, marker2
+    
+    def publish_empty_bounds(self):
+        lanes_marker_array = MarkerArray()
+
+        for supercombo in [True, False]:
+
+            if supercombo:
+                color = ColorRGBA(0.0, 1.0, 0.7, 1.0)
+                id_start = 0
+                frame_id = "base_link"
+            else:
+                color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
+                id_start = 2
+                frame_id = "base_link_gnss"
+
+
+            marker1 = Marker()
+            marker1.header.frame_id = frame_id
+            marker1.header.stamp = rospy.Time.now()
+            marker1.ns = "right bound"
+            marker1.id = id_start
+            marker1.type = Marker.LINE_STRIP
+            marker1.action = Marker.ADD
+            marker1.pose.orientation.w = 1.0
+            marker1.scale.x = 0.1
+            marker1.color = color
+            marker1.points = []
+
+            marker2 = Marker()
+            marker2.header.frame_id = frame_id
+            marker2.header.stamp = rospy.Time.now()
+            marker2.ns = "left bound"
+            marker2.id = id_start + 1
+            marker2.type = Marker.LINE_STRIP
+            marker2.action = Marker.ADD
+            marker2.pose.orientation.w = 1.0
+            marker2.scale.x = 0.1
+            marker2.color = color
+            marker2.points = []
+
+            lanes_marker_array.markers.append(marker1)
+            lanes_marker_array.markers.append(marker2)
+
+        self.lanelet_bounds_pub.publish(lanes_marker_array)
+
     
     def publish_base_link_correction_tf(self, localization_corrections, init=False):
         t = TransformStamped()

@@ -238,7 +238,9 @@ def split_linestring_by_point_and_heading(line, point, heading, length=10):
     return segment
 
 def split_linestring_with_two_lines(main_linestring, cutting_line1, cutting_line2):
-    split1 = split(main_linestring, cutting_line1).geoms[1]
-    split2 = split(split1, cutting_line2).geoms[0]
+    split_goems1 = split(main_linestring, cutting_line1).geoms
+    if len(split_goems1) < 2:
+        return None
+    split2 = split(split_goems1[1], cutting_line2).geoms[0]
 
     return split2
