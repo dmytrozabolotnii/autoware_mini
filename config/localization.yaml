@@ -12,6 +12,6 @@ lane_boundary_matcher:
   only_lateral_correction: False
   y_correction_treshold: 0.5
   z_correction_treshold: 0.8
-  yaw_correction_treshold: 0.14
+  yaw_correction_treshold: 0.1
   transform_timeout: 0.06
-  window_size: 100
+  alpha: 0.15

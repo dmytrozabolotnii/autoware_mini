@@ -17,30 +17,6 @@ from tf.transformations import quaternion_from_euler, quaternion_matrix
 from helpers.lanelet2 import load_lanelet2_map
 from helpers.geometry import get_heading_from_orientation
 from helpers.shapely import split_linestring_with_two_points
-
-class StreamingRollingAverage:
-    def __init__(self, window_size):
-        self.window_size = window_size
-        self.window = np.zeros(window_size)  # Pre-allocate a fixed-size window
-        self.index = 0  # Index to track the circular buffer
-        self.count = 1  # Number of elements added so far, initialization at 1 to avoid division by 0
-        self.total = 0  # Running total of the window
-    
-    def add(self, value):
-        # Subtract the value that is being replaced
-        self.total -= self.window[self.index]
-        
-        # Add the new value to the total and update the window
-        self.window[self.index] = value
-        self.total += value
-        
-        # Update the circular index and count
-        self.index = (self.index + 1) % self.window_size
-        self.count = min(self.count + 1, self.window_size)
-        
-    def get(self):
-        # Return the current rolling average
-        return self.total / self.count
         
 class LaneBoundaryMatcher:
 
@@ -62,7 +38,7 @@ class LaneBoundaryMatcher:
         self.z_correction_treshold = rospy.get_param("~z_correction_treshold")
         self.yaw_correction_treshold = rospy.get_param("~yaw_correction_treshold")
         self.transform_timeout = rospy.get_param("~transform_timeout")
-        self.window_size = rospy.get_param("~window_size")
+        self.alpha = rospy.get_param("~alpha")
 
         # variables
         self.global_path_lanelet_ids = None
@@ -74,7 +50,7 @@ class LaneBoundaryMatcher:
         self.new_global_path = None
         self.approximated_lanelet_lengths = None
 
-        self.localization_corrections = {c : StreamingRollingAverage(self.window_size) for c in ['x', 'y', 'z', 'roll', 'pitch', 'yaw']}
+        self.localization_corrections = {c : 0 for c in ['x', 'y', 'z', 'roll', 'pitch', 'yaw']}
         self.localization_corrections['stamp'] = None
         self.transform_matrix = np.eye(4)
         
@@ -94,6 +70,10 @@ class LaneBoundaryMatcher:
         rospy.Subscriber('/openpilot/lane_lines', Float32MultiArray, self.lane_line_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/planning/global_path_lenelet_ids', UInt32MultiArray, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('current_pose_gnss', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
+
+    def update_corrections(self, names, new_values):
+        for name, new_value in zip(names, new_values):
+            self.localization_corrections[name] = self.alpha * new_value + (1 - self.alpha) * self.localization_corrections[name]
 
     def current_pose_callback(self, msg):
         with self.current_pose_lock:
@@ -208,9 +188,7 @@ class LaneBoundaryMatcher:
                 self.publish_empty_bounds()
                 return
             
-            # update the localization correction and publish the updated transform
-            self.localization_corrections['y'].add((avg_y_diff_left + avg_y_diff_right) / 2)
-            self.localization_corrections['z'].add((avg_z_diff_left + avg_z_diff_right) / 2)
+            self.update_corrections(['y', 'z'], [(avg_y_diff_left + avg_y_diff_right) / 2, (avg_z_diff_left + avg_z_diff_right) / 2])
 
         else:
             right_splitter_point1 = right_lane_bound_bl.interpolate(supercombo_lane_points[0][0][0] + right_current_pos_dist)
@@ -231,16 +209,13 @@ class LaneBoundaryMatcher:
             y, z, yaw = result.x
 
             # if the calculated correction is too big then don't use the correction
-            if (abs(self.localization_corrections['y'].get() - y) > self.y_correction_treshold or 
-                abs(self.localization_corrections['z'].get() - z) > self.z_correction_treshold or 
-                abs(self.localization_corrections['yaw'].get() - yaw) > self.yaw_correction_treshold):
+            if (abs(self.localization_corrections['y'] - y) > self.y_correction_treshold or 
+                abs(self.localization_corrections['z'] - z) > self.z_correction_treshold or 
+                abs(self.localization_corrections['yaw'] - yaw) > self.yaw_correction_treshold):
                 self.publish_empty_bounds()
                 return
 
-            # update the localization correction and publish the updated transform
-            self.localization_corrections['y'].add(y)
-            self.localization_corrections['z'].add(z)
-            self.localization_corrections['yaw'].add(yaw)
+            self.update_corrections(['y', 'z', 'yaw'], [y, z, yaw])
 
         self.localization_corrections['stamp'] = current_timestamp
         self.publish_base_link_correction_tf(self.localization_corrections)
@@ -325,7 +300,6 @@ class LaneBoundaryMatcher:
         right_lane_openpilot = shapely.LineString(corrected_openpilot_lane_lines[1])
 
         return shapely.hausdorff_distance(left_lane_openpilot, left_lane_map) + shapely.hausdorff_distance(right_lane_openpilot, right_lane_map)
-
 
     def publish_lanelet_bounds(self, right_lane_bound, left_lane_bound, supercombo=False):
         # For debugging
@@ -422,9 +396,9 @@ class LaneBoundaryMatcher:
     def publish_base_link_correction_tf(self, localization_corrections, init=False):
         t = TransformStamped()
 
-        x_q, y_q, z_q, w_q = quaternion_from_euler(localization_corrections["roll"].get(), 
-                                                   localization_corrections["pitch"].get(), 
-                                                   localization_corrections["yaw"].get(), axes='rxyz')
+        x_q, y_q, z_q, w_q = quaternion_from_euler(localization_corrections["roll"], 
+                                                   localization_corrections["pitch"], 
+                                                   localization_corrections["yaw"], axes='rxyz')
         orientation = Quaternion(x_q, y_q, z_q, w_q)
 
         if init:
@@ -434,15 +408,15 @@ class LaneBoundaryMatcher:
         t.header.frame_id = "base_link_gnss"
         t.child_frame_id = "base_link"
 
-        t.transform.translation.x = localization_corrections["x"].get()
-        t.transform.translation.y = localization_corrections["y"].get()
-        t.transform.translation.z = localization_corrections["z"].get()
+        t.transform.translation.x = localization_corrections["x"]
+        t.transform.translation.y = localization_corrections["y"]
+        t.transform.translation.z = localization_corrections["z"]
         t.transform.rotation = orientation
 
         matrix = quaternion_matrix([x_q, y_q, z_q, w_q])
-        matrix[0, 3] = localization_corrections["x"].get()
-        matrix[1, 3] = localization_corrections["y"].get()
-        matrix[2, 3] = localization_corrections["z"].get()
+        matrix[0, 3] = localization_corrections["x"]
+        matrix[1, 3] = localization_corrections["y"]
+        matrix[2, 3] = localization_corrections["z"]
 
         if init:
             static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
