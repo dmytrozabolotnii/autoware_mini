@@ -15,7 +15,6 @@ from ros_numpy import numpify, msgify
 from tf.transformations import quaternion_from_euler, quaternion_matrix
 
 from helpers.lanelet2 import load_lanelet2_map
-from helpers.transform import transform_to_matrix
 from helpers.geometry import get_heading_from_orientation
 from helpers.shapely import split_linestring_with_two_lines
 
@@ -125,9 +124,9 @@ class LaneBoundaryMatcher:
 
         try:
             transform_openpilot = self.tf_buffer.lookup_transform("base_link", "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
-            tf_matrix_openpilot = transform_to_matrix(transform_openpilot.transform)
+            tf_matrix_openpilot = numpify(transform_openpilot.transform)
             transform_map = self.tf_buffer.lookup_transform("base_link_gnss", "map", current_timestamp, rospy.Duration(self.transform_timeout))
-            tf_matrix_map = transform_to_matrix(transform_map.transform)
+            tf_matrix_map = numpify(transform_map.transform)
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
             return

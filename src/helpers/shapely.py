@@ -1,4 +1,5 @@
 import shapely
+from shapely import ops
 
 def get_polygon_width(polygon, heading_angle):
     """
@@ -16,10 +17,10 @@ def get_polygon_width(polygon, heading_angle):
     return width
 
 def split_linestring_with_two_lines(main_linestring, cutting_line1, cutting_line2):
-    split_goems1 = shapely.ops.split(main_linestring, cutting_line1).geoms
+    split_goems1 = ops.split(main_linestring, cutting_line1).geoms
     if len(split_goems1) < 2:
         return None
     
-    split2 = shapely.ops.split(split_goems1[1], cutting_line2).geoms[0]
+    split2 = ops.split(split_goems1[1], cutting_line2).geoms[0]
 
     return split2
