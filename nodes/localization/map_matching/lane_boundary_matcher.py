@@ -78,7 +78,8 @@ class LaneBoundaryMatcher:
         self.localization_corrections['stamp'] = None
         self.transform_matrix = np.eye(4)
         
-        self.lock = threading.Lock()
+        self.current_pose_lock = threading.Lock()
+        self.lane_line_lock = threading.Lock()
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -95,9 +96,10 @@ class LaneBoundaryMatcher:
         rospy.Subscriber('current_pose_gnss', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
-        self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.y)
-        self.current_heading = get_heading_from_orientation(msg.pose.orientation)
-        self.current_timestamp = msg.header.stamp
+        with self.current_pose_lock:
+            self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.y)
+            self.current_heading = get_heading_from_orientation(msg.pose.orientation)
+            self.current_timestamp = msg.header.stamp
 
         current_pose_matrix = numpify(msg.pose)
         corrected_current_pose_matrix = self.transform_matrix.dot(current_pose_matrix)
@@ -113,7 +115,7 @@ class LaneBoundaryMatcher:
         if self.lanelet_polygons is None or self.current_position is None or self.new_global_path is None or self.approximated_lanelet_lengths is None:
             return
         
-        with self.lock:
+        with self.lane_line_lock:
             current_position = self.current_position
             current_timestamp = self.current_timestamp
             lanelet_polygons = self.lanelet_polygons
@@ -122,6 +124,7 @@ class LaneBoundaryMatcher:
             approximated_lanelet_lengths = self.approximated_lanelet_lengths
             self.new_global_path = False
 
+        # fetch the transforms to base_link and base_link_gnss frames
         try:
             transform_openpilot = self.tf_buffer.lookup_transform("base_link", "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
             tf_matrix_openpilot = numpify(transform_openpilot.transform)
