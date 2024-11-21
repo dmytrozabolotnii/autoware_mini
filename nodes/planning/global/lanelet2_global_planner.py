@@ -107,7 +107,6 @@ class Lanelet2GlobalPlanner:
 
         # Find shortest path and shortest route
         path, route, stops = self.get_shortest_path_with_route(lanelet_candidates)
-        print("PATH", path)
         if path is None:
             rospy.logerr("%s - no route found, try new goal!", rospy.get_name())
             return

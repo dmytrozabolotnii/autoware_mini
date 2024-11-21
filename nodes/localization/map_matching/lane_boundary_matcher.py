@@ -7,7 +7,7 @@ import tf2_ros
 import shapely
 import threading
 import scipy
-from lanelet2.geometry import approximatedLength2d
+import lanelet2.geometry as ll2geometry
 from std_msgs.msg import Float32MultiArray, UInt32MultiArray, ColorRGBA
 from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Quaternion, Pose
 from visualization_msgs.msg import MarkerArray, Marker
@@ -63,7 +63,6 @@ class LaneBoundaryMatcher:
         self.z_correction_treshold = rospy.get_param("~z_correction_treshold")
         self.yaw_correction_treshold = rospy.get_param("~yaw_correction_treshold")
         self.transform_timeout = rospy.get_param("~transform_timeout")
-        self.base_link_openpilot_dist = rospy.get_param("~base_link_openpilot_dist")
         self.window_size = rospy.get_param("~window_size")
 
         # variables
@@ -215,7 +214,7 @@ class LaneBoundaryMatcher:
 
 
             result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), method='Nelder-Mead', args=(trimmed_left_lane_bound_bl, trimmed_right_lane_bound_bl, supercombo_lane_points_homogeneous))
-            y, z, yaw = result["x"]
+            y, z, yaw = result.x
 
             # if the calculated correction is too big then don't use the correction
             if (abs(self.localization_corrections['y'].get() - y) > self.y_correction_treshold or 
@@ -274,7 +273,7 @@ class LaneBoundaryMatcher:
 
             polygon = shapely.Polygon([(pt.x, pt.y) for pt in lanelet.polygon2d()])
             lanelet_polys.append(polygon)
-            approximated_lanelet_lengths[lanelet_id] = approximatedLength2d(lanelet)
+            approximated_lanelet_lengths[lanelet_id] = ll2geometry.approximatedLength2d(lanelet)
 
         self.lanelet_polygons = lanelet_polys
         self.current_lanelet_idx = 0
@@ -315,7 +314,7 @@ class LaneBoundaryMatcher:
         left_lane_openpilot = shapely.LineString(corrected_openpilot_lane_lines[0])
         right_lane_openpilot = shapely.LineString(corrected_openpilot_lane_lines[1])
 
-        return (shapely.hausdorff_distance(left_lane_openpilot, left_lane_map) + shapely.hausdorff_distance(right_lane_openpilot, right_lane_map)) / 2
+        return shapely.hausdorff_distance(left_lane_openpilot, left_lane_map) + shapely.hausdorff_distance(right_lane_openpilot, right_lane_map)
 
 
     def publish_lanelet_bounds(self, right_lane_bound, left_lane_bound, supercombo=False):
