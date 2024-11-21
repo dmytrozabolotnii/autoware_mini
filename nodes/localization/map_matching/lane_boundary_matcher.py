@@ -16,7 +16,8 @@ from tf.transformations import quaternion_from_euler, quaternion_matrix
 
 from helpers.lanelet2 import load_lanelet2_map
 from helpers.transform import transform_to_matrix
-from helpers.geometry import get_heading_from_orientation, split_linestring_with_two_lines
+from helpers.geometry import get_heading_from_orientation
+from helpers.shapely import split_linestring_with_two_lines
 
 class StreamingRollingAverage:
     def __init__(self, window_size):

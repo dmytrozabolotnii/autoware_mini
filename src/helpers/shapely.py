@@ -1,5 +1,4 @@
-from shapely.affinity import rotate
-
+import shapely
 
 def get_polygon_width(polygon, heading_angle):
     """
@@ -11,7 +10,16 @@ def get_polygon_width(polygon, heading_angle):
 
     # rotate polygon to align with y axis, so the width will be in x direction
     angle = 90 - heading_angle
-    rotated_polygon = rotate(polygon, angle, origin='centroid', use_radians=False)
+    rotated_polygon = shapely.affinity.rotate(polygon, angle, origin='centroid', use_radians=False)
     minx, miny, maxx, maxy = rotated_polygon.bounds
     width = maxx - minx
     return width
+
+def split_linestring_with_two_lines(main_linestring, cutting_line1, cutting_line2):
+    split_goems1 = shapely.ops.split(main_linestring, cutting_line1).geoms
+    if len(split_goems1) < 2:
+        return None
+    
+    split2 = shapely.ops.split(split_goems1[1], cutting_line2).geoms[0]
+
+    return split2

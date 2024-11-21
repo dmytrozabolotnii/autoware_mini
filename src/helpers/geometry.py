@@ -1,7 +1,5 @@
 import math
 import numpy as np
-import shapely
-from shapely.ops import split
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import Point, Quaternion
 
@@ -209,38 +207,3 @@ def convert_geometry_to_line_list(geometry, delta_z=0):
         line_list_points.append(points[i + 1])
     
     return line_list_points
-
-def split_linestring_by_point_and_heading(line, point, heading, length=10):
-
-    # Compute the perpendicular direction by adding 90 degrees to the heading
-    perp_heading_rad = heading + math.pi / 2
-    dx = math.cos(perp_heading_rad)
-    dy = math.sin(perp_heading_rad)
-
-    # Create a line segment centered at the given point, perpendicular to the heading
-    perpendicular_line = shapely.LineString([
-        (point.x - dx * length, point.y - dy * length),
-        (point.x + dx * length, point.y + dy * length)
-    ])
-
-    # Split the line by the perpendicular line
-    split_segments = line.difference(perpendicular_line)
-
-    # Define a direction point slightly offset in the heading direction
-    direction_point = shapely.Point(point.x + math.cos(heading), point.y + math.sin(heading))
-
-    if split_segments.geom_type == "MultiLineString":
-        # Select the segment that is closest in the heading direction
-        segment = min(split_segments.geoms, key=lambda seg: seg.distance(direction_point))
-    else:
-        segment = split_segments
-
-    return segment
-
-def split_linestring_with_two_lines(main_linestring, cutting_line1, cutting_line2):
-    split_goems1 = split(main_linestring, cutting_line1).geoms
-    if len(split_goems1) < 2:
-        return None
-    split2 = split(split_goems1[1], cutting_line2).geoms[0]
-
-    return split2
