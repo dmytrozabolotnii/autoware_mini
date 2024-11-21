@@ -39,6 +39,7 @@
     <arg name="rate"                    default=""              doc="Bag speed parameteer, defaults to 1.0 i.e. the normal speed" />
     <arg name="rate_option"             default="$(eval '--rate ' + str(rate) if rate != '' else '')" doc="rosbag play parameter" />
     <arg name="repub_camera_info"       default="true"          doc="Republish camera_info topics using camera intrinsics files" />
+    <arg name="use_lane_matching"       default="false" />
 
     <!-- Use simulation time from bag -->
     <param name="/use_sim_time" value="true" />
@@ -138,6 +139,7 @@
         <arg name="localizer"           value="$(arg localizer)" />
         <arg name="map_name"            value="$(arg map_name)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
+        <arg name="use_lane_matching"   value="$(arg use_lane_matching)" />
     </include>
 
     <!-- Detection -->
