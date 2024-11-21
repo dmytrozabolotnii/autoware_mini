@@ -110,7 +110,7 @@ class LaneBoundaryMatcher:
         self.current_pose_pub.publish(corrected_current_pose)
 
     def lane_line_callback(self, msg):
-        supercombo_lane_lines = np.array(msg.data).reshape(msg.layout.dim[0].size, msg.layout.dim[1].size, msg.layout.dim[2].size)
+        supercombo_lane_lines = float32_multiarray_to_numpy(msg)
 
         if self.lanelet_polygons is None or self.current_position is None or self.new_global_path is None or self.approximated_lanelet_lengths is None:
             return
@@ -145,6 +145,8 @@ class LaneBoundaryMatcher:
         left_lane_points = []
         idx = current_lanelet_idx
         current_centerline = shapely.LineString([(point.x, point.y) for point in self.lanelet2_map.laneletLayer.get(global_path_lanelet_ids[idx]).centerline])
+
+        # subtract the length that is already behind us on the current lanelet
         total_length = -current_centerline.project(current_position)
 
         # take close left and right boundaries from lanelets
@@ -448,6 +450,10 @@ class LaneBoundaryMatcher:
 
     def run(self):
         rospy.spin()
+    
+def float32_multiarray_to_numpy(multiarray):
+    dims = tuple(map(lambda x: x.size, multiarray.layout.dim))
+    return np.array(multiarray.data, dtype=float).reshape(dims).astype(np.float32)
 
 if __name__ == '__main__':
     rospy.init_node('lane_boundary_matcher')
