@@ -14,4 +14,4 @@ lane_boundary_matcher:
   z_correction_treshold: 0.8
   yaw_correction_treshold: 0.1
   transform_timeout: 0.06
-  alpha: 0.15
+  alpha: 0.03
