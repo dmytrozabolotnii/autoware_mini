@@ -16,7 +16,7 @@ from tf.transformations import quaternion_from_euler, quaternion_matrix
 
 from helpers.lanelet2 import load_lanelet2_map
 from helpers.geometry import get_heading_from_orientation
-from helpers.shapely import split_linestring_with_two_lines
+from helpers.shapely import split_linestring_with_two_points
 
 class StreamingRollingAverage:
     def __init__(self, window_size):
@@ -145,9 +145,10 @@ class LaneBoundaryMatcher:
         left_lane_points = []
         idx = current_lanelet_idx
         current_centerline = shapely.LineString([(point.x, point.y) for point in self.lanelet2_map.laneletLayer.get(global_path_lanelet_ids[idx]).centerline])
+        cur_pos_dist_from_lanelet_start = current_centerline.project(current_position)
 
         # subtract the length that is already behind us on the current lanelet
-        total_length = -current_centerline.project(current_position)
+        total_length = -cur_pos_dist_from_lanelet_start
 
         # take close left and right boundaries from lanelets
         while total_length < self.cutoff_length:
@@ -160,6 +161,9 @@ class LaneBoundaryMatcher:
 
             total_length += approximated_lanelet_lengths[lanelet_id]
             idx += 1
+
+        left_current_pos_dist = shapely.LineString(right_lane_points).project(current_position)
+        right_current_pos_dist = shapely.LineString(left_lane_points).project(current_position)
 
         # transform lane boundary points from map to base_link_gnss frame
         homogeneous_right_lane_points = np.hstack((np.array(right_lane_points), np.ones((len(right_lane_points), 1))))
@@ -178,14 +182,16 @@ class LaneBoundaryMatcher:
         supercombo_lane_points_homogeneous = trimmed_supercombo_lane_lines @ tf_matrix_openpilot.T # do the transform
         supercombo_lane_points = supercombo_lane_points_homogeneous[:, :3].reshape(2, supercombo_lane_points_homogeneous.shape[0] // 2, 3) # convert back to 3d matrix with 3d points
 
-        splitter_line1 = shapely.LineString([(supercombo_lane_points[0][0][0], -10), (supercombo_lane_points[0][0][0], 10)])
-        splitter_line2 = shapely.LineString([(supercombo_lane_points[0][-1][0], -10), (supercombo_lane_points[0][-1][0], 10)])
-
+        left_lane_bound_bl = shapely.LineString(left_lane_bound_bl)
+        right_lane_bound_bl = shapely.LineString(right_lane_bound_bl)
+    
         if self.only_lateral_correction:
             # calculate the average difference for right and left boundaries
             differences = self.find_average_distance(supercombo_lane_points, 
-                                                    shapely.LineString(left_lane_bound_bl), 
-                                                    shapely.LineString(right_lane_bound_bl))
+                                                    left_lane_bound_bl,
+                                                    right_lane_bound_bl,
+                                                    left_current_pos_dist,
+                                                    right_current_pos_dist)
             
             if differences is None:
                 self.publish_empty_bounds()
@@ -194,11 +200,11 @@ class LaneBoundaryMatcher:
             avg_y_diff_left, avg_y_diff_right, avg_z_diff_left, avg_z_diff_right = differences
 
             # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-            if avg_y_diff_left > self.y_correction_treshold or avg_y_diff_right > self.y_correction_treshold:
+            if abs(avg_y_diff_left) > self.y_correction_treshold or abs(avg_y_diff_right) > self.y_correction_treshold:
                 self.publish_empty_bounds()
                 return
 
-            if avg_z_diff_left > self.z_correction_treshold or avg_z_diff_right > self.z_correction_treshold:
+            if abs(avg_z_diff_left) > self.z_correction_treshold or abs(avg_z_diff_right) > self.z_correction_treshold:
                 self.publish_empty_bounds()
                 return
             
@@ -206,16 +212,20 @@ class LaneBoundaryMatcher:
             self.localization_corrections['y'].add((avg_y_diff_left + avg_y_diff_right) / 2)
             self.localization_corrections['z'].add((avg_z_diff_left + avg_z_diff_right) / 2)
 
-
         else:
+            right_splitter_point1 = right_lane_bound_bl.interpolate(supercombo_lane_points[0][0][0] + right_current_pos_dist)
+            right_splitter_point2 = right_lane_bound_bl.interpolate(supercombo_lane_points[0][-1][0] + right_current_pos_dist)
+
+            left_splitter_point1 = left_lane_bound_bl.interpolate(supercombo_lane_points[0][0][0] + left_current_pos_dist)
+            left_splitter_point2 = left_lane_bound_bl.interpolate(supercombo_lane_points[0][-1][0] + left_current_pos_dist)
+
             # trim the start of lane boundaries
-            trimmed_right_lane_bound_bl = split_linestring_with_two_lines(shapely.LineString(right_lane_bound_bl), splitter_line1, splitter_line2)
-            trimmed_left_lane_bound_bl = split_linestring_with_two_lines(shapely.LineString(left_lane_bound_bl), splitter_line1, splitter_line2)
+            trimmed_right_lane_bound_bl = split_linestring_with_two_points(right_lane_bound_bl, right_splitter_point1, right_splitter_point2)
+            trimmed_left_lane_bound_bl = split_linestring_with_two_points(left_lane_bound_bl, left_splitter_point1, left_splitter_point2)
 
             if trimmed_right_lane_bound_bl is None or trimmed_left_lane_bound_bl is None:
                 self.publish_empty_bounds()
                 return
-
 
             result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), method='Nelder-Mead', args=(trimmed_left_lane_bound_bl, trimmed_right_lane_bound_bl, supercombo_lane_points_homogeneous))
             y, z, yaw = result.x
@@ -242,7 +252,7 @@ class LaneBoundaryMatcher:
         lanes_marker_array.markers.append(marker2)
 
         if self.only_lateral_correction:
-            marker1, marker2 = self.publish_lanelet_bounds(shapely.LineString(right_lane_bound_bl), shapely.LineString(left_lane_bound_bl))
+            marker1, marker2 = self.publish_lanelet_bounds(right_lane_bound_bl, left_lane_bound_bl)
         else:
             marker1, marker2 = self.publish_lanelet_bounds(trimmed_right_lane_bound_bl, trimmed_left_lane_bound_bl)
 
@@ -283,22 +293,18 @@ class LaneBoundaryMatcher:
         self.current_lanelet_idx = 0
         self.approximated_lanelet_lengths = approximated_lanelet_lengths
 
-    def find_average_distance(self, supercombo_lane_points, left_lane_bound, right_lane_bound):
+    def find_average_distance(self, supercombo_lane_points, left_lane_bound, right_lane_bound, left_current_pos_dist, rigth_current_pos_dist):
         left_y_diffs = []
         left_z_diffs = [] 
         for x, y, z in supercombo_lane_points[0]:
-            point = left_lane_bound.intersection(shapely.LineString([(x, -10), (x, 10)]))
-            if point.is_empty:
-                return None
+            point = left_lane_bound.interpolate(x + left_current_pos_dist)
             left_y_diffs.append(point.y - y)
             left_z_diffs.append(point.z - z)
 
         right_y_diffs = []
         right_z_diffs = []
         for x, y, z in supercombo_lane_points[1]:
-            point = right_lane_bound.intersection(shapely.LineString([(x, -10), (x, 10)]))
-            if point.is_empty:
-                return None
+            point = right_lane_bound.interpolate(x + rigth_current_pos_dist)
             right_y_diffs.append(point.y - y)
             right_z_diffs.append(point.z - z)
 
@@ -413,7 +419,6 @@ class LaneBoundaryMatcher:
 
         self.lanelet_bounds_pub.publish(lanes_marker_array)
 
-    
     def publish_base_link_correction_tf(self, localization_corrections, init=False):
         t = TransformStamped()
 

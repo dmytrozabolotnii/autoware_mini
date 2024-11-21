@@ -16,11 +16,21 @@ def get_polygon_width(polygon, heading_angle):
     width = maxx - minx
     return width
 
-def split_linestring_with_two_lines(main_linestring, cutting_line1, cutting_line2):
-    split_goems1 = ops.split(main_linestring, cutting_line1).geoms
-    if len(split_goems1) < 2:
-        return None
-    
-    split2 = ops.split(split_goems1[1], cutting_line2).geoms[0]
+def split_linestring_with_two_points(linestring, point1, point2):
+    """
+    Spilits linestring with two points and returns the middle segment
+    :param linestring: shapely LineString
+    :param point1: shapely Point
+    :param point2: shapely Point
+    :return: middle segment
+    """
 
-    return split2
+    split_points = shapely.MultiPoint([point1, point2])
+    split_lines = ops.split(linestring, split_points.buffer(0.001))
+
+    # Return the middle section
+    for segment in split_lines.geoms:
+        if segment.intersects(point1.buffer(0.01)) and segment.intersects(point2.buffer(0.01)):
+            return segment
+        
+    return None
