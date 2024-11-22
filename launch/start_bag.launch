@@ -75,14 +75,26 @@
         <remap from="/detection/detected_objects_unfiltered" to="/bag/detection/detected_objects_unfiltered" if="$(arg use_road_area_filter)"/>
         <remap from="/detection/road_area" to="/bag/detection/road_area" if="$(arg use_road_area_filter)"/>
         <remap from="/planning/lanelet2_map_markers" to="/bag/planning/lanelet2_map_markers" if="$(arg use_planning)"/>
+        <remap from="/planning/lanelet2_global_path" to="/bag/planning/lanelet2_global_path" if="$(arg use_planning)"/>
+        <remap from="/planning/lanelet2_global_path_markers" to="/bag/planning/lanelet2_global_path_markers" if="$(arg use_planning)"/>
+        <remap from="/planning/lane_change_global_path" to="/bag/planning/lane_change_global_path" if="$(arg use_planning)"/>
+        <remap from="/planning/lane_change_global_path_markers" to="/bag/planning/lane_change_global_path_markers" if="$(arg use_planning)"/>
         <remap from="/planning/global_path" to="/bag/planning/global_path" if="$(arg use_planning)"/>
         <remap from="/planning/global_path_markers" to="/bag/planning/global_path_markers" if="$(arg use_planning)"/>
         <remap from="/planning/smoothed_path" to="/bag/planning/smoothed_path" if="$(arg use_planning)"/>
         <remap from="/planning/smoothed_path_markers" to="/bag/planning/smoothed_path_markers" if="$(arg use_planning)"/>
+        <remap from="/planning/extracted_local_path" to="/bag/planning/extracted_local_path" if="$(arg use_planning)"/>
         <remap from="/planning/local_path" to="/bag/planning/local_path" if="$(arg use_planning)"/>
         <remap from="/planning/local_path_markers" to="/bag/planning/local_path_markers" if="$(arg use_planning)"/>
         <remap from="/planning/stop_line_markers" to="/bag/planning/stop_line_markers" if="$(arg use_planning)"/>
         <remap from="/planning/target_lane_markers" to="/bag/planning/target_lane_markers" if="$(arg use_planning)"/>
+        <remap from="/planning/goal_collision_points" to="/bag/planning/goal_collision_points" if="$(arg use_planning)"/>
+        <remap from="/planning/object_collision_points" to="/bag/planning/object_collision_points" if="$(arg use_planning)"/>
+        <remap from="/planning/crosswalk_collision_points" to="/bag/planning/crosswalk_collision_points" if="$(arg use_planning)"/>
+        <remap from="/planning/tfl_stopline_collision_points" to="/bag/planning/tfl_stopline_collision_points" if="$(arg use_planning)"/>
+        <remap from="/planning/stop_line_collision_points" to="/bag/planning/stop_line_collision_points" if="$(arg use_planning)"/>
+        <remap from="/planning/trajectory_collision_points" to="/bag/planning/trajectory_collision_points" if="$(arg use_planning)"/>
+        <remap from="/planning/collision_points" to="/bag/planning/collision_points" if="$(arg use_planning)"/>
         <remap from="/detection/traffic_light_status" to="/bag/detection/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/detection/camera_fl/traffic_light_status" to="/bag/detection/camera_fl/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/detection/camera_fl/traffic_light_roi" to="/bag/detection/camera_fl/traffic_light_roi" if="$(arg use_detection)"/>
