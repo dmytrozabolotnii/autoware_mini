@@ -78,6 +78,8 @@
             <node pkg="autoware_mini" type="speed_planner.py" name="speed_planner" output="screen" required="true" />
 
             <node pkg="autoware_mini" type="local_path_visualizer.py" name="local_path_visualizer" output="screen" required="true"/>
+
+            <node pkg="autoware_mini" type="openpilot_local_path_extractor.py" name="openpilot_local_path_extractor" output="screen" required="true"/>
         </group>
 
         <node if="$(eval local_planner=='none')" pkg="topic_tools" type="relay" args="/planning/global_path /planning/local_path" name="local_path_relay" output="screen" required="true" />

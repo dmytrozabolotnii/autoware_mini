@@ -39,7 +39,7 @@ class LocalPathVisualizer:
         self.planner_status_pub = rospy.Publisher('/dashboard/planner_status', OverlayText, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('local_path', Path, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('openpilot_local_path', Path, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
     def local_path_callback(self, msg):
 

@@ -2,6 +2,7 @@ import math
 import shapely
 import numpy as np
 from scipy.interpolate import interp1d
+import shapely.ops
 from autoware_mini.msg import Waypoint
 from geometry_msgs.msg import Point, Pose
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
@@ -14,6 +15,9 @@ class PathWrapper:
 
         self.linestring = shapely.LineString(self._waypoints_xyz)
         shapely.prepare(self.linestring)
+
+        self.multipoints = shapely.multipoints(self._waypoints_xyz)
+        shapely.prepare(self.multipoints)
 
         d = np.cumsum(np.sqrt(np.sum(np.diff(self._waypoints_xyz[:, :2], axis=0)**2, axis=1)))
         self._distances = np.insert(d, 0, 0)
@@ -176,6 +180,18 @@ class PathWrapper:
 
         current_position = shapely.Point(current_position.x, current_position.y, current_position.z)
         return calculate_cross_track_error(self.linestring, current_position)
+    
+
+    def get_nearest_waypoint(self, point):
+        """
+        Gets the returns the nearest waypoint on the path
+        :param point: Shapely point
+        :return: Waypoint
+        """
+        nearest_point = shapely.ops.nearest_points(self.multipoints, point)[0]
+        nearest_point = np.array(nearest_point.coords[0])
+        nearest_point_idx = np.where((self._waypoints_xyz == nearest_point).all(axis=1))[0][0]
+        return self.waypoints[nearest_point_idx]
 
 
 def get_blinker_state(steering_state):
