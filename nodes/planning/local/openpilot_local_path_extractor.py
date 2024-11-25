@@ -26,7 +26,7 @@ class OpenpilotLocalPathExtractor:
         self.current_timestamp = None
 
         self.current_pose_lock = threading.Lock()
-        self.openpilot_position_lock = threading.Lock()
+        self.global_path_lock = threading.Lock()
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -54,15 +54,18 @@ class OpenpilotLocalPathExtractor:
             global_path = PathWrapper(msg.waypoints)
             rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(global_path.waypoints))
 
-        self.output_frame = output_frame
-        self.global_path = global_path
+        with self.global_path_lock:
+            self.output_frame = output_frame
+            self.global_path = global_path
 
     def openpilot_position_callback(self, msg):
         openpilot_plan = float32_multiarray_to_numpy(msg).T
 
-        with self.openpilot_position_lock:
+        with self.current_pose_lock:
             current_position = self.current_position
             current_timestamp = self.current_timestamp
+
+        with self.global_path_lock:
             global_path = self.global_path
             output_frame = self.output_frame
 
