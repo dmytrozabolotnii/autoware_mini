@@ -4,18 +4,17 @@
     <arg name="map_name"            default="tartu_demo" />
     <arg name="lanelet2_map_name"   default="$(arg map_name).osm" />
     <arg name="use_lane_matching"   default="false" />
-    <arg name="child_frame"         default="$(eval 'base_link_gnss' if use_lane_matching else 'base_link')" />
 
 
     <group ns="localization">
     
         <node if="$(eval localizer=='novatel')" pkg="autoware_mini" type="novatel_oem7_localizer.py" name="novatel_oem7_localizer" output="screen" required="true">
-            <param name="child_frame" value="$(arg child_frame)" />
-            <remap if="$(eval use_lane_matching)" from="current_pose" to="current_pose_gnss"/>
+            <param name="child_frame" value="$(eval 'base_link_gnss' if use_lane_matching else 'base_link')" />
+            <remap if="$(arg use_lane_matching)" from="current_pose" to="current_pose_gnss"/>
         </node>
 
         <!-- Lane boundary matcher -->
-        <node if="$(eval use_lane_matching and localizer=='novatel')" pkg="autoware_mini" type="lane_boundary_matcher.py" name="lane_boundary_matcher" output="screen" required="true">
+        <node if="$(arg use_lane_matching)" pkg="autoware_mini" type="lane_boundary_matcher.py" name="lane_boundary_matcher" output="screen" required="true">
             <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
         </node>
 

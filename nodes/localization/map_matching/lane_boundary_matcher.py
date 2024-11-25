@@ -55,7 +55,7 @@ class LaneBoundaryMatcher:
         self.transform_matrix = np.eye(4)
         
         self.current_pose_lock = threading.Lock()
-        self.lane_line_lock = threading.Lock()
+        self.global_path_lock = threading.Lock()
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -78,7 +78,6 @@ class LaneBoundaryMatcher:
     def current_pose_callback(self, msg):
         with self.current_pose_lock:
             self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.y)
-            self.current_heading = get_heading_from_orientation(msg.pose.orientation)
             self.current_timestamp = msg.header.stamp
 
         current_pose_matrix = numpify(msg.pose)
@@ -95,9 +94,11 @@ class LaneBoundaryMatcher:
         if self.lanelet_polygons is None or self.current_position is None or self.new_global_path is None or self.approximated_lanelet_lengths is None:
             return
         
-        with self.lane_line_lock:
+        with self.current_pose_lock:
             current_position = self.current_position
             current_timestamp = self.current_timestamp
+
+        with self.global_path_lock:
             lanelet_polygons = self.lanelet_polygons
             global_path_lanelet_ids = self.global_path_lanelet_ids
             current_lanelet_idx = self.current_lanelet_idx
@@ -149,10 +150,12 @@ class LaneBoundaryMatcher:
         homogeneous_right_lane_points = np.hstack((np.array(right_lane_points), np.ones((len(right_lane_points), 1))))
         right_lane_bound_bl_homogeneous = homogeneous_right_lane_points @ tf_matrix_map.T
         right_lane_bound_bl = right_lane_bound_bl_homogeneous[:, :3]
+        right_lane_bound_bl = shapely.LineString(right_lane_bound_bl)
 
         homogeneous_left_lane_points = np.hstack((np.array(left_lane_points), np.ones((len(left_lane_points), 1))))
         left_lane_bound_bl_homogeneous = homogeneous_left_lane_points @ tf_matrix_map.T
         left_lane_bound_bl = left_lane_bound_bl_homogeneous[:, :3]
+        left_lane_bound_bl = shapely.LineString(left_lane_bound_bl)
 
         # transfrom openpilot predicted lane lines to base_link frame
         center_supercombo_lane_lines = np.transpose(supercombo_lane_lines, (0, 2, 1))[1:3, :, :] # transpose axis 1 and 2
@@ -160,10 +163,7 @@ class LaneBoundaryMatcher:
         trimmed_supercombo_lane_lines = flattened_supercombo_lane_lines[flattened_supercombo_lane_lines[:, 0] <= self.lookahead_distance] # filter out rows where x > lookahead_distance
         trimmed_supercombo_lane_lines[:, 3] = 1 # replece the time dimension with ones to get homogeneous points
         supercombo_lane_points_homogeneous = trimmed_supercombo_lane_lines @ tf_matrix_openpilot.T # do the transform
-        supercombo_lane_points = supercombo_lane_points_homogeneous[:, :3].reshape(2, supercombo_lane_points_homogeneous.shape[0] // 2, 3) # convert back to 3d matrix with 3d points
-
-        left_lane_bound_bl = shapely.LineString(left_lane_bound_bl)
-        right_lane_bound_bl = shapely.LineString(right_lane_bound_bl)
+        supercombo_lane_points = supercombo_lane_points_homogeneous[:, :3].reshape(2, -1, 3) # convert back to 3d matrix with 3d points
     
         if self.only_lateral_correction:
             # calculate the average difference for right and left boundaries
@@ -264,9 +264,10 @@ class LaneBoundaryMatcher:
             lanelet_polys.append(polygon)
             approximated_lanelet_lengths[lanelet_id] = ll2geometry.approximatedLength2d(lanelet)
 
-        self.lanelet_polygons = lanelet_polys
-        self.current_lanelet_idx = 0
-        self.approximated_lanelet_lengths = approximated_lanelet_lengths
+        with self.global_path_lock:
+            self.lanelet_polygons = lanelet_polys
+            self.current_lanelet_idx = 0
+            self.approximated_lanelet_lengths = approximated_lanelet_lengths
 
     def find_average_distance(self, supercombo_lane_points, left_lane_bound, right_lane_bound, left_current_pos_dist, rigth_current_pos_dist):
         left_y_diffs = []
@@ -294,7 +295,7 @@ class LaneBoundaryMatcher:
         matrix[2, 3] = height_correction
 
         corrected_openpilot_lane_lines_h = openpilot_lane_lines @ matrix.T
-        corrected_openpilot_lane_lines = corrected_openpilot_lane_lines_h[:, :3].reshape(2, corrected_openpilot_lane_lines_h.shape[0] // 2, 3)
+        corrected_openpilot_lane_lines = corrected_openpilot_lane_lines_h[:, :3].reshape(2, -1, 3)
 
         left_lane_openpilot = shapely.LineString(corrected_openpilot_lane_lines[0])
         right_lane_openpilot = shapely.LineString(corrected_openpilot_lane_lines[1])
