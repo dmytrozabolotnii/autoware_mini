@@ -42,7 +42,7 @@ class RoadAreaFilter:
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
 
-        self.road_area_pub = rospy.Publisher('road_area', MarkerArray, queue_size=1, tcp_nodelay=True, latch=True)
+        self.road_area_pub = rospy.Publisher('road_area_markers', MarkerArray, queue_size=1, tcp_nodelay=True, latch=True)
 
         # Subscribers
         rospy.Subscriber('detected_objects_unfiltered', DetectedObjectArray, self.detected_objects_callback, queue_size=1, tcp_nodelay=True)

@@ -61,8 +61,9 @@
         <remap from="/detection/radar/detected_objects" to="/bag/detection/radar/detected_objects" if="$(arg use_detection)"/>
         <remap from="/detection/radar/detected_objects_markers" to="/bag/detection/radar/detected_objects_markers" if="$(arg use_detection)"/>
         <remap from="/detection/detected_objects" to="/bag/detection/detected_objects" if="$(arg use_detection)"/>
-        <remap from="/detection/detected_objects_unfiltered" to="/bag/detection/detected_objects_unfiltered" if="$(arg use_road_area_filter)"/>
         <remap from="/detection/detected_objects_markers" to="/bag/detection/detected_objects_markers" if="$(arg use_detection)"/>
+        <remap from="/detection/detected_objects_unfiltered" to="/bag/detection/detected_objects_unfiltered" if="$(arg use_detection)"/>
+        <remap from="/detection/road_area_markers" to="/bag/detection/road_area_markers" if="$(arg use_detection)"/>
         <remap from="/detection/tracked_objects" to="/bag/detection/tracked_objects" if="$(arg use_detection)"/>
         <remap from="/detection/tracked_objects_markers" to="/bag/detection/tracked_objects_markers" if="$(arg use_detection)"/>
         <remap from="/detection/predicted_objects_map" to="/bag/detection/predicted_objects_map" if="$(arg use_detection)"/>
