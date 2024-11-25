@@ -71,7 +71,7 @@ class Lanelet2MapVisualizer:
             # for filtering trafiiclight stopline statuses
             self.filtered_linestrings = None
         else:
-            lanelet_markers = visualize_laneltLayer(self.lanelet2_map.laneletLayer)
+            lanelet_markers = visualize_laneletLayer(self.lanelet2_map.laneletLayer)
             linestring_markers = visualize_lineStringLayer(self.lanelet2_map.lineStringLayer)
             reg_el_markers = visualize_regulatoryElementLayer(self.lanelet2_map.regulatoryElementLayer)
             marker_array = MarkerArray()
@@ -97,7 +97,7 @@ class Lanelet2MapVisualizer:
                             break
 
             # Visualize different parts of the map
-            lanelet_markers = visualize_laneltLayer([lanelet for d, lanelet in filtered_lanelets])
+            lanelet_markers = visualize_laneletLayer([lanelet for d, lanelet in filtered_lanelets])
             linestring_markers = visualize_lineStringLayer([linestring for d, linestring in filtered_linestrings])
             reg_el_markers = visualize_regulatoryElementLayer(filtered_regulatory_elements)
 
@@ -107,7 +107,6 @@ class Lanelet2MapVisualizer:
             marker.action = Marker.DELETEALL
             marker_array.markers = [marker] + lanelet_markers.markers + linestring_markers.markers + reg_el_markers.markers
 
-            # create MarkerArray publisher
             self.lanelet2_map_markers_pub.publish(marker_array)
             self.filtered_linestrings = filtered_linestrings
 
@@ -119,7 +118,7 @@ class Lanelet2MapVisualizer:
 
         if msg.data != -1:
             points = [Point(x=x, y=y, z=z + 0.01) for x, y, z in self.yield_stop_lines[msg.data].coords]
-            marker = linestring_to_marker(points, "Yield line", msg.data, GREEN, 0.5, rospy.Time.now())
+            marker = linelist_to_marker(points, "Yield line", msg.data, GREEN, 0.5, rospy.Time.now())
             marker_array.markers.append(marker)
 
         self.yield_stop_line_markers_pub.publish(marker_array)
@@ -161,7 +160,7 @@ class Lanelet2MapVisualizer:
                 color = ColorRGBA(color.r, color.g, color.b, color.a * get_multiplier())
 
             # create linestring marker
-            stopline_marker = linestring_to_marker(coords, "Stop line", stop_line.id, color, 0.5, rospy.Time.now())
+            stopline_marker = linelist_to_marker(coords, "Stop line", stop_line.id, color, 0.5, rospy.Time.now())
 
             marker_array.markers.append(stopline_marker)
 
@@ -185,7 +184,7 @@ def get_multiplier():
         return 1.0
 
 
-def visualize_laneltLayer(lanelets):
+def visualize_laneletLayer(lanelets):
 
     # Create a MarkerArray
     marker_array = MarkerArray()
@@ -215,11 +214,11 @@ def visualize_laneltLayer(lanelets):
         elif lanelet.attributes["subtype"] == "bus_lane":
             bus_lane_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.centerline]))
 
-    left_boundary_marker = linestring_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
-    right_boundary_marker = linestring_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
-    centerline_marker = linestring_to_marker(centerline_points, "Centerline", 0, CYAN, 1.5, stamp)
-    crosswalk_marker = linestring_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 0.3, stamp)
-    bus_lane_marker = linestring_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 0.3, stamp)
+    left_boundary_marker = linelist_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
+    right_boundary_marker = linelist_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
+    centerline_marker = linelist_to_marker(centerline_points, "Centerline", 0, CYAN, 1.5, stamp)
+    crosswalk_marker = linelist_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 0.3, stamp)
+    bus_lane_marker = linelist_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 0.3, stamp)
 
     marker_array.markers.append(left_boundary_marker)
     marker_array.markers.append(right_boundary_marker)
@@ -297,9 +296,9 @@ def visualize_lineStringLayer(linestrings):
                         elif line.attributes["subtype"]=="yield":
                             points_yield.extend(coords)
 
-    marker_array.markers.append(linestring_to_marker(points_traffic_light, "Traffic light stop lines", 0, WHITE, 0.5, rospy.Time.now()))
-    marker_array.markers.append(linestring_to_marker(points_yield_stop, "Yield stop line", 0, RED, 0.5, rospy.Time.now()))
-    marker_array.markers.append(linestring_to_marker(points_yield, "Yield line", 0, YELLOW, 0.3, rospy.Time.now()))
+    marker_array.markers.append(linelist_to_marker(points_traffic_light, "Traffic light stop lines", 0, WHITE, 0.5, rospy.Time.now()))
+    marker_array.markers.append(linelist_to_marker(points_yield_stop, "Yield stop line", 0, RED, 0.5, rospy.Time.now()))
+    marker_array.markers.append(linelist_to_marker(points_yield, "Yield line", 0, YELLOW, 0.3, rospy.Time.now()))
 
     return marker_array
 
@@ -311,7 +310,7 @@ def create_coords_for_line_list(line):
     return coords
 
 
-def linestring_to_marker(points, namespace, id, color, scale, stamp):
+def linelist_to_marker(points, namespace, id, color, scale, stamp):
     """
     Creates a Marker from a LineString
     :param linestring: LineString
