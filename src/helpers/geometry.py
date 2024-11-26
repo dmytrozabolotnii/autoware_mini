@@ -185,3 +185,25 @@ def get_minimum_angle_between_two_lines(angle1, angle2):
     if difference > math.pi/2:
         difference = math.pi - difference
     return difference
+
+def convert_geometry_to_line_list(geometry, delta_z=0):
+    """
+    Convert geometry to line list
+    :param geometry: geometry
+    :param delta_z: z offset added to actual z values
+    :return: line list with Points
+    """
+
+    # create list of Point
+    if isinstance(geometry[0], tuple):  # Case: geometry is list of coordinate tuples
+        points = [Point(x=coord[0], y=coord[1], z=coord[2] + delta_z) for coord in geometry]
+    else:  # Case: Lanelet2 linestring
+        points = [Point(x=point.x, y=point.y, z=point.z + delta_z) for point in geometry]
+
+    # Create line list
+    line_list_points = []
+    for i in range(len(points) - 1):
+        line_list_points.append(points[i])
+        line_list_points.append(points[i + 1])
+    
+    return line_list_points

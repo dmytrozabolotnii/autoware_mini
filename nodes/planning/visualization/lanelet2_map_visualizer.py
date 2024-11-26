@@ -11,7 +11,7 @@ from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d, distance, to2D
 
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
-from helpers.geometry import get_distance_between_two_points_2d
+from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
 
 # used for traffic lights
 RED = ColorRGBA(1.0, 0.0, 0.0, 0.8)
@@ -146,7 +146,7 @@ class Lanelet2MapVisualizer:
 
             # fetch the stop line data
             stop_line = self.lanelet2_map.lineStringLayer.get(result.stopline_id)
-            coords = create_coords_for_line_list([Point(x=p.x, y=p.y, z=p.z + 0.01) for p in stop_line])
+            points = convert_geometry_to_line_list(stop_line, delta_z=0.1)
 
             # choose the color of stopline based on the traffic light state
             if result.recognition_result in TRAFFIC_LIGHT_STATE_TO_MARKER_COLOR:
@@ -160,12 +160,12 @@ class Lanelet2MapVisualizer:
                 color = ColorRGBA(color.r, color.g, color.b, color.a * get_multiplier())
 
             # create linestring marker
-            stopline_marker = linelist_to_marker(coords, "Stop line", stop_line.id, color, 0.5, rospy.Time.now())
+            stopline_marker = linelist_to_marker(points, "Stop line", stop_line.id, color, 0.5, rospy.Time.now())
 
             marker_array.markers.append(stopline_marker)
 
             # create traffic light status marker
-            text_marker = text_to_marker(result.recognition_result_str, coords, "Status text", stop_line.id, WHITE100, 0.5, rospy.Time.now())
+            text_marker = text_to_marker(result.recognition_result_str, points, "Status text", stop_line.id, WHITE100, 0.5, rospy.Time.now())
             marker_array.markers.append(text_marker)
 
             # record the state of this stop line
@@ -199,20 +199,20 @@ def visualize_laneletLayer(lanelets):
 
         stamp = rospy.Time.now()
 
-        if lanelet.attributes["subtype"] == "road":
-            left_boundary_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.leftBound]))
-            right_boundary_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.rightBound]))
-            centerline_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.centerline]))
+        if lanelet.attributes["subtype"] == "road" or lanelet.attributes["subtype"] == "bus_lane":
+            left_boundary_points.extend(convert_geometry_to_line_list(lanelet.leftBound))
+            right_boundary_points.extend(convert_geometry_to_line_list(lanelet.rightBound))
 
+        if lanelet.attributes["subtype"] == "road":
+            centerline_points.extend(convert_geometry_to_line_list(lanelet.centerline))
         elif lanelet.attributes["subtype"] == "crosswalk":
             # create "polygon points" from crosswalk lanelet and then create line list from them
-            points = [Point(point.x, point.y, point.z) for point in lanelet.leftBound]
-            points += [Point(point.x, point.y, point.z) for point in lanelet.rightBound.invert()]
-            points.append(Point(lanelet.leftBound[0].x, lanelet.leftBound[0].y, lanelet.leftBound[0].z))
-            crosswalk_points.extend(create_coords_for_line_list(points))
-
+            crosswalk_border = [point for point in lanelet.leftBound]
+            crosswalk_border.extend([point for point in lanelet.rightBound.invert()])
+            crosswalk_border.append(lanelet.leftBound[0])
+            crosswalk_points.extend(convert_geometry_to_line_list(crosswalk_border))
         elif lanelet.attributes["subtype"] == "bus_lane":
-            bus_lane_points.extend(create_coords_for_line_list([Point(point.x, point.y, point.z) for point in lanelet.centerline]))
+            bus_lane_points.extend(convert_geometry_to_line_list(lanelet.centerline))
 
     left_boundary_marker = linelist_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
     right_boundary_marker = linelist_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
@@ -287,27 +287,20 @@ def visualize_lineStringLayer(linestrings):
                 # select stop lines
                 if line.attributes["type"] == "stop_line":
                     # points = [point for point in line]
-                    coords = create_coords_for_line_list(line)
+                    points = convert_geometry_to_line_list(line)
                     if "subtype" in line.attributes:
                         if line.attributes["subtype"]=="traffic_light":
-                            points_traffic_light.extend(coords)
+                            points_traffic_light.extend(points)
                         elif line.attributes["subtype"]=="yield_stop":
-                            points_yield_stop.extend(coords)
+                            points_yield_stop.extend(points)
                         elif line.attributes["subtype"]=="yield":
-                            points_yield.extend(coords)
+                            points_yield.extend(points)
 
     marker_array.markers.append(linelist_to_marker(points_traffic_light, "Traffic light stop lines", 0, WHITE, 0.5, rospy.Time.now()))
     marker_array.markers.append(linelist_to_marker(points_yield_stop, "Yield stop line", 0, RED, 0.5, rospy.Time.now()))
     marker_array.markers.append(linelist_to_marker(points_yield, "Yield line", 0, YELLOW, 0.3, rospy.Time.now()))
 
     return marker_array
-
-def create_coords_for_line_list(line):
-    coords = []
-    for i in range(len(line)-1):
-        coords.append(line[i])
-        coords.append(line[i+1])
-    return coords
 
 
 def linelist_to_marker(points, namespace, id, color, scale, stamp):

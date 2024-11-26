@@ -7,7 +7,7 @@ from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, PoseStamped
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
-from helpers.geometry import get_distance_between_two_points_2d
+from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
 
 class RoadAreaFilter:
     def __init__(self):
@@ -70,9 +70,9 @@ class RoadAreaFilter:
         marker.color.b = 0.1
 
         for geom in road_area.geoms:
-            marker.points.extend(create_coords_for_line_list(geom.exterior.coords))
+            marker.points.extend(convert_geometry_to_line_list(geom.exterior.coords))
             for interior in geom.interiors:
-                marker.points.extend(create_coords_for_line_list(interior.coords))
+                marker.points.extend(convert_geometry_to_line_list(interior.coords))
 
         road_area_markers.markers.append(marker)
         return road_area_markers
@@ -142,12 +142,6 @@ class RoadAreaFilter:
     def run(self):
         rospy.spin()
 
-def create_coords_for_line_list(coords):
-    line_list = []
-    for i in range(len(coords)-1):
-        line_list.append(Point(x=coords[i][0], y=coords[i][1], z=coords[i][2]))
-        line_list.append(Point(x=coords[i+1][0], y=coords[i+1][1], z=coords[i+1][2]))
-    return line_list
 
 if __name__ == '__main__':
     rospy.init_node('road_area_filter', log_level=rospy.INFO)
