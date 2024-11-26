@@ -12,7 +12,7 @@ from std_msgs.msg import Float32MultiArray
 from helpers.path import PathWrapper
 from helpers.geometry import get_heading_between_two_points
 
-class OpenpilotLocalPathExtractor:
+class OpenpilotLocalPathPublisher:
 
     def __init__(self):
 
@@ -96,12 +96,12 @@ class OpenpilotLocalPathExtractor:
                 # use heading of previous point - last point of last lanelet has no following point 
                 x, y, z = openpilot_plan[i]
                 x_prev, y_prev, z_prev = openpilot_plan[i-1]
-                waypoint = self.generate_waypoint(shapely.Point(x, y, z), shapely.Point(x_prev, y_prev, z_prev))
+                waypoint = self.generate_waypoint(shapely.Point(x, y, z), previous_point=shapely.Point(x_prev, y_prev, z_prev))
                 waypoints.append(waypoint)
             else:
                 x, y, z = openpilot_plan[i]
                 x_next, y_next, z_next = openpilot_plan[i+1]
-                waypoint = self.generate_waypoint(shapely.Point(x, y, z), shapely.Point(x_next, y_next, z_next))
+                waypoint = self.generate_waypoint(shapely.Point(x, y, z), next_point=shapely.Point(x_next, y_next, z_next))
                 waypoints.append(waypoint)
 
         openpilot_local_path.waypoints = waypoints
@@ -123,8 +123,8 @@ class OpenpilotLocalPathExtractor:
         waypoint.blinker_state = nearest_global_path_waypoint.blinker_state
         waypoint.heading = heading
         waypoint.speed = nearest_global_path_waypoint.speed
-        waypoint.left_width = 1.2 #lanelet2_distance(point, lanelet.leftBound)
-        waypoint.right_width = 1.2 #lanelet2_distance(point, lanelet.rightBound)
+        waypoint.left_width = 1.2
+        waypoint.right_width = 1.2
 
         return waypoint
 
@@ -137,5 +137,5 @@ def float32_multiarray_to_numpy(multiarray):
 
 if __name__ == '__main__':
     rospy.init_node('openpilot_local_path_extractor')
-    node = OpenpilotLocalPathExtractor()
+    node = OpenpilotLocalPathPublisher()
     node.run()

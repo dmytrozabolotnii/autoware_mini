@@ -11,7 +11,7 @@
     <arg name="predictor"               default="none"              doc="none, naive, map, map_naive" />
     <arg name="follower"                default="pure_pursuit"      doc="pure_pursuit, stanley" />
     <arg name="global_planner"          default="lanelet2"          doc="waypoints, lanelet2" />
-    <arg name="local_planner"           default="rule"              doc="rule, none"/>
+    <arg name="local_planner"           default="rule"              doc="none, rule, openpilot"/>
     <arg name="use_path_smoothing"      default="true" />
     <arg name="use_road_area_filter"    default="false"            doc="use road area filter"/>
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
@@ -20,7 +20,7 @@
     <arg name="max_speed"               default="40" />
     <arg name="detection_range"         default=""                  doc="enter a value in meters to enable it" />
     <arg name="more_visualizations"     default="false"             doc="By default visualize only the final detections" />
-    <arg name="use_openpilot"           default="false" />
+    <arg name="use_openpilot"           default="$(eval global_planner=='openpilot')" />
     
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">

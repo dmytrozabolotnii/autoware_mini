@@ -22,7 +22,7 @@ class CollisionPointsMerger:
         collision_trajectory_sub = message_filters.Subscriber('trajectory_collision_points', PointCloud2, tcp_nodelay=True)
         collision_stop_line_sub = message_filters.Subscriber('stop_line_collision_points', PointCloud2, tcp_nodelay=True)
 
-        ts = message_filters.TimeSynchronizer([collision_goal_sub, collision_object_sub, collision_tfl_stopline_sub, collision_crosswalk_sub, collision_stop_line_sub, collision_trajectory_sub], queue_size=4)
+        ts = message_filters.ApproximateTimeSynchronizer([collision_goal_sub, collision_object_sub, collision_tfl_stopline_sub, collision_crosswalk_sub, collision_stop_line_sub, collision_trajectory_sub], queue_size=4, slop=0.15)
         ts.registerCallback(self.collision_points_callback)
 
     def collision_points_callback(self, collision_goal_points_msg, collision_object_msg, collision_tfl_stopline_msg, collision_crosswalk_msg, collision_stop_line_msg, trajectory_collision_msg):

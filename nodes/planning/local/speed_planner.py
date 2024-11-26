@@ -38,7 +38,7 @@ class SpeedPlanner:
         collision_points_sub = message_filters.Subscriber('collision_points', PointCloud2, tcp_nodelay=True)
         local_path_sub = message_filters.Subscriber('extracted_local_path', Path, tcp_nodelay=True)
 
-        ts = message_filters.TimeSynchronizer([collision_points_sub, local_path_sub], queue_size=4)
+        ts = message_filters.ApproximateTimeSynchronizer([collision_points_sub, local_path_sub], queue_size=4, slop=0.15)
         ts.registerCallback(self.collision_points_and_path_callback)
 
     def current_velocity_callback(self, msg):
