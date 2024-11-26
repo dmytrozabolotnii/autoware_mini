@@ -5,8 +5,7 @@ import json
 import shapely
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import Point, PoseStamped
-from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
+from geometry_msgs.msg import PoseStamped
 from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
 
 class RoadAreaFilter:
@@ -18,20 +17,12 @@ class RoadAreaFilter:
         self.filtering_extent = rospy.get_param("~filtering_extent")
         self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
         self.local_path_length = rospy.get_param("/planning/local_path_length")
-        self.coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
-        self.utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-        self.utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
         if self.filtering_method not in ["centroid", "intersects", "within"]:
             raise ValueError(f"{rospy.get_name()} - 'filtering_method' must be one of 'centroid', 'intersects' or 'within', not '{self.filtering_method}'")
 
         self.current_location = None
         self.map_extraction_location = None
-
-        # initialize coordinate_transformer
-        if self.coordinate_transformer == "utm":
-            self.transformer = WGS84ToUTMTransformer(False, self.utm_origin_lat, self.utm_origin_lon)
-        self.easting, self.northing = self.transformer.transform_lat_lon(self.utm_origin_lat, self.utm_origin_lon, 0)
 
         rospy.loginfo("%s - loading road area from file %s", rospy.get_name(), self.road_area_file)
 
@@ -79,16 +70,14 @@ class RoadAreaFilter:
 
     def current_pose_callback(self, msg):
 
-        point_utm_local = shapely.geometry.Point(msg.pose.position.x, msg.pose.position.y)
-        point_utm = shapely.affinity.translate(point_utm_local, xoff=self.easting, yoff=self.northing)
+        current_location = shapely.Point(msg.pose.position.x, msg.pose.position.y)
 
         if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) >= (self.map_extraction_distance - self.local_path_length):
             self.map_extraction_location = msg.pose.position
             road_area = []
             for feature in self.geojson_data['features']:
                 geometry = shapely.geometry.shape(feature['geometry'])
-                if geometry.dwithin(point_utm, self.map_extraction_distance):
-                    geometry = shapely.affinity.translate(geometry, xoff=-self.easting, yoff=-self.northing)
+                if geometry.dwithin(current_location, self.map_extraction_distance):
                     road_area.append(geometry)
             road_area = shapely.unary_union(road_area)
             shapely.prepare(road_area)
