@@ -1,5 +1,4 @@
 import shapely
-from shapely import ops
 
 def get_polygon_width(polygon, heading_angle):
     """
