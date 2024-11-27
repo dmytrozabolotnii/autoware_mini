@@ -9,11 +9,12 @@ from ros_numpy import numpify
 
 from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import ColorRGBA
+from geometry_msgs.msg import Pose
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
 
 import onnxruntime
 
-from helpers.geometry import get_orientation_from_heading
+from helpers.geometry import get_orientation_from_heading, get_heading_from_orientation
 from helpers.detection import create_hull
 from helpers.transform import transform_pose
 
@@ -225,18 +226,22 @@ class SFADetector:
         detected_objects_list = []
         for i, (cls_id, x, y, z, height, width, length, yaw, score) in enumerate(detections):
 
+            pose = Pose()
+            pose.position.x = x
+            pose.position.y = y
+            pose.position.z = z
+            pose.orientation = get_orientation_from_heading(yaw)
+            pose = transform_pose(pose, transform)
+
             detected_object = DetectedObject()
             detected_object.id = i
             detected_object.label = CLASS_NAMES[cls_id]
             detected_object.color = LIGHT_BLUE
             detected_object.valid = True
             detected_object.score = score
-            detected_object.pose.position.x = x
-            detected_object.pose.position.y = y
-            detected_object.pose.position.z = z
-            detected_object.pose.orientation = get_orientation_from_heading(yaw)
-            detected_object.pose = transform_pose(detected_object.pose, transform)
-            detected_object.pose_reliable = True
+            detected_object.position = pose.position
+            detected_object.heading = get_heading_from_orientation(pose.orientation)
+            detected_object.position_reliable = True
 
             # object dimensions
             detected_object.dimensions.x = length

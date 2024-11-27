@@ -37,7 +37,8 @@ class DetectedObjectsVisualizer:
             marker.id = obj.id
             marker.type = Marker.SPHERE
             marker.action = Marker.ADD
-            marker.pose = obj.pose
+            marker.pose.position = obj.position
+            marker.pose.orientation = get_orientation_from_heading(obj.heading)
             marker.scale.x = 1.0
             marker.scale.y = 1.0
             marker.scale.z = 1.0
@@ -50,7 +51,8 @@ class DetectedObjectsVisualizer:
             marker.id = obj.id
             marker.type = marker.LINE_STRIP
             marker.action = marker.ADD
-            marker.pose = obj.pose
+            marker.pose.position = obj.position
+            marker.pose.orientation = get_orientation_from_heading(obj.heading)
             marker.scale.x = 0.1
             marker.color = ColorRGBA(1.0, 0.0, 0.0, 0.8)
             half_length = obj.dimensions.x / 2.0
@@ -84,9 +86,9 @@ class DetectedObjectsVisualizer:
             marker.id = obj.id
             marker.type = Marker.ARROW
             marker.action = Marker.ADD
-            marker.pose.position = obj.pose.position
-            yaw = math.atan2(obj.velocity.y, obj.velocity.x)
-            marker.pose.orientation = get_orientation_from_heading(yaw)
+            marker.pose.position = obj.position
+            heading = math.atan2(obj.velocity.y, obj.velocity.x)
+            marker.pose.orientation = get_orientation_from_heading(heading)
             marker.scale.x = max(math.sqrt(obj.velocity.x**2 + obj.velocity.y**2), 0.01)
             marker.scale.y = 0.1
             marker.scale.z = 0.1
@@ -127,7 +129,7 @@ class DetectedObjectsVisualizer:
             marker.id = obj.id
             marker.type = Marker.TEXT_VIEW_FACING
             marker.action = Marker.ADD
-            marker.pose.position = Point(obj.pose.position.x, obj.pose.position.y, obj.pose.position.z + 1.0)
+            marker.pose.position = Point(obj.position.x, obj.position.y, obj.position.z + 1.0)
             marker.scale.z = 0.5
             marker.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
             marker.text = "%s %d (%d km/h)" % (obj.label, obj.id, math.sqrt(obj.velocity.x**2 + obj.velocity.y**2 + obj.velocity.z**2) * 3.6)

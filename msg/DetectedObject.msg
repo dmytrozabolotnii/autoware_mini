@@ -5,18 +5,19 @@ std_msgs/ColorRGBA              color   # Define this object specific color
 bool                            valid   # Defines if this object is valid, or invalid as defined by the filtering
 
 ################ 3D BB
-geometry_msgs/Pose              pose
+geometry_msgs/Point32           position
 geometry_msgs/Vector3           dimensions
 #geometry_msgs/Vector3           variance
 geometry_msgs/Vector3           velocity
 geometry_msgs/Vector3           acceleration
+float32                         heading
 
 #sensor_msgs/PointCloud2         pointcloud
 
 geometry_msgs/Polygon           convex_hull
 PathArray                       candidate_trajectories
 
-bool                            pose_reliable
+bool                            position_reliable
 bool                            velocity_reliable
 bool                            acceleration_reliable
 

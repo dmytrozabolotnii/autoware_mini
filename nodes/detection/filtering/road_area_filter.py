@@ -118,7 +118,7 @@ class RoadAreaFilter:
 
         for obj in msg.objects:
             if self.filtering_method == "centroid":
-                obj_geom = shapely.Point(obj.pose.position.x, obj.pose.position.y)
+                obj_geom = shapely.Point(obj.position.x, obj.position.y)
             else:
                 obj_geom = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
             shapely.prepare(obj_geom)

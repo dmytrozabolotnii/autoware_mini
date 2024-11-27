@@ -11,11 +11,11 @@ ground truth detections. Publishes the following topics:
 import rospy
 
 from std_msgs.msg import ColorRGBA
-from geometry_msgs.msg import PolygonStamped, Point
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from derived_object_msgs.msg import ObjectArray, Object
 from localization.SimulationToUTMTransformer import SimulationToUTMTransformer
 from helpers.detection import create_hull
+from helpers.geometry import get_heading_from_orientation
 
 CLASS_ID_TO_LABEL = {
     Object.CLASSIFICATION_UNKNOWN: 'unknown',
@@ -74,18 +74,20 @@ class CarlaDetector:
             object_msg.color = YELLOW80P
             object_msg.score = 1
             object_msg.valid = True
-            object_msg.pose = obj.pose
-
+            
+            pose = obj.pose
             if self.use_transformer:
-                object_msg.pose = self.sim2utm_transformer.transform_pose(object_msg.pose)
+                pose = self.sim2utm_transformer.transform_pose(pose)
 
+            object_msg.position = pose.position
+            object_msg.heading = get_heading_from_orientation(pose.orientation)
             object_msg.dimensions.x = obj.shape.dimensions[0]
             object_msg.dimensions.y = obj.shape.dimensions[1]
             object_msg.dimensions.z = obj.shape.dimensions[2]
             object_msg.velocity = obj.twist.linear
             object_msg.acceleration = obj.accel.linear
             object_msg.convex_hull = create_hull(object_msg)
-            object_msg.pose_reliable = True
+            object_msg.position_reliable = True
             object_msg.velocity_reliable = True
             object_msg.acceleration_reliable = True
 

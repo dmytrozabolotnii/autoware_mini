@@ -28,7 +28,7 @@ class NaivePredictor:
             ('acceleration', np.float32, (2,)),
         ])
         for i, obj in enumerate(msg.objects):
-            tracked_objects_array[i]['centroid'] = (obj.pose.position.x, obj.pose.position.y)
+            tracked_objects_array[i]['centroid'] = (obj.position.x, obj.position.y)
             tracked_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y) 
             tracked_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
 
@@ -57,7 +57,7 @@ class NaivePredictor:
             for j in range(num_timesteps):
                 wp = Waypoint()
                 wp.position.x, wp.position.y = predicted_objects_array[j][i]['centroid']
-                wp.position.z = obj.pose.position.z
+                wp.position.z = obj.position.z
                 wp.speed = (predicted_objects_array[j][i]['velocity'][0]**2 + predicted_objects_array[j][i]['velocity'][1]**2)**0.5
                 path.waypoints.append(wp)
             obj.candidate_trajectories.paths.append(path)

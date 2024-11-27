@@ -51,7 +51,7 @@ class MapBasedPredictor:
                 continue
 
             # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
-            object_location = BasicPoint2d(obj.pose.position.x, obj.pose.position.y)
+            object_location = BasicPoint2d(obj.position.x, obj.position.y)
             # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
             lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, object_location, self.distance_from_lanelet)
 
@@ -109,7 +109,7 @@ class MapBasedPredictor:
                 trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
                 trajectory_linestring = trajectory_linestring.simplify(0.01, preserve_topology=True)
                 if self.use_offset_for_prediction:
-                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, shapely.Point(obj.pose.position.x, obj.pose.position.y, obj.pose.position.z))
+                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, shapely.Point(obj.position.x, obj.position.y, obj.position.z))
                     trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style=1)
                 object_distance_from_trajectory_linestring_start = trajectory_linestring.project(shapely.Point(object_location.x, object_location.y))
 
@@ -119,7 +119,7 @@ class MapBasedPredictor:
                     p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + d)
                     wp.position.x = p.x
                     wp.position.y = p.y
-                    wp.position.z = obj.pose.position.z
+                    wp.position.z = obj.position.z
                     # TODO Recalculating velocity vector based on lanelet heading at the object location.
                     # Wrong when lanelet changes direction (turns), but good enough for now?
                     wp.speed = velocities[i]
