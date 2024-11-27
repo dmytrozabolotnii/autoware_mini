@@ -7,6 +7,7 @@ import tf2_ros
 import shapely
 import threading
 import scipy
+import shapely.ops as shpops
 import lanelet2.geometry as ll2geometry
 from std_msgs.msg import Float32MultiArray, UInt32MultiArray, ColorRGBA
 from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Quaternion, Pose
@@ -15,7 +16,6 @@ from ros_numpy import numpify, msgify
 from tf.transformations import quaternion_from_euler, quaternion_matrix
 
 from helpers.lanelet2 import load_lanelet2_map
-from helpers.shapely import split_linestring_with_two_points
 
 class LaneBoundaryMatcher:
 
@@ -202,15 +202,11 @@ class LaneBoundaryMatcher:
             self.z_correction = self.alpha * (avg_z_diff_left + avg_z_diff_right) / 2 + (1 - self.alpha) * self.z_correction
 
         else:
-            right_splitter_point1 = right_lane_bound_bl.interpolate(supercombo_lane_points[0][0][0] + right_current_pos_dist)
-            right_splitter_point2 = right_lane_bound_bl.interpolate(supercombo_lane_points[0][-1][0] + right_current_pos_dist)
-
-            left_splitter_point1 = left_lane_bound_bl.interpolate(supercombo_lane_points[0][0][0] + left_current_pos_dist)
-            left_splitter_point2 = left_lane_bound_bl.interpolate(supercombo_lane_points[0][-1][0] + left_current_pos_dist)
-
             # trim the start of lane boundaries
-            trimmed_right_lane_bound_bl = split_linestring_with_two_points(right_lane_bound_bl, right_splitter_point1, right_splitter_point2)
-            trimmed_left_lane_bound_bl = split_linestring_with_two_points(left_lane_bound_bl, left_splitter_point1, left_splitter_point2)
+            trimmed_right_lane_bound_bl = shpops.substring(right_lane_bound_bl, supercombo_lane_points[0][0][0] + right_current_pos_dist, 
+                                                           supercombo_lane_points[0][-1][0] + right_current_pos_dist)
+            trimmed_left_lane_bound_bl = shpops.substring(left_lane_bound_bl, supercombo_lane_points[0][0][0] + left_current_pos_dist, 
+                                                          supercombo_lane_points[0][-1][0] + left_current_pos_dist)
 
             if trimmed_right_lane_bound_bl is None or trimmed_left_lane_bound_bl is None:
                 self.publish_empty_bounds()
