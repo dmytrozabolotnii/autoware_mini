@@ -10,6 +10,7 @@ from std_msgs.msg import ColorRGBA
 from vella_msgs.msg import Track3DArray
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
 
+from hellpers.geometry import get_heading_from_orientation
 from helpers.detection import create_hull
 from helpers.transform import transform_pose, transform_vector3
 
@@ -86,8 +87,10 @@ class VellaDetector:
         detected_object.valid = True
 
         # transform position and orientation to output frame using the transformation saved when callback was received
-        detected_object.pose = transform_pose(vella_track.pose.pose, transform)
-        detected_object.pose_reliable = True
+        pose = transform_pose(vella_track.pose.pose, transform)
+        detected_object.position = pose.position
+        detected_object.heading = get_heading_from_orientation(pose.orientation)
+        detected_object.position_reliable = True
 
         # transform velocity to output frame using the transformation saved when callback was received
         detected_object.velocity = transform_vector3(vella_track.velocity.twist.linear, transform)

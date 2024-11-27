@@ -89,13 +89,13 @@ class ClusterDetector:
                 dim_x, dim_y, dim_z = maxs - mins
 
                 # always pointing forward
-                orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
+                heading = 0.0
             elif self.bounding_box_type == 'min_area':
                 # calculate minimum area bounding box
                 (center_x, center_y), (dim_x, dim_y), heading_angle = cv2.minAreaRect(points2d)
 
-                # calculate quaternion for heading angle
-                orientation = get_orientation_from_heading(math.radians(heading_angle))
+                # convert degrees to radians for heading angle
+                heading = math.radians(heading_angle)
 
                 # calculate height and vertical position
                 max_z = np.max(points3d[:,2])
@@ -111,14 +111,14 @@ class ClusterDetector:
             object.label = "unknown"
             object.color = BLUE80P
             object.valid = True
-            object.pose.position.x = center_x
-            object.pose.position.y = center_y
-            object.pose.position.z = center_z
-            object.pose.orientation = orientation
+            object.position.x = center_x
+            object.position.y = center_y
+            object.position.z = center_z
+            object.heading = heading
             object.dimensions.x = dim_x
             object.dimensions.y = dim_y
             object.dimensions.z = dim_z
-            object.pose_reliable = True
+            object.position_reliable = True
             object.velocity_reliable = False
             object.acceleration_reliable = False
             #object.velocity
