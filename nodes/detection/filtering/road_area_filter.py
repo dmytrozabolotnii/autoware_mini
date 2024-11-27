@@ -7,6 +7,7 @@ from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import PoseStamped
 from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
+from helpers.timer import Timer
 
 class RoadAreaFilter:
     def __init__(self):
@@ -23,12 +24,18 @@ class RoadAreaFilter:
 
         self.current_location = None
         self.map_extraction_location = None
+        self.road_area_data = None
 
         rospy.loginfo("%s - loading road area from file %s", rospy.get_name(), self.road_area_file)
 
-        # Read the GeoJSON file
+        # Read the GeoJSON file and create shapely geometries
+        road_area_data = []
         with open(self.road_area_file, 'r') as f:
             self.geojson_data = json.load(f)
+            for feature in self.geojson_data['features']:
+                geometry = shapely.geometry.shape(feature['geometry'])
+                road_area_data.append(geometry)
+        self.road_area_data = road_area_data
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -70,13 +77,16 @@ class RoadAreaFilter:
 
     def current_pose_callback(self, msg):
 
+        # road area data is not loaded yet
+        if self.road_area_data is None:
+            return
+
         current_location = shapely.Point(msg.pose.position.x, msg.pose.position.y)
 
         if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) >= (self.map_extraction_distance - self.local_path_length):
             self.map_extraction_location = msg.pose.position
             road_area = []
-            for feature in self.geojson_data['features']:
-                geometry = shapely.geometry.shape(feature['geometry'])
+            for geometry in self.road_area_data:
                 if geometry.dwithin(current_location, self.map_extraction_distance):
                     road_area.append(geometry)
             road_area = shapely.unary_union(road_area)
