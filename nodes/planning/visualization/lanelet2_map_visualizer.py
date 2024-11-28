@@ -50,7 +50,7 @@ class Lanelet2MapVisualizer:
     
         # Parameters
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
-        self.local_path_length = rospy.get_param("/planning/local_path_length")
+        self.local_path_length = rospy.get_param("local_path_length")
         self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
         self.use_map_extraction = rospy.get_param("~use_map_extraction")
 

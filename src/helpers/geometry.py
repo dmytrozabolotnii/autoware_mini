@@ -196,7 +196,7 @@ def convert_geometry_to_line_list(geometry, delta_z=0):
 
     # create list of Point
     if isinstance(geometry[0], tuple):  # Case: geometry is list of coordinate tuples
-        points = [Point(x=coord[0], y=coord[1], z=coord[2] + delta_z) for coord in geometry]
+        points = [Point(x=x, y=y, z=z + delta_z) for x, y, z in geometry]
     else:  # Case: Lanelet2 linestring
         points = [Point(x=point.x, y=point.y, z=point.z + delta_z) for point in geometry]
 
