@@ -24,6 +24,8 @@ class RoadAreaFilter:
         self.current_location = None
         self.map_extraction_location = None
         self.road_area_data = None
+        self.road_area = None
+        self.not_road_area = None
 
         rospy.loginfo("%s - loading road area from file %s", rospy.get_name(), self.road_area_file)
 
