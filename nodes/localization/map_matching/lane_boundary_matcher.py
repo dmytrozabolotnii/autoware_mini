@@ -72,6 +72,9 @@ class LaneBoundaryMatcher:
         rospy.Subscriber('/planning/global_path_lenelet_ids', UInt32MultiArray, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('current_pose_gnss', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
+    def update_correction(self, new_value, old_value):
+        return self.alpha * new_value + (1 - self.alpha) * old_value
+
     def current_pose_callback(self, msg):
         with self.current_pose_lock:
             self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.y)
@@ -181,23 +184,23 @@ class LaneBoundaryMatcher:
                                                     right_current_pos_dist)
             
             if differences is None:
-                self.publish_empty_bounds()
-                return
-            
-            avg_y_diff_left, avg_y_diff_right, avg_z_diff_left, avg_z_diff_right = differences
+                y, z = 0, 0
+            else:
+                avg_y_diff_left, avg_y_diff_right, avg_z_diff_left, avg_z_diff_right = differences
 
-            # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-            if abs(avg_y_diff_left) > self.y_correction_treshold or abs(avg_y_diff_right) > self.y_correction_treshold:
-                self.publish_empty_bounds()
-                return
+                y = (avg_y_diff_left + avg_y_diff_right) / 2
+                z = (avg_z_diff_left + avg_z_diff_right) / 2
 
-            if abs(avg_z_diff_left) > self.z_correction_treshold or abs(avg_z_diff_right) > self.z_correction_treshold:
-                self.publish_empty_bounds()
-                return
+                # if the difference between map and openpilot lane boundaries is too big then don't use the correction
+                if abs(avg_y_diff_left) > self.y_correction_treshold or abs(avg_y_diff_right) > self.y_correction_treshold:
+                    y, z = 0, 0
+
+                if abs(avg_z_diff_left) > self.z_correction_treshold or abs(avg_z_diff_right) > self.z_correction_treshold:
+                    y, z = 0, 0
             
             # use exponential moving average to smooth coordinate corrections
-            self.y_correction = self.alpha * (avg_y_diff_left + avg_y_diff_right) / 2 + (1 - self.alpha) * self.y_correction
-            self.z_correction = self.alpha * (avg_z_diff_left + avg_z_diff_right) / 2 + (1 - self.alpha) * self.z_correction
+            self.y_correction = self.update_correction(y, self.y_correction)
+            self.z_correction = self.update_correction(z, self.z_correction)
 
         else:
             # trim the start of lane boundaries
@@ -207,23 +210,22 @@ class LaneBoundaryMatcher:
                                                           supercombo_lane_points[0][-1][0] + left_current_pos_dist)
 
             if trimmed_right_lane_bound_bl is None or trimmed_left_lane_bound_bl is None:
-                self.publish_empty_bounds()
-                return
+                y, z, yaw = 0, 0, 0
 
-            result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), method='Nelder-Mead', args=(trimmed_left_lane_bound_bl, trimmed_right_lane_bound_bl, supercombo_lane_points_homogeneous))
-            y, z, yaw = result.x
+            else:
+                result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), method='Nelder-Mead', args=(trimmed_left_lane_bound_bl, trimmed_right_lane_bound_bl, supercombo_lane_points_homogeneous))
+                y, z, yaw = result.x
 
-            # if the calculated correction is too big then don't use the correction
-            if (abs(self.y_correction - y) > self.y_correction_treshold or 
-                abs(self.z_correction - z) > self.z_correction_treshold or 
-                abs(self.yaw_correction - yaw) > self.yaw_correction_treshold):
-                self.publish_empty_bounds()
-                return
+                # if the calculated correction is too big then don't use the correction
+                if (abs(self.y_correction - y) > self.y_correction_treshold or 
+                    abs(self.z_correction - z) > self.z_correction_treshold or 
+                    abs(self.yaw_correction - yaw) > self.yaw_correction_treshold):
+                    y, z, yaw = 0, 0, 0
 
             # use exponential moving average to smooth coordinate corrections 
-            self.y_correction = self.alpha * -y + (1 - self.alpha) * self.y_correction
-            self.z_correction = self.alpha * -z + (1 - self.alpha) * self.z_correction
-            self.yaw_correction = self.alpha * -yaw + (1 - self.alpha) * self.yaw_correction
+            self.y_correction = self.update_correction(-y, self.y_correction)
+            self.z_correction = self.update_correction(-z, self.z_correction)
+            self.yaw_correction = self.update_correction(-yaw, self.yaw_correction)
 
         self.correction_stamp = current_timestamp
         self.publish_base_link_correction_tf()
@@ -362,49 +364,6 @@ class LaneBoundaryMatcher:
         marker2.points = points
 
         return marker1, marker2
-   
-    def publish_empty_bounds(self):
-        lanes_marker_array = MarkerArray()
-
-        for supercombo in [True, False]:
-
-            if supercombo:
-                color = ColorRGBA(0.0, 1.0, 0.7, 1.0)
-                id_start = 0
-                frame_id = "base_link"
-            else:
-                color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
-                id_start = 2
-                frame_id = "base_link_gnss"
-
-            marker1 = Marker()
-            marker1.header.frame_id = frame_id
-            marker1.header.stamp = rospy.Time.now()
-            marker1.ns = "right bound"
-            marker1.id = id_start
-            marker1.type = Marker.LINE_STRIP
-            marker1.action = Marker.ADD
-            marker1.pose.orientation.w = 1.0
-            marker1.scale.x = 0.1
-            marker1.color = color
-            marker1.points = []
-
-            marker2 = Marker()
-            marker2.header.frame_id = frame_id
-            marker2.header.stamp = rospy.Time.now()
-            marker2.ns = "left bound"
-            marker2.id = id_start + 1
-            marker2.type = Marker.LINE_STRIP
-            marker2.action = Marker.ADD
-            marker2.pose.orientation.w = 1.0
-            marker2.scale.x = 0.1
-            marker2.color = color
-            marker2.points = []
-
-            lanes_marker_array.markers.append(marker1)
-            lanes_marker_array.markers.append(marker2)
-
-        self.lanelet_bounds_pub.publish(lanes_marker_array)
 
     def publish_base_link_correction_tf(self, init=False):
         t = TransformStamped()
@@ -439,9 +398,8 @@ class LaneBoundaryMatcher:
             static_tf_broadcaster.sendTransform(t)
             self.transform_matrix = matrix
         else:
-            if not np.allclose(self.transform_matrix, matrix):
-                self.tf_broadcaster.sendTransform(t)
-                self.transform_matrix = matrix
+            self.tf_broadcaster.sendTransform(t)
+            self.transform_matrix = matrix
 
     def run(self):
         rospy.spin()
