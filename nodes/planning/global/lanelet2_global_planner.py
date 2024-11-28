@@ -8,7 +8,7 @@ from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import to2D, findWithin2d, length2d, distance as lanelet2_distance
 from geometry_msgs.msg import PoseStamped, TwistStamped, Point
 from autoware_mini.msg import Path, Waypoint
-from std_msgs.msg import ColorRGBA, UInt32MultiArray, MultiArrayDimension
+from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Empty, EmptyResponse
 from visualization_msgs.msg import MarkerArray, Marker
 
@@ -60,7 +60,6 @@ class Lanelet2GlobalPlanner:
         # Publishers
         self.waypoints_pub = rospy.Publisher('lanelet2_global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
         self.target_lane_pub = rospy.Publisher('target_lane_markers', MarkerArray, queue_size=10, latch=True, tcp_nodelay=True)
-        self.global_path_lenelet_ids_pub = rospy.Publisher('global_path_lenelet_ids', UInt32MultiArray, queue_size=10, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
@@ -110,8 +109,6 @@ class Lanelet2GlobalPlanner:
         if path is None:
             rospy.logerr("%s - no route found, try new goal!", rospy.get_name())
             return
-
-        self.publish_global_path_lanelet_ids(path)
         
         # Publish target lanelets for visualization
         start_lanelet = path[0]
@@ -300,22 +297,6 @@ class Lanelet2GlobalPlanner:
         path.waypoints = waypoints
         
         self.waypoints_pub.publish(path)
-
-    def publish_global_path_lanelet_ids(self, path):
-        global_path_ids = []
-        for lanelet in path:
-            global_path_ids.append(lanelet.id)
-
-        lanelet_ids_msg = UInt32MultiArray()
-        lanelet_ids_msg.layout.data_offset = 0
-        lanelet_ids_msg.layout.dim = [MultiArrayDimension()]
-
-        lanelet_ids_msg.layout.dim[0].label = "lanelet_ids"
-        lanelet_ids_msg.layout.dim[0].size = len(global_path_ids)
-        lanelet_ids_msg.layout.dim[0].stride = len(global_path_ids)
-
-        lanelet_ids_msg.data = global_path_ids
-        self.global_path_lenelet_ids_pub.publish(lanelet_ids_msg)
 
     def publish_target_lanelets(self, start_lanelet, goal_lanelet):
 
