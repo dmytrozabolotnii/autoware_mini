@@ -3,7 +3,6 @@
 import rospy
 import json
 import shapely
-import threading
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import PoseStamped
@@ -27,7 +26,6 @@ class RoadAreaFilter:
         self.road_area_data = None
         self.road_area = None
         self.not_road_area = None
-        self.lock = threading.Lock()
 
         rospy.loginfo("%s - loading road area from file %s", rospy.get_name(), self.road_area_file)
 
@@ -38,7 +36,8 @@ class RoadAreaFilter:
             for feature in self.geojson_data['features']:
                 geometry = shapely.geometry.shape(feature['geometry'])
                 road_area_data.append(geometry)
-        self.road_area_data = road_area_data
+        self.road_area_data = shapely.unary_union(road_area_data)
+        shapely.prepare(self.road_area_data)
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -48,8 +47,6 @@ class RoadAreaFilter:
         if self.use_map_extraction:
             rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         else:
-            self.road_area = shapely.unary_union(self.road_area_data)
-            shapely.prepare(self.road_area)
             xmin, ymin, xmax, ymax = shapely.total_bounds(self.road_area)
             full_extent = shapely.box(xmin, ymin, xmax, ymax)
             self.not_road_area = full_extent.difference(self.road_area)
@@ -93,30 +90,23 @@ class RoadAreaFilter:
 
         if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) >= (self.map_extraction_distance - self.local_path_length):
             self.map_extraction_location = msg.pose.position
-            road_area = []
-            for geometry in self.road_area_data:
-                if geometry.dwithin(current_location, self.map_extraction_distance):
-                    road_area.append(geometry)
-            road_area = shapely.unary_union(road_area)
-            shapely.prepare(road_area)
             map_extent_box = shapely.box(current_location.x - self.map_extraction_distance, current_location.y - self.map_extraction_distance, current_location.x + self.map_extraction_distance, current_location.y + self.map_extraction_distance)
-            road_area = map_extent_box.intersection(road_area)
+            road_area = map_extent_box.intersection(self.road_area_data)
+            shapely.prepare(road_area)
+            self.road_area = road_area
 
             # create inverted road area
             if self.filtering_method == "within":
                 not_road_area = map_extent_box.difference(road_area)
                 shapely.prepare(not_road_area)
-
-            with self.lock:
-                self.road_area = road_area
-                if self.filtering_method == "within":
-                    self.not_road_area = not_road_area
+                self.not_road_area = not_road_area
 
             self.road_area_pub.publish(self.get_road_area_markers(road_area))
 
     def detected_objects_callback(self, msg):
 
         if self.road_area is None:
+            rospy.logwarn_throttle(3, "%s - road area not received!", rospy.get_name())
             return
 
         # Create detected objects array
