@@ -16,6 +16,7 @@ class RoadAreaFilter:
         # get parameters
         self.road_area_file = rospy.get_param("~road_area_file")
         self.filtering_method = rospy.get_param("~filtering_method")
+        self.use_map_extraction = rospy.get_param("~use_map_extraction")
         self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
         self.local_path_length = rospy.get_param("/planning/local_path_length")
 
@@ -41,12 +42,21 @@ class RoadAreaFilter:
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
-
         self.road_area_pub = rospy.Publisher('road_area_markers', MarkerArray, queue_size=1, tcp_nodelay=True, latch=True)
 
         # Subscribers
+        if self.use_map_extraction:
+            rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
+        else:
+            self.road_area = shapely.unary_union(self.road_area_data)
+            shapely.prepare(self.road_area)
+            xmin, ymin, xmax, ymax = shapely.total_bounds(self.road_area)
+            full_extent = shapely.box(xmin, ymin, xmax, ymax)
+            self.not_road_area = full_extent.difference(self.road_area)
+            shapely.prepare(self.not_road_area)
+            self.road_area_pub.publish(self.get_road_area_markers(self.road_area))
+
         rospy.Subscriber('detected_objects_unfiltered', DetectedObjectArray, self.detected_objects_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
