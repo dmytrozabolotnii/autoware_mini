@@ -36,24 +36,20 @@ class RoadAreaFilter:
             for feature in self.geojson_data['features']:
                 geometry = shapely.geometry.shape(feature['geometry'])
                 road_area_data.append(geometry)
-        self.road_area_data = shapely.unary_union(road_area_data)
-        shapely.prepare(self.road_area_data)
+        road_area_data = shapely.unary_union(road_area_data)
+        shapely.prepare(road_area_data)
+        self.road_area_data = road_area_data
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
         self.road_area_pub = rospy.Publisher('road_area_markers', MarkerArray, queue_size=1, tcp_nodelay=True, latch=True)
 
         # Subscribers
-        if self.use_map_extraction:
-            rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
-        else:
-            xmin, ymin, xmax, ymax = shapely.total_bounds(self.road_area)
-            full_extent = shapely.box(xmin, ymin, xmax, ymax)
-            self.not_road_area = full_extent.difference(self.road_area)
-            shapely.prepare(self.not_road_area)
-            self.road_area_pub.publish(self.get_road_area_markers(self.road_area))
-
+        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('detected_objects_unfiltered', DetectedObjectArray, self.detected_objects_callback, queue_size=1, tcp_nodelay=True)
+
+        if not self.use_map_extraction:
+            self.road_area_pub.publish(self.get_road_area_markers(self.road_area_data))
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
@@ -118,13 +114,12 @@ class RoadAreaFilter:
                 obj_geom = shapely.Point(obj.pose.position.x, obj.pose.position.y)
             else:
                 obj_geom = shapely.multipoints([(p.x, p.y) for p in obj.convex_hull.points])
-            shapely.prepare(obj_geom)
 
             if self.filtering_method == "centroid" or self.filtering_method == "intersects":
-                if obj_geom.intersects(self.road_area):
+                if self.road_area.intersects(obj_geom):
                     detected_objects.objects.append(obj)
             elif self.filtering_method == "within":
-                if not obj_geom.intersects(self.not_road_area):
+                if not self.not_road_area.intersects(obj_geom):
                     detected_objects.objects.append(obj)
             else:
                 assert False, f"Unknown filtering method {self.filtering_method}"
