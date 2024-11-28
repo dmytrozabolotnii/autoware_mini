@@ -8,30 +8,26 @@ import shapely
 import threading
 import scipy
 import shapely.ops as shpops
-import lanelet2.geometry as ll2geometry
-from std_msgs.msg import Float32MultiArray, UInt32MultiArray, ColorRGBA
+from std_msgs.msg import Float32MultiArray, ColorRGBA
+from autoware_mini.msg import Path
 from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Quaternion, Pose
 from visualization_msgs.msg import MarkerArray, Marker
 from ros_numpy import numpify, msgify
 from tf.transformations import quaternion_from_euler, quaternion_matrix
 
-from helpers.lanelet2 import load_lanelet2_map
+from helpers.transform import transform_point
 
 class LaneBoundaryMatcher:
 
     def __init__(self):
 
         # parameters
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
         self.only_lateral_correction = rospy.get_param("~only_lateral_correction")
 
-        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         if self.only_lateral_correction:
-            self.cutoff_length = 8
             self.lookahead_distance = 3
         else:
-            self.cutoff_length = 50
-            self.lookahead_distance = 42.1875
+            self.lookahead_distance = 30
 
         self.y_correction_treshold = rospy.get_param("~y_correction_treshold")
         self.z_correction_treshold = rospy.get_param("~z_correction_treshold")
@@ -40,14 +36,11 @@ class LaneBoundaryMatcher:
         self.alpha = rospy.get_param("~alpha")
 
         # variables
-        self.global_path_lanelet_ids = None
-        self.lanelet_polygons = None
-        self.lanelet_centerline_waypoints = None
-        self.current_lanelet_idx = 0
+        self.global_path_left_boundary = None
+        self.global_path_right_boundary = None
+
         self.current_position = None
         self.current_timestamp = None
-        self.new_global_path = None
-        self.approximated_lanelet_lengths = None
 
         self.y_correction = 0
         self.z_correction = 0
@@ -69,7 +62,7 @@ class LaneBoundaryMatcher:
 
         # subscribers
         rospy.Subscriber('/openpilot/lane_lines', Float32MultiArray, self.lane_line_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/planning/global_path_lenelet_ids', UInt32MultiArray, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/planning/lanelet2_global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('current_pose_gnss', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
     def update_correction(self, new_value, old_value):
@@ -87,89 +80,70 @@ class LaneBoundaryMatcher:
         self.current_pose_pub.publish(msg)
 
     def lane_line_callback(self, msg):
-        supercombo_lane_lines = float32_multiarray_to_numpy(msg)
+        openpilot_lane_boundaries = float32_multiarray_to_numpy(msg)
         
         with self.current_pose_lock:
             current_position = self.current_position
             current_timestamp = self.current_timestamp
 
         with self.global_path_lock:
-            lanelet_polygons = self.lanelet_polygons
-            global_path_lanelet_ids = self.global_path_lanelet_ids
-            current_lanelet_idx = self.current_lanelet_idx
-            approximated_lanelet_lengths = self.approximated_lanelet_lengths
+            global_path_left_boundary = self.global_path_left_boundary
+            global_path_right_boundary = self.global_path_right_boundary
             self.new_global_path = False
 
-        if lanelet_polygons is None or current_position is None or approximated_lanelet_lengths is None:
+        if global_path_left_boundary is None or global_path_right_boundary is None or current_position is None:
             return
 
         # Fetch transforms
         try:
-            transform_openpilot = self.tf_buffer.lookup_transform("base_link", "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
-            tf_matrix_openpilot = numpify(transform_openpilot.transform)
-            transform_map = self.tf_buffer.lookup_transform("base_link_gnss", "map", current_timestamp, rospy.Duration(self.transform_timeout))
-            tf_matrix_map = numpify(transform_map.transform)
+            transform_openpilot_bl = self.tf_buffer.lookup_transform("base_link", "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
+            tf_matrix_openpilot_bl = numpify(transform_openpilot_bl.transform)
+            transform_map_bl = self.tf_buffer.lookup_transform("base_link_gnss", "map", current_timestamp, rospy.Duration(self.transform_timeout))
+            tf_matrix_map_bl = numpify(transform_map_bl.transform)
+            transform_openpilot_map = self.tf_buffer.lookup_transform("map", "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
             return
         
-        ##################################################################
-        # Fetch and transform map lane boundaries
-        ##################################################################
+        current_pos = transform_point(Point(0, 0, 0), transform_openpilot_map)
         
-        # find the current lanelet
-        while not lanelet_polygons[current_lanelet_idx].contains(current_position):
-            if len(lanelet_polygons) <= current_lanelet_idx + 1:
-                return
-            
-            current_lanelet_idx += 1
-
-        right_lane_points = []
-        left_lane_points = []
-        idx = current_lanelet_idx
-        current_centerline = shapely.LineString([(point.x, point.y) for point in self.lanelet2_map.laneletLayer.get(global_path_lanelet_ids[idx]).centerline])
-        cur_pos_dist_from_lanelet_start = current_centerline.project(current_position)
-
-        # subtract the length that is already behind us on the current lanelet
-        total_length = -cur_pos_dist_from_lanelet_start
-
-        # take close left and right boundaries from lanelets
-        while total_length < self.cutoff_length:
-            lanelet_id = global_path_lanelet_ids[idx]
-            for point in self.lanelet2_map.laneletLayer.get(lanelet_id).rightBound:
-                right_lane_points.append((point.x, point.y, point.z))
-
-            for point in self.lanelet2_map.laneletLayer.get(lanelet_id).leftBound:
-                left_lane_points.append((point.x, point.y, point.z))
-
-            total_length += approximated_lanelet_lengths[lanelet_id]
-            idx += 1
-
-        left_current_pos_dist = shapely.LineString(right_lane_points).project(current_position)
-        right_current_pos_dist = shapely.LineString(left_lane_points).project(current_position)
-
-        # transform lane boundary points from map to base_link_gnss frame
-        homogeneous_right_lane_points = np.hstack((np.array(right_lane_points), np.ones((len(right_lane_points), 1))))
-        right_lane_bound_bl_homogeneous = homogeneous_right_lane_points @ tf_matrix_map.T
-        right_lane_bound_bl = right_lane_bound_bl_homogeneous[:, :3]
-        right_lane_bound_bl = shapely.LineString(right_lane_bound_bl)
-
-        homogeneous_left_lane_points = np.hstack((np.array(left_lane_points), np.ones((len(left_lane_points), 1))))
-        left_lane_bound_bl_homogeneous = homogeneous_left_lane_points @ tf_matrix_map.T
-        left_lane_bound_bl = left_lane_bound_bl_homogeneous[:, :3]
-        left_lane_bound_bl = shapely.LineString(left_lane_bound_bl)
-
         ##################################################################
-        # Transform openpilot lane boundaries
+        # Transform openpilot lane boundaries and create linestrings
         ##################################################################
 
-        # transfrom openpilot predicted lane lines to base_link frame
-        center_supercombo_lane_lines = np.transpose(supercombo_lane_lines, (0, 2, 1))[1:3, :, :] # transpose axis 1 and 2
-        flattened_supercombo_lane_lines = center_supercombo_lane_lines.reshape(-1, 4) # flatten to (2*n_points, 4)
-        trimmed_supercombo_lane_lines = flattened_supercombo_lane_lines[flattened_supercombo_lane_lines[:, 0] <= self.lookahead_distance] # filter out rows where x > lookahead_distance
-        trimmed_supercombo_lane_lines[:, 3] = 1 # replece the time dimension with ones to get homogeneous points
-        supercombo_lane_points_homogeneous = trimmed_supercombo_lane_lines @ tf_matrix_openpilot.T # do the transform
-        supercombo_lane_points = supercombo_lane_points_homogeneous[:, :3].reshape(2, -1, 3) # convert back to 3d matrix with 3d points
+        # transfrom openpilot predicted lane boundaries to base_link frame
+        center_openpilot_lane_boundaries = np.transpose(openpilot_lane_boundaries, (0, 2, 1))[1:3, :, :] # transpose axis 1 and 2
+        flattened_openpilot_lane_boundaries = center_openpilot_lane_boundaries.reshape(-1, 4) # flatten to (2*n_points, 4)
+        flattened_openpilot_lane_boundaries[:, 3] = 1 # replece the time dimension with ones to get homogeneous points
+        homogeneous_openpilot_lane_boundaries = flattened_openpilot_lane_boundaries @ tf_matrix_openpilot_bl.T # do the transform
+        openpilot_lane_boundary_points = homogeneous_openpilot_lane_boundaries[:, :3].reshape(2, -1, 3) # convert back to 3d matrix with 3d points
+
+        # trim openpilot lane boundaries
+        openpilot_left_lane_boundary = shpops.substring(shapely.LineString(openpilot_lane_boundary_points[0]), 0, self.lookahead_distance)
+        openpilot_right_lane_boundary = shpops.substring(shapely.LineString(openpilot_lane_boundary_points[1]), 0, self.lookahead_distance)
+        
+        ##################################################################
+        # Transform map lane boundaries
+        ##################################################################
+
+        # find the distance of current position
+        left_cur_pos_dist = global_path_left_boundary.project(shapely.Point(current_pos.x, current_pos.y, current_pos.z))
+        right_cur_pos_dist = global_path_right_boundary.project(shapely.Point(current_pos.x, current_pos.y, current_pos.z))
+        
+        # cut out the relevant sections from the global path boundaries 
+        trimmed_left_map_lane_boundary = shpops.substring(global_path_left_boundary, left_cur_pos_dist, left_cur_pos_dist + self.lookahead_distance)
+        trimmed_right_map_lane_boundary = shpops.substring(global_path_right_boundary, right_cur_pos_dist, right_cur_pos_dist + self.lookahead_distance)
+
+        # transform map lane boundary points from map to base_link_gnss frame
+        homogeneous_left_lane_points = np.hstack((np.array(trimmed_left_map_lane_boundary.coords), np.ones((len(trimmed_left_map_lane_boundary.coords), 1))))
+        map_left_lane_boundary_homogeneous = homogeneous_left_lane_points @ tf_matrix_map_bl.T
+        map_left_lane_boundary = map_left_lane_boundary_homogeneous[:, :3]
+        map_left_lane_boundary = shapely.LineString(map_left_lane_boundary)
+
+        homogeneous_right_lane_points = np.hstack((np.array(trimmed_right_map_lane_boundary.coords), np.ones((len(trimmed_right_map_lane_boundary.coords), 1))))
+        map_right_lane_boundary_homogeneous = homogeneous_right_lane_points @ tf_matrix_map_bl.T
+        map_right_lane_boundary = map_right_lane_boundary_homogeneous[:, :3]
+        map_right_lane_boundary = shapely.LineString(map_right_lane_boundary)
 
         ##################################################################
         # Perform matching
@@ -177,11 +151,8 @@ class LaneBoundaryMatcher:
     
         if self.only_lateral_correction:
             # calculate the average difference for right and left boundaries
-            differences = self.find_average_distance(supercombo_lane_points, 
-                                                    left_lane_bound_bl,
-                                                    right_lane_bound_bl,
-                                                    left_current_pos_dist,
-                                                    right_current_pos_dist)
+            differences = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
+                                                     openpilot_left_lane_boundary, openpilot_right_lane_boundary)
             
             if differences is None:
                 y, z = 0, 0
@@ -203,50 +174,36 @@ class LaneBoundaryMatcher:
             self.z_correction = self.update_correction(z, self.z_correction)
 
         else:
-            # trim the start of lane boundaries
-            trimmed_right_lane_bound_bl = shpops.substring(right_lane_bound_bl, supercombo_lane_points[0][0][0] + right_current_pos_dist, 
-                                                           supercombo_lane_points[0][-1][0] + right_current_pos_dist)
-            trimmed_left_lane_bound_bl = shpops.substring(left_lane_bound_bl, supercombo_lane_points[0][0][0] + left_current_pos_dist, 
-                                                          supercombo_lane_points[0][-1][0] + left_current_pos_dist)
+            result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), method='Nelder-Mead', 
+                                             args=(map_left_lane_boundary, map_right_lane_boundary, 
+                                                   openpilot_left_lane_boundary, openpilot_right_lane_boundary))
+            y, z, yaw = result.x
 
-            if trimmed_right_lane_bound_bl is None or trimmed_left_lane_bound_bl is None:
+            # if the calculated correction is too big then don't use the correction
+            if (abs(self.y_correction - y) > self.y_correction_treshold or 
+                abs(self.z_correction - z) > self.z_correction_treshold or 
+                abs(self.yaw_correction - yaw) > self.yaw_correction_treshold):
                 y, z, yaw = 0, 0, 0
 
-            else:
-                result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), method='Nelder-Mead', args=(trimmed_left_lane_bound_bl, trimmed_right_lane_bound_bl, supercombo_lane_points_homogeneous))
-                y, z, yaw = result.x
-
-                # if the calculated correction is too big then don't use the correction
-                if (abs(self.y_correction - y) > self.y_correction_treshold or 
-                    abs(self.z_correction - z) > self.z_correction_treshold or 
-                    abs(self.yaw_correction - yaw) > self.yaw_correction_treshold):
-                    y, z, yaw = 0, 0, 0
-
             # use exponential moving average to smooth coordinate corrections 
-            self.y_correction = self.update_correction(-y, self.y_correction)
-            self.z_correction = self.update_correction(-z, self.z_correction)
-            self.yaw_correction = self.update_correction(-yaw, self.yaw_correction)
+            self.y_correction = self.update_correction(y, self.y_correction)
+            self.z_correction = self.update_correction(z, self.z_correction)
+            self.yaw_correction = self.update_correction(yaw, self.yaw_correction)
 
         self.correction_stamp = current_timestamp
         self.publish_base_link_correction_tf()
-
-        if not self.new_global_path:
-            self.current_lanelet_idx = current_lanelet_idx
 
         ##################################################################
         # Visualization
         ##################################################################
 
         lanes_marker_array = MarkerArray()
-        marker1, marker2 = self.publish_lanelet_bounds(shapely.LineString(supercombo_lane_points[1]), shapely.LineString(supercombo_lane_points[0]), True)
+        marker1, marker2 = self.publish_lanelet_bounds(openpilot_right_lane_boundary, openpilot_left_lane_boundary, True)
         lanes_marker_array.markers.append(marker1)
         lanes_marker_array.markers.append(marker2)
 
-        if self.only_lateral_correction:
-            marker1, marker2 = self.publish_lanelet_bounds(right_lane_bound_bl, left_lane_bound_bl)
-        else:
-            marker1, marker2 = self.publish_lanelet_bounds(trimmed_right_lane_bound_bl, trimmed_left_lane_bound_bl)
-
+        marker1, marker2 = self.publish_lanelet_bounds(map_left_lane_boundary, map_right_lane_boundary)
+        #marker1, marker2 = self.publish_lanelet_bounds(global_path_right_boundary, global_path_left_boundary)
         lanes_marker_array.markers.append(marker1)
         lanes_marker_array.markers.append(marker2)
         
@@ -254,54 +211,79 @@ class LaneBoundaryMatcher:
 
         
     def global_path_callback(self, msg):
-        
-        self.new_global_path = True
-        if len(msg.data) == 0:
-            self.lanelet_polygons = None
-            self.current_lanelet_idx = 0
+        if len(msg.waypoints) == 0:
+            rospy.loginfo("%s - Empty global path received", rospy.get_name())
             return
         
+        three_point_lines = []
+        left_offstes = []
+        right_offsets = []
+
+        # create three-point linestring segments for every waypoint
+        for i in range(len(msg.waypoints)):
+            left_offstes.append(msg.waypoints[i].left_width)
+            right_offsets.append(-msg.waypoints[i].right_width)
+
+            # the first and last waypoints cannot be in the middle
+            if i == 0:
+                i += 1
+            elif i == len(msg.waypoints) - 1:
+                i -= 1
+
+            three_point_lines.append([[msg.waypoints[i-1].position.x, msg.waypoints[i-1].position.y],
+                                    [msg.waypoints[i].position.x, msg.waypoints[i].position.y],
+                                    [msg.waypoints[i+1].position.x, msg.waypoints[i+1].position.y]])
+
+        three_point_linestrings = shapely.linestrings(three_point_lines)
+        
+        left_offset_lines = shapely.offset_curve(three_point_linestrings, left_offstes)
+        right_offset_lines = shapely.offset_curve(three_point_linestrings, right_offsets)
+
+        left_bondary_coords = []
+        right_bondary_coords = []
+        for i in range(len(three_point_linestrings)):
+            z_coord = msg.waypoints[i].position.z
+            if i == 0: # use the first point of the first segment as the first lane boundary point 
+                left_offset_point = left_offset_lines[0].coords[0]
+                right_offset_point = right_offset_lines[0].coords[0]
+            elif i == len(three_point_linestrings) - 1:  # use the third point of the last segment as the last lane boundary point 
+                left_offset_point = left_offset_lines[-1].coords[2]
+                right_offset_point = right_offset_lines[-1].coords[2]
+            else: # take the second point from every other segment
+                left_offset_point = left_offset_lines[i].coords[1]
+                right_offset_point = right_offset_lines[i].coords[1]
+
+            left_bondary_coords.append((left_offset_point[0], left_offset_point[1], z_coord))
+            right_bondary_coords.append((right_offset_point[0], right_offset_point[1], z_coord))
+
+        left_bondary = shapely.LineString(left_bondary_coords)
+        shapely.prepare(left_bondary)
+
+        right_bondary = shapely.LineString(right_bondary_coords)
+        shapely.prepare(right_bondary)
+
         with self.global_path_lock:
-            self.global_path_lanelet_ids = msg.data
+            self.global_path_left_boundary = left_bondary
+            self.global_path_right_boundary = right_bondary
 
-        lanelet_polys = []
-        centerline_waypoints = []
-        approximated_lanelet_lengths = {}
-
-        # get all lanelets on the global path
-        for lanelet_id in msg.data:
-            lanelet = self.lanelet2_map.laneletLayer.get(lanelet_id)
-
-            for point in lanelet.centerline:
-                centerline_waypoints.append(shapely.Point(point.x, point.y))
-
-            polygon = shapely.Polygon([(pt.x, pt.y) for pt in lanelet.polygon2d()])
-            lanelet_polys.append(polygon)
-            approximated_lanelet_lengths[lanelet_id] = ll2geometry.approximatedLength2d(lanelet)
-
-        with self.global_path_lock:
-            self.lanelet_polygons = lanelet_polys
-            self.current_lanelet_idx = 0
-            self.approximated_lanelet_lengths = approximated_lanelet_lengths
-
-    def find_average_distance(self, supercombo_lane_points, left_lane_bound, right_lane_bound, left_current_pos_dist, rigth_current_pos_dist):
+    def find_average_distance(self, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary):
         left_y_diffs = []
         left_z_diffs = [] 
-        for x, y, z in supercombo_lane_points[0]:
-            point = left_lane_bound.interpolate(x + left_current_pos_dist)
+        for x, y, z in openpilot_left_lane_boundary.coords:
+            point = map_left_lane_boundary.interpolate(x)
             left_y_diffs.append(y - point.y)
             left_z_diffs.append(z - point.z)
 
         right_y_diffs = []
         right_z_diffs = []
-        for x, y, z in supercombo_lane_points[1]:
-            point = right_lane_bound.interpolate(x + rigth_current_pos_dist)
+        for x, y, z in openpilot_right_lane_boundary.coords:
+            point = map_right_lane_boundary.interpolate(x)
             right_y_diffs.append(y - point.y)
             right_z_diffs.append(z - point.z)
 
         return np.mean(left_y_diffs), np.mean(right_y_diffs), np.mean(left_z_diffs), np.mean(right_z_diffs)
     
-    def objective_function(self, input_values, left_lane_map, right_lane_map, openpilot_lane_lines):
+    def objective_function(self, input_values, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary):
         lateral_correction, height_correction, yaw_correction = input_values
         x_q, y_q, z_q, w_q = quaternion_from_euler(0, 0, yaw_correction, axes='rxyz')
 
@@ -309,13 +291,19 @@ class LaneBoundaryMatcher:
         matrix[1, 3] = lateral_correction
         matrix[2, 3] = height_correction
 
-        corrected_openpilot_lane_lines_h = openpilot_lane_lines @ matrix.T
-        corrected_openpilot_lane_lines = corrected_openpilot_lane_lines_h[:, :3].reshape(2, -1, 3)
+        map_left_lane_boundary_h = np.hstack((np.array(map_left_lane_boundary.coords), np.ones((len(map_left_lane_boundary.coords), 1))))
+        map_right_lane_boundary_h = np.hstack((np.array(map_right_lane_boundary.coords), np.ones((len(map_right_lane_boundary.coords), 1))))
 
-        left_lane_openpilot = shapely.LineString(corrected_openpilot_lane_lines[0])
-        right_lane_openpilot = shapely.LineString(corrected_openpilot_lane_lines[1])
+        corrected_map_left_lane_bound_h = map_left_lane_boundary_h @ matrix.T
+        corrected_map_left_lane_bound = corrected_map_left_lane_bound_h[:, :3]
 
-        return shapely.hausdorff_distance(left_lane_openpilot, left_lane_map) + shapely.hausdorff_distance(right_lane_openpilot, right_lane_map)
+        corrected_map_right_lane_bound_h = map_right_lane_boundary_h @ matrix.T
+        corrected_map_right_lane_bound = corrected_map_right_lane_bound_h[:, :3]
+
+        corrected_left_map_lane_boundary = shapely.LineString(corrected_map_left_lane_bound)
+        corrected_right_map_lane_boundary = shapely.LineString(corrected_map_right_lane_bound)
+
+        return shapely.hausdorff_distance(openpilot_left_lane_boundary, corrected_left_map_lane_boundary) + shapely.hausdorff_distance(openpilot_right_lane_boundary, corrected_right_map_lane_boundary)
 
     def publish_lanelet_bounds(self, right_lane_bound, left_lane_bound, supercombo=False):
         # For debugging
@@ -328,6 +316,7 @@ class LaneBoundaryMatcher:
             color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
             id_start = 2
             frame_id = "base_link_gnss"
+            #frame_id = "map"
 
         points = []
         for x, y, z in right_lane_bound.coords:
