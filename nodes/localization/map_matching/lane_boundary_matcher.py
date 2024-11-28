@@ -216,12 +216,12 @@ class LaneBoundaryMatcher:
             return
         
         three_point_lines = []
-        left_offstes = []
+        left_offsets = []
         right_offsets = []
 
         # create three-point linestring segments for every waypoint
         for i in range(len(msg.waypoints)):
-            left_offstes.append(msg.waypoints[i].left_width)
+            left_offsets.append(msg.waypoints[i].left_width)
             right_offsets.append(-msg.waypoints[i].right_width)
 
             # the first and last waypoints cannot be in the middle
@@ -236,11 +236,11 @@ class LaneBoundaryMatcher:
 
         three_point_linestrings = shapely.linestrings(three_point_lines)
         
-        left_offset_lines = shapely.offset_curve(three_point_linestrings, left_offstes)
+        left_offset_lines = shapely.offset_curve(three_point_linestrings, left_offsets)
         right_offset_lines = shapely.offset_curve(three_point_linestrings, right_offsets)
 
-        left_bondary_coords = []
-        right_bondary_coords = []
+        left_boundary_coords = []
+        right_boundary_coords = []
         for i in range(len(three_point_linestrings)):
             z_coord = msg.waypoints[i].position.z
             if i == 0: # use the first point of the first segment as the first lane boundary point 
@@ -253,18 +253,16 @@ class LaneBoundaryMatcher:
                 left_offset_point = left_offset_lines[i].coords[1]
                 right_offset_point = right_offset_lines[i].coords[1]
 
-            left_bondary_coords.append((left_offset_point[0], left_offset_point[1], z_coord))
-            right_bondary_coords.append((right_offset_point[0], right_offset_point[1], z_coord))
+            left_boundary_coords.append((left_offset_point[0], left_offset_point[1], z_coord))
+            right_boundary_coords.append((right_offset_point[0], right_offset_point[1], z_coord))
 
-        left_bondary = shapely.LineString(left_bondary_coords)
-        shapely.prepare(left_bondary)
-
-        right_bondary = shapely.LineString(right_bondary_coords)
-        shapely.prepare(right_bondary)
+        left_boundary, right_boundary = shapely.linestrings([left_boundary_coords, right_boundary_coords])
+        shapely.prepare(left_boundary)
+        shapely.prepare(right_boundary)
 
         with self.global_path_lock:
-            self.global_path_left_boundary = left_bondary
-            self.global_path_right_boundary = right_bondary
+            self.global_path_left_boundary = left_boundary
+            self.global_path_right_boundary = right_boundary
 
     def find_average_distance(self, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary):
         left_y_diffs = []
