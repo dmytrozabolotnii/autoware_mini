@@ -80,16 +80,11 @@ class LaneBoundaryMatcher:
         current_pose_matrix = numpify(msg.pose)
         corrected_current_pose_matrix = self.transform_matrix.dot(current_pose_matrix)
 
-        corrected_current_pose = PoseStamped()
-        corrected_current_pose.header = msg.header
-        corrected_current_pose.pose = msgify(Pose, corrected_current_pose_matrix)
-        self.current_pose_pub.publish(corrected_current_pose)
+        msg.pose = msgify(Pose, corrected_current_pose_matrix)
+        self.current_pose_pub.publish(msg)
 
     def lane_line_callback(self, msg):
         supercombo_lane_lines = float32_multiarray_to_numpy(msg)
-
-        if self.lanelet_polygons is None or self.current_position is None or self.new_global_path is None or self.approximated_lanelet_lengths is None:
-            return
         
         with self.current_pose_lock:
             current_position = self.current_position
@@ -101,6 +96,9 @@ class LaneBoundaryMatcher:
             current_lanelet_idx = self.current_lanelet_idx
             approximated_lanelet_lengths = self.approximated_lanelet_lengths
             self.new_global_path = False
+
+        if lanelet_polygons is None or current_position is None or approximated_lanelet_lengths is None:
+            return
 
         # Fetch transforms
         try:
@@ -261,7 +259,8 @@ class LaneBoundaryMatcher:
             self.current_lanelet_idx = 0
             return
         
-        self.global_path_lanelet_ids = msg.data
+        with self.global_path_lock:
+            self.global_path_lanelet_ids = msg.data
 
         lanelet_polys = []
         centerline_waypoints = []
