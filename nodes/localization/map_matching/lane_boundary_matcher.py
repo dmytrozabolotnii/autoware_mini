@@ -38,8 +38,6 @@ class LaneBoundaryMatcher:
         # variables
         self.global_path_left_boundary = None
         self.global_path_right_boundary = None
-
-        self.current_position = None
         self.current_timestamp = None
 
         self.y_correction = 0
@@ -58,7 +56,7 @@ class LaneBoundaryMatcher:
 
         # publishers
         self.current_pose_pub = rospy.Publisher('current_pose', PoseStamped, queue_size=1, tcp_nodelay=True)
-        self.lanelet_bounds_pub = rospy.Publisher('lanelet_bounds_match', MarkerArray, queue_size=1, tcp_nodelay=True)
+        self.lane_bound_markers_pub = rospy.Publisher('lane_boundary_matcher_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('/openpilot/lane_lines', Float32MultiArray, self.lane_line_callback, queue_size=1, tcp_nodelay=True)
@@ -70,7 +68,6 @@ class LaneBoundaryMatcher:
 
     def current_pose_callback(self, msg):
         with self.current_pose_lock:
-            self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.y)
             self.current_timestamp = msg.header.stamp
 
         current_pose_matrix = numpify(msg.pose)
@@ -83,7 +80,6 @@ class LaneBoundaryMatcher:
         openpilot_lane_boundaries = float32_multiarray_to_numpy(msg)
         
         with self.current_pose_lock:
-            current_position = self.current_position
             current_timestamp = self.current_timestamp
 
         with self.global_path_lock:
@@ -91,7 +87,7 @@ class LaneBoundaryMatcher:
             global_path_right_boundary = self.global_path_right_boundary
             self.new_global_path = False
 
-        if global_path_left_boundary is None or global_path_right_boundary is None or current_position is None:
+        if global_path_left_boundary is None or global_path_right_boundary is None:
             return
 
         # Fetch transforms
@@ -149,6 +145,7 @@ class LaneBoundaryMatcher:
         # Perform matching
         ##################################################################
     
+        no_correction = False
         if self.only_lateral_correction:
             # calculate the average difference for right and left boundaries
             differences = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
@@ -156,6 +153,7 @@ class LaneBoundaryMatcher:
             
             if differences is None:
                 y, z = 0, 0
+                no_correction = True
             else:
                 avg_y_diff_left, avg_y_diff_right, avg_z_diff_left, avg_z_diff_right = differences
 
@@ -165,9 +163,11 @@ class LaneBoundaryMatcher:
                 # if the difference between map and openpilot lane boundaries is too big then don't use the correction
                 if abs(avg_y_diff_left) > self.y_correction_treshold or abs(avg_y_diff_right) > self.y_correction_treshold:
                     y, z = 0, 0
+                    no_correction = True
 
                 if abs(avg_z_diff_left) > self.z_correction_treshold or abs(avg_z_diff_right) > self.z_correction_treshold:
                     y, z = 0, 0
+                    no_correction = True
             
             # use exponential moving average to smooth coordinate corrections
             self.y_correction = self.update_correction(y, self.y_correction)
@@ -184,6 +184,7 @@ class LaneBoundaryMatcher:
                 abs(self.z_correction - z) > self.z_correction_treshold or 
                 abs(self.yaw_correction - yaw) > self.yaw_correction_treshold):
                 y, z, yaw = 0, 0, 0
+                no_correction = True
 
             # use exponential moving average to smooth coordinate corrections 
             self.y_correction = self.update_correction(y, self.y_correction)
@@ -198,16 +199,15 @@ class LaneBoundaryMatcher:
         ##################################################################
 
         lanes_marker_array = MarkerArray()
-        marker1, marker2 = self.publish_lanelet_bounds(openpilot_right_lane_boundary, openpilot_left_lane_boundary, True)
+        marker1, marker2 = self.get_lane_boundary_markers(openpilot_right_lane_boundary, openpilot_left_lane_boundary, no_correction, True)
         lanes_marker_array.markers.append(marker1)
         lanes_marker_array.markers.append(marker2)
 
-        marker1, marker2 = self.publish_lanelet_bounds(map_left_lane_boundary, map_right_lane_boundary)
-        #marker1, marker2 = self.publish_lanelet_bounds(global_path_right_boundary, global_path_left_boundary)
+        marker1, marker2 = self.get_lane_boundary_markers(map_left_lane_boundary, map_right_lane_boundary, no_correction)
         lanes_marker_array.markers.append(marker1)
         lanes_marker_array.markers.append(marker2)
         
-        self.lanelet_bounds_pub.publish(lanes_marker_array)
+        self.lane_bound_markers_pub.publish(lanes_marker_array)
 
         
     def global_path_callback(self, msg):
@@ -305,18 +305,21 @@ class LaneBoundaryMatcher:
 
         return shapely.hausdorff_distance(openpilot_left_lane_boundary, corrected_left_map_lane_boundary) + shapely.hausdorff_distance(openpilot_right_lane_boundary, corrected_right_map_lane_boundary)
 
-    def publish_lanelet_bounds(self, right_lane_bound, left_lane_bound, supercombo=False):
-        # For debugging
-
-        if supercombo:
-            color = ColorRGBA(0.0, 1.0, 0.7, 1.0)
+    def get_lane_boundary_markers(self, right_lane_bound, left_lane_bound, no_correction, openpilot=False):
+        if openpilot:
+            if no_correction:
+                color = ColorRGBA(0.5, 0.8, 0.7, 1.0)
+            else:
+                color = ColorRGBA(0.0, 1.0, 0.7, 1.0)
             id_start = 0
             frame_id = "base_link"
         else:
-            color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
+            if no_correction:
+                color = ColorRGBA(0.6, 0.5, 0.4, 1.0)
+            else:
+                color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
             id_start = 2
             frame_id = "base_link_gnss"
-            #frame_id = "map"
 
         points = []
         for x, y, z in right_lane_bound.coords:
