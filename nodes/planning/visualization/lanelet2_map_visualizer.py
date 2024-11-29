@@ -88,17 +88,20 @@ class Lanelet2MapVisualizer:
 
             filtered_lanelets = findWithin2d(self.lanelet2_map.laneletLayer, self.map_extraction_location, self.map_extraction_distance)
             filtered_linestrings = findWithin2d(self.lanelet2_map.lineStringLayer, self.map_extraction_location, self.map_extraction_distance)
+            # convert filtered_linestring into dictionary
+            filtered_linestrings = {linestring.id: linestring for d, linestring in filtered_linestrings}
+
             filtered_regulatory_elements = []
             for reg_el in self.lanelet2_map.regulatoryElementLayer:
                 if reg_el.attributes["subtype"] == "traffic_light":
                     for line in reg_el.parameters["ref_line"]:
-                        if distance(to2D(line), self.map_extraction_location) <= self.map_extraction_distance:
+                        if line.id in filtered_linestrings:
                             filtered_regulatory_elements.append(reg_el)
                             break
 
             # Visualize different parts of the map
             lanelet_markers = visualize_laneletLayer([lanelet for d, lanelet in filtered_lanelets])
-            linestring_markers = visualize_lineStringLayer([linestring for d, linestring in filtered_linestrings])
+            linestring_markers = visualize_lineStringLayer(filtered_linestrings.values())
             reg_el_markers = visualize_regulatoryElementLayer(filtered_regulatory_elements)
 
            # conactenate the MarkerArrays with delete all at front
@@ -140,8 +143,7 @@ class Lanelet2MapVisualizer:
 
             if self.use_map_extraction and self.filtered_linestrings is not None:
                 # Check if the linestring with the target ID is in the filtered list
-                stopline_present = any(linestring.id == result.stopline_id for _, linestring in self.filtered_linestrings)
-                if not stopline_present:
+                if not (result.stopline_id in self.filtered_linestrings):
                     continue
 
             # fetch the stop line data
