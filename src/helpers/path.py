@@ -16,9 +16,6 @@ class PathWrapper:
         self.linestring = shapely.LineString(self._waypoints_xyz)
         shapely.prepare(self.linestring)
 
-        self.multipoints = shapely.multipoints(self._waypoints_xyz)
-        shapely.prepare(self.multipoints)
-
         d = np.cumsum(np.sqrt(np.sum(np.diff(self._waypoints_xyz[:, :2], axis=0)**2, axis=1)))
         self._distances = np.insert(d, 0, 0)
 
@@ -188,10 +185,18 @@ class PathWrapper:
         :param point: Shapely point
         :return: Waypoint
         """
-        nearest_point = shapely.ops.nearest_points(self.multipoints, point)[0]
-        nearest_point = np.array(nearest_point.coords[0])
-        nearest_point_idx = np.where((self._waypoints_xyz == nearest_point).all(axis=1))[0][0]
-        return self.waypoints[nearest_point_idx]
+        point_dist = self.linestring.project(point)
+        idx = self.get_waypoint_index_at_distance(point_dist)
+        if idx == 0:
+            return self.waypoints[0]
+        
+        pot_wp1 = self._waypoints_xyz[idx-1]
+        pot_wp2 = self._waypoints_xyz[idx]
+
+        if shapely.Point(pot_wp1).distance(point) < shapely.Point(pot_wp2).distance(point):
+            return self.waypoints[idx-1]
+        else:
+            return self.waypoints[idx-1]
 
 
 def get_blinker_state(steering_state):

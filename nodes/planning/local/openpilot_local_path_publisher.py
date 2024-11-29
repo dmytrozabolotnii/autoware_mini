@@ -32,7 +32,7 @@ class OpenpilotLocalPathPublisher:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # publishers
-        self.openpilt_local_path_pub = rospy.Publisher('openpilot_local_path', Path, queue_size=1, tcp_nodelay=True)
+        self.openpilot_local_path_pub = rospy.Publisher('openpilot_local_path', Path, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
@@ -74,7 +74,7 @@ class OpenpilotLocalPathPublisher:
         openpilot_local_path.header.stamp = rospy.Time.now()
 
         if current_position is None or global_path is None:
-            self.openpilt_local_path_pub.publish(openpilot_local_path)
+            self.openpilot_local_path_pub.publish(openpilot_local_path)
             return
 
         # fetch the transform from 'openpilot' frame to ouput frame
@@ -96,18 +96,18 @@ class OpenpilotLocalPathPublisher:
                 # use heading of previous point - last point of last lanelet has no following point 
                 x, y, z = openpilot_plan[i]
                 x_prev, y_prev, z_prev = openpilot_plan[i-1]
-                waypoint = self.generate_waypoint(shapely.Point(x, y, z), previous_point=shapely.Point(x_prev, y_prev, z_prev))
+                waypoint = self.create_waypoint(shapely.Point(x, y, z), previous_point=shapely.Point(x_prev, y_prev, z_prev))
                 waypoints.append(waypoint)
             else:
                 x, y, z = openpilot_plan[i]
                 x_next, y_next, z_next = openpilot_plan[i+1]
-                waypoint = self.generate_waypoint(shapely.Point(x, y, z), next_point=shapely.Point(x_next, y_next, z_next))
+                waypoint = self.create_waypoint(shapely.Point(x, y, z), next_point=shapely.Point(x_next, y_next, z_next))
                 waypoints.append(waypoint)
 
         openpilot_local_path.waypoints = waypoints
-        self.openpilt_local_path_pub.publish(openpilot_local_path)
+        self.openpilot_local_path_pub.publish(openpilot_local_path)
 
-    def generate_waypoint(self, current_point, next_point=None, previous_point=None):
+    def create_waypoint(self, current_point, next_point=None, previous_point=None):
         if next_point is not None:
             heading = get_heading_between_two_points(current_point, next_point)
         else:
@@ -133,7 +133,7 @@ class OpenpilotLocalPathPublisher:
 
 def float32_multiarray_to_numpy(multiarray):
     dims = tuple(map(lambda x: x.size, multiarray.layout.dim))
-    return np.array(multiarray.data, dtype=float).reshape(dims).astype(np.float32)
+    return np.array(multiarray.data, dtype=np.float32).reshape(dims)
 
 if __name__ == '__main__':
     rospy.init_node('openpilot_local_path_extractor')
