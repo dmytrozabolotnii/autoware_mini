@@ -97,7 +97,8 @@ class RoadAreaFilter:
                 shapely.prepare(not_road_area)
                 self.not_road_area = not_road_area
 
-            self.road_area_pub.publish(self.get_road_area_markers(road_area))
+            if self.use_map_extraction:
+                self.road_area_pub.publish(self.get_road_area_markers(road_area))
 
     def detected_objects_callback(self, msg):
 
