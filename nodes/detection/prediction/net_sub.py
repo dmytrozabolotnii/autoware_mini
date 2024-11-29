@@ -5,7 +5,7 @@ import rospy
 import threading
 import time
 
-from autoware_msgs.msg import Lane, DetectedObjectArray, Waypoint
+from autoware_mini.msg import Path, DetectedObjectArray, Waypoint
 
 from helpers.message_cache import MessageCache
 
@@ -33,7 +33,7 @@ class NetSubscriber(metaclass=ABCMeta):
 
         # ROS timers/pub/sub
         self.class_init = False
-
+        print(self.inference_timer_duration)
         self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
         self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
                                            tcp_nodelay=True)
@@ -45,17 +45,17 @@ class NetSubscriber(metaclass=ABCMeta):
         # cache objects with filter, so we can refer to them at inference time
         active_keys = set()
         for i, detectedobject in enumerate(detectedobjectarray.objects):
-            if detectedobject.label == 'pedestrian' or detectedobject.label == 'unknown':
+            if detectedobject.label == 'pedestrian' or detectedobject.label == 'bicycle' or detectedobject.label == 'unknown':
                 position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
-                velocity = np.array([detectedobject.velocity.linear.x, detectedobject.velocity.linear.y])
-                acceleration = np.array([detectedobject.acceleration.linear.x, detectedobject.acceleration.linear.y])
-                header = detectedobject.header
+                velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
+                acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
+                header = detectedobjectarray.header
                 _id = detectedobject.id
                 active_keys.add(_id)
                 with self.lock:
                     if _id not in self.cache:
                         self.cache[_id] = MessageCache(_id, position, velocity, acceleration, header,
-                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration)
+                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=detectedobject.convex_hull)
 
                     else:
                         self.cache[_id].move_endpoints()
@@ -74,19 +74,19 @@ class NetSubscriber(metaclass=ABCMeta):
         output_msg_array = DetectedObjectArray(header=detectedobjectsarray.header)
 
         for detectedobject in detectedobjectsarray.objects:
-            if detectedobject.label == 'pedestrian' or detectedobject.label == 'unknown':
+            if detectedobject.label == 'pedestrian' or detectedobject.label == 'bicycle' or detectedobject.label == 'unknown':
                 with self.lock:
                     predictions = self.cache[detectedobject.id].return_last_prediction()
                     predictions_header = self.cache[detectedobject.id].return_last_prediction_header()
                 for prediction in predictions:
-                    lane = Lane(header=predictions_header)
+                    lane = Path(header=predictions_header)
 
                     for j in prediction:
                         wp = Waypoint()
-                        wp.pose.pose.position.x, wp.pose.pose.position.y = j
-                        wp.pose.pose.position.z = detectedobject.pose.position.z
+                        wp.position.x, wp.position.y = j
+                        wp.position.z = detectedobject.pose.position.z
                         lane.waypoints.append(wp)
-                    detectedobject.candidate_trajectories.lanes.append(lane)
+                    detectedobject.candidate_trajectories.paths.append(lane)
 
             output_msg_array.objects.append(detectedobject)
         # Publish objects with predicted candidate trajectories

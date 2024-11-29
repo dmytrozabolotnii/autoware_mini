@@ -1,11 +1,11 @@
-# Adapted naive_predictor for pedestrian prediction experiments
-
 #!/usr/bin/env python3
+
+# Adapted naive_predictor for pedestrian prediction experiments
 
 import rospy
 import numpy as np
 
-from autoware_msgs.msg import DetectedObjectArray, Lane, Waypoint
+from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 from net_sub import NetSubscriber
 
 class NaivePredictor(NetSubscriber):

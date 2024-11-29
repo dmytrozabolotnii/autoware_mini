@@ -114,11 +114,7 @@ map_based_predictor:
   prediction_min_speed: 1.0         # m/s
   use_offset_for_prediction: True   # use offset from lanelet centerline for prediction
 
-road_area_filter:
-  filtering_method: within          # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
-  filtering_extent: 100             # m from ego current location of ego in x and y directions, objects further are removed
-
-predictor:
+pedestrian_predictor:
   prediction_horizon: 12 # prediction horizon in steps
   prediction_history: 8 # prediction data history in steps
   prediction_history_hide: 4 # hide the last X values in prediction history
@@ -126,7 +122,7 @@ predictor:
   inference_timer: 0.4 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
-  results_category_folder: "_one_node_k_5_n_4"
+  results_category_folder: "_contrib_2_adl_seminar"
 
   pecnet_predictor:
     predictions_amount: 5
@@ -143,6 +139,9 @@ predictor:
   musevae_predictor:
     predictions_amount: 5
 
+road_area_filter:
+  filtering_method: within          # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
+  filtering_extent: 100             # m from ego current location of ego in x and y directions, objects further are removed
 
 mqtt_traffic_light_detector:
   mqtt_host: mqtt.cloud.ut.ee

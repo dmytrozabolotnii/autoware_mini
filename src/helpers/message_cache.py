@@ -1,17 +1,19 @@
 # Class for caching info from messages of type DetectedObject for inference with separate timer
 import numpy as np
+from scipy.spatial import convex_hull_plot_2d
 from shapely import LineString, Point, LinearRing, prepare
 import time
 
 class MessageCache:
     def __init__(self, id,
                  initial_trajectory_point,
-                 initial_velocity, initial_acceleration, initial_header, pad_past=8, hide_past=0, delta_t=0.5):
+                 initial_velocity, initial_acceleration, initial_header, pad_past=8, hide_past=0, delta_t=0.5, convex_hull=None):
         self.id = id
         self.endpoints_count = 0
         self.raw_trajectories = [initial_trajectory_point]
         self.raw_velocities = [initial_velocity]
         self.raw_accelerations = [initial_acceleration]
+        self.convex_hull = convex_hull
         self.headers = [initial_header]
         self.prediction_history = [[]]
         self.predictions_history_headers = [None]

@@ -9,7 +9,7 @@ import numpy as np
 from shapely import LineString, prepare
 from helpers.geometry import get_distance_between_two_points_2d
 from std_msgs.msg import Float32
-from autoware_msgs.msg import Lane
+from autoware_mini.msg import Path
 
 
 def calculate_ade(x, y):
@@ -54,7 +54,7 @@ class MetricsCalculator:
         self.aware_fde = rospy.Publisher('/dashboard/aware_fde', Float32, queue_size=1)
 
         # self.sub = rospy.Subscriber('predicted_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
-        self.local_path_sub = rospy.Subscriber('/planning/local_path', Lane, self.local_path_callback, queue_size=1)
+        self.local_path_sub = rospy.Subscriber('/planning/local_path', Path, self.local_path_callback, queue_size=1)
         rospy.on_shutdown(self.shutdown)
         with open(self.csvfilename, 'w') as file:
             file.write('stamp,ade,fde,aware_ade,n_ped')
@@ -208,12 +208,12 @@ class MetricsCalculator:
         # Calculate planned local path from the autoware message
         # and save it to cache if its newer than previous message for duration
 
-        points = [waypoint.pose.pose.position for waypoint in lane.waypoints]
+        points = [waypoint.position for waypoint in lane.waypoints]
         if (len(points) > 1) and ((not any(self.planned_local_path_cache)) or (lane.header.stamp - list(self.planned_local_path_cache.keys())[-1] >=
                             rospy.Duration(self.metrics_timer_duration))):
             linepoints = LineString([(point.x, point.y) for point in points])
             prepare(linepoints)
-            speeds = [waypoint.twist.twist.linear.x for waypoint in lane.waypoints]
+            speeds = [waypoint.speed for waypoint in lane.waypoints]
 
             dist_between_points = np.array([get_distance_between_two_points_2d(points[i], points[i + 1]) for i in range(len(points) - 1) if range(len(points) > 1)])
             avg_speed_between_points = np.array([(speeds[i] + speeds[i + 1]) / 2 for i in range(len(speeds) - 1) if range(len(speeds) > 1)])

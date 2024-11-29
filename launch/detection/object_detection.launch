@@ -8,7 +8,7 @@
     <arg name="map_name"            default="tartu_demo"        doc="map name for road area filter" />
     <arg name="road_area_file"      default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
     <arg name="tracker"             default="ema"               doc="none, ema" />
-    <arg name="predictor"           default="none"              doc="none, naive, map, map_naive" />
+    <arg name="predictor"           default="none"              doc="none, naive, map, map_naive, pedestrian, pedestriansg, pedestrianga, pedestrianmuse, pedestrianhp" />
     <arg name="predictor_backfill"  default="false"             doc="By default don't backfill object trajectories" />
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
@@ -119,50 +119,51 @@
         </node>
         <node if="$(eval predictor=='map')" pkg="topic_tools" type="relay" args="predicted_objects_map predicted_objects" name="predicted_objects_relay" output="screen" required="true" />
         <node if="$(eval predictor=='naive')" pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
+        <node if="$(eval 'pedestrian' in predictor)" pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
         <node if="$(eval 'naive' in predictor)" type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
             <remap from="tracked_objects" to="predicted_objects_map" />
         </node>
-    </group>
-    <group unless="$(eval predictor=='none')" ns="predictor">
-        <remap from="tracked_objects" to="/detection/tracked_objects" />
-        <remap from="predicted_objects" to="/detection/final_objects" />
+        <group if="$(eval 'pedestrian' in predictor)" ns="pedestrian_predictor">
+            <remap from="tracked_objects" to="/detection/tracked_objects" />
+            <remap from="predicted_objects" to="/detection/predicted_objects" />
 
-        <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
-        <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
-        <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
-        <param name="predictor" type="string" value="$(arg predictor)"/>
-        <param name="bag_file" type="string" value="$(arg bag_file)"/>
+            <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
+            <param name="predictor_backfill"  value="$(arg predictor_backfill)" />
+            <param name="csv_file_result" value="$(find autoware_mini)/data/results/prediction"/>
+            <param name="predictor" type="string" value="$(arg predictor)"/>
+            <param name="bag_file" type="string" value="$(arg bag_file)"/>
 
-        <node if="$(eval predictor=='naive')" type="naive_predictor_2.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
-            <param name="constant_velocity" value="false" />
-        </node>
+            <node if="$(eval predictor=='pedestrianca')" type="naive_predictor_2.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
+                <param name="constant_velocity" value="false" />
+            </node>
 
-        <node if="$(eval predictor=='naivecv')" type="naive_predictor_2.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
-            <param name="constant_velocity" value="true" />
-        </node>
+            <node if="$(eval predictor=='pedestriancv')" type="naive_predictor_2.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
+                <param name="constant_velocity" value="true" />
+            </node>
 
-        <node if="$(eval predictor=='pedestrian')" type="pecnet_sub.py" name="pecnet_predictor" pkg="autoware_mini" output="screen" required="true" />
+            <node if="$(eval predictor=='pedestrianrvo')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
+                <param name="constant_velocity" value="true" />
+                <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
+            </node>
 
-        <node if="$(eval predictor=='pedestriansg')" type="sgnet_sub.py" name="sgnet_predictor" pkg="autoware_mini" output="screen" required="true" />
+            <node if="$(eval predictor=='pedestrian')" type="pecnet_sub.py" name="pecnet_predictor" pkg="autoware_mini" output="screen" required="true" />
 
-        <node if="$(eval predictor=='pedestrianled')" type="lednet_sub.py" name="lednet_predictor" pkg="autoware_mini" output="screen" required="true" />
+            <node if="$(eval predictor=='pedestriansg')" type="sgnet_sub.py" name="sgnet_predictor" pkg="autoware_mini" output="screen" required="true" />
 
-        <node if="$(eval predictor=='pedestrianga')" type="gatraj_sub.py" name="gatraj_predictor" pkg="autoware_mini" output="screen" required="true" />
+            <node if="$(eval predictor=='pedestrianled')" type="lednet_sub.py" name="lednet_predictor" pkg="autoware_mini" output="screen" required="true" />
 
-        <node if="$(eval predictor=='pedestrianmuse')" type="musevae_sub.py" name="musevae_predictor" pkg="autoware_mini" output="screen" required="true" />
+            <node if="$(eval predictor=='pedestrianga')" type="gatraj_sub.py" name="gatraj_predictor" pkg="autoware_mini" output="screen" required="true" />
 
-        <node if="$(eval predictor=='pedestrianhp')" type="hpnet_sub.py" name="hpnet_predictor" pkg="autoware_mini" output="screen" required="true" />
+            <node if="$(eval predictor=='pedestrianmuse')" type="musevae_sub.py" name="musevae_predictor" pkg="autoware_mini" output="screen" required="true" />
 
-        <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
+            <node if="$(eval predictor=='pedestrianhp')" type="hpnet_sub.py" name="hpnet_predictor" pkg="autoware_mini" output="screen" required="true" />
+        </group>
+
+        <node type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
             <remap from="detected_objects" to="predicted_objects" />
             <remap from="detected_objects_markers" to="predicted_objects_markers" />
         </node>
-
     </group>
-
-
-    <node if="$(eval predictor=='none')" pkg="topic_tools" type="relay" args="tracked_objects final_objects" name="tracked_objects_relay" output="screen" required="true" />
-
     <group if="$(eval predictor=='none')">
         <node pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
         <node pkg="topic_tools" type="relay" args="predicted_objects_map predicted_objects" name="predicted_objects_relay" output="screen" required="true" />
