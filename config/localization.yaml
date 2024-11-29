@@ -10,6 +10,9 @@ novatel_oem7_localizer:
 
 lane_boundary_matcher:
   only_lateral_correction: False
+  #only_lateral_correction: True
+  lookahead_distance: 30
+  #lookahead_distance: 3
   y_correction_treshold: 0.5
   z_correction_treshold: 0.8
   yaw_correction_treshold: 0.1

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 
+import threading
+import numpy as np
+import shapely
+import shapely.ops as shpops
+import scipy
 import scipy.optimize
 import rospy
-import numpy as np
 import tf2_ros
-import shapely
-import threading
-import scipy
-import shapely.ops as shpops
+from ros_numpy import numpify, msgify
+from tf.transformations import quaternion_from_euler, quaternion_matrix
 from std_msgs.msg import Float32MultiArray, ColorRGBA
 from autoware_mini.msg import Path
 from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Quaternion, Pose
 from visualization_msgs.msg import MarkerArray, Marker
-from ros_numpy import numpify, msgify
-from tf.transformations import quaternion_from_euler, quaternion_matrix
 
 from helpers.transform import transform_point
 
@@ -23,12 +23,7 @@ class LaneBoundaryMatcher:
 
         # parameters
         self.only_lateral_correction = rospy.get_param("~only_lateral_correction")
-
-        if self.only_lateral_correction:
-            self.lookahead_distance = 3
-        else:
-            self.lookahead_distance = 30
-
+        self.lookahead_distance = rospy.get_param("~lookahead_distance")
         self.y_correction_treshold = rospy.get_param("~y_correction_treshold")
         self.z_correction_treshold = rospy.get_param("~z_correction_treshold")
         self.yaw_correction_treshold = rospy.get_param("~yaw_correction_treshold")
@@ -85,7 +80,6 @@ class LaneBoundaryMatcher:
         with self.global_path_lock:
             global_path_left_boundary = self.global_path_left_boundary
             global_path_right_boundary = self.global_path_right_boundary
-            self.new_global_path = False
 
         if global_path_left_boundary is None or global_path_right_boundary is None:
             return
@@ -115,8 +109,9 @@ class LaneBoundaryMatcher:
         openpilot_lane_boundary_points = homogeneous_openpilot_lane_boundaries[:, :3].reshape(2, -1, 3) # convert back to 3d matrix with 3d points
 
         # trim openpilot lane boundaries
-        openpilot_left_lane_boundary = shpops.substring(shapely.LineString(openpilot_lane_boundary_points[0]), 0, self.lookahead_distance)
-        openpilot_right_lane_boundary = shpops.substring(shapely.LineString(openpilot_lane_boundary_points[1]), 0, self.lookahead_distance)
+        openpilot_left_lane_boundary, openpilot_right_lane_boundary = shapely.linestrings(openpilot_lane_boundary_points)
+        openpilot_left_lane_boundary = shpops.substring(openpilot_left_lane_boundary, 0, self.lookahead_distance)
+        openpilot_right_lane_boundary = shpops.substring(openpilot_right_lane_boundary, 0, self.lookahead_distance)
         
         ##################################################################
         # Transform map lane boundaries
@@ -161,11 +156,7 @@ class LaneBoundaryMatcher:
                 z = (avg_z_diff_left + avg_z_diff_right) / 2
 
                 # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-                if abs(avg_y_diff_left) > self.y_correction_treshold or abs(avg_y_diff_right) > self.y_correction_treshold:
-                    y, z = 0, 0
-                    no_correction = True
-
-                if abs(avg_z_diff_left) > self.z_correction_treshold or abs(avg_z_diff_right) > self.z_correction_treshold:
+                if y > self.y_correction_treshold or z > self.z_correction_treshold:
                     y, z = 0, 0
                     no_correction = True
             
@@ -199,20 +190,21 @@ class LaneBoundaryMatcher:
         ##################################################################
 
         lanes_marker_array = MarkerArray()
-        marker1, marker2 = self.get_lane_boundary_markers(openpilot_right_lane_boundary, openpilot_left_lane_boundary, no_correction, True)
+        marker1 = self.get_lane_boundary_marker(openpilot_right_lane_boundary, "right", no_correction, True)
+        marker2 = self.get_lane_boundary_marker(openpilot_left_lane_boundary, "left", no_correction, True)
         lanes_marker_array.markers.append(marker1)
         lanes_marker_array.markers.append(marker2)
 
-        marker1, marker2 = self.get_lane_boundary_markers(map_left_lane_boundary, map_right_lane_boundary, no_correction)
-        lanes_marker_array.markers.append(marker1)
-        lanes_marker_array.markers.append(marker2)
+        marker3 = self.get_lane_boundary_marker(map_right_lane_boundary, "right", no_correction)
+        marker4 = self.get_lane_boundary_marker(map_left_lane_boundary, "left", no_correction)
+        lanes_marker_array.markers.append(marker3)
+        lanes_marker_array.markers.append(marker4)
         
         self.lane_bound_markers_pub.publish(lanes_marker_array)
 
         
     def global_path_callback(self, msg):
         if len(msg.waypoints) == 0:
-            rospy.loginfo("%s - Empty global path received", rospy.get_name())
             return
         
         three_point_lines = []
@@ -238,6 +230,8 @@ class LaneBoundaryMatcher:
         
         left_offset_lines = shapely.offset_curve(three_point_linestrings, left_offsets)
         right_offset_lines = shapely.offset_curve(three_point_linestrings, right_offsets)
+
+        assert len(three_point_linestrings) == len(left_offsets) == len(right_offsets)
 
         left_boundary_coords = []
         right_boundary_coords = []
@@ -303,57 +297,46 @@ class LaneBoundaryMatcher:
 
         return shapely.hausdorff_distance(openpilot_left_lane_boundary, corrected_left_map_lane_boundary) + shapely.hausdorff_distance(openpilot_right_lane_boundary, corrected_right_map_lane_boundary)
 
-    def get_lane_boundary_markers(self, right_lane_bound, left_lane_bound, no_correction, openpilot=False):
+    def get_lane_boundary_marker(self, lane_boundary, side, no_correction, openpilot=False):
         if openpilot:
             if no_correction:
                 color = ColorRGBA(0.5, 0.8, 0.7, 1.0)
             else:
                 color = ColorRGBA(0.0, 1.0, 0.7, 1.0)
-            id_start = 0
+            if side == "right":
+                id_start = 0
+            else:
+                id_start = 1
             frame_id = "base_link"
         else:
             if no_correction:
                 color = ColorRGBA(0.6, 0.5, 0.4, 1.0)
             else:
                 color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
-            id_start = 2
+            if side == "right":
+                id_start = 2
+            else:
+                id_start = 3
             frame_id = "base_link_gnss"
 
         points = []
-        for x, y, z in right_lane_bound.coords:
+        for x, y, z in lane_boundary.coords:
             point = Point(x=x,y=y, z=z)
             points.append(point)
 
-        marker1 = Marker()
-        marker1.header.frame_id = frame_id
-        marker1.header.stamp = rospy.Time.now()
-        marker1.ns = "right bound"
-        marker1.id = id_start
-        marker1.type = Marker.LINE_STRIP
-        marker1.action = Marker.ADD
-        marker1.pose.orientation.w = 1.0
-        marker1.scale.x = 0.1
-        marker1.color = color
-        marker1.points = points
+        marker = Marker()
+        marker.header.frame_id = frame_id
+        marker.header.stamp = rospy.Time.now()
+        marker.ns = f"{side} bound"
+        marker.id = id_start
+        marker.type = Marker.LINE_STRIP
+        marker.action = Marker.ADD
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.1
+        marker.color = color
+        marker.points = points
 
-        points = []
-        for x, y, z in left_lane_bound.coords:
-            point = Point(x=x,y=y, z=z)
-            points.append(point)
-
-        marker2 = Marker()
-        marker2.header.frame_id = frame_id
-        marker2.header.stamp = rospy.Time.now()
-        marker2.ns = "left bound"
-        marker2.id = id_start + 1
-        marker2.type = Marker.LINE_STRIP
-        marker2.action = Marker.ADD
-        marker2.pose.orientation.w = 1.0
-        marker2.scale.x = 0.1
-        marker2.color = color
-        marker2.points = points
-
-        return marker1, marker2
+        return marker
 
     def publish_base_link_correction_tf(self, init=False):
         t = TransformStamped()
