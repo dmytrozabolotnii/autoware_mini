@@ -9,13 +9,14 @@ import scipy.optimize
 import rospy
 import tf2_ros
 from ros_numpy import numpify, msgify
-from tf.transformations import quaternion_from_euler, quaternion_matrix
+from tf.transformations import euler_matrix
 from std_msgs.msg import Float32MultiArray, ColorRGBA
 from autoware_mini.msg import Path
-from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Quaternion, Pose
+from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Pose
 from visualization_msgs.msg import MarkerArray, Marker
 
 from helpers.transform import transform_point
+from helpers.geometry import get_orientation_from_heading
 
 class LaneBoundaryMatcher:
 
@@ -277,9 +278,8 @@ class LaneBoundaryMatcher:
     
     def objective_function(self, input_values, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary):
         lateral_correction, height_correction, yaw_correction = input_values
-        x_q, y_q, z_q, w_q = quaternion_from_euler(0, 0, yaw_correction, axes='rxyz')
 
-        matrix = quaternion_matrix([x_q, y_q, z_q, w_q])
+        matrix = euler_matrix(0, 0, yaw_correction)
         matrix[1, 3] = lateral_correction
         matrix[2, 3] = height_correction
 
@@ -346,9 +346,6 @@ class LaneBoundaryMatcher:
         yaw_correction = self.yaw_correction
         correction_stamp = self.correction_stamp
 
-        x_q, y_q, z_q, w_q = quaternion_from_euler(0, 0, yaw_correction, axes='rxyz')
-        orientation = Quaternion(x_q, y_q, z_q, w_q)
-
         if init:
             t.header.stamp = rospy.Time.now()
         else:
@@ -359,9 +356,9 @@ class LaneBoundaryMatcher:
         t.transform.translation.x = 0
         t.transform.translation.y = y_correction
         t.transform.translation.z = z_correction
-        t.transform.rotation = orientation
+        t.transform.rotation = get_orientation_from_heading(yaw_correction)
 
-        matrix = quaternion_matrix([x_q, y_q, z_q, w_q])
+        matrix = euler_matrix(0, 0, yaw_correction)
         matrix[0, 3] = 0
         matrix[1, 3] = y_correction
         matrix[2, 3] = z_correction
