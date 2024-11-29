@@ -7,11 +7,10 @@ from autoware_mini.msg import TrafficLightResultArray
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point, PoseStamped
 from std_msgs.msg import ColorRGBA, Int32
-from lanelet2.core import BasicPoint2d
-from lanelet2.geometry import findWithin2d, distance, to2D
-
+from lanelet2.core import BasicPoint2d, BoundingBox2d
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
+
 
 # used for traffic lights
 RED = ColorRGBA(1.0, 0.0, 0.0, 0.8)
@@ -86,21 +85,19 @@ class Lanelet2MapVisualizer:
         if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) > (self.map_extraction_distance - 2*self.local_path_length):
             self.map_extraction_location = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
 
-            filtered_lanelets = findWithin2d(self.lanelet2_map.laneletLayer, self.map_extraction_location, self.map_extraction_distance)
-            filtered_linestrings = findWithin2d(self.lanelet2_map.lineStringLayer, self.map_extraction_location, self.map_extraction_distance)
-            # convert filtered_linestring into dictionary
-            filtered_linestrings = {linestring.id: linestring for d, linestring in filtered_linestrings}
+            self.map_extraction_location = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
+            search_box = BoundingBox2d(BasicPoint2d(msg.pose.position.x - self.map_extraction_distance, msg.pose.position.y - self.map_extraction_distance),
+                                        BasicPoint2d(msg.pose.position.x + self.map_extraction_distance, msg.pose.position.y + self.map_extraction_distance))
 
-            filtered_regulatory_elements = []
-            for reg_el in self.lanelet2_map.regulatoryElementLayer:
-                if reg_el.attributes["subtype"] == "traffic_light":
-                    for line in reg_el.parameters["ref_line"]:
-                        if line.id in filtered_linestrings:
-                            filtered_regulatory_elements.append(reg_el)
-                            break
+            filtered_lanelets = self.lanelet2_map.laneletLayer.search(search_box)
+            filtered_linestrings = self.lanelet2_map.lineStringLayer.search(search_box)
+            filtered_regulatory_elements = self.lanelet2_map.regulatoryElementLayer.search(search_box)
+
+            # convert filtered_linestring into dictionary
+            filtered_linestrings = {linestring.id: linestring for linestring in filtered_linestrings}
 
             # Visualize different parts of the map
-            lanelet_markers = visualize_laneletLayer([lanelet for d, lanelet in filtered_lanelets])
+            lanelet_markers = visualize_laneletLayer([lanelet for lanelet in filtered_lanelets])
             linestring_markers = visualize_lineStringLayer(filtered_linestrings.values())
             reg_el_markers = visualize_regulatoryElementLayer(filtered_regulatory_elements)
 
