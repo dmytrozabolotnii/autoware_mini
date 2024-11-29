@@ -59,5 +59,11 @@ trajectory_collision_checker:
 automatic_stop_behavior:
   braking_safety_distance_stop_line: 0.1      # m
   keep_stop_line_for: 15.0                    # s
+collision_points_merger:
+  synchronization_queue_size: 4
+  synchronization_slop: 0.15
+speed_planner:
+  synchronization_queue_size: 4
+  synchronization_slop: 0.15
 openpilot_local_path_publisher:
   transform_timeout: 0.06

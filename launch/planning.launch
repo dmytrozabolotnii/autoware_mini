@@ -3,6 +3,7 @@
 
     <arg name="global_planner"              default="lanelet2"  doc="waypoints, lanelet2, carla" />
     <arg name="local_planner"               default="rule"      doc="none, rule, openpilot" />
+    <arg name="synchronization_method"      default="$(eval 'approximate' if local_planner=='openpilot' else 'exact')" />
     <arg name="use_path_smoothing"          default="true" />
     <arg name="waypoints_file"              default="waypoints_erm_utm_1m.csv" />
     <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
@@ -76,9 +77,12 @@
             <node pkg="autoware_mini" type="automatic_stop_behavior.py" name="automatic_stop_behavior" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
-            <node pkg="autoware_mini" type="collision_points_merger.py" name="collision_points_merger" output="screen" required="true" />
+            <node pkg="autoware_mini" type="collision_points_merger.py" name="collision_points_merger" output="screen" required="true" >
+                <param name="synchronization_method" value="$(arg synchronization_method)" />
+            </node>
             <node pkg="autoware_mini" type="speed_planner.py" name="speed_planner" output="screen" required="true" >
                 <remap if="$(eval local_planner=='openpilot')" from="extracted_local_path" to="openpilot_local_path"/>
+                <param name="synchronization_method" value="$(arg synchronization_method)" />
             </node>
 
             <node pkg="autoware_mini" type="local_path_visualizer.py" name="local_path_visualizer" output="screen" required="true"/>

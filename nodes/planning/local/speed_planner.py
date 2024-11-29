@@ -11,7 +11,6 @@ from autoware_mini.msg import Path
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from helpers.path import PathWrapper
-from helpers.collision import CollisionPoints
 from helpers.geometry import project_vector_to_heading, get_distance_between_two_points_2d
 
 class SpeedPlanner:
@@ -22,6 +21,9 @@ class SpeedPlanner:
         self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.default_deceleration = rospy.get_param("default_deceleration")
         self.braking_reaction_time = rospy.get_param("braking_reaction_time")
+        synchronization_method = rospy.get_param("~synchronization_method")
+        synchronization_queue_size = rospy.get_param("~synchronization_queue_size")
+        synchronization_slop = rospy.get_param("~synchronization_slop")
 
         # variables
         self.collision_points = None
@@ -38,7 +40,11 @@ class SpeedPlanner:
         collision_points_sub = message_filters.Subscriber('collision_points', PointCloud2, tcp_nodelay=True)
         local_path_sub = message_filters.Subscriber('extracted_local_path', Path, tcp_nodelay=True)
 
-        ts = message_filters.ApproximateTimeSynchronizer([collision_points_sub, local_path_sub], queue_size=4, slop=0.15)
+        if synchronization_method == "approximate":
+            ts = message_filters.ApproximateTimeSynchronizer([collision_points_sub, local_path_sub], queue_size=synchronization_queue_size, slop=synchronization_slop)
+        else:
+            ts = message_filters.TimeSynchronizer([collision_points_sub, local_path_sub], queue_size=4)
+
         ts.registerCallback(self.collision_points_and_path_callback)
 
     def current_velocity_callback(self, msg):
