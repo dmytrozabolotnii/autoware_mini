@@ -22,7 +22,7 @@ lanelet2_global_planner:
   lanelet_search_radius: 0.5
 
 lanelet2_map_visualizer:
-  use_map_extraction: True      # extract smaller map area around the ego vehicle for visualization
+  use_map_extraction: False     # extract smaller map area around the ego vehicle for visualization
   map_extraction_distance: 500  # m - distance from ego vehicle to extract map data
 
 waypoint_loader:

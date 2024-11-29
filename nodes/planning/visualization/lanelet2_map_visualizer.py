@@ -84,8 +84,6 @@ class Lanelet2MapVisualizer:
 
         if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) > (self.map_extraction_distance - 2*self.local_path_length):
             self.map_extraction_location = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
-
-            self.map_extraction_location = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
             search_box = BoundingBox2d(BasicPoint2d(msg.pose.position.x - self.map_extraction_distance, msg.pose.position.y - self.map_extraction_distance),
                                         BasicPoint2d(msg.pose.position.x + self.map_extraction_distance, msg.pose.position.y + self.map_extraction_distance))
 
@@ -93,12 +91,9 @@ class Lanelet2MapVisualizer:
             filtered_linestrings = self.lanelet2_map.lineStringLayer.search(search_box)
             filtered_regulatory_elements = self.lanelet2_map.regulatoryElementLayer.search(search_box)
 
-            # convert filtered_linestring into dictionary
-            filtered_linestrings = {linestring.id: linestring for linestring in filtered_linestrings}
-
             # Visualize different parts of the map
-            lanelet_markers = visualize_laneletLayer([lanelet for lanelet in filtered_lanelets])
-            linestring_markers = visualize_lineStringLayer(filtered_linestrings.values())
+            lanelet_markers = visualize_laneletLayer(filtered_lanelets)
+            linestring_markers = visualize_lineStringLayer(filtered_linestrings)
             reg_el_markers = visualize_regulatoryElementLayer(filtered_regulatory_elements)
 
            # conactenate the MarkerArrays with delete all at front
@@ -108,7 +103,7 @@ class Lanelet2MapVisualizer:
             marker_array.markers = [marker] + lanelet_markers.markers + linestring_markers.markers + reg_el_markers.markers
 
             self.lanelet2_map_markers_pub.publish(marker_array)
-            self.filtered_linestrings = filtered_linestrings
+            self.filtered_linestrings = {linestring.id: linestring for linestring in filtered_linestrings}
 
     def lets_go_callback(self, msg):
         marker_array = MarkerArray()
