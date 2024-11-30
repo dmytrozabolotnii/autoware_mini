@@ -12,10 +12,10 @@
     <arg name="tfl_detector"            default="carla"                 doc="carla, camera, mqtt_camera_fusion" />
     <arg name="tfl_cameras"             default="mako"                  doc="mako, nvidia" />
     <arg name="tracker"                 default="$(eval 'ema' if detector != 'carla' else 'none')" />
-    <arg name="predictor"               default="none"                  doc="none, naive, map, map_naive" />
+    <arg name="predictor"               default="map_naive"             doc="none, naive, map, map_naive" />
     <arg name="follower"                default="pure_pursuit"          doc="pure_pursuit, stanley" />
     <arg name="detection_range"         default=""                      doc="enter a value in meters to enable it" />
-    <arg name="use_road_area_filter"    default="false"                 doc="use road area filter"/>
+    <arg name="use_road_area_filter"    default="$(eval 'tartu' in map_name)"   doc="use road area filter"/>
     <arg name='use_lidar_center'        default='true'/>
     <arg name='use_lidar_front'         default='false'/>
     <arg name='rviz'                    default='true'/>
