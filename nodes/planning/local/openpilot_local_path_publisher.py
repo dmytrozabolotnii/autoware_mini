@@ -6,9 +6,8 @@ import tf2_ros
 import threading
 import shapely
 from ros_numpy import numpify
-from autoware_mini.msg import Path, Waypoint
+from autoware_mini.msg import Path, Waypoint, Float32MultiArrayStamped
 from geometry_msgs.msg import PoseStamped
-from std_msgs.msg import Float32MultiArray
 from helpers.path import PathWrapper
 from helpers.geometry import get_heading_between_two_points
 
@@ -25,9 +24,8 @@ class OpenpilotLocalPathPublisher:
         self.current_position = None
         self.global_path = None
         self.output_frame = None
-        self.current_timestamp = None
+        self.openpilot_velocity = None
 
-        self.current_pose_lock = threading.Lock()
         self.global_path_lock = threading.Lock()
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -39,12 +37,11 @@ class OpenpilotLocalPathPublisher:
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
-        rospy.Subscriber('/openpilot/position', Float32MultiArray, self.openpilot_position_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/openpilot/position', Float32MultiArrayStamped, self.openpilot_position_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/openpilot/velocity', Float32MultiArrayStamped, self.openpilot_velocity_callback, queue_size=1, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
-        with self.current_pose_lock:
-            self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
-            self.current_timestamp = msg.header.stamp
+        self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
     def global_path_callback(self, msg):
         output_frame = msg.header.frame_id
@@ -60,12 +57,13 @@ class OpenpilotLocalPathPublisher:
             self.output_frame = output_frame
             self.global_path = global_path
 
+    def openpilot_velocity_callback(self, msg):
+        self.openpilot_velocity = float32_multiarray_to_numpy(msg).T
+
     def openpilot_position_callback(self, msg):
         openpilot_plan = float32_multiarray_to_numpy(msg).T
-
-        with self.current_pose_lock:
-            current_position = self.current_position
-            current_timestamp = self.current_timestamp
+        openpilot_velocity = self.openpilot_velocity
+        current_position = self.current_position
 
         with self.global_path_lock:
             global_path = self.global_path
@@ -73,7 +71,7 @@ class OpenpilotLocalPathPublisher:
 
         openpilot_local_path = Path()
         openpilot_local_path.header.frame_id = output_frame
-        openpilot_local_path.header.stamp = rospy.Time.now()
+        openpilot_local_path.header.stamp = msg.header.stamp
 
         if current_position is None or global_path is None:
             self.openpilot_local_path_pub.publish(openpilot_local_path)
@@ -81,7 +79,7 @@ class OpenpilotLocalPathPublisher:
 
         # fetch the transform from 'openpilot' frame to ouput frame
         try:
-            transform = self.tf_buffer.lookup_transform(output_frame, "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
+            transform = self.tf_buffer.lookup_transform(output_frame, msg.header.frame_id, msg.header.stamp, rospy.Duration(self.transform_timeout))
             tf_matrix = numpify(transform.transform)
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
@@ -98,18 +96,18 @@ class OpenpilotLocalPathPublisher:
                 # use heading of previous point - last point of last lanelet has no following point 
                 x, y, z = openpilot_plan[i]
                 x_prev, y_prev, z_prev = openpilot_plan[i-1]
-                waypoint = self.create_waypoint(shapely.Point(x, y, z), previous_point=shapely.Point(x_prev, y_prev, z_prev))
+                waypoint = self.create_waypoint(shapely.Point(x, y, z), openpilot_velocity[i], previous_point=shapely.Point(x_prev, y_prev, z_prev))
                 waypoints.append(waypoint)
             else:
                 x, y, z = openpilot_plan[i]
                 x_next, y_next, z_next = openpilot_plan[i+1]
-                waypoint = self.create_waypoint(shapely.Point(x, y, z), next_point=shapely.Point(x_next, y_next, z_next))
+                waypoint = self.create_waypoint(shapely.Point(x, y, z), openpilot_velocity[i], next_point=shapely.Point(x_next, y_next, z_next))
                 waypoints.append(waypoint)
 
         openpilot_local_path.waypoints = waypoints
         self.openpilot_local_path_pub.publish(openpilot_local_path)
 
-    def create_waypoint(self, current_point, next_point=None, previous_point=None):
+    def create_waypoint(self, current_point, openpilot_velocity, next_point=None, previous_point=None):
         if next_point is not None:
             heading = get_heading_between_two_points(current_point, next_point)
         else:
@@ -132,7 +130,7 @@ class OpenpilotLocalPathPublisher:
         waypoint.lanechange_state = 0
         waypoint.blinker_state = blinker_state
         waypoint.heading = heading
-        waypoint.speed = self.global_path.get_velocity_at_distance(current_point_dist)
+        waypoint.speed = np.linalg.norm(openpilot_velocity[:3])
         waypoint.left_width = self.default_left_width
         waypoint.right_width = self.default_right_width
 
@@ -143,7 +141,7 @@ class OpenpilotLocalPathPublisher:
 
 def float32_multiarray_to_numpy(multiarray):
     dims = tuple(map(lambda x: x.size, multiarray.layout.dim))
-    data = multiarray.data[multiarray.layout.data_offset:] # remove timestamp
+    data = multiarray.data[multiarray.layout.data_offset:]
     return np.array(data, dtype=np.float32).reshape(dims)
 
 if __name__ == '__main__':
