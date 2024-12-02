@@ -59,7 +59,7 @@ class LaneBoundaryMatcher:
         rospy.Subscriber('/planning/lanelet2_global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('current_pose_gnss', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
-    def update_correction(self, new_value, old_value):
+    def calculate_updated_correction(self, new_value, old_value):
         return self.alpha * new_value + (1 - self.alpha) * old_value
 
     def current_pose_callback(self, msg):
@@ -147,23 +147,20 @@ class LaneBoundaryMatcher:
             differences = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
                                                      openpilot_left_lane_boundary, openpilot_right_lane_boundary)
             
-            if differences is None:
+            
+            avg_y_diff_left, avg_y_diff_right, avg_z_diff_left, avg_z_diff_right = differences
+
+            y = (avg_y_diff_left + avg_y_diff_right) / 2
+            z = (avg_z_diff_left + avg_z_diff_right) / 2
+
+            # if the difference between map and openpilot lane boundaries is too big then don't use the correction
+            if abs(y) > self.y_correction_treshold or abs(z) > self.z_correction_treshold:
                 y, z = 0, 0
                 no_correction = True
-            else:
-                avg_y_diff_left, avg_y_diff_right, avg_z_diff_left, avg_z_diff_right = differences
-
-                y = (avg_y_diff_left + avg_y_diff_right) / 2
-                z = (avg_z_diff_left + avg_z_diff_right) / 2
-
-                # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-                if y > self.y_correction_treshold or z > self.z_correction_treshold:
-                    y, z = 0, 0
-                    no_correction = True
             
             # use exponential moving average to smooth coordinate corrections
-            self.y_correction = self.update_correction(y, self.y_correction)
-            self.z_correction = self.update_correction(z, self.z_correction)
+            self.y_correction = self.calculate_updated_correction(y, self.y_correction)
+            self.z_correction = self.calculate_updated_correction(z, self.z_correction)
 
         else:
             result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), method='Nelder-Mead', 
@@ -172,16 +169,14 @@ class LaneBoundaryMatcher:
             y, z, yaw = result.x
 
             # if the calculated correction is too big then don't use the correction
-            if (abs(self.y_correction - y) > self.y_correction_treshold or 
-                abs(self.z_correction - z) > self.z_correction_treshold or 
-                abs(self.yaw_correction - yaw) > self.yaw_correction_treshold):
+            if (abs(y) > self.y_correction_treshold or abs(z) > self.z_correction_treshold or abs(yaw) > self.yaw_correction_treshold):
                 y, z, yaw = 0, 0, 0
                 no_correction = True
 
             # use exponential moving average to smooth coordinate corrections 
-            self.y_correction = self.update_correction(y, self.y_correction)
-            self.z_correction = self.update_correction(z, self.z_correction)
-            self.yaw_correction = self.update_correction(yaw, self.yaw_correction)
+            self.y_correction = self.calculate_updated_correction(y, self.y_correction)
+            self.z_correction = self.calculate_updated_correction(z, self.z_correction)
+            self.yaw_correction = self.calculate_updated_correction(yaw, self.yaw_correction)
 
         self.correction_stamp = current_timestamp
         self.publish_base_link_correction_tf()
@@ -206,6 +201,9 @@ class LaneBoundaryMatcher:
         
     def global_path_callback(self, msg):
         if len(msg.waypoints) == 0:
+            with self.global_path_lock:
+                self.global_path_left_boundary = None
+                self.global_path_right_boundary = None
             return
         
         three_point_lines = []
@@ -363,13 +361,13 @@ class LaneBoundaryMatcher:
         matrix[1, 3] = y_correction
         matrix[2, 3] = z_correction
 
+        self.transform_matrix = matrix
+
         if init:
             static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
             static_tf_broadcaster.sendTransform(t)
-            self.transform_matrix = matrix
         else:
             self.tf_broadcaster.sendTransform(t)
-            self.transform_matrix = matrix
 
     def run(self):
         rospy.spin()
