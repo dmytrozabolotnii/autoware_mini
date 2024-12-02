@@ -31,9 +31,11 @@ class CollisionPointsMerger:
             ts = message_filters.ApproximateTimeSynchronizer([collision_goal_sub, collision_object_sub, collision_tfl_stopline_sub, 
                                                               collision_crosswalk_sub, collision_stop_line_sub, collision_trajectory_sub], 
                                                               queue_size=synchronization_queue_size, slop=synchronization_slop)
-        else:
+        elif synchronization_method == "exact":
             ts = message_filters.TimeSynchronizer([collision_goal_sub, collision_object_sub, collision_tfl_stopline_sub, 
-                                                   collision_crosswalk_sub, collision_stop_line_sub, collision_trajectory_sub], queue_size=4)
+                                                   collision_crosswalk_sub, collision_stop_line_sub, collision_trajectory_sub], queue_size=synchronization_queue_size)
+        else:
+            raise ValueError(f"'{synchronization_method}' is not a known synchronization method")
 
         ts.registerCallback(self.collision_points_callback)
 

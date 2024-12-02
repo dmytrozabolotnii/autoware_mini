@@ -18,6 +18,8 @@ class OpenpilotLocalPathPublisher:
 
         # parameters
         self.transform_timeout = rospy.get_param('~transform_timeout')
+        self.default_left_width = rospy.get_param("default_left_width")
+        self.default_right_width = rospy.get_param("default_right_width")
 
         # variables
         self.current_position = None
@@ -51,7 +53,7 @@ class OpenpilotLocalPathPublisher:
             global_path = None
             rospy.loginfo("%s - Empty global path received", rospy.get_name())
         else:
-            global_path = PathWrapper(msg.waypoints)
+            global_path = PathWrapper(msg.waypoints, velocities=True, blinkers=True)
             rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(global_path.waypoints))
 
         with self.global_path_lock:
@@ -113,18 +115,26 @@ class OpenpilotLocalPathPublisher:
         else:
             heading = get_heading_between_two_points(previous_point, current_point)
 
-        nearest_global_path_waypoint = self.global_path.get_nearest_waypoint(current_point)
+        current_point_dist = self.global_path.linestring.project(current_point)
+        left_blinker, right_blinker = self.global_path.get_blinker_state_with_lookahead(current_point_dist, 0)
+        
+        if left_blinker == 0 and right_blinker == 1:
+            blinker_state = Waypoint.STR_RIGHT
+        elif left_blinker == 1 and right_blinker == 0:
+            blinker_state = Waypoint.STR_LEFT
+        else:
+            blinker_state = Waypoint.STR_STRAIGHT
 
         waypoint = Waypoint()
         waypoint.position.x = current_point.x
         waypoint.position.y = current_point.y
         waypoint.position.z = current_point.z
         waypoint.lanechange_state = 0
-        waypoint.blinker_state = nearest_global_path_waypoint.blinker_state
+        waypoint.blinker_state = blinker_state
         waypoint.heading = heading
-        waypoint.speed = nearest_global_path_waypoint.speed
-        waypoint.left_width = 1.2
-        waypoint.right_width = 1.2
+        waypoint.speed = self.global_path.get_velocity_at_distance(current_point_dist)
+        waypoint.left_width = self.default_left_width
+        waypoint.right_width = self.default_right_width
 
         return waypoint
 
@@ -133,7 +143,8 @@ class OpenpilotLocalPathPublisher:
 
 def float32_multiarray_to_numpy(multiarray):
     dims = tuple(map(lambda x: x.size, multiarray.layout.dim))
-    return np.array(multiarray.data, dtype=np.float32).reshape(dims)
+    data = multiarray.data[multiarray.layout.data_offset:] # remove timestamp
+    return np.array(data, dtype=np.float32).reshape(dims)
 
 if __name__ == '__main__':
     rospy.init_node('openpilot_local_path_extractor')

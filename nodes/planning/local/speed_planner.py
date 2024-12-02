@@ -42,8 +42,10 @@ class SpeedPlanner:
 
         if synchronization_method == "approximate":
             ts = message_filters.ApproximateTimeSynchronizer([collision_points_sub, local_path_sub], queue_size=synchronization_queue_size, slop=synchronization_slop)
+        elif synchronization_method == "exact":
+            ts = message_filters.TimeSynchronizer([collision_points_sub, local_path_sub], queue_size=synchronization_queue_size)
         else:
-            ts = message_filters.TimeSynchronizer([collision_points_sub, local_path_sub], queue_size=4)
+            raise ValueError(f"'{synchronization_method}' is not a known synchronization method")
 
         ts.registerCallback(self.collision_points_and_path_callback)
 
