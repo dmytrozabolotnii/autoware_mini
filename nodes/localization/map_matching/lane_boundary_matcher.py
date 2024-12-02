@@ -144,14 +144,8 @@ class LaneBoundaryMatcher:
         no_correction = False
         if self.only_lateral_correction:
             # calculate the average difference for right and left boundaries
-            differences = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
-                                                     openpilot_left_lane_boundary, openpilot_right_lane_boundary)
-            
-            
-            avg_y_diff_left, avg_y_diff_right, avg_z_diff_left, avg_z_diff_right = differences
-
-            y = (avg_y_diff_left + avg_y_diff_right) / 2
-            z = (avg_z_diff_left + avg_z_diff_right) / 2
+            y, z = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
+                                                openpilot_left_lane_boundary, openpilot_right_lane_boundary)
 
             # if the difference between map and openpilot lane boundaries is too big then don't use the correction
             if abs(y) > self.y_correction_treshold or abs(z) > self.z_correction_treshold:
@@ -275,7 +269,10 @@ class LaneBoundaryMatcher:
             right_y_diffs.append(y - point.y)
             right_z_diffs.append(z - point.z)
 
-        return np.mean(left_y_diffs), np.mean(right_y_diffs), np.mean(left_z_diffs), np.mean(right_z_diffs)
+        y_diffs = (np.array(left_y_diffs) + np.array(right_y_diffs)) / 2
+        z_diffs = (np.array(left_z_diffs) + np.array(right_z_diffs)) / 2
+
+        return np.mean(y_diffs), np.mean(z_diffs)
     
     def objective_function(self, input_values, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary):
         lateral_correction, height_correction, yaw_correction = input_values
@@ -356,7 +353,8 @@ class LaneBoundaryMatcher:
     
 def float32_multiarray_to_numpy(multiarray):
     dims = tuple(map(lambda x: x.size, multiarray.layout.dim))
-    return np.array(multiarray.data, dtype=float).reshape(dims).astype(np.float32)
+    data = multiarray.data[multiarray.layout.data_offset:] # remove timestamp
+    return np.array(data, dtype=np.float32).reshape(dims)
 
 if __name__ == '__main__':
     rospy.init_node('lane_boundary_matcher')
