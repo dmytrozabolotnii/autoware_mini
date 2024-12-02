@@ -51,12 +51,12 @@ class RoadAreaFilter:
         self.road_area_data = road_area_data
 
         # detected objects publisher
-        self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
+        self.objects_pub = rospy.Publisher('detected_objects_filtered', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
         self.road_area_pub = rospy.Publisher('road_area_markers', MarkerArray, queue_size=1, tcp_nodelay=True, latch=True)
 
         # Subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('detected_objects_unfiltered', DetectedObjectArray, self.detected_objects_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('detected_objects', DetectedObjectArray, self.detected_objects_callback, queue_size=1, tcp_nodelay=True)
 
         if not self.use_map_extraction:
             self.road_area_pub.publish(self.get_road_area_markers(self.road_area_data))
