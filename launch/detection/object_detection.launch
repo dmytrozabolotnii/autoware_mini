@@ -97,10 +97,8 @@
         <!-- Obstacle simulator -->
         <node if="$(eval detector=='sim')" pkg="autoware_mini" type="obstacle_simulation.py" name="obstacle_simulation" output="screen" required="true" />
 
-        <!-- Detected objects visualizer in case of filtering visualizes detected_objects_filtered-->
-        <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="detected_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
-            <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="detected_objects_filtered" />
-        </node>
+        <!-- Detected objects visualizer -->
+        <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="detected_objects_visualizer" pkg="autoware_mini" output="screen" required="true" />
     </group>
 
     <node if="$(eval tracker=='ema')" type="ema_tracker.py" name="ema_tracker" pkg="autoware_mini" output="screen" required="true">
