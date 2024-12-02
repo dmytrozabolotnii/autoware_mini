@@ -7,6 +7,7 @@ from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import PoseStamped
 from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
+from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
 
 
 class RoadAreaFilter:
@@ -18,6 +19,9 @@ class RoadAreaFilter:
         self.use_map_extraction = rospy.get_param("~use_map_extraction")
         self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
         self.local_path_length = rospy.get_param("/planning/local_path_length")
+        self.coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
+        self.utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
+        self.utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
         if self.filtering_method not in ["centroid", "intersects", "within"]:
             raise ValueError(f"{rospy.get_name()} - 'filtering_method' must be one of 'centroid', 'intersects' or 'within', not '{self.filtering_method}'")
@@ -28,6 +32,11 @@ class RoadAreaFilter:
         self.not_road_area = None
 
         rospy.loginfo("%s - loading road area from file %s", rospy.get_name(), self.road_area_file)
+        # initialize coordinate_transformer
+        if self.coordinate_transformer == "utm":
+            self.transformer = WGS84ToUTMTransformer(False, self.utm_origin_lat, self.utm_origin_lon)
+        easting, northing = self.transformer.transform_lat_lon(self.utm_origin_lat, self.utm_origin_lon, 0)
+
 
         # Read the GeoJSON file and create shapely geometries
         road_area_data = []
@@ -35,6 +44,7 @@ class RoadAreaFilter:
             self.geojson_data = json.load(f)
             for feature in self.geojson_data['features']:
                 geometry = shapely.geometry.shape(feature['geometry'])
+                geometry = shapely.affinity.translate(geometry, xoff=-easting, yoff=-northing)
                 road_area_data.append(geometry)
         road_area_data = shapely.unary_union(road_area_data)
         shapely.prepare(road_area_data)
