@@ -44,9 +44,9 @@ class RoadAreaFilter:
             self.geojson_data = json.load(f)
             for feature in self.geojson_data['features']:
                 geometry = shapely.geometry.shape(feature['geometry'])
-                geometry = shapely.affinity.translate(geometry, xoff=-easting, yoff=-northing)
                 road_area_data.append(geometry)
         road_area_data = shapely.unary_union(road_area_data)
+        road_area_data = shapely.affinity.translate(road_area_data, xoff=-easting, yoff=-northing)
         shapely.prepare(road_area_data)
         self.road_area_data = road_area_data
 
