@@ -186,19 +186,22 @@ class LaneBoundaryMatcher:
         ##################################################################
 
         lanes_marker_array = MarkerArray()
-        marker1 = self.get_lane_boundary_marker(openpilot_right_lane_boundary, "right", no_correction, True)
-        marker2 = self.get_lane_boundary_marker(openpilot_left_lane_boundary, "left", no_correction, True)
+        marker1 = self.get_lane_boundary_marker(openpilot_right_lane_boundary, "right", 0, "base_link", 
+                                                ColorRGBA(0.5, 0.8, 0.7, 1.0) if no_correction else ColorRGBA(0.0, 1.0, 0.7, 1.0))
+        marker2 = self.get_lane_boundary_marker(openpilot_left_lane_boundary, "left", 1, "base_link", 
+                                                ColorRGBA(0.5, 0.8, 0.7, 1.0) if no_correction else ColorRGBA(0.0, 1.0, 0.7, 1.0))
         lanes_marker_array.markers.append(marker1)
         lanes_marker_array.markers.append(marker2)
 
-        marker3 = self.get_lane_boundary_marker(map_right_lane_boundary, "right", no_correction)
-        marker4 = self.get_lane_boundary_marker(map_left_lane_boundary, "left", no_correction)
+        marker3 = self.get_lane_boundary_marker(map_right_lane_boundary, "right", 2, "base_link_gnss", 
+                                                ColorRGBA(0.6, 0.5, 0.4, 1.0) if no_correction else ColorRGBA(0.6, 0.3, 0.0, 1.0))
+        marker4 = self.get_lane_boundary_marker(map_left_lane_boundary, "left", 3, "base_link_gnss", 
+                                                ColorRGBA(0.6, 0.5, 0.4, 1.0) if no_correction else ColorRGBA(0.6, 0.3, 0.0, 1.0))
         lanes_marker_array.markers.append(marker3)
         lanes_marker_array.markers.append(marker4)
         
         self.lane_bound_markers_pub.publish(lanes_marker_array)
 
-        
     def global_path_callback(self, msg):
         if len(msg.waypoints) == 0:
             with self.global_path_lock:
@@ -295,28 +298,7 @@ class LaneBoundaryMatcher:
 
         return shapely.hausdorff_distance(openpilot_left_lane_boundary, corrected_left_map_lane_boundary) + shapely.hausdorff_distance(openpilot_right_lane_boundary, corrected_right_map_lane_boundary)
 
-    def get_lane_boundary_marker(self, lane_boundary, side, no_correction, openpilot=False):
-        if openpilot:
-            if no_correction:
-                color = ColorRGBA(0.5, 0.8, 0.7, 1.0)
-            else:
-                color = ColorRGBA(0.0, 1.0, 0.7, 1.0)
-            if side == "right":
-                id_start = 0
-            else:
-                id_start = 1
-            frame_id = "base_link"
-        else:
-            if no_correction:
-                color = ColorRGBA(0.6, 0.5, 0.4, 1.0)
-            else:
-                color = ColorRGBA(0.6, 0.3, 0.0, 1.0)
-            if side == "right":
-                id_start = 2
-            else:
-                id_start = 3
-            frame_id = "base_link_gnss"
-
+    def get_lane_boundary_marker(self, lane_boundary, side, marker_id, frame_id, marker_color):
         points = []
         for x, y, z in lane_boundary.coords:
             point = Point(x=x,y=y, z=z)
@@ -326,12 +308,12 @@ class LaneBoundaryMatcher:
         marker.header.frame_id = frame_id
         marker.header.stamp = rospy.Time.now()
         marker.ns = f"{side} bound"
-        marker.id = id_start
+        marker.id = marker_id
         marker.type = Marker.LINE_STRIP
         marker.action = Marker.ADD
         marker.pose.orientation.w = 1.0
         marker.scale.x = 0.1
-        marker.color = color
+        marker.color = marker_color
         marker.points = points
 
         return marker
