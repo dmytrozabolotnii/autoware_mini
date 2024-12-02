@@ -79,6 +79,8 @@ class RoadAreaFilter:
             road_area = [road_area]
 
         for geom in road_area:
+            if geom.is_empty:
+                continue
             marker.points.extend(convert_geometry_to_line_list(geom.exterior.coords))
             if hasattr(geom, 'interiors'):
                 for interior in geom.interiors:
