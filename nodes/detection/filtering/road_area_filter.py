@@ -72,10 +72,17 @@ class RoadAreaFilter:
         marker.color.g = 0.1
         marker.color.b = 0.1
 
-        for geom in road_area.geoms:
+        # in case of MultiPolygon the Polygons are listed in geoms. If no geoms, it is a single Polygon
+        if hasattr(road_area, 'geoms'):
+            road_area = road_area.geoms
+        else:
+            road_area = [road_area]
+
+        for geom in road_area:
             marker.points.extend(convert_geometry_to_line_list(geom.exterior.coords))
-            for interior in geom.interiors:
-                marker.points.extend(convert_geometry_to_line_list(interior.coords))
+            if hasattr(geom, 'interiors'):
+                for interior in geom.interiors:
+                    marker.points.extend(convert_geometry_to_line_list(interior.coords))
 
         road_area_markers.markers.append(marker)
         return road_area_markers
