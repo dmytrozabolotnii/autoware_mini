@@ -6,11 +6,6 @@ import numpy as np
 import rospy
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
 
-coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
-use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
-
 
 def load_lanelet2_map(lanelet2_map_name):
     """
@@ -39,7 +34,7 @@ def load_lanelet2_map(lanelet2_map_name):
 
     return lanelet2_map
 
-def load_origin():
+def utm_origin():
     """
     Load the origin of the local UTM coordinate system in (lat, lon) format and transform it to UTM35N coordinates
     :param utm_origin_lat: local utm origin latitude
@@ -47,8 +42,11 @@ def load_origin():
     :return: utm coordinates of utm_origin lat lon point
     """
 
+    utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
+    utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
+
     # origin point of the UTM35N coordinate system
-    origin = Origin(0, 27)
+    origin = Origin(utm_origin_lat, utm_origin_lon)
     projector = UtmProjector(origin, False, False)
 
     gps_point = GPSPoint(utm_origin_lat, utm_origin_lon, 0)

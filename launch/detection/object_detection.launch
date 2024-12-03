@@ -13,13 +13,6 @@
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
 
     <group>
-        <node if="$(eval detection_range != '')" pkg="autoware_mini" type="detection_range_filter.py" name="detection_range_filter" output="screen" required="true" >
-            <param name="detection_range" value="$(arg detection_range)" />
-        </node>
-        <node if="$(arg use_road_area_filter)" pkg="autoware_mini" type="road_area_filter.py" name="road_area_filter" output="screen" required="true" >
-            <param name="road_area_file" value="$(arg road_area_file)" />
-        </node>
-
         <group if="$(eval 'lidar' in detector)" ns="lidar">
             <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <group if="$(eval 'lidar_cluster' in detector)">
@@ -99,6 +92,14 @@
 
         <!-- Detected objects visualizer -->
         <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="detected_objects_visualizer" pkg="autoware_mini" output="screen" required="true" />
+
+        <!-- Object filters -->
+        <node if="$(eval detection_range != '')" pkg="autoware_mini" type="detection_range_filter.py" name="detection_range_filter" output="screen" required="true" >
+            <param name="detection_range" value="$(arg detection_range)" />
+        </node>
+        <node if="$(arg use_road_area_filter)" pkg="autoware_mini" type="road_area_filter.py" name="road_area_filter" output="screen" required="true" >
+            <param name="road_area_file" value="$(arg road_area_file)" />
+        </node>
     </group>
 
     <node if="$(eval tracker=='ema')" type="ema_tracker.py" name="ema_tracker" pkg="autoware_mini" output="screen" required="true">

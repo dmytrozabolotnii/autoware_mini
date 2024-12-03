@@ -7,7 +7,7 @@ from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import PoseStamped
 from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
-from helpers.lanelet2 import load_origin
+from helpers.lanelet2 import utm_origin
 
 
 class RoadAreaFilter:
@@ -29,7 +29,7 @@ class RoadAreaFilter:
         self.not_road_area = None
 
         rospy.loginfo("%s - loading road area from file %s", rospy.get_name(), self.road_area_file)
-        easting, northing = load_origin()
+        easting, northing = utm_origin()
 
         # Read the GeoJSON file and create shapely geometries
         road_area_data = []
