@@ -4,7 +4,6 @@ from lanelet2.core import GPSPoint
 import shapely
 import numpy as np
 import rospy
-from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
 
 
 def load_lanelet2_map(lanelet2_map_name):

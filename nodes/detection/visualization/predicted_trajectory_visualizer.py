@@ -17,8 +17,8 @@ class PredictedTrajectoryVisualizer:
         self.use_object_width = rospy.get_param('/planning/use_object_width')
         self.published_ids = set()
 
-        self.markers_pub = rospy.Publisher('detected_objects_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('detected_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        self.markers_pub = rospy.Publisher('predicted_objects_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('predicted_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
