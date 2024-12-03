@@ -29,6 +29,7 @@ class NovatelOem7Localizer:
         self.lest97_origin_northing = rospy.get_param("lest97_origin_northing")
         self.lest97_origin_easting = rospy.get_param("lest97_origin_easting")
         self.use_msl_height = rospy.get_param("~use_msl_height")
+        self.parent_frame = rospy.get_param("~parent_frame")
         self.child_frame = rospy.get_param("~child_frame")
 
         # variable to store undulation value from bestpos message
@@ -169,7 +170,7 @@ class NovatelOem7Localizer:
         t = TransformStamped()
 
         t.header.stamp = stamp
-        t.header.frame_id = "map"
+        t.header.frame_id = self.parent_frame
         t.child_frame_id = self.child_frame
 
         t.transform.translation.x = current_pose.position.x
