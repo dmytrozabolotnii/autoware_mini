@@ -10,8 +10,8 @@ import rospy
 import tf2_ros
 from ros_numpy import numpify, msgify
 from tf.transformations import euler_matrix
-from std_msgs.msg import Float32MultiArray, ColorRGBA
-from autoware_mini.msg import Path
+from std_msgs.msg import ColorRGBA
+from autoware_mini.msg import Path, Float32MultiArrayStamped
 from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Pose
 from visualization_msgs.msg import MarkerArray, Marker
 
@@ -34,28 +34,25 @@ class LaneBoundaryMatcher:
         # variables
         self.global_path_left_boundary = None
         self.global_path_right_boundary = None
-        self.current_timestamp = None
 
         self.y_correction = 0
         self.z_correction = 0
         self.yaw_correction = 0
-        self.correction_stamp = None
         self.transform_matrix = np.eye(4)
         
-        self.current_pose_lock = threading.Lock()
         self.global_path_lock = threading.Lock()
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        self.publish_base_link_correction_tf(init=True)
+        self.publish_base_link_correction_tf()
 
         # publishers
         self.current_pose_pub = rospy.Publisher('current_pose', PoseStamped, queue_size=1, tcp_nodelay=True)
         self.lane_bound_markers_pub = rospy.Publisher('lane_boundary_matcher_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        rospy.Subscriber('/openpilot/lane_lines', Float32MultiArray, self.lane_line_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/openpilot/lane_lines', Float32MultiArrayStamped, self.lane_line_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/planning/lanelet2_global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('current_pose_gnss', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
@@ -63,9 +60,6 @@ class LaneBoundaryMatcher:
         return self.alpha * new_value + (1 - self.alpha) * old_value
 
     def current_pose_callback(self, msg):
-        with self.current_pose_lock:
-            self.current_timestamp = msg.header.stamp
-
         current_pose_matrix = numpify(msg.pose)
         corrected_current_pose_matrix = self.transform_matrix.dot(current_pose_matrix)
 
@@ -74,9 +68,6 @@ class LaneBoundaryMatcher:
 
     def lane_line_callback(self, msg):
         openpilot_lane_boundaries = float32_multiarray_to_numpy(msg)
-        
-        with self.current_pose_lock:
-            current_timestamp = self.current_timestamp
 
         with self.global_path_lock:
             global_path_left_boundary = self.global_path_left_boundary
@@ -87,11 +78,11 @@ class LaneBoundaryMatcher:
 
         # Fetch transforms
         try:
-            transform_openpilot_bl = self.tf_buffer.lookup_transform("base_link", "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
+            transform_openpilot_bl = self.tf_buffer.lookup_transform("base_link", "openpilot", msg.header.stamp, rospy.Duration(self.transform_timeout))
             tf_matrix_openpilot_bl = numpify(transform_openpilot_bl.transform)
-            transform_map_bl = self.tf_buffer.lookup_transform("base_link_gnss", "map", current_timestamp, rospy.Duration(self.transform_timeout))
+            transform_map_bl = self.tf_buffer.lookup_transform("base_link_gnss", "map", msg.header.stamp, rospy.Duration(self.transform_timeout))
             tf_matrix_map_bl = numpify(transform_map_bl.transform)
-            transform_openpilot_map = self.tf_buffer.lookup_transform("map", "openpilot", current_timestamp, rospy.Duration(self.transform_timeout))
+            transform_openpilot_map = self.tf_buffer.lookup_transform("map", "openpilot", msg.header.stamp, rospy.Duration(self.transform_timeout))
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
             return
@@ -172,8 +163,7 @@ class LaneBoundaryMatcher:
             self.z_correction = self.calculate_updated_correction(z, self.z_correction)
             self.yaw_correction = self.calculate_updated_correction(yaw, self.yaw_correction)
 
-        self.correction_stamp = current_timestamp
-        self.publish_base_link_correction_tf()
+        self.publish_base_link_correction_tf(correction_stamp=msg.header.stamp)
 
         ##################################################################
         # Visualization
@@ -315,15 +305,14 @@ class LaneBoundaryMatcher:
 
         return marker
 
-    def publish_base_link_correction_tf(self, init=False):
+    def publish_base_link_correction_tf(self, correction_stamp=None):
         t = TransformStamped()
 
         y_correction = self.y_correction
         z_correction = self.z_correction
         yaw_correction = self.yaw_correction
-        correction_stamp = self.correction_stamp
 
-        if init:
+        if correction_stamp is None:
             t.header.stamp = rospy.Time.now()
         else:
             t.header.stamp = correction_stamp
@@ -342,7 +331,7 @@ class LaneBoundaryMatcher:
 
         self.transform_matrix = matrix
 
-        if init:
+        if correction_stamp is None:
             static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
             static_tf_broadcaster.sendTransform(t)
         else:
@@ -353,7 +342,7 @@ class LaneBoundaryMatcher:
     
 def float32_multiarray_to_numpy(multiarray):
     dims = tuple(map(lambda x: x.size, multiarray.layout.dim))
-    data = multiarray.data[multiarray.layout.data_offset:] # remove timestamp
+    data = multiarray.data[multiarray.layout.data_offset:]
     return np.array(data, dtype=np.float32).reshape(dims)
 
 if __name__ == '__main__':
