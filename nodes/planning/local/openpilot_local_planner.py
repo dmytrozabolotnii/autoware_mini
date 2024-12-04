@@ -38,10 +38,10 @@ class OpenpilotLocalPlanner:
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
+
         openpilot_position_sub = message_filters.Subscriber('/openpilot/position', Float32MultiArrayStamped, queue_size=1, tcp_nodelay=True)
         openpilot_velocity_sub = message_filters.Subscriber('/openpilot/velocity', Float32MultiArrayStamped, queue_size=1, tcp_nodelay=True)
-
-        ts = message_filters.TimeSynchronizer([openpilot_position_sub, openpilot_velocity_sub], queue_size=1)
+        ts = message_filters.TimeSynchronizer([openpilot_position_sub, openpilot_velocity_sub], queue_size=2)
 
         ts.registerCallback(self.openpilot_prediction_callback)
 
@@ -98,31 +98,31 @@ class OpenpilotLocalPlanner:
                 # use heading of previous point - last point of last lanelet has no following point 
                 x, y, z = openpilot_plan[i]
                 x_prev, y_prev, z_prev = openpilot_plan[i-1]
-                waypoint = self.create_waypoint(shapely.Point(x, y, z), openpilot_velocity[i], previous_point=shapely.Point(x_prev, y_prev, z_prev))
+                waypoint = self.create_waypoint(shapely.Point(x, y, z), openpilot_velocity[i], global_path, previous_point=shapely.Point(x_prev, y_prev, z_prev))
                 waypoints.append(waypoint)
             else:
                 x, y, z = openpilot_plan[i]
                 x_next, y_next, z_next = openpilot_plan[i+1]
-                waypoint = self.create_waypoint(shapely.Point(x, y, z), openpilot_velocity[i], next_point=shapely.Point(x_next, y_next, z_next))
+                waypoint = self.create_waypoint(shapely.Point(x, y, z), openpilot_velocity[i], global_path, next_point=shapely.Point(x_next, y_next, z_next))
                 waypoints.append(waypoint)
 
         openpilot_local_path.waypoints = waypoints
         self.openpilot_local_path_pub.publish(openpilot_local_path)
 
-    def create_waypoint(self, current_point, openpilot_velocity, next_point=None, previous_point=None):
+    def create_waypoint(self, current_point, openpilot_velocity, global_path, next_point=None, previous_point=None):
         if next_point is not None:
             heading = get_heading_between_two_points(current_point, next_point)
         else:
             heading = get_heading_between_two_points(previous_point, current_point)
 
-        current_point_dist = self.global_path.linestring.project(current_point)
+        current_point_dist = global_path.linestring.project(current_point)
 
         waypoint = Waypoint()
         waypoint.position.x = current_point.x
         waypoint.position.y = current_point.y
         waypoint.position.z = current_point.z
         waypoint.lanechange_state = 0
-        waypoint.blinker_state = self.global_path.get_blinker_at_distance(current_point_dist)
+        waypoint.blinker_state = global_path.get_blinker_at_distance(current_point_dist)
         waypoint.heading = heading
         waypoint.speed = np.linalg.norm(openpilot_velocity[:3])
         waypoint.left_width = self.default_left_width

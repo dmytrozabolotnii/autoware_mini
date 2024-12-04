@@ -33,7 +33,7 @@ class CollisionPointsMerger:
                                                               queue_size=synchronization_queue_size, slop=synchronization_slop)
         elif synchronization_method == "exact":
             ts = message_filters.TimeSynchronizer([collision_goal_sub, collision_object_sub, collision_tfl_stopline_sub, 
-                                                   collision_crosswalk_sub, collision_stop_line_sub, collision_trajectory_sub], queue_size=synchronization_queue_size)
+                                                   collision_crosswalk_sub, collision_stop_line_sub, collision_trajectory_sub], queue_size=2)
         else:
             raise ValueError(f"'{synchronization_method}' is not a known synchronization method")
 
