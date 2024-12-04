@@ -124,7 +124,7 @@ class OpenpilotLocalPlanner:
         waypoint.lanechange_state = 0
         waypoint.blinker_state = global_path.get_blinker_at_distance(current_point_dist)
         waypoint.heading = heading
-        waypoint.speed = np.linalg.norm(openpilot_velocity[:3])
+        waypoint.speed = np.linalg.norm(openpilot_velocity[:3]) #TODO: Speed is currently in openpilot frame, should be converted to base_link
         waypoint.left_width = self.default_left_width
         waypoint.right_width = self.default_right_width
 
