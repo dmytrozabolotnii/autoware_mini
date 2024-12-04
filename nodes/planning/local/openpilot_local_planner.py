@@ -12,7 +12,7 @@ from geometry_msgs.msg import PoseStamped
 from helpers.path import PathWrapper
 from helpers.geometry import get_heading_between_two_points
 
-class OpenpilotLocalPathPublisher:
+class OpenpilotLocalPlanner:
 
     def __init__(self):
 
@@ -138,6 +138,6 @@ def float32_multiarray_to_numpy(multiarray):
     return np.array(data, dtype=np.float32).reshape(dims)
 
 if __name__ == '__main__':
-    rospy.init_node('openpilot_local_path_extractor')
-    node = OpenpilotLocalPathPublisher()
+    rospy.init_node('openpilot_local_planner')
+    node = OpenpilotLocalPlanner()
     node.run()
