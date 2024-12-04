@@ -1,13 +1,9 @@
 from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
+from lanelet2.core import GPSPoint
 import shapely
 import numpy as np
 import rospy
-
-coordinate_transformer = rospy.get_param("/localization/coordinate_transformer")
-use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
 
 def load_lanelet2_map(lanelet2_map_name):
@@ -36,6 +32,25 @@ def load_lanelet2_map(lanelet2_map_name):
     lanelet2_map = load(lanelet2_map_name, projector)
 
     return lanelet2_map
+
+def utm_origin():
+    """
+    Load the origin of the local UTM coordinate system in (lat, lon) format and transform it to UTM35N coordinates
+    :param utm_origin_lat: local utm origin latitude
+    :param utm_origin_lon: local utm origin longitude
+    :return: utm coordinates of utm_origin lat lon point
+    """
+
+    utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
+    utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
+
+    # origin point of the UTM35N coordinate system
+    origin = Origin(utm_origin_lat, utm_origin_lon)
+    projector = UtmProjector(origin, False, False)
+
+    gps_point = GPSPoint(utm_origin_lat, utm_origin_lon, 0)
+    utm_point = projector.forward(gps_point)
+    return utm_point.x, utm_point.y
 
 def get_crosswalks(lanelet2_map):
     """

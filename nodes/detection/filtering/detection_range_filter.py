@@ -15,10 +15,10 @@ class DetectionRangeFilter:
         self.current_pose = None
 
         # detected objects publisher
-        self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
+        self.objects_pub = rospy.Publisher('detected_objects_filtered', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
 
         # initial position and vehicle command from outside
-        rospy.Subscriber('detected_objects_unfiltered', DetectedObjectArray, self.detected_objects_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('detected_objects', DetectedObjectArray, self.detected_objects_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())

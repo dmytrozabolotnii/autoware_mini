@@ -2,20 +2,17 @@
 
 import math
 import rospy
-import shapely
 
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point
 from std_msgs.msg import Header, ColorRGBA
 
-from helpers.shapely import get_polygon_width
 from helpers.geometry import get_orientation_from_heading
 
 class DetectedObjectsVisualizer:
     def __init__(self):
 
-        self.use_object_width = rospy.get_param('/planning/use_object_width')
         self.published_ids = set()
 
         self.markers_pub = rospy.Publisher('detected_objects_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
@@ -44,25 +41,25 @@ class DetectedObjectsVisualizer:
             marker.color = obj.color
             markers.markers.append(marker)
             
-            # bounding box
-            marker = Marker(header=header)
-            marker.ns = 'bounding_box'
-            marker.id = obj.id
-            marker.type = marker.LINE_STRIP
-            marker.action = marker.ADD
-            marker.pose = obj.pose
-            marker.scale.x = 0.1
-            marker.color = ColorRGBA(1.0, 0.0, 0.0, 0.8)
-            half_length = obj.dimensions.x / 2.0
-            half_width = obj.dimensions.y / 2.0
-            marker.points = [
-                Point(-half_length, -half_width, 0.0),
-                Point(-half_length, half_width, 0.0),
-                Point(half_length, half_width, 0.0),
-                Point(half_length, -half_width, 0.0),
-                Point(-half_length, -half_width, 0.0),
-            ]
-            markers.markers.append(marker)
+            # # bounding box
+            # marker = Marker(header=header)
+            # marker.ns = 'bounding_box'
+            # marker.id = obj.id
+            # marker.type = marker.LINE_STRIP
+            # marker.action = marker.ADD
+            # marker.pose = obj.pose
+            # marker.scale.x = 0.1
+            # marker.color = ColorRGBA(1.0, 0.0, 0.0, 0.8)
+            # half_length = obj.dimensions.x / 2.0
+            # half_width = obj.dimensions.y / 2.0
+            # marker.points = [
+            #     Point(-half_length, -half_width, 0.0),
+            #     Point(-half_length, half_width, 0.0),
+            #     Point(half_length, half_width, 0.0),
+            #     Point(half_length, -half_width, 0.0),
+            #     Point(-half_length, -half_width, 0.0),
+            # ]
+            # markers.markers.append(marker)
 
             # convex hull
             if len(obj.convex_hull.points) > 0:
@@ -93,34 +90,6 @@ class DetectedObjectsVisualizer:
             marker.color = ColorRGBA(1.0, 1.0, 0.0, 1.0)
             markers.markers.append(marker)
 
-            # candidate trajectories
-            # if len(obj.candidate_trajectories.paths) > 0:
-            # extract and visualize object width - used in object detection
-            marker = Marker(header=header)
-            marker.ns = 'candidate_trajectories'
-            marker.id = obj.id
-            marker.type = marker.LINE_LIST
-            if len(obj.candidate_trajectories.paths) == 0:
-                marker.action = marker.DELETE
-            else:
-                marker.action = marker.ADD
-                marker.pose.orientation.w = 1.0
-                marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
-                if self.use_object_width:
-                    object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
-                    object_heading = math.degrees(math.atan2(obj.velocity.y, obj.velocity.x))
-                    marker.scale.x = get_polygon_width(object_polygon, object_heading)
-                else:
-                    marker.scale.x = 0.2
-                # visualize possible multiple trajectories
-                for lane in obj.candidate_trajectories.paths:
-                    for i in range(len(lane.waypoints) - 1):
-                        p1 = lane.waypoints[i].position
-                        p2 = lane.waypoints[i + 1].position
-                        marker.points.append(Point(p1.x, p1.y, p1.z))
-                        marker.points.append(Point(p2.x, p2.y, p2.z))
-            markers.markers.append(marker)
-
             # text
             marker = Marker(header=header)
             marker.ns = 'text'
@@ -144,11 +113,11 @@ class DetectedObjectsVisualizer:
             marker.action = marker.DELETE
             markers.markers.append(marker)
 
-            marker = Marker(header=header)
-            marker.ns = 'bounding_box'
-            marker.id = id
-            marker.action = marker.DELETE
-            markers.markers.append(marker)
+            # marker = Marker(header=header)
+            # marker.ns = 'bounding_box'
+            # marker.id = id
+            # marker.action = marker.DELETE
+            # markers.markers.append(marker)
 
             marker = Marker(header=header)
             marker.ns = 'convex_hull'
@@ -158,12 +127,6 @@ class DetectedObjectsVisualizer:
 
             marker = Marker(header=header)
             marker.ns = 'speed'
-            marker.id = id
-            marker.action = marker.DELETE
-            markers.markers.append(marker)
-
-            marker = Marker(header=header)
-            marker.ns = 'candidate_trajectories'
             marker.id = id
             marker.action = marker.DELETE
             markers.markers.append(marker)

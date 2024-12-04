@@ -5,15 +5,15 @@
     <arg name="global_planner"          default="lanelet2"      doc="waypoints, lanelet2" />
     <arg name="local_planner"           default="rule"          doc="rule, none" />
     <arg name="use_path_smoothing"      default="true" />
-    <arg name="use_road_area_filter"    default="false"            doc="use road area filter"/>
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
     <arg name="scenario_name"           default=""              doc="scenario name" />
     <arg name='map_name'                default="$(eval 'tartu_demo_noheight' if scenario_name == '' else 'tartu_demo')" />
     <arg name="lanelet2_map_name"       default="$(arg map_name).osm" />
     <arg name="detector"                default="$(eval 'sim' if scenario_name == '' else 'none')" />
+    <arg name="use_road_area_filter"    default="$(eval 'tartu' in map_name)"   doc="use road area filter"/>
     <arg name="tfl_detector"            default="none"          doc="mqtt" />
     <arg name="tracker"                 default="$(eval 'ema' if scenario_name != '' else 'none')"  doc="none, ema"/>
-    <arg name="predictor"               default="none"          doc="none, naive, map, map_naive"/>
+    <arg name="predictor"               default="$(eval 'map_naive' if scenario_name != '' else 'none')"  doc="none, naive, map, map_naive"/>
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
 
     <!-- Localization -->

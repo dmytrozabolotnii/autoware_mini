@@ -5,10 +5,12 @@ import time
 
 from autoware_mini.msg import TrafficLightResultArray
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PoseStamped
 from std_msgs.msg import ColorRGBA, Int32
-
+from lanelet2.core import BasicPoint2d, BoundingBox2d
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
+from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
+
 
 # used for traffic lights
 RED = ColorRGBA(1.0, 0.0, 0.0, 0.8)
@@ -47,26 +49,61 @@ class Lanelet2MapVisualizer:
     
         # Parameters
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        self.local_path_length = rospy.get_param("local_path_length")
+        self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
+        self.use_map_extraction = rospy.get_param("~use_map_extraction")
 
+        self.map_extraction_location = None
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.yield_stop_lines = get_stop_lines_using_subtype(self.lanelet2_map, subtype=["yield_stop"])
-
-        # Visualize the Lanelet2 map
-        marker_array = visualize_lanelet2_map(self.lanelet2_map)
-
-        # create MarkerArray publisher
-        markers_pub = rospy.Publisher('lanelet2_map_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
-        markers_pub.publish(marker_array)
 
         # Special publishers for stop line markers: traffic_lights and yielding
         self.tfl_stop_line_markers_pub = rospy.Publisher('tfl_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
         self.yield_stop_line_markers_pub = rospy.Publisher('yield_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
+        self.lanelet2_map_markers_pub = rospy.Publisher('lanelet2_map_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
 
         rospy.Subscriber("/detection/traffic_light_status", TrafficLightResultArray, self.traffic_light_status_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/planning/lets_go', Int32, self.lets_go_callback, queue_size=1, tcp_nodelay=True)
 
+        if self.use_map_extraction:
+            rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
+            # for filtering trafiiclight stopline statuses
+            self.filtered_linestrings = None
+        else:
+            lanelet_markers = visualize_laneletLayer(self.lanelet2_map.laneletLayer)
+            linestring_markers = visualize_lineStringLayer(self.lanelet2_map.lineStringLayer)
+            reg_el_markers = visualize_regulatoryElementLayer(self.lanelet2_map.regulatoryElementLayer)
+            marker_array = MarkerArray()
+            marker_array.markers = lanelet_markers.markers + linestring_markers.markers + reg_el_markers.markers
+            self.lanelet2_map_markers_pub.publish(marker_array)
+
         rospy.loginfo("%s - map loaded with %i lanelets and %i regulatory elements from file: %s", rospy.get_name(),
                       len(self.lanelet2_map.laneletLayer), len(self.lanelet2_map.regulatoryElementLayer), lanelet2_map_name)
+
+    def current_pose_callback(self, msg):
+
+        if self.map_extraction_location is None or get_distance_between_two_points_2d(self.map_extraction_location, msg.pose.position) > (self.map_extraction_distance - 2*self.local_path_length):
+            self.map_extraction_location = BasicPoint2d(msg.pose.position.x, msg.pose.position.y)
+            search_box = BoundingBox2d(BasicPoint2d(msg.pose.position.x - self.map_extraction_distance, msg.pose.position.y - self.map_extraction_distance),
+                                        BasicPoint2d(msg.pose.position.x + self.map_extraction_distance, msg.pose.position.y + self.map_extraction_distance))
+
+            filtered_lanelets = self.lanelet2_map.laneletLayer.search(search_box)
+            filtered_linestrings = self.lanelet2_map.lineStringLayer.search(search_box)
+            filtered_regulatory_elements = self.lanelet2_map.regulatoryElementLayer.search(search_box)
+
+            # Visualize different parts of the map
+            lanelet_markers = visualize_laneletLayer(filtered_lanelets)
+            linestring_markers = visualize_lineStringLayer(filtered_linestrings)
+            reg_el_markers = visualize_regulatoryElementLayer(filtered_regulatory_elements)
+
+           # conactenate the MarkerArrays with delete all at front
+            marker_array = MarkerArray()
+            marker = Marker()
+            marker.action = Marker.DELETEALL
+            marker_array.markers = [marker] + lanelet_markers.markers + linestring_markers.markers + reg_el_markers.markers
+
+            self.lanelet2_map_markers_pub.publish(marker_array)
+            self.filtered_linestrings = {linestring.id: linestring for linestring in filtered_linestrings}
 
     def lets_go_callback(self, msg):
         marker_array = MarkerArray()
@@ -76,7 +113,7 @@ class Lanelet2MapVisualizer:
 
         if msg.data != -1:
             points = [Point(x=x, y=y, z=z + 0.01) for x, y, z in self.yield_stop_lines[msg.data].coords]
-            marker = linestring_to_marker(points, "Yield line", msg.data, GREEN, 0.5, rospy.Time.now())
+            marker = linelist_to_marker(points, "Yield line", msg.data, GREEN, 0.5, rospy.Time.now())
             marker_array.markers.append(marker)
 
         self.yield_stop_line_markers_pub.publish(marker_array)
@@ -96,9 +133,14 @@ class Lanelet2MapVisualizer:
                     rospy.logwarn("%s - multiple traffic lights with different states on the same stop line %d: %s != %s", rospy.get_name(), result.stopline_id, states[result.stopline_id], result.recognition_result_str)
                 continue
 
+            if self.use_map_extraction and self.filtered_linestrings is not None:
+                # Check if the linestring with the target ID is in the filtered list
+                if not (result.stopline_id in self.filtered_linestrings):
+                    continue
+
             # fetch the stop line data
             stop_line = self.lanelet2_map.lineStringLayer.get(result.stopline_id)
-            points = [Point(x=p.x, y=p.y, z=p.z + 0.01) for p in stop_line]
+            points = convert_geometry_to_line_list(stop_line, delta_z=0.1)
 
             # choose the color of stopline based on the traffic light state
             if result.recognition_result in TRAFFIC_LIGHT_STATE_TO_MARKER_COLOR:
@@ -112,7 +154,7 @@ class Lanelet2MapVisualizer:
                 color = ColorRGBA(color.r, color.g, color.b, color.a * get_multiplier())
 
             # create linestring marker
-            stopline_marker = linestring_to_marker(points, "Stop line", stop_line.id, color, 0.5, rospy.Time.now())
+            stopline_marker = linelist_to_marker(points, "Stop line", stop_line.id, color, 0.5, rospy.Time.now())
 
             marker_array.markers.append(stopline_marker)
 
@@ -136,65 +178,57 @@ def get_multiplier():
         return 1.0
 
 
-def visualize_lanelet2_map(map):
+def visualize_laneletLayer(lanelets):
 
     # Create a MarkerArray
     marker_array = MarkerArray()
 
-    # Visualize different parts of the map
-    lanelet_markers = visualize_laneltLayer(map)
-    reg_el_markers = visualize_regulatoryElementLayer(map)
-    linestring_markers = visualize_lineStringLayer(map)
+    left_boundary_points = []
+    right_boundary_points = []
+    centerline_points = []
+    crosswalk_points = []
+    bus_lane_points = []
 
-    # conactenate the MarkerArrays
-    marker_array.markers = lanelet_markers.markers + reg_el_markers.markers + linestring_markers.markers
-    return marker_array
-
-
-def visualize_laneltLayer(map):
-
-    # Create a MarkerArray
-    marker_array = MarkerArray()
-
-    for lanelet in map.laneletLayer:
+    for lanelet in lanelets:
 
         stamp = rospy.Time.now()
 
-        # TODO bicycle_lane, bus_lane, emergency_lane, parking_lane, pedestrian_lane, sidewalk, special_lane, traffic_island, traffic_lane, traffic_zone, walkway        
+        if lanelet.attributes["subtype"] == "road" or lanelet.attributes["subtype"] == "bus_lane":
+            left_boundary_points.extend(convert_geometry_to_line_list(lanelet.leftBound))
+            right_boundary_points.extend(convert_geometry_to_line_list(lanelet.rightBound))
+
         if lanelet.attributes["subtype"] == "road":
-        
-            # Create markers for the left, right boundary and centerline
-            left_boundary_marker = linestring_to_marker(lanelet.leftBound, "Left boundary", lanelet.id, GREY, 0.1, stamp)
-            right_boundary_marker = linestring_to_marker(lanelet.rightBound, "Right boundary", lanelet.id, GREY, 0.1, stamp)
-            centerline_marker = linestring_to_marker(lanelet.centerline, "Centerline", lanelet.id, CYAN, 1.5, stamp)
-
-            # Add the markers to the MarkerArray
-            marker_array.markers.append(left_boundary_marker)
-            marker_array.markers.append(right_boundary_marker)
-            marker_array.markers.append(centerline_marker)
-
+            centerline_points.extend(convert_geometry_to_line_list(lanelet.centerline))
         elif lanelet.attributes["subtype"] == "crosswalk":
-
-            points = [point for point in lanelet.leftBound]
-            points += [point for point in lanelet.rightBound.invert()]
-            points.append(lanelet.leftBound[0])
-
-            crosswalk_marker = linestring_to_marker(points, "Crosswalk", lanelet.id, ORANGE, 0.3, stamp)
-            marker_array.markers.append(crosswalk_marker)
-
+            # create "polygon points" from crosswalk lanelet and then create line list from them
+            crosswalk_border = [point for point in lanelet.leftBound]
+            crosswalk_border.extend([point for point in lanelet.rightBound.invert()])
+            crosswalk_border.append(lanelet.leftBound[0])
+            crosswalk_points.extend(convert_geometry_to_line_list(crosswalk_border))
         elif lanelet.attributes["subtype"] == "bus_lane":
-            centerline_marker = linestring_to_marker(lanelet.centerline, "Centerline", lanelet.id, BLUE, 1.5, stamp)
-            marker_array.markers.append(centerline_marker)
+            bus_lane_points.extend(convert_geometry_to_line_list(lanelet.centerline))
+
+    left_boundary_marker = linelist_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
+    right_boundary_marker = linelist_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
+    centerline_marker = linelist_to_marker(centerline_points, "Centerline", 0, CYAN, 1.5, stamp)
+    crosswalk_marker = linelist_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 0.3, stamp)
+    bus_lane_marker = linelist_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 0.3, stamp)
+
+    marker_array.markers.append(left_boundary_marker)
+    marker_array.markers.append(right_boundary_marker)
+    marker_array.markers.append(centerline_marker)
+    marker_array.markers.append(crosswalk_marker)
+    marker_array.markers.append(bus_lane_marker)
 
     return marker_array
 
-def visualize_regulatoryElementLayer(map):
+def visualize_regulatoryElementLayer(regulatory_elements):
     
     # Create a MarkerArray
     marker_array = MarkerArray()
 
     # Iterate over all the regulatory elements
-    for reg_el in map.regulatoryElementLayer:
+    for reg_el in regulatory_elements:
         # Check if the regulatory element is a traffic light group
         if reg_el.attributes["subtype"] == "traffic_light":
             stamp = rospy.Time.now()
@@ -230,37 +264,40 @@ def visualize_regulatoryElementLayer(map):
 
                     marker_array.markers.append(marker)
                     bulb_z -= tfl_height/6
-
-        # TODO stop line, yield line, speed limit, etc.
-
     return marker_array
 
 
-def visualize_lineStringLayer(map):
+def visualize_lineStringLayer(linestrings):
 
     marker_array = MarkerArray()
 
-    for line in map.lineStringLayer:
+    points_traffic_light = []
+    points_yield_stop = []
+    points_yield = []
+
+    for line in linestrings:
             # if has attributes
             if line.attributes:
                 # select stop lines
                 if line.attributes["type"] == "stop_line":
-                    points = [point for point in line]
+                    # points = [point for point in line]
+                    points = convert_geometry_to_line_list(line)
                     if "subtype" in line.attributes:
                         if line.attributes["subtype"]=="traffic_light":
-                            marker = linestring_to_marker(points, "Traffic light stop lines", line.id, WHITE, 0.5, rospy.Time.now())
-                            marker_array.markers.append(marker)
+                            points_traffic_light.extend(points)
                         elif line.attributes["subtype"]=="yield_stop":
-                            marker = linestring_to_marker(points, "Yield stop line", line.id, RED, 0.5, rospy.Time.now())
-                            marker_array.markers.append(marker)
+                            points_yield_stop.extend(points)
                         elif line.attributes["subtype"]=="yield":
-                            marker = linestring_to_marker(points, "Yield line", line.id, YELLOW, 0.3, rospy.Time.now())
-                            marker_array.markers.append(marker)
+                            points_yield.extend(points)
+
+    marker_array.markers.append(linelist_to_marker(points_traffic_light, "Traffic light stop lines", 0, WHITE, 0.5, rospy.Time.now()))
+    marker_array.markers.append(linelist_to_marker(points_yield_stop, "Yield stop line", 0, RED, 0.5, rospy.Time.now()))
+    marker_array.markers.append(linelist_to_marker(points_yield, "Yield line", 0, YELLOW, 0.3, rospy.Time.now()))
 
     return marker_array
 
 
-def linestring_to_marker(linestring, namespace, id, color, scale, stamp):
+def linelist_to_marker(points, namespace, id, color, scale, stamp):
     """
     Creates a Marker from a LineString
     :param linestring: LineString
@@ -276,16 +313,12 @@ def linestring_to_marker(linestring, namespace, id, color, scale, stamp):
     marker.header.stamp = stamp
     marker.ns = namespace
     marker.id = id
-    marker.type = marker.LINE_STRIP
+    marker.type = marker.LINE_LIST
     marker.action = marker.ADD
     marker.scale.x = scale
     marker.color = color
     marker.pose.orientation.w = 1.0
-
-    # Add the points to the marker
-    for point in linestring:
-        marker.points.append(point)
-
+    marker.points = points
     return marker
 
 def text_to_marker(text, linestring, namespace, id, color, scale, stamp):

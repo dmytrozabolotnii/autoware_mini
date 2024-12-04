@@ -13,17 +13,8 @@
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
 
     <group>
-        <node if="$(eval detection_range != '')" pkg="autoware_mini" type="detection_range_filter.py" name="detection_range_filter" output="screen" required="true" >
-            <param name="detection_range" value="$(arg detection_range)" />
-        </node>
-        <node if="$(arg use_road_area_filter)" pkg="autoware_mini" type="road_area_filter.py" name="road_area_filter" output="screen" required="true" >
-            <param name="road_area_file" value="$(arg road_area_file)" />
-        </node>
-        <remap if="$(eval detection_range != '' or use_road_area_filter)" from="/detection/detected_objects" to="/detection/detected_objects_unfiltered" />
-
         <group if="$(eval 'lidar' in detector)" ns="lidar">
-            <remap if="$(eval 'fusion' not in detector and (detection_range == '' and not use_road_area_filter))" from="detected_objects" to="/detection/detected_objects" />
-            <remap if="$(eval 'fusion' not in detector and (detection_range != '' or use_road_area_filter))" from="detected_objects" to="/detection/detected_objects_unfiltered" />
+            <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <group if="$(eval 'lidar_cluster' in detector)">
                 <group if="$(arg use_lidar_center)" ns="center">
                     <!-- Only functional in Carla simulation -->
@@ -83,8 +74,7 @@
         </group>
 
         <group if="$(eval 'radar' in detector)" ns="radar">
-            <remap if="$(eval 'fusion' not in detector and (detection_range == '' and not use_road_area_filter))" from="detected_objects" to="/detection/detected_objects" />
-            <remap if="$(eval 'fusion' not in detector and (detection_range != '' or use_road_area_filter))" from="detected_objects" to="/detection/detected_objects_unfiltered" />
+            <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <node pkg="autoware_mini" type="radar_detector.py" name="radar_detector" output="screen" required="true"/>
             <group if="$(arg more_visualizations)">
                 <!-- visualizer for radar detections-->
@@ -102,9 +92,19 @@
 
         <!-- Detected objects visualizer -->
         <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="detected_objects_visualizer" pkg="autoware_mini" output="screen" required="true" />
+
+        <!-- Object filters -->
+        <node if="$(eval detection_range != '')" pkg="autoware_mini" type="detection_range_filter.py" name="detection_range_filter" output="screen" required="true" >
+            <param name="detection_range" value="$(arg detection_range)" />
+        </node>
+        <node if="$(arg use_road_area_filter)" pkg="autoware_mini" type="road_area_filter.py" name="road_area_filter" output="screen" required="true" >
+            <param name="road_area_file" value="$(arg road_area_file)" />
+        </node>
     </group>
 
-    <node if="$(eval tracker=='ema')" type="ema_tracker.py" name="ema_tracker" pkg="autoware_mini" output="screen" required="true" />
+    <node if="$(eval tracker=='ema')" type="ema_tracker.py" name="ema_tracker" pkg="autoware_mini" output="screen" required="true">
+        <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="detected_objects_filtered" />
+    </node>
     <node if="$(eval tracker=='none')" pkg="topic_tools" type="relay" args="detected_objects tracked_objects" name="detected_objects_relay" output="screen" required="true" />
     <node type="detected_objects_visualizer.py" name="tracked_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
         <remap from="detected_objects" to="tracked_objects" />
@@ -120,10 +120,7 @@
         <node if="$(eval 'naive' in predictor)" type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
             <remap from="tracked_objects" to="predicted_objects_map" />
         </node>
-        <node type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
-            <remap from="detected_objects" to="predicted_objects" />
-            <remap from="detected_objects_markers" to="predicted_objects_markers" />
-        </node>
+        <node type="predicted_trajectory_visualizer.py" name="predicted_trajectory_visualizer" pkg="autoware_mini" output="screen" required="true" />
     </group>
     <group if="$(eval predictor=='none')">
         <node pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
