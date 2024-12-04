@@ -84,7 +84,7 @@ class PedestrianCrosswalkChecker:
 
             if len(crosswalks_on_local_path) > 0:
                 for obj in detected_objects:
-                    object_centroid = shapely.Point(obj.pose.position.x, obj.pose.position.y)
+                    object_centroid = shapely.Point(obj.position.x, obj.position.y)
                     object_distance_from_local_path_start = local_path_linestring.project(object_centroid)
                     # ignore objects behind the ego vehicle
                     if math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
@@ -104,7 +104,7 @@ class PedestrianCrosswalkChecker:
                         if object_polygon.intersects(crosswalk['polygon']):
                             if object_speed < self.stopping_speed_limit or object_path_approach_angle < self.crossing_angle_max_limit or \
                                 (180 - object_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(object_polygon)):
-                                collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
+                                collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
                                 crosswalks_on_local_path.remove(crosswalk)
                                 if object_speed < self.stopping_speed_limit:
                                     break  # Stop checking other crosswalks for this object
@@ -125,7 +125,7 @@ class PedestrianCrosswalkChecker:
                                     closest_point_to_object = min([trajectory.linestring.project(shapely.Point(x, y)) for x, y in intersection_points])
                                     trajectory_heading = trajectory.get_heading_at_distance(closest_point_to_object)
                                     if math.degrees(get_minimum_angle_between_two_lines(crosswalk['heading'], trajectory_heading)) < self.crossing_angle_max_limit:
-                                        collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.pose.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
+                                        collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
                                         crosswalks_on_local_path.remove(crosswalk)
                                         break
 

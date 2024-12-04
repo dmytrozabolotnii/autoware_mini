@@ -27,8 +27,8 @@ class ObstacleSimulation:
     def point_callback(self, msg):
         # check if clicked on an existing object
         for o in self.objects:
-            if o.pose.position.x - o.dimensions.x / 2.0 <= msg.point.x <= o.pose.position.x + o.dimensions.x / 2.0 and \
-                    o.pose.position.y - o.dimensions.y / 2.0 <= msg.point.y <= o.pose.position.y + o.dimensions.y / 2.0:
+            if o.position.x - o.dimensions.x / 2.0 <= msg.point.x <= o.position.x + o.dimensions.x / 2.0 and \
+                    o.position.y - o.dimensions.y / 2.0 <= msg.point.y <= o.position.y + o.dimensions.y / 2.0:
                 self.objects.remove(o)
                 rospy.loginfo("%s - removed obstacle %d", rospy.get_name(), o.id)
                 return
@@ -40,17 +40,14 @@ class ObstacleSimulation:
         obj.color = ColorRGBA(1.0, 1.0, 1.0, 0.8)
         obj.valid = True
 
-        obj.pose.position.x = msg.point.x
-        obj.pose.position.y = msg.point.y
-        obj.pose.position.z = msg.point.z
-        obj.pose.orientation.x = 0.0
-        obj.pose.orientation.y = 0.0
-        obj.pose.orientation.z = 0.0
-        obj.pose.orientation.w = 1.0
+        obj.position.x = msg.point.x
+        obj.position.y = msg.point.y
+        obj.position.z = msg.point.z
+        obj.heading = 0.0
         obj.dimensions.x = 1.0
         obj.dimensions.y = 1.0
         obj.dimensions.z = 1.0
-        obj.pose_reliable = True
+        obj.position_reliable = True
 
         obj.convex_hull.points = [
             Point32(msg.point.x - 0.5, msg.point.y - 0.5, msg.point.z),

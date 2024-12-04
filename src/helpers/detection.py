@@ -17,16 +17,13 @@ def create_hull(obj):
     """
     convex_hull = Polygon()
 
-    # compute heading angle from object's orientation
-    heading = get_heading_from_orientation(obj.pose.orientation)
-
     # use cv2.boxPoints to get a rotated rectangle given the angle
     points = cv2.boxPoints((
-        (obj.pose.position.x, obj.pose.position.y),
+        (obj.position.x, obj.position.y),
         (obj.dimensions.x, obj.dimensions.y),
-        math.degrees(heading)
+        math.degrees(obj.heading)
     ))
-    convex_hull.points = [Point(x, y, obj.pose.position.z) for x, y in points]
+    convex_hull.points = [Point(x, y, obj.position.z) for x, y in points]
 
     return convex_hull
 

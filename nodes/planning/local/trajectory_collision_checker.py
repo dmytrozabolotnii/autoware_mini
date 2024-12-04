@@ -108,7 +108,7 @@ class TrajectoryCollisionChecker:
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 
                             object_current_heading = get_heading_from_vector(obj.velocity)
-                            object_current_location = shapely.Point(obj.pose.position.x, obj.pose.position.y)
+                            object_current_location = shapely.Point(obj.position.x, obj.position.y)
                             object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
                             object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
                             heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
@@ -126,7 +126,7 @@ class TrajectoryCollisionChecker:
 
                                 collision_points.add_point(x = yield_line_point.x,
                                                            y = yield_line_point.y,
-                                                           z = obj.pose.position.z,
+                                                           z = obj.position.z,
                                                            vx = 0.0,
                                                            vy = 0.0, 
                                                            vz = 0.0,
@@ -141,7 +141,7 @@ class TrajectoryCollisionChecker:
                             if heading_difference < self.heading_alignment_limit and local_path_buffer.intersects(object_current_location):
                                 continue
                             collision_points.add_intersection_points(trajectory_intersection_points,
-                                                                    z = obj.pose.position.z,
+                                                                    z = obj.position.z,
                                                                     vx = 0,
                                                                     vy = 0,
                                                                     vz = 0,
