@@ -2,7 +2,6 @@
 <launch>
     <arg name="localizer"           default="novatel"  doc="novatel, carla" />
     <arg name="map_name"            default="tartu_demo" />
-    <arg name="lanelet2_map_name"   default="$(arg map_name).osm" />
     <arg name="use_lane_matching"   default="false" />
 
 
@@ -16,9 +15,7 @@
         </node>
 
         <!-- Lane boundary matcher -->
-        <node if="$(arg use_lane_matching)" pkg="autoware_mini" type="lane_boundary_matcher.py" name="lane_boundary_matcher" output="screen" required="true">
-            <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
-        </node>
+        <node if="$(arg use_lane_matching)" pkg="autoware_mini" type="lane_boundary_matcher.py" name="lane_boundary_matcher" output="screen" required="true" />
 
         <group if="$(eval localizer=='carla')">
             <node pkg='autoware_mini' type='carla_localizer.py' name='carla_localizer' output='screen' required="true" />

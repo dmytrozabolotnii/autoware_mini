@@ -98,7 +98,6 @@ class PathWrapper:
 
         return waypoints
 
-
     def get_velocity_at_distance(self, distance):
         """
         Get the target velocity at a certain distance along the path.
@@ -132,6 +131,15 @@ class PathWrapper:
         """
         assert hasattr(self, '_distance_to_blinker_interpolator'), "Blinker interpolator not available, check that path was initialized with blinkers=True"
         return int(self._distance_to_blinker_interpolator(ego_distance_from_path_start))
+    
+    def get_elevation_at_distance(self, distance):
+        """
+        Get the elevation at a certain distance along the path.
+        :param distance: distance from the path start (m)
+        :return: elevation
+        """
+        point_location = self.linestring.interpolate(distance)
+        return point_location.z
 
     def get_pose_at_distance(self, distance):
         """

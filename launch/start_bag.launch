@@ -138,7 +138,6 @@
     <include if="$(arg use_localization)" file="$(find autoware_mini)/launch/localization.launch">
         <arg name="localizer"           value="$(arg localizer)" />
         <arg name="map_name"            value="$(arg map_name)" />
-        <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="use_lane_matching"   value="$(arg use_lane_matching)" />
     </include>
 
