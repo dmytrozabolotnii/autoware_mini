@@ -89,9 +89,9 @@ class LaneBoundaryMatcher:
             return
         
         current_pose_openpilot = transform_point(Point(0, 0, 0), transform)
-        current_pose_footprint = transform_point(Point(0, 0, 0), transform_footprint)
 
         if self.enable_height_correction and global_path is not None:
+            current_pose_footprint = transform_point(Point(0, 0, 0), transform_footprint)
             current_pos_dist = global_path.linestring.project(shapely.Point(current_pose_footprint.x, current_pose_footprint.y, current_pose_footprint.z))
             self.z_correction = global_path.get_elevation_at_distance(current_pos_dist) - current_pose_footprint.z
         
