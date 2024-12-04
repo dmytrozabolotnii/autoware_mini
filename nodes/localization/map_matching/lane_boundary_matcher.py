@@ -11,7 +11,8 @@ import tf2_ros
 from ros_numpy import numpify, msgify
 from tf.transformations import euler_matrix
 from std_msgs.msg import ColorRGBA
-from autoware_mini.msg import Path, Float32MultiArrayStamped
+from autoware_mini.msg import Path
+from vehicle_platform.msg import Float32MultiArrayStamped
 from geometry_msgs.msg import PoseStamped, Point, TransformStamped, Pose
 from visualization_msgs.msg import MarkerArray, Marker
 
