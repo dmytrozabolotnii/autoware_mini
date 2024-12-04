@@ -123,7 +123,15 @@ class PathWrapper:
         else:
             lookahead_blinker_state = int(self._distance_to_blinker_interpolator(blinker_lookahead_distance))
             return get_blinker_state(lookahead_blinker_state)
-
+        
+    def get_blinker_at_distance(self, ego_distance_from_path_start):
+        """
+        Get blinker steering state. 
+        :param ego_distance_from_path_start: distance from path start (m)
+        :return: steering state
+        """
+        assert hasattr(self, '_distance_to_blinker_interpolator'), "Blinker interpolator not available, check that path was initialized with blinkers=True"
+        return int(self._distance_to_blinker_interpolator(ego_distance_from_path_start))
 
     def get_pose_at_distance(self, distance):
         """
@@ -177,26 +185,6 @@ class PathWrapper:
 
         current_position = shapely.Point(current_position.x, current_position.y, current_position.z)
         return calculate_cross_track_error(self.linestring, current_position)
-    
-
-    def get_nearest_waypoint(self, point):
-        """
-        Gets the returns the nearest waypoint on the path
-        :param point: Shapely point
-        :return: Waypoint
-        """
-        point_dist = self.linestring.project(point)
-        idx = self.get_waypoint_index_at_distance(point_dist)
-        if idx == 0:
-            return self.waypoints[0]
-        
-        pot_wp1 = self._waypoints_xyz[idx-1]
-        pot_wp2 = self._waypoints_xyz[idx]
-
-        if shapely.Point(pot_wp1).distance(point) < shapely.Point(pot_wp2).distance(point):
-            return self.waypoints[idx-1]
-        else:
-            return self.waypoints[idx-1]
 
 
 def get_blinker_state(steering_state):

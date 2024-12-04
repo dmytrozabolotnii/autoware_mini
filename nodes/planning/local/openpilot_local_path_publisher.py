@@ -2,9 +2,10 @@
 
 import rospy
 import numpy as np
+import shapely
 import tf2_ros
 import threading
-import shapely
+import message_filters
 from ros_numpy import numpify
 from autoware_mini.msg import Path, Waypoint, Float32MultiArrayStamped
 from geometry_msgs.msg import PoseStamped
@@ -24,7 +25,6 @@ class OpenpilotLocalPathPublisher:
         self.current_position = None
         self.global_path = None
         self.output_frame = None
-        self.openpilot_velocity = None
 
         self.global_path_lock = threading.Lock()
 
@@ -37,8 +37,12 @@ class OpenpilotLocalPathPublisher:
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
-        rospy.Subscriber('/openpilot/position', Float32MultiArrayStamped, self.openpilot_position_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/openpilot/velocity', Float32MultiArrayStamped, self.openpilot_velocity_callback, queue_size=1, tcp_nodelay=True)
+        openpilot_position_sub = message_filters.Subscriber('/openpilot/position', Float32MultiArrayStamped, queue_size=1, tcp_nodelay=True)
+        openpilot_velocity_sub = message_filters.Subscriber('/openpilot/velocity', Float32MultiArrayStamped, queue_size=1, tcp_nodelay=True)
+
+        ts = message_filters.TimeSynchronizer([openpilot_position_sub, openpilot_velocity_sub], queue_size=1)
+
+        ts.registerCallback(self.openpilot_prediction_callback)
 
     def current_pose_callback(self, msg):
         self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
@@ -57,12 +61,9 @@ class OpenpilotLocalPathPublisher:
             self.output_frame = output_frame
             self.global_path = global_path
 
-    def openpilot_velocity_callback(self, msg):
-        self.openpilot_velocity = float32_multiarray_to_numpy(msg).T
-
-    def openpilot_position_callback(self, msg):
-        openpilot_plan = float32_multiarray_to_numpy(msg).T
-        openpilot_velocity = self.openpilot_velocity
+    def openpilot_prediction_callback(self, position_msg, velocity_msg):
+        openpilot_plan = float32_multiarray_to_numpy(position_msg).T
+        openpilot_velocity = float32_multiarray_to_numpy(velocity_msg).T
         current_position = self.current_position
 
         with self.global_path_lock:
@@ -71,7 +72,7 @@ class OpenpilotLocalPathPublisher:
 
         openpilot_local_path = Path()
         openpilot_local_path.header.frame_id = output_frame
-        openpilot_local_path.header.stamp = msg.header.stamp
+        openpilot_local_path.header.stamp = position_msg.header.stamp
 
         if current_position is None or global_path is None:
             self.openpilot_local_path_pub.publish(openpilot_local_path)
@@ -79,7 +80,7 @@ class OpenpilotLocalPathPublisher:
 
         # fetch the transform from 'openpilot' frame to ouput frame
         try:
-            transform = self.tf_buffer.lookup_transform(output_frame, msg.header.frame_id, msg.header.stamp, rospy.Duration(self.transform_timeout))
+            transform = self.tf_buffer.lookup_transform(output_frame, position_msg.header.frame_id, position_msg.header.stamp, rospy.Duration(self.transform_timeout))
             tf_matrix = numpify(transform.transform)
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
@@ -114,21 +115,13 @@ class OpenpilotLocalPathPublisher:
             heading = get_heading_between_two_points(previous_point, current_point)
 
         current_point_dist = self.global_path.linestring.project(current_point)
-        left_blinker, right_blinker = self.global_path.get_blinker_state_with_lookahead(current_point_dist, 0)
-        
-        if left_blinker == 0 and right_blinker == 1:
-            blinker_state = Waypoint.STR_RIGHT
-        elif left_blinker == 1 and right_blinker == 0:
-            blinker_state = Waypoint.STR_LEFT
-        else:
-            blinker_state = Waypoint.STR_STRAIGHT
 
         waypoint = Waypoint()
         waypoint.position.x = current_point.x
         waypoint.position.y = current_point.y
         waypoint.position.z = current_point.z
         waypoint.lanechange_state = 0
-        waypoint.blinker_state = blinker_state
+        waypoint.blinker_state = self.global_path.get_blinker_at_distance(current_point_dist)
         waypoint.heading = heading
         waypoint.speed = np.linalg.norm(openpilot_velocity[:3])
         waypoint.left_width = self.default_left_width
