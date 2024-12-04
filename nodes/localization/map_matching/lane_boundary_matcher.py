@@ -117,7 +117,7 @@ class LaneBoundaryMatcher:
                                                 openpilot_left_lane_boundary, openpilot_right_lane_boundary)
 
             # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-            if abs(x) > self.z_correction_treshold or abs(y) > self.y_correction_treshold:
+            if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold:
                 x, y = 0, 0
                 no_correction = True
             
@@ -132,7 +132,7 @@ class LaneBoundaryMatcher:
             x, y, yaw = result.x
 
             # if the calculated correction is too big then don't use the correction
-            if (abs(x) > self.z_correction_treshold or abs(y) > self.y_correction_treshold or abs(yaw) > self.yaw_correction_treshold):
+            if (abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or abs(yaw) > self.yaw_correction_treshold):
                 x, y, yaw = 0, 0, 0
                 no_correction = True
 
@@ -235,11 +235,11 @@ class LaneBoundaryMatcher:
             left_x, left_y, left_z = openpilot_left_lane_boundary.coords[i]
             right_x, right_y, right_z = openpilot_right_lane_boundary.coords[i]
 
-            left_x_diffs.append(left_x - left_point.x)
-            left_y_diffs.append(left_y - left_point.y)
+            left_x_diffs.append(left_point.x - left_x)
+            left_y_diffs.append(left_point.y - left_y)
 
-            right_x_diffs.append(right_x - right_point.x)
-            right_y_diffs.append(right_y - right_point.y)
+            right_x_diffs.append(right_point.x - right_x)
+            right_y_diffs.append(right_point.y - right_y)
             
 
         x_diffs = (np.array(left_x_diffs) + np.array(right_x_diffs)) / 2
@@ -253,20 +253,20 @@ class LaneBoundaryMatcher:
         matrix = euler_matrix(0, 0, yaw_correction)
         matrix[0, 3] = x_correction
         matrix[1, 3] = y_correction
-        
-        map_left_lane_boundary_h = np.hstack((np.array(map_left_lane_boundary.coords), np.ones((len(map_left_lane_boundary.coords), 1))))
-        map_right_lane_boundary_h = np.hstack((np.array(map_right_lane_boundary.coords), np.ones((len(map_right_lane_boundary.coords), 1))))
 
-        corrected_map_left_lane_bound_h = map_left_lane_boundary_h @ matrix.T
-        corrected_map_left_lane_bound = corrected_map_left_lane_bound_h[:, :3]
+        openpilot_left_lane_boundary_h = np.hstack((np.array(openpilot_left_lane_boundary.coords), np.ones((len(openpilot_left_lane_boundary.coords), 1))))
+        openpilot_right_lane_boundary_h = np.hstack((np.array(openpilot_right_lane_boundary.coords), np.ones((len(openpilot_right_lane_boundary.coords), 1))))
 
-        corrected_map_right_lane_bound_h = map_right_lane_boundary_h @ matrix.T
-        corrected_map_right_lane_bound = corrected_map_right_lane_bound_h[:, :3]
+        openpilot_left_lane_bound_map_fr_h = openpilot_left_lane_boundary_h @ matrix.T
+        openpilot_left_lane_bound_map_fr = openpilot_left_lane_bound_map_fr_h[:, :3]
 
-        corrected_left_map_lane_boundary = shapely.LineString(corrected_map_left_lane_bound)
-        corrected_right_map_lane_boundary = shapely.LineString(corrected_map_right_lane_bound)
+        openpilot_right_lane_bound_map_fr_h = openpilot_right_lane_boundary_h @ matrix.T
+        openpilot_right_lane_bound_map_fr = openpilot_right_lane_bound_map_fr_h[:, :3]
 
-        return shapely.hausdorff_distance(openpilot_left_lane_boundary, corrected_left_map_lane_boundary) + shapely.hausdorff_distance(openpilot_right_lane_boundary, corrected_right_map_lane_boundary)
+        openpilot_left_map_lane_boundary_map_fr = shapely.LineString(openpilot_left_lane_bound_map_fr)
+        openpilot_right_map_lane_boundary_map_fr = shapely.LineString(openpilot_right_lane_bound_map_fr)
+
+        return shapely.hausdorff_distance(map_left_lane_boundary, openpilot_left_map_lane_boundary_map_fr) + shapely.hausdorff_distance(map_right_lane_boundary, openpilot_right_map_lane_boundary_map_fr)
 
     def get_lane_boundary_marker(self, lane_boundary, side, marker_id, frame_id, marker_color):
         points = []

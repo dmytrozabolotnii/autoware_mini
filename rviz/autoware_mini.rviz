@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /System1
         - /System1/TF1
+        - /System1/TF1/Frames1
         - /Detection1
         - /Detection1/Lidar1
         - /Detection1/Detected objects1/Namespaces1
@@ -76,8 +77,6 @@ Visualization Manager:
               Value: false
             base_link:
               Value: true
-            base_link_gnss:
-              Value: true
             camera0:
               Value: false
             camera1:
@@ -115,7 +114,9 @@ Visualization Manager:
             lidar_front/os_sensor:
               Value: false
             map:
-              Value: false
+              Value: true
+            map_corrected:
+              Value: true
             openpilot:
               Value: false
             radar_fc:
@@ -128,7 +129,7 @@ Visualization Manager:
           Show Names: true
           Tree:
             map:
-              base_link_gnss:
+              map_corrected:
                 base_link:
                   base_footprint:
                     {}
@@ -171,18 +172,27 @@ Visualization Manager:
         - Alpha: 1
           Class: rviz/RobotModel
           Collision Enabled: false
-          Enabled: false
+          Enabled: true
           Links:
             All Links Enabled: true
             Expand Joint Details: false
             Expand Link Details: false
             Expand Tree: false
             Link Tree Style: Links in Alphabetic Order
+            base_link:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+            lexus_model:
+              Alpha: 1
+              Show Axes: false
+              Show Trail: false
+              Value: true
           Name: Lexus model
           Robot Description: robot_description
           TF Prefix: ""
           Update Interval: 0
-          Value: false
+          Value: true
           Visual Enabled: true
         - Alpha: 1
           Axes Length: 1
@@ -880,34 +890,7 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  Detected objects: true
-                  Let's go yield line: true
-                  Lidar:
-                    Center:
-                      Points center ground: true
-                      Points center no ground: true
-                      Value: true
-                    Front:
-                      Points front filtered: true
-                      Points front ground: true
-                      Points front no ground: true
-                      Value: true
-                    Lidar detections: true
-                    Points clustered: true
-                    Points filtered: true
-                    Points ground: true
-                    Points no ground: true
-                    Value: true
-                  Predicted objects: true
-                  Radar:
-                    Radar detections: true
-                    Value: true
-                  Tracked objects: true
-                  Traffic lights:
-                    Forward camera ROI image: true
-                    Right camera ROI image: true
-                    Stop line status: true
-                    Value: true
+                  "": true
                   Value: true
                 Grid: true
                 Map:
@@ -1012,34 +995,7 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  Detected objects: true
-                  Let's go yield line: true
-                  Lidar:
-                    Center:
-                      Points center ground: true
-                      Points center no ground: true
-                      Value: true
-                    Front:
-                      Points front filtered: true
-                      Points front ground: true
-                      Points front no ground: true
-                      Value: true
-                    Lidar detections: true
-                    Points clustered: true
-                    Points filtered: true
-                    Points ground: true
-                    Points no ground: true
-                    Value: true
-                  Predicted objects: true
-                  Radar:
-                    Radar detections: true
-                    Value: true
-                  Tracked objects: true
-                  Traffic lights:
-                    Forward camera ROI image: true
-                    Right camera ROI image: true
-                    Stop line status: true
-                    Value: true
+                  "": true
                   Value: true
                 Grid: true
                 Map:
@@ -1148,34 +1104,7 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  Detected objects: true
-                  Let's go yield line: true
-                  Lidar:
-                    Center:
-                      Points center ground: true
-                      Points center no ground: true
-                      Value: true
-                    Front:
-                      Points front filtered: true
-                      Points front ground: true
-                      Points front no ground: true
-                      Value: true
-                    Lidar detections: true
-                    Points clustered: true
-                    Points filtered: true
-                    Points ground: true
-                    Points no ground: true
-                    Value: true
-                  Predicted objects: true
-                  Radar:
-                    Radar detections: true
-                    Value: true
-                  Tracked objects: true
-                  Traffic lights:
-                    Forward camera ROI image: true
-                    Right camera ROI image: true
-                    Stop line status: true
-                    Value: true
+                  "": true
                   Value: true
                 Grid: true
                 Map:
@@ -1199,10 +1128,7 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1280,34 +1206,7 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  Detected objects: true
-                  Let's go yield line: true
-                  Lidar:
-                    Center:
-                      Points center ground: true
-                      Points center no ground: true
-                      Value: true
-                    Front:
-                      Points front filtered: true
-                      Points front ground: true
-                      Points front no ground: true
-                      Value: true
-                    Lidar detections: true
-                    Points clustered: true
-                    Points filtered: true
-                    Points ground: true
-                    Points no ground: true
-                    Value: true
-                  Predicted objects: true
-                  Radar:
-                    Radar detections: true
-                    Value: true
-                  Tracked objects: true
-                  Traffic lights:
-                    Forward camera ROI image: true
-                    Right camera ROI image: true
-                    Stop line status: true
-                    Value: true
+                  "": true
                   Value: true
                 Grid: true
                 Map:
@@ -1331,10 +1230,7 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1412,34 +1308,7 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  Detected objects: true
-                  Let's go yield line: true
-                  Lidar:
-                    Center:
-                      Points center ground: true
-                      Points center no ground: true
-                      Value: true
-                    Front:
-                      Points front filtered: true
-                      Points front ground: true
-                      Points front no ground: true
-                      Value: true
-                    Lidar detections: true
-                    Points clustered: true
-                    Points filtered: true
-                    Points ground: true
-                    Points no ground: true
-                    Value: true
-                  Predicted objects: true
-                  Radar:
-                    Radar detections: true
-                    Value: true
-                  Tracked objects: true
-                  Traffic lights:
-                    Forward camera ROI image: true
-                    Right camera ROI image: true
-                    Stop line status: true
-                    Value: true
+                  "": true
                   Value: true
                 Grid: true
                 Map:
@@ -1463,10 +1332,7 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link2 Forward: true
@@ -1544,34 +1410,7 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  Detected objects: true
-                  Let's go yield line: true
-                  Lidar:
-                    Center:
-                      Points center ground: true
-                      Points center no ground: true
-                      Value: true
-                    Front:
-                      Points front filtered: true
-                      Points front ground: true
-                      Points front no ground: true
-                      Value: true
-                    Lidar detections: true
-                    Points clustered: true
-                    Points filtered: true
-                    Points ground: true
-                    Points no ground: true
-                    Value: true
-                  Predicted objects: true
-                  Radar:
-                    Radar detections: true
-                    Value: true
-                  Tracked objects: true
-                  Traffic lights:
-                    Forward camera ROI image: true
-                    Right camera ROI image: true
-                    Stop line status: true
-                    Value: true
+                  "": true
                   Value: true
                 Grid: true
                 Map:
@@ -1595,10 +1434,7 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -1676,34 +1512,7 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  Detected objects: true
-                  Let's go yield line: true
-                  Lidar:
-                    Center:
-                      Points center ground: true
-                      Points center no ground: true
-                      Value: true
-                    Front:
-                      Points front filtered: true
-                      Points front ground: true
-                      Points front no ground: true
-                      Value: true
-                    Lidar detections: true
-                    Points clustered: true
-                    Points filtered: true
-                    Points ground: true
-                    Points no ground: true
-                    Value: true
-                  Predicted objects: true
-                  Radar:
-                    Radar detections: true
-                    Value: true
-                  Tracked objects: true
-                  Traffic lights:
-                    Forward camera ROI image: true
-                    Right camera ROI image: true
-                    Stop line status: true
-                    Value: true
+                  "": true
                   Value: true
                 Grid: true
                 Map:
@@ -1727,10 +1536,7 @@ Visualization Manager:
                   Value: true
                 Sensing:
                   Mako:
-                    Camera left: true
-                    Camera right: true
-                    Image left: true
-                    Image right: true
+                    "": true
                     Value: true
                   Nvidia:
                     Camera Interface link1 Right: true
@@ -2200,8 +2006,7 @@ Visualization Manager:
               Marker Topic: /planning/tfl_stop_line_markers
               Name: Stop line status
               Namespaces:
-                Status text: true
-                Stop line: true
+                {}
               Queue Size: 100
               Value: true
           Enabled: true
@@ -2504,7 +2309,8 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              "": true
+              Current pose: true
+              Follower markers: true
               Value: true
             Dashboard:
               Accel limit: true
@@ -2535,34 +2341,7 @@ Visualization Manager:
                 Value: true
                 Wheel: true
             Detection:
-              Detected objects: true
-              Let's go yield line: true
-              Lidar:
-                Center:
-                  Points center ground: true
-                  Points center no ground: true
-                  Value: true
-                Front:
-                  Points front filtered: true
-                  Points front ground: true
-                  Points front no ground: true
-                  Value: true
-                Lidar detections: true
-                Points clustered: true
-                Points filtered: true
-                Points ground: true
-                Points no ground: true
-                Value: true
-              Predicted objects: true
-              Radar:
-                Radar detections: true
-                Value: true
-              Tracked objects: true
-              Traffic lights:
-                Forward camera ROI image: true
-                Right camera ROI image: true
-                Stop line status: true
-                Value: true
+              "": true
               Value: true
             Grid: true
             Lane boundary matcher: true
@@ -2687,7 +2466,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 23.397104263305664
+      Distance: 19.73822784423828
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -2695,17 +2474,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -1.083136796951294
-        Y: -0.4189020097255707
-        Z: -1.6794238035799935e-05
-      Focal Shape Fixed Size: true
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5953983068466187
-      Target Frame: base_link_gnss
-      Yaw: 3.160402297973633
+      Pitch: 0.48979687690734863
+      Target Frame: base_link
+      Yaw: 3.090399980545044
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho
