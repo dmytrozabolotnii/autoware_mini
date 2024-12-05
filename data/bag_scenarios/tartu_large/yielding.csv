@@ -1,4 +1,4 @@
-bag_name, start, duration, scenario_number
+# bag_name, start, duration, scenario_number
 2023-11-03-13-56-06_tiksoja_ride_20_sfa_split_2.bag, 339, 22, 01
 2023-11-03-13-56-06_tiksoja_ride_20_sfa_split_2.bag, 744, 27, 02
 2023-11-03-13-56-06_tiksoja_ride_20_sfa_split_2.bag, 1033, 26, 03
