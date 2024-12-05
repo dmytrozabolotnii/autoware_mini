@@ -37,6 +37,7 @@ class PurePursuitFollower:
 
         # Variables - init
         self.path = None
+        self.is_blocked = False
         self.closest_object_velocity = 0.0
         self.stopping_point_distance = 0.0
         self.lock = threading.Lock()
@@ -62,15 +63,18 @@ class PurePursuitFollower:
         if len(path_msg.waypoints) == 0:
             # if path is cancelled and empty waypoints received
             path = None
+            is_blocked = False
             closest_object_velocity = 0.0
             stopping_point_distance = 0.0
         else:
             path = PathWrapper(path_msg.waypoints, velocities=True, blinkers=True)
+            is_blocked = path_msg.is_blocked
             closest_object_velocity = path_msg.closest_object_velocity
             stopping_point_distance = path_msg.stopping_point_distance
 
         with self.lock:
             self.path = path
+            self.is_blocked = is_blocked
             self.closest_object_velocity = closest_object_velocity
             self.stopping_point_distance = stopping_point_distance
 
@@ -82,6 +86,7 @@ class PurePursuitFollower:
 
             with self.lock:
                 path = self.path
+                is_blocked = self.is_blocked
                 closest_object_velocity = self.closest_object_velocity
                 stopping_point_distance = self.stopping_point_distance
 
@@ -142,7 +147,7 @@ class PurePursuitFollower:
 
             # if decelerating because of obstacle then calculate necessary deceleration
             emergency = 0
-            if stopping_point_distance > 0.0 and target_velocity < current_velocity:
+            if is_blocked and target_velocity < current_velocity:
                 # calculate distance from car front to stopping point
                 car_front_to_stopping_point_distance = stopping_point_distance - ego_distance_from_path_start - self.current_pose_to_car_front
                 if car_front_to_stopping_point_distance > 0:
