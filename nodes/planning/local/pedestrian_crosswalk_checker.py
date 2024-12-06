@@ -3,8 +3,10 @@
 import math
 import rospy
 import shapely
+import shapely.ops
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
+from tf2_ros import TransformListener, Buffer, TransformException
 from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_heading_between_two_points, get_angle_between_two_headings, get_minimum_angle_between_two_lines
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
@@ -22,8 +24,12 @@ class PedestrianCrosswalkChecker:
         self.crossing_angle_max_limit = rospy.get_param("~crossing_angle_max_limit")
         self.use_object_width = rospy.get_param("/planning/use_object_width")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        self.transform_timeout = rospy.get_param('~transform_timeout')
+        self.car_front_transform = rospy.get_param("~car_front_transform")
 
         # variables
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer)
         self.detected_objects = None
         self.crosswalks_on_global_path = None
 
@@ -70,16 +76,25 @@ class PedestrianCrosswalkChecker:
 
         collision_points = CollisionPoints()
         if len(msg.waypoints) > 0 and len(self.crosswalks) > 0 and len(detected_objects) > 0:
-
             local_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
             shapely.prepare(local_path_linestring)
             local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
+            # get the transform 'car_front' location point(0,0,0) to the map frame
+            try:
+                transform = self.tf_buffer.lookup_transform(msg.header.frame_id, self.car_front_transform, msg.header.stamp, rospy.Duration(self.transform_timeout))
+            except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
+                rospy.logwarn("%s - %s", rospy.get_name(), e)
+                return
+            car_front = shapely.Point(transform.transform.translation.x, transform.transform.translation.y)
+            car_front_distance_from_path_start = local_path_linestring.project(car_front)
+            linestring_up_to_car_front = shapely.ops.substring(local_path_linestring, 0, car_front_distance_from_path_start)
+
             # extract crosswalks that intersect with local path
             crosswalks_on_local_path = []
             for crosswalk in crosswalks_on_global_path:
-                if crosswalk['polygon'].intersects(local_path_linestring):
+                if crosswalk['polygon'].intersects(local_path_linestring) and not crosswalk['polygon'].intersects(linestring_up_to_car_front):
                     crosswalks_on_local_path.append(crosswalk)
 
             if len(crosswalks_on_local_path) > 0:
@@ -101,7 +116,7 @@ class PedestrianCrosswalkChecker:
                     for crosswalk in crosswalks_on_local_path[:]:
 
                         # INTERSECTING OBJECTS
-                        if object_polygon.intersects(crosswalk['polygon']):
+                        if crosswalk['polygon'].intersects(object_polygon):
                             if object_speed < self.stopping_speed_limit or object_path_approach_angle < self.crossing_angle_max_limit or \
                                 (180 - object_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(object_polygon)):
                                 collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
