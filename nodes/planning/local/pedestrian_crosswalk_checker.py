@@ -22,10 +22,8 @@ class PedestrianCrosswalkChecker:
         self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
         self.braking_safety_distance_crosswalk = rospy.get_param("~braking_safety_distance_crosswalk")
         self.crossing_angle_max_limit = rospy.get_param("~crossing_angle_max_limit")
-        self.use_object_width = rospy.get_param("/planning/use_object_width")
+        self.use_object_width = rospy.get_param("use_object_width")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
-        self.transform_timeout = rospy.get_param('~transform_timeout')
-        self.car_front_transform = rospy.get_param("~car_front_transform")
 
         # variables
         self.tf_buffer = Buffer()
@@ -83,7 +81,7 @@ class PedestrianCrosswalkChecker:
 
             # get the transform 'car_front' location point(0,0,0) to the map frame
             try:
-                transform = self.tf_buffer.lookup_transform(msg.header.frame_id, self.car_front_transform, msg.header.stamp, rospy.Duration(self.transform_timeout))
+                transform = self.tf_buffer.lookup_transform(msg.header.frame_id, "car_front", msg.header.stamp, rospy.Duration(0.06))
             except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
                 rospy.logwarn("%s - %s", rospy.get_name(), e)
                 return
