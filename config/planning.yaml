@@ -15,6 +15,8 @@ output_frame: map
 distance_to_goal_limit: 5.0     # m
 ego_vehicle_stopped_speed_limit: 0.1
 use_object_width: False          # use object width for predictions and collision checks in trajectory_collision_checker and pedestrian_crosswalk_checker
+default_left_width: 1.4         # m
+default_right_width: 1.4        # m
 
 lanelet2_global_planner:
   distance_to_centerline_limit: 5.0
@@ -27,8 +29,6 @@ lanelet2_map_visualizer:
 
 waypoint_loader:
   output_frame: map
-  wp_left_width: 1.4
-  wp_right_width: 1.4
 
 waypoint_saver:
   interval: 1.0
@@ -63,3 +63,11 @@ trajectory_collision_checker:
 automatic_stop_behavior:
   braking_safety_distance_stop_line: 0.1      # m
   keep_stop_line_for: 15.0                    # s
+collision_points_merger:
+  synchronization_queue_size: 4
+  synchronization_slop: 0.15
+speed_planner:
+  synchronization_queue_size: 4
+  synchronization_slop: 0.15
+openpilot_local_planner:
+  transform_timeout: 0.06

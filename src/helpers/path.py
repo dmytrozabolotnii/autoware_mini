@@ -2,6 +2,7 @@ import math
 import shapely
 import numpy as np
 from scipy.interpolate import interp1d
+import shapely.ops
 from autoware_mini.msg import Waypoint
 from geometry_msgs.msg import Point, Pose
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
@@ -122,7 +123,15 @@ class PathWrapper:
         else:
             lookahead_blinker_state = int(self._distance_to_blinker_interpolator(blinker_lookahead_distance))
             return get_blinker_state(lookahead_blinker_state)
-
+        
+    def get_blinker_at_distance(self, ego_distance_from_path_start):
+        """
+        Get blinker steering state. 
+        :param ego_distance_from_path_start: distance from path start (m)
+        :return: steering state
+        """
+        assert hasattr(self, '_distance_to_blinker_interpolator'), "Blinker interpolator not available, check that path was initialized with blinkers=True"
+        return int(self._distance_to_blinker_interpolator(ego_distance_from_path_start))
 
     def get_pose_at_distance(self, distance):
         """

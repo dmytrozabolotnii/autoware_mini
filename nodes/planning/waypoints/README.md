@@ -14,8 +14,8 @@ ROS node to load waypoints from a CSV file and publish them on a ROS topic. Wayp
 | --- | --- | --- | --- |
 | `waypoints_file` | `string` | - | The path to the CSV file containing the waypoints. |
 | `output_frame` | `string` | `"map"` | The frame ID to use for the published waypoints. |
-| `wp_left_width` | `float` | `1.4` | The left width of the waypoints. |
-| `wp_right_width` | `float` | `1.4` | The right width of the waypoints. |
+| `default_left_width` | `float` | `1.4` | The left width of the waypoints. |
+| `default_right_width` | `float` | `1.4` | The right width of the waypoints. |
 
 
 #### Subscribed Topics

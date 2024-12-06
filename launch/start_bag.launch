@@ -11,7 +11,7 @@
     <arg name="tfl_detector"            default="camera"        doc="camera, mqtt, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
     <arg name="tfl_cameras"             default="mako"          doc="mako, nvidia" />
     <arg name="global_planner"          default="lanelet2"      doc="waypoints, lanelet2"/>
-    <arg name="local_planner"           default="rule"          doc="rule"/>
+    <arg name="local_planner"           default="rule"          doc="rule, openpilot"/>
     <arg name="follower"                default="pure_pursuit"  doc="pure_pursuit, stanley"/>
     <arg name="use_path_smoothing"      default="true" />
     <arg name="use_road_area_filter"    default="$(eval 'tartu' in map_name)"  doc="use road area filter"/>
@@ -82,6 +82,8 @@
         <remap from="/planning/smoothed_path_markers" to="/bag/planning/smoothed_path_markers" if="$(arg use_planning)"/>
         <remap from="/planning/extracted_local_path" to="/bag/planning/extracted_local_path" if="$(arg use_planning)"/>
         <remap from="/planning/local_path" to="/bag/planning/local_path" if="$(arg use_planning)"/>
+        <remap from="/planning/extracted_local_path" to="/bag/planning/extracted_local_path" if="$(arg use_planning)"/>
+        <remap from="/planning/collision_points" to="/bag/planning/collision_points" if="$(arg use_planning)"/>
         <remap from="/planning/local_path_markers" to="/bag/planning/local_path_markers" if="$(arg use_planning)"/>
         <remap from="/planning/stop_line_markers" to="/bag/planning/stop_line_markers" if="$(arg use_planning)"/>
         <remap from="/planning/target_lane_markers" to="/bag/planning/target_lane_markers" if="$(arg use_planning)"/>

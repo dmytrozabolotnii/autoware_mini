@@ -12,8 +12,8 @@ class WaypointLoader:
         # Parameters
         self.waypoints_file = rospy.get_param("~waypoints_file")
         self.output_frame = rospy.get_param("~output_frame")
-        self.wp_left_width = rospy.get_param("~wp_left_width")
-        self.wp_right_width = rospy.get_param("~wp_right_width")
+        self.default_left_width = rospy.get_param("default_left_width")
+        self.default_right_width = rospy.get_param("default_right_width")
 
         # Publishers
         self.waypoints_pub = rospy.Publisher('global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
@@ -64,8 +64,8 @@ class WaypointLoader:
                 #waypoint.wpstate.event_state = int(row[9])
 
                 # set waypoint width
-                waypoint.left_width = self.wp_left_width
-                waypoint.right_width = self.wp_right_width
+                waypoint.left_width = self.default_left_width
+                waypoint.right_width = self.default_right_width
 
                 waypoints.append(waypoint)
 
