@@ -9,9 +9,8 @@
     
         <node if="$(eval localizer=='novatel')" pkg="autoware_mini" type="novatel_oem7_localizer.py" name="novatel_oem7_localizer" output="screen" required="true">
             <!-- <remap if="$(arg use_lane_matching)" from="current_pose" to="current_pose_gnss"/> -->
-            <param name="parent_frame" value="$(eval 'map_corrected' if use_lane_matching else 'map')" />
-            <param name="child_frame" value="base_link" /> 
-            <!-- <param name="child_frame" value="$(eval 'base_link_gnss' if use_lane_matching else 'base_link')" />-->
+            <param name="parent_frame" value="$(eval 'map_gnss' if use_lane_matching else 'map')" />
+            <remap if="$(arg use_lane_matching)" from="current_pose" to="current_pose_gnss" />
         </node>
 
         <!-- Lane boundary matcher -->

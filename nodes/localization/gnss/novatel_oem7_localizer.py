@@ -47,7 +47,7 @@ class NovatelOem7Localizer:
             exit(1)
 
         # Publishers
-        self.current_pose_pub = rospy.Publisher('current_pose_gnss', PoseStamped, queue_size=1, tcp_nodelay=True)
+        self.current_pose_pub = rospy.Publisher('current_pose', PoseStamped, queue_size=1, tcp_nodelay=True)
         self.current_velocity_pub = rospy.Publisher('current_velocity', TwistStamped, queue_size=1, tcp_nodelay=True)
         self.odometry_pub = rospy.Publisher('odometry', Odometry, queue_size=1, tcp_nodelay=True)
         
