@@ -19,4 +19,6 @@ lane_boundary_matcher:
   y_correction_treshold: 0.5
   yaw_correction_treshold: 0.1
   transform_timeout: 0.06
+  openpilot_delay_compensation: 0.1
   alpha: 0.03
+  

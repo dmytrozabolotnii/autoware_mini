@@ -31,6 +31,7 @@ class LaneBoundaryMatcher:
         self.y_correction_treshold = rospy.get_param("~y_correction_treshold")
         self.yaw_correction_treshold = rospy.get_param("~yaw_correction_treshold")
         self.transform_timeout = rospy.get_param("~transform_timeout")
+        self.openpilot_delay_compensation = rospy.get_param("~openpilot_delay_compensation")
         self.alpha = rospy.get_param("~alpha")
 
         # variables
@@ -73,15 +74,16 @@ class LaneBoundaryMatcher:
         openpilot_lane_boundaries = float32_multiarray_to_numpy(msg)
 
         global_path = self.global_path
+        timestamp = msg.header.stamp - rospy.Duration.from_sec(self.openpilot_delay_compensation)
 
         if global_path is None or global_path.left_boundary is None or global_path.right_boundary is None:
             return
 
         # Fetch transforms
         try:
-            transform_openpilot = self.tf_buffer.lookup_transform("map_gnss", "openpilot", msg.header.stamp, rospy.Duration(self.transform_timeout))
+            transform_openpilot = self.tf_buffer.lookup_transform("map_gnss", "openpilot", timestamp, rospy.Duration(self.transform_timeout))
             tf_matrix_openpilot = numpify(transform_openpilot.transform)
-            transform_footprint = self.tf_buffer.lookup_transform("map_gnss", "base_footprint", msg.header.stamp, rospy.Duration(self.transform_timeout))
+            transform_footprint = self.tf_buffer.lookup_transform("map_gnss", "base_footprint", timestamp, rospy.Duration(self.transform_timeout))
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
             return
@@ -134,7 +136,7 @@ class LaneBoundaryMatcher:
             current_pose_tf = numpify(transform_footprint.transform)
             current_pose_tf_inv = np.linalg.inv(current_pose_tf)
             # use optimizer to find the best match between map boundaries and openpilot boundaries
-            result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), options={'disp': True},
+            result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), options={'disp': True}, method='Nelder-Mead',
                                              args=(current_pose_tf, current_pose_tf_inv,
                                                    map_left_lane_boundary, map_right_lane_boundary, 
                                                    openpilot_left_lane_boundary, openpilot_right_lane_boundary))
@@ -153,7 +155,7 @@ class LaneBoundaryMatcher:
         self.y_correction = self.calculate_updated_correction(y, self.y_correction)
         self.yaw_correction = self.calculate_updated_correction(yaw, self.yaw_correction)
 
-        self.publish_base_link_correction_tf(correction_stamp=msg.header.stamp)
+        self.publish_base_link_correction_tf(correction_stamp=timestamp)
 
         ##################################################################
         # Visualization
@@ -163,13 +165,13 @@ class LaneBoundaryMatcher:
         map_color = ColorRGBA(0.6, 0.5, 0.4, 1.0) if no_correction else ColorRGBA(1.0, 1.0, 0.0, 1.0)
 
         lanes_marker_array = MarkerArray()
-        marker1 = self.get_lane_boundary_marker(openpilot_right_lane_boundary, "right", 0, "map_gnss", openpilot_color, msg.header.stamp)
-        marker2 = self.get_lane_boundary_marker(openpilot_left_lane_boundary, "left", 1, "map_gnss", openpilot_color, msg.header.stamp)
+        marker1 = self.get_lane_boundary_marker(openpilot_right_lane_boundary, "right", 0, "map_gnss", openpilot_color, timestamp)
+        marker2 = self.get_lane_boundary_marker(openpilot_left_lane_boundary, "left", 1, "map_gnss", openpilot_color, timestamp)
         lanes_marker_array.markers.append(marker1)
         lanes_marker_array.markers.append(marker2)
 
-        marker3 = self.get_lane_boundary_marker(map_right_lane_boundary, "right", 2, "map", map_color, msg.header.stamp)
-        marker4 = self.get_lane_boundary_marker(map_left_lane_boundary, "left", 3, "map", map_color, msg.header.stamp)
+        marker3 = self.get_lane_boundary_marker(map_right_lane_boundary, "right", 2, "map", map_color, timestamp)
+        marker4 = self.get_lane_boundary_marker(map_left_lane_boundary, "left", 3, "map", map_color, timestamp)
         lanes_marker_array.markers.append(marker3)
         lanes_marker_array.markers.append(marker4)
         
@@ -184,26 +186,25 @@ class LaneBoundaryMatcher:
         self.global_path = PathWrapper(msg.waypoints, boundaries=True)
 
     def find_average_distance(self, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary):
-        x_diffs, y_diffs = [], []
-
         dists = np.linspace(0, self.lookahead_distance, len(openpilot_left_lane_boundary.coords))
 
-        for i in range(len(dists)):
-            left_point = map_left_lane_boundary.interpolate(dists[i])
-            right_point = map_right_lane_boundary.interpolate(dists[i])
+        map_left_points = map_left_lane_boundary.interpolate(dists)
+        map_right_points = map_right_lane_boundary.interpolate(dists)
 
-            left_x, left_y, left_z = openpilot_left_lane_boundary.coords[i]
-            right_x, right_y, right_z = openpilot_right_lane_boundary.coords[i]
+        openpilot_left_points = openpilot_left_lane_boundary.interpolate(dists)
+        openpilot_right_points = openpilot_right_lane_boundary.interpolate(dists)
 
-            x_diffs.append(left_point.x - left_x)
-            y_diffs.append(left_point.y - left_y)
+        map_points = np.vstack([shapely.get_coordinates(map_left_points), shapely.get_coordinates(map_right_points)])
+        openpilot_points = np.vstack([shapely.get_coordinates(openpilot_left_points), shapely.get_coordinates(openpilot_right_points)])
 
-            x_diffs.append(right_point.x - right_x)
-            y_diffs.append(right_point.y - right_y)
-            
-        return np.mean(x_diffs), np.mean(y_diffs)
+        if self.only_lateral_correction:
+            diffs = map_points - openpilot_points
+            mean = np.mean(diffs, axis=0)
+            return mean[0], mean[1]
+        else:
+            diffs = np.absolute(map_points - openpilot_points)
+            return np.mean(diffs)
 
-    
     def objective_function(self, input_values, current_pose_tf, current_pose_tf_inv, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary):
         x_correction, y_correction, yaw_correction = input_values
 
@@ -226,7 +227,7 @@ class LaneBoundaryMatcher:
         openpilot_left_map_lane_boundary_map_fr = shapely.LineString(openpilot_left_lane_bound_map_fr)
         openpilot_right_map_lane_boundary_map_fr = shapely.LineString(openpilot_right_lane_bound_map_fr)
 
-        return shapely.hausdorff_distance(map_left_lane_boundary, openpilot_left_map_lane_boundary_map_fr) + shapely.hausdorff_distance(map_right_lane_boundary, openpilot_right_map_lane_boundary_map_fr)
+        return self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, openpilot_left_map_lane_boundary_map_fr, openpilot_right_map_lane_boundary_map_fr)
 
     def get_lane_boundary_marker(self, lane_boundary, side, marker_id, frame_id, marker_color, stamp):
         points = []
