@@ -17,9 +17,8 @@ class LocalPathExtractor:
         self.local_path_length = rospy.get_param("local_path_length")
 
         # variables
-        self.current_position = None
+        self.current_pose = None
         self.global_path = None
-        self.output_frame = None
 
         # publishers
         self.local_path_pub = rospy.Publisher('extracted_local_path', Path, queue_size=1, tcp_nodelay=True)
@@ -29,37 +28,34 @@ class LocalPathExtractor:
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
-        self.current_position = shapely.Point(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
+        self.current_pose = msg
 
     def global_path_callback(self, msg):
-        output_frame = msg.header.frame_id
-
         if len(msg.waypoints) == 0:
-            global_path = None
+            self.global_path = None
             rospy.loginfo("%s - Empty global path received", rospy.get_name())
         else:
-            global_path = PathWrapper(msg.waypoints)
-            rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(global_path.waypoints))
-
-        self.output_frame = output_frame
-        self.global_path = global_path
+            self.global_path = PathWrapper(msg.waypoints)
+            rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(self.global_path.waypoints))
 
     def extract_local_path(self):
         try:
-            current_position = self.current_position
+            current_pose = self.current_pose
             global_path = self.global_path
-            output_frame = self.output_frame
+
+            if current_pose is None:
+                return
 
             local_path = Path()
-            local_path.header.frame_id = output_frame
-            local_path.header.stamp = rospy.Time.now()
+            local_path.header = current_pose.header
 
-            if current_position is None or global_path is None:
+            if global_path is None:
                 self.local_path_pub.publish(local_path)
                 return
 
             # TODO avoid jumping from one place to another on path - just finding the closest point is dangerous!
             # Example of global path overlapping with itself.
+            current_position = shapely.Point(current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z)
             ego_distance_from_global_path_start = global_path.linestring.project(current_position)
 
             # extract local path using dstances
