@@ -31,7 +31,7 @@ class MapBasedPredictor:
         lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.VehicleTaxi)
+        traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.Vehicle)
         self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
 
         # Publishers
