@@ -59,8 +59,6 @@ lidar:
   cluster_detector:
     min_cluster_size: 4
     bounding_box_type: axis_aligned # axis_aligned, min_area
-    enable_pointcloud: False
-    enable_convex_hull: True
     transform_timeout: 0.06         # needed for Carla
 
   sfa_detector:

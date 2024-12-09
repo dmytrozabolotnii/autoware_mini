@@ -22,8 +22,6 @@ class ClusterDetector:
     def __init__(self):
         self.min_cluster_size = rospy.get_param('~min_cluster_size')
         self.bounding_box_type = rospy.get_param('~bounding_box_type')
-        self.enable_pointcloud = rospy.get_param('~enable_pointcloud')
-        self.enable_convex_hull = rospy.get_param('~enable_convex_hull')
         self.output_frame = rospy.get_param('/detection/output_frame')
         self.transform_timeout = rospy.get_param('~transform_timeout')
 
@@ -121,18 +119,9 @@ class ClusterDetector:
             object.position_reliable = True
             object.velocity_reliable = False
             object.acceleration_reliable = False
-            #object.velocity
-            #object.acceleration
-            #object.candidate_trajectories
 
-            # create pointcloud
-            if self.enable_pointcloud:
-                object.pointcloud = msgify(PointCloud2, points)
-
-            # create convex hull
-            if self.enable_convex_hull:
-                hull_points = cv2.convexHull(points2d)[:,0,:]
-                object.convex_hull.points = [Point32(x, y, center_z) for x, y in hull_points]
+            hull_points = cv2.convexHull(points2d)[:,0,:]
+            object.convex_hull.points = [Point32(x, y, center_z) for x, y in hull_points]
 
             objects.objects.append(object)
 
