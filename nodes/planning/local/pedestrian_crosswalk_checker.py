@@ -97,12 +97,15 @@ class PedestrianCrosswalkChecker:
 
             if len(crosswalks_on_local_path) > 0:
                 for obj in detected_objects:
+                    object_speed = get_vector_norm_3d(obj.velocity)
+                    # ignore objects that are not moving
+                    if object_speed < self.stopping_speed_limit:
+                        continue
                     object_centroid = shapely.Point(obj.position.x, obj.position.y)
                     object_distance_from_local_path_start = local_path_linestring.project(object_centroid)
                     # ignore objects behind the ego vehicle
                     if math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
                         continue
-                    object_speed = get_vector_norm_3d(obj.velocity)
                     object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
                     object_heading = get_heading_from_vector(obj.velocity)
                     object_projection_on_path = local_path_linestring.interpolate(object_distance_from_local_path_start)
@@ -115,12 +118,12 @@ class PedestrianCrosswalkChecker:
 
                         # INTERSECTING OBJECTS
                         if crosswalk['polygon'].intersects(object_polygon):
-                            if object_speed < self.stopping_speed_limit or object_path_approach_angle < self.crossing_angle_max_limit or \
+                            # objects on crosswalk approaching local path or have crossed it and departing, but still within the local path buffer
+                            if object_path_approach_angle < self.crossing_angle_max_limit or \
                                 (180 - object_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(object_polygon)):
                                 collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
                                 crosswalks_on_local_path.remove(crosswalk)
-                                if object_speed < self.stopping_speed_limit:
-                                    break  # Stop checking other crosswalks for this object
+                                continue
 
                         # NON-INTERSECTING OBJECTS - CONSIDER TRAJECTORIES
                         elif len(obj.candidate_trajectories.paths) > 0:
@@ -133,7 +136,7 @@ class PedestrianCrosswalkChecker:
                                     shapely.prepare(trajectory_to_check)
 
                                 if trajectory_to_check.intersects(crosswalk['polygon']):
-                                    # find closest point along the object'ss trajectory to the crosswalk and get the heading from there!
+                                    # find closest point along the object's trajectory to the crosswalk and get the heading from there!
                                     intersection_points = shapely.get_coordinates(trajectory_to_check.intersection(crosswalk['polygon']))
                                     closest_point_to_object = min([trajectory.linestring.project(shapely.Point(x, y)) for x, y in intersection_points])
                                     trajectory_heading = trajectory.get_heading_at_distance(closest_point_to_object)
