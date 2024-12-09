@@ -105,6 +105,7 @@
         <remap from="/detection/camera/traffic_light_status" to="/bag/detection/camera/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/detection/mqtt/traffic_light_status" to="/bag/detection/mqtt/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/control/vehicle_cmd" to="/bag/control/vehicle_cmd" if="$(arg use_control)"/>
+        <remap from="/dashboard/planner_status" to="/bag/dashboard/planner_status" if="$(eval use_detection or use_planning)" />
         <remap from="/dashboard/current_speed" to="/bag/dashboard/current_speed" />
         <remap from="/dashboard/target_speed" to="/bag/dashboard/target_speed" />
         <remap from="/dashboard/closest_object_distance" to="/bag/dashboard/closest_object_distance" />
