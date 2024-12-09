@@ -3,7 +3,7 @@
 
 ## velocity_local_planner
 
-The `velocity_local_planner` node is responsible for generating a local path that can be followed by the vehicle, using the smoothed_path as a reference. The local path is generated based on the current position of the vehicle and the surrounding environment, such as detected objects, traffic lights, and stop lines. `velocity_local_planner` changes only the speeds of the smoothed_path depending on the detected objects and traffic lights.
+The `velocity_local_planner` node is responsible for generating a local path that can be followed by the vehicle, using the global_path as a reference. The local path is generated based on the current position of the vehicle and the surrounding environment, such as detected objects, traffic lights, and stop lines. `velocity_local_planner` changes only the speeds of the global_path depending on the detected objects and traffic lights.
 
 
 #### Parameters
@@ -26,7 +26,7 @@ The `velocity_local_planner` node is responsible for generating a local path tha
 
 | Name | Type | Description |
 |------|------|-------------|
-|`smoothed_path` | `autoware_mini/Path` | The smoothed global path |
+|`global_path` | `autoware_mini/Path` | The smoothed global path |
 |`/localization/current_pose` | `geometry_msgs/PoseStamped` | The current pose of the vehicle |
 |`/localization/current_velocity` | `geometry_msgs/TwistStamped` | The current velocity of the vehicle |
 |`/detection/detected_objects` | `autoware_mini/DetectedObjectArray` | Detected objects |

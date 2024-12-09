@@ -60,11 +60,11 @@ A ROS node for smoothing global path using interpolation and optional speed adju
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/global_path` | `autoware_mini/Path` | Subscribes to the global path to be smoothed. |
+| `lane_change_global_path` | `autoware_mini/Path` | Subscribes to the global path to be smoothed. |
 
 
 #### Published Topics
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `/smoothed_path` | `autoware_mini/Path` | Publishes the smoothed path with equal distances between waypoints |
+| `global_path` | `autoware_mini/Path` | Publishes the smoothed path with equal distances between waypoints |

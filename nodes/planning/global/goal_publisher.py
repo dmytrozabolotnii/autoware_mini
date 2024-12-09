@@ -4,7 +4,7 @@ import threading
 
 import rospy
 from geometry_msgs.msg import PoseStamped
-from autoware_msgs.msg import Lane
+from autoware_mini.msg import Path
 
 from carla_ros_scenario_runner_types.msg import CarlaScenarioList, CarlaScenario, CarlaScenarioRunnerStatus
 from carla_ros_scenario_runner_types.srv import ExecuteScenario
@@ -28,7 +28,7 @@ class GoalPublisher:
         
         # Subscribers
         rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.goal_callback, queue_size=None, tcp_nodelay=True)
-        rospy.Subscriber('smoothed_path', Lane, self.global_path_callback, queue_size=None, tcp_nodelay=True)
+        rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
 
         # Services
         rospy.Service('/scenario_runner/execute_scenario', ExecuteScenario, self.publish_goal_handler)
