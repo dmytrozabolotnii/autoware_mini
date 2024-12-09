@@ -637,6 +637,27 @@ Visualization Manager:
           text size: 9
           top: 585
           width: 266
+        - Align Bottom: false
+          Background Alpha: 0.800000011920929
+          Background Color: 0; 0; 0
+          Class: jsk_rviz_plugin/OverlayText
+          Enabled: true
+          Foreground Alpha: 1
+          Foreground Color: 128; 128; 128
+          Invert Shadow: false
+          Name: GNSS corrections detailed
+          Overtake BG Color Properties: true
+          Overtake FG Color Properties: true
+          Overtake Position Properties: true
+          Topic: /dashboard/gnss_corrections_detailed
+          Value: true
+          font: DejaVu Sans Condensed
+          height: 90
+          left: 10
+          line width: 2
+          text size: 9
+          top: 750
+          width: 266
       Enabled: true
       Name: Dashboard
     - Class: rviz/Group
@@ -778,6 +799,7 @@ Visualization Manager:
                   Closest obj dist: true
                   Closest obj spd: true
                   Decel limit: true
+                  GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
                   Pacmod dtailed: true
@@ -800,7 +822,34 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -848,10 +897,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -883,6 +929,7 @@ Visualization Manager:
                   Closest obj dist: true
                   Closest obj spd: true
                   Decel limit: true
+                  GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
                   Pacmod dtailed: true
@@ -905,7 +952,34 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -953,10 +1027,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -992,6 +1063,7 @@ Visualization Manager:
                   Closest obj dist: true
                   Closest obj spd: true
                   Decel limit: true
+                  GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
                   Pacmod dtailed: true
@@ -1014,7 +1086,34 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1062,10 +1161,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1097,6 +1193,7 @@ Visualization Manager:
                   Closest obj dist: true
                   Closest obj spd: true
                   Decel limit: true
+                  GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
                   Pacmod dtailed: true
@@ -1119,7 +1216,34 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1167,10 +1291,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1202,6 +1323,7 @@ Visualization Manager:
                   Closest obj dist: true
                   Closest obj spd: true
                   Decel limit: true
+                  GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
                   Pacmod dtailed: true
@@ -1224,7 +1346,34 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1272,10 +1421,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1307,6 +1453,7 @@ Visualization Manager:
                   Closest obj dist: true
                   Closest obj spd: true
                   Decel limit: true
+                  GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
                   Pacmod dtailed: true
@@ -1329,7 +1476,34 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1377,10 +1551,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1412,6 +1583,7 @@ Visualization Manager:
                   Closest obj dist: true
                   Closest obj spd: true
                   Decel limit: true
+                  GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
                   Pacmod dtailed: true
@@ -1434,7 +1606,34 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1482,10 +1681,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1878,14 +2074,10 @@ Visualization Manager:
           Marker Topic: /detection/tracked_objects_markers
           Name: Tracked objects
           Namespaces:
-<<<<<<< HEAD
             centroid: true
             convex_hull: true
             speed: false
             text: true
-=======
-            {}
->>>>>>> Add rolling average for smoothing localization corrections
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -1893,11 +2085,7 @@ Visualization Manager:
           Marker Topic: /detection/predicted_objects_markers
           Name: Predicted objects
           Namespaces:
-<<<<<<< HEAD
             candidate_trajectories: true
-=======
-            {}
->>>>>>> Add rolling average for smoothing localization corrections
           Queue Size: 100
           Value: true
         - Class: rviz/Group
@@ -1931,8 +2119,7 @@ Visualization Manager:
               Marker Topic: /planning/tfl_stop_line_markers
               Name: Stop line status
               Namespaces:
-                Status text: true
-                Stop line: true
+                {}
               Queue Size: 100
               Value: true
           Enabled: true
@@ -2157,8 +2344,8 @@ Visualization Manager:
           Name: Global path
           Namespaces:
             Path: true
-            Velocity label: false
-            Waypoint pose: false
+            Velocity label: true
+            Waypoint pose: true
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -2249,6 +2436,7 @@ Visualization Manager:
               Closest obj dist: true
               Closest obj spd: true
               Decel limit: true
+              GNSS corrections detailed: true
               GNSS detailed: true
               GNSS general: true
               Pacmod dtailed: true
@@ -2271,7 +2459,34 @@ Visualization Manager:
                 Value: true
                 Wheel: true
             Detection:
-              "": true
+              Detected objects: true
+              Let's go yield line: true
+              Lidar:
+                Center:
+                  Points center ground: true
+                  Points center no ground: true
+                  Value: true
+                Front:
+                  Points front filtered: true
+                  Points front ground: true
+                  Points front no ground: true
+                  Value: true
+                Lidar detections: true
+                Points clustered: true
+                Points filtered: true
+                Points ground: true
+                Points no ground: true
+                Value: true
+              Predicted objects: true
+              Radar:
+                Radar detections: true
+                Value: true
+              Tracked objects: true
+              Traffic lights:
+                Forward camera ROI image: true
+                Right camera ROI image: true
+                Stop line status: true
+                Value: true
               Value: true
             Grid: true
             Map:
@@ -2293,8 +2508,11 @@ Visualization Manager:
               Stop point: true
               Value: true
             Sensing:
-              "":
-                "": true
+              Mako:
+                Camera left: true
+                Camera right: true
+                Image left: true
+                Image right: true
                 Value: true
               Nvidia:
                 Camera Interface link1 Right: true
@@ -2394,7 +2612,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: -0.004999999888241291
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -2404,10 +2622,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.0010000000474974513
-      Scale: 20
+      Scale: 6.838559150695801
       Target Frame: base_link
-      X: 0
-      Y: 0
+      X: 27.900327682495117
+      Y: 39.117984771728516
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho
@@ -2498,11 +2716,7 @@ Window Geometry:
     collapsed: false
   Forward camera ROI image:
     collapsed: false
-<<<<<<< HEAD
-  Height: 1403
-=======
-  Height: 1376
->>>>>>> Code improvements in lane_boundary_matcher
+  Height: 1369
   Hide Left Dock: false
   Hide Right Dock: false
   Image Interface link1 Right:

@@ -123,6 +123,9 @@ class LaneBoundaryMatcher:
         map_left_lane_boundary = shpops.substring(global_path.left_boundary, left_cur_pos_dist, left_cur_pos_dist + self.lookahead_distance)
         map_right_lane_boundary = shpops.substring(global_path.right_boundary, right_cur_pos_dist, right_cur_pos_dist + self.lookahead_distance)
 
+        if not isinstance(map_left_lane_boundary, shapely.LineString) or not isinstance(map_right_lane_boundary, shapely.LineString):
+            return
+
         ##################################################################
         # Perform matching
         ##################################################################
