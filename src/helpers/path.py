@@ -10,6 +10,9 @@ from helpers.geometry import get_heading_between_two_points, get_orientation_fro
 class PathWrapper:
     def __init__(self, waypoints, velocities=False, blinkers=False, boundaries=False):
 
+        if len(waypoints) == 1:
+            ValueError("PathWrapper - waypoints array must be empty or have more than 1 waypoint ")
+
         self.waypoints = waypoints
         self._waypoints_xyz = np.array([(waypoint.position.x, waypoint.position.y, waypoint.position.z) for waypoint in self.waypoints])
 
@@ -110,8 +113,8 @@ class PathWrapper:
 
             three_point_linestrings = shapely.linestrings(three_point_lines)
             
-            left_offset_lines = shapely.offset_curve(three_point_linestrings, left_offsets)
-            right_offset_lines = shapely.offset_curve(three_point_linestrings, right_offsets)
+            left_offset_lines = shapely.offset_curve(three_point_linestrings, left_offsets, join_style="mitre")
+            right_offset_lines = shapely.offset_curve(three_point_linestrings, right_offsets, join_style="mitre")
 
             assert len(three_point_linestrings) == len(left_offsets) == len(right_offsets)
 
@@ -154,7 +157,12 @@ class PathWrapper:
 
         # extend the path by one waypoint backwards
         index_start = max(0, index_start - 1)
-        waypoints = self._extract_waypoints(index_start, index_end, copy=copy)
+
+        # if indices differ by 1, then 1 waypoint is returnd and a linestring cannot be created. Therefore return empty list instead
+        if abs(index_start - index_end) == 1:
+            return []
+        
+        waypoints = self._extract_waypoints(index_start, index_end, copy=copy)        
 
         if trim:
             # modify start and end of the path by shifting waypoints to exact locations determined by distances

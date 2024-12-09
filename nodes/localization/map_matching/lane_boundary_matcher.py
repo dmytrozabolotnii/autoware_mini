@@ -94,6 +94,26 @@ class LaneBoundaryMatcher:
         if self.enable_height_correction:
             current_pos_dist = global_path.linestring.project(shapely.Point(current_pose_footprint.x, current_pose_footprint.y, current_pose_footprint.z))
             self.z_correction = global_path.get_elevation_at_distance(current_pos_dist) - current_pose_footprint.z
+
+        ##################################################################
+        # Trim map lane boundaries
+        ##################################################################
+
+        # find the distance of current position
+        left_cur_pos_dist = global_path.left_boundary.project(shapely.Point(current_pose_openpilot.x, current_pose_openpilot.y, current_pose_openpilot.z))
+        right_cur_pos_dist = global_path.right_boundary.project(shapely.Point(current_pose_openpilot.x, current_pose_openpilot.y, current_pose_openpilot.z))
+        
+        # make sure that lookahead distance does not go beyond the end of global path
+        left_end_dist = min(left_cur_pos_dist + self.lookahead_distance, global_path.left_boundary.length)
+        right_end_dist = min(right_cur_pos_dist + self.lookahead_distance, global_path.right_boundary.length)
+
+        # cut out the relevant sections from the global path boundaries
+        map_left_lane_boundary = shpops.substring(global_path.left_boundary, left_cur_pos_dist, left_end_dist)
+        map_right_lane_boundary = shpops.substring(global_path.right_boundary, right_cur_pos_dist, right_end_dist)
+
+        # return if one boundary given by substring is not a LineString type
+        if not isinstance(map_left_lane_boundary, shapely.LineString) or not isinstance(map_right_lane_boundary, shapely.LineString):
+            return
         
         ##################################################################
         # Transform openpilot lane boundaries and create linestrings
@@ -108,23 +128,13 @@ class LaneBoundaryMatcher:
 
         # trim openpilot lane boundaries
         openpilot_left_lane_boundary, openpilot_right_lane_boundary = shapely.linestrings(openpilot_lane_boundary_points)
-        openpilot_left_lane_boundary = shpops.substring(openpilot_left_lane_boundary, 0, self.lookahead_distance)
-        openpilot_right_lane_boundary = shpops.substring(openpilot_right_lane_boundary, 0, self.lookahead_distance)
-        
-        ##################################################################
-        # Trim map lane boundaries
-        ##################################################################
 
-        # find the distance of current position
-        left_cur_pos_dist = global_path.left_boundary.project(shapely.Point(current_pose_openpilot.x, current_pose_openpilot.y, current_pose_openpilot.z))
-        right_cur_pos_dist = global_path.right_boundary.project(shapely.Point(current_pose_openpilot.x, current_pose_openpilot.y, current_pose_openpilot.z))
-        
-        # cut out the relevant sections from the global path boundaries 
-        map_left_lane_boundary = shpops.substring(global_path.left_boundary, left_cur_pos_dist, left_cur_pos_dist + self.lookahead_distance)
-        map_right_lane_boundary = shpops.substring(global_path.right_boundary, right_cur_pos_dist, right_cur_pos_dist + self.lookahead_distance)
+        # make sure that lookahead distance does not go beyond the end of global path
+        openpilot_left_end_dist = min(global_path.left_boundary.length - left_cur_pos_dist,  self.lookahead_distance)
+        openpilot_right_end_dist = min(global_path.right_boundary.length - right_cur_pos_dist,  self.lookahead_distance)
 
-        if not isinstance(map_left_lane_boundary, shapely.LineString) or not isinstance(map_right_lane_boundary, shapely.LineString):
-            return
+        openpilot_left_lane_boundary = shpops.substring(openpilot_left_lane_boundary, 0, openpilot_left_end_dist)
+        openpilot_right_lane_boundary = shpops.substring(openpilot_right_lane_boundary, 0, openpilot_right_end_dist)
 
         ##################################################################
         # Perform matching

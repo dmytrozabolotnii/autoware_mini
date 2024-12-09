@@ -789,8 +789,7 @@ Visualization Manager:
               Value: false
               Visibility:
                 Control:
-                  Current pose: true
-                  Follower markers: true
+                  "": true
                   Value: true
                 Dashboard:
                   Accel limit: true
@@ -856,20 +855,7 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Smoothed path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -891,6 +877,11 @@ Visualization Manager:
                     Value: true
                   Openpilot:
                     "": true
+                    Value: true
+                  Openpilot:
+                    Lane boundary matcher: true
+                    Openpilot lane lines: true
+                    Openpilot plan: true
                     Value: true
                   Points raw center: true
                   Points raw front: true
@@ -919,8 +910,7 @@ Visualization Manager:
               Value: false
               Visibility:
                 Control:
-                  Current pose: true
-                  Follower markers: true
+                  "": true
                   Value: true
                 Dashboard:
                   Accel limit: true
@@ -986,20 +976,7 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Smoothed path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1021,6 +998,11 @@ Visualization Manager:
                     Value: true
                   Openpilot:
                     "": true
+                    Value: true
+                  Openpilot:
+                    Lane boundary matcher: true
+                    Openpilot lane lines: true
+                    Openpilot plan: true
                     Value: true
                   Points raw center: true
                   Points raw front: true
@@ -1053,8 +1035,7 @@ Visualization Manager:
               Value: false
               Visibility:
                 Control:
-                  Current pose: true
-                  Follower markers: true
+                  "": true
                   Value: true
                 Dashboard:
                   Accel limit: true
@@ -1120,20 +1101,7 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Smoothed path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1183,8 +1151,7 @@ Visualization Manager:
               Value: false
               Visibility:
                 Control:
-                  Current pose: true
-                  Follower markers: true
+                  "": true
                   Value: true
                 Dashboard:
                   Accel limit: true
@@ -1250,20 +1217,7 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Smoothed path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1313,8 +1267,7 @@ Visualization Manager:
               Value: false
               Visibility:
                 Control:
-                  Current pose: true
-                  Follower markers: true
+                  "": true
                   Value: true
                 Dashboard:
                   Accel limit: true
@@ -1380,20 +1333,7 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Smoothed path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1443,8 +1383,7 @@ Visualization Manager:
               Value: false
               Visibility:
                 Control:
-                  Current pose: true
-                  Follower markers: true
+                  "": true
                   Value: true
                 Dashboard:
                   Accel limit: true
@@ -1510,20 +1449,7 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Smoothed path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1573,8 +1499,7 @@ Visualization Manager:
               Value: false
               Visibility:
                 Control:
-                  Current pose: true
-                  Follower markers: true
+                  "": true
                   Value: true
                 Dashboard:
                   Accel limit: true
@@ -1640,20 +1565,7 @@ Visualization Manager:
                   "": true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Smoothed path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -2622,10 +2534,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.0010000000474974513
-      Scale: 6.838559150695801
+      Scale: 13.498104095458984
       Target Frame: base_link
-      X: 27.900327682495117
-      Y: 39.117984771728516
+      X: 34.169189453125
+      Y: -18.576250076293945
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho
