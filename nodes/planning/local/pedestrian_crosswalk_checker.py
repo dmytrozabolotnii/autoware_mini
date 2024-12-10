@@ -123,7 +123,6 @@ class PedestrianCrosswalkChecker:
                                 (180 - object_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(object_polygon)):
                                 collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
                                 crosswalks_on_local_path.remove(crosswalk)
-                                continue
 
                         # NON-INTERSECTING OBJECTS - CONSIDER TRAJECTORIES
                         elif len(obj.candidate_trajectories.paths) > 0:
