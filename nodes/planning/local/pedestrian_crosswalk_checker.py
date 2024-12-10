@@ -89,7 +89,7 @@ class PedestrianCrosswalkChecker:
             car_front_distance_from_path_start = local_path_linestring.project(car_front)
             linestring_up_to_car_front = shapely.ops.substring(local_path_linestring, 0, car_front_distance_from_path_start)
 
-            # extract crosswalks that intersect with local path
+            # extract crosswalks that intersect with local path and ego vehicleis not on them
             crosswalks_on_local_path = []
             for crosswalk in crosswalks_on_global_path:
                 if crosswalk['polygon'].intersects(local_path_linestring) and not crosswalk['polygon'].intersects(linestring_up_to_car_front):
