@@ -2,13 +2,13 @@
 
 import rospy
 import shapely
-from tf2_ros import TransformListener, Buffer
 from autoware_mini.msg import Path, TrafficLightResultArray
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from sensor_msgs.msg import PointCloud2
 from helpers.path import PathWrapper
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_traffic_light_stop_lines
+from helpers.transform import get_distance_to_car_front
 
 class TrafficLightStoplineChecker:
 
@@ -27,11 +27,7 @@ class TrafficLightStoplineChecker:
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.all_stoplines = get_traffic_light_stop_lines(lanelet2_map)
-
-        tf_buffer = Buffer()
-        tf_listener = TransformListener(tf_buffer)
-        transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time.now(), rospy.Duration(10.0))
-        self.distance_to_car_front = transform.transform.translation.x
+        self.distance_to_car_front = get_distance_to_car_front()
 
         # publishers
         self.traffic_light_stopline_pub = rospy.Publisher('tfl_stopline_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)

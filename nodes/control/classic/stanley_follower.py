@@ -7,8 +7,8 @@ import message_filters
 import threading
 import traceback
 from helpers.geometry import get_heading_from_orientation, get_heading_between_two_points, normalize_heading_error, get_point_using_heading_and_distance
+from helpers.transform import get_distance_to_car_front
 from helpers.path import PathWrapper
-from tf2_ros import TransformListener, Buffer
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
 from std_msgs.msg import ColorRGBA, Float32MultiArray
@@ -37,11 +37,7 @@ class StanleyFollower:
         self.closest_object_velocity = 0.0
         self.stopping_point_distance = 0.0
         self.lock = threading.Lock()
-
-        tf_buffer = Buffer()
-        tf_listener = TransformListener(tf_buffer)
-        transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time.now(), rospy.Duration(10.0))
-        self.distance_to_car_front = transform.transform.translation.x
+        self.distance_to_car_front = get_distance_to_car_front()
 
         # Publishers
         self.vehicle_command_pub = rospy.Publisher('vehicle_cmd', VehicleCmd, queue_size=1, tcp_nodelay=True)

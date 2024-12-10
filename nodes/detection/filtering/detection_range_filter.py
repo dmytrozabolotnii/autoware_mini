@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import rospy
-from tf2_ros import TransformListener, Buffer
 from geometry_msgs.msg import PoseStamped, Point
 from autoware_mini.msg import DetectedObjectArray
 from helpers.geometry import get_distance_between_two_points_2d, get_heading_from_orientation, get_point_using_heading_and_distance
+from helpers.transform import get_distance_to_car_front
 
 class DetectionRangeFilter:
     def __init__(self):
@@ -13,11 +13,7 @@ class DetectionRangeFilter:
         self.detection_range = rospy.get_param("~detection_range")
 
         self.current_pose = None
-
-        tf_buffer = Buffer()
-        tf_listener = TransformListener(tf_buffer)
-        transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time.now(), rospy.Duration(10.0))
-        self.distance_to_car_front = transform.transform.translation.x
+        self.distance_to_car_front = get_distance_to_car_front()
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects_filtered', DetectedObjectArray, queue_size=1, tcp_nodelay=True)

@@ -10,9 +10,9 @@ from ros_numpy import numpify
 from autoware_mini.msg import Path
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
-from tf2_ros import TransformListener, Buffer
 from helpers.path import PathWrapper
 from helpers.geometry import project_vector_to_heading, get_distance_between_two_points_2d
+from helpers.transform import get_distance_to_car_front
 
 class SpeedPlanner:
 
@@ -29,11 +29,7 @@ class SpeedPlanner:
         self.collision_points = None
         self.current_position = None
         self.current_speed = None
-
-        tf_buffer = Buffer()
-        tf_listener = TransformListener(tf_buffer)
-        transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time.now(), rospy.Duration(10.0))
-        self.distance_to_car_front = transform.transform.translation.x
+        self.distance_to_car_front = get_distance_to_car_front()
 
         # publishers
         self.local_path_pub = rospy.Publisher('local_path', Path, queue_size=1, tcp_nodelay=True)

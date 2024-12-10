@@ -1,4 +1,6 @@
+import rospy
 from geometry_msgs.msg import PointStamped, Vector3Stamped, PoseStamped
+from tf2_ros import TransformListener, Buffer
 from tf2_geometry_msgs import do_transform_point, do_transform_vector3, do_transform_pose
 
 def transform_point(point, transform):
@@ -15,3 +17,10 @@ def transform_pose(pose, transform):
     # to apply a transform we need a pose stamped
     pose_stamped = PoseStamped(pose=pose)
     return do_transform_pose(pose_stamped, transform).pose
+
+def get_distance_to_car_front():
+    # get the distance between the current_pose (base_link) and the front of the car
+    tf_buffer = Buffer()
+    tf_listener = TransformListener(tf_buffer)
+    transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time.now(), rospy.Duration(10.0))
+    return transform.transform.translation.x
