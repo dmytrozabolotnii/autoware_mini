@@ -134,18 +134,30 @@ class TrajectoryCollisionChecker:
                                 # do not check for colliding trajectory if yielding
                                 continue
 
-                            # 2. CHECK COLLISION only the ones that are not included for yielding
+                            # 2. CHECK COLLISION only the ones that are not included for yielding and not behind the ego
                             # TODO implement time based collision checking and HACK should be removed
-                            # HACK ignore trajectories from object in front of ego having similar heading with local path, so that 0 velocity could be used
-                            if heading_difference < self.heading_alignment_limit and local_path_buffer.intersects(object_current_location):
-                                continue
-                            collision_points.add_intersection_points(trajectory_intersection_points,
-                                                                    z = obj.position.z,
-                                                                    vx = 0,
-                                                                    vy = 0,
-                                                                    vz = 0,
-                                                                    distance_to_stop = self.braking_safety_distance_obstacle,
-                                                                    category = CollisionPoints.COLLIDING_TRAJECTORY)
+                            if heading_difference < self.heading_alignment_limit:
+                                if local_path_buffer.intersects(object_polygon):
+                                    # object in front with similar heading and intersecting local path
+                                    continue
+                                else:
+                                    # object in front with similar heading but not on local path add collision points with object's velocity
+                                    collision_points.add_intersection_points(trajectory_intersection_points,
+                                                                            z = obj.position.z,
+                                                                            vx = obj.velocity.x,
+                                                                            vy = obj.velocity.y,
+                                                                            vz = obj.velocity.z,
+                                                                            distance_to_stop = self.braking_safety_distance_obstacle,
+                                                                            category = CollisionPoints.COLLIDING_TRAJECTORY)
+                            else:
+                                # objects intersecting at angle, add with 0 velocity
+                                collision_points.add_intersection_points(trajectory_intersection_points,
+                                        z = obj.position.z,
+                                        vx = 0,
+                                        vy = 0,
+                                        vz = 0,
+                                        distance_to_stop = self.braking_safety_distance_obstacle,
+                                        category = CollisionPoints.COLLIDING_TRAJECTORY)
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header
