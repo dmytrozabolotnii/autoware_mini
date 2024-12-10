@@ -79,7 +79,7 @@ class PedestrianCrosswalkChecker:
             local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
-            # get the transform 'car_front' location point(0,0,0) to the map frame
+            # get the car_front and projct to local_path
             try:
                 transform = self.tf_buffer.lookup_transform(msg.header.frame_id, "car_front", msg.header.stamp, rospy.Duration(0.06))
             except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
