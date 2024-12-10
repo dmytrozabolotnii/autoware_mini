@@ -18,7 +18,6 @@ class TrajectoryCollisionChecker:
 
         # parameters
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
-        self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
         self.braking_safety_distance_yield = rospy.get_param("~braking_safety_distance_yield")
         self.braking_safety_distance_obstacle = rospy.get_param("~braking_safety_distance_obstacle")
         self.yielding_distance_limit = rospy.get_param("~yielding_distance_limit")

@@ -28,7 +28,7 @@ class StanleyFollower:
         self.default_acceleration = rospy.get_param("/planning/default_acceleration")
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
         self.max_deceleration = rospy.get_param("/planning/max_deceleration")
-        self.stopping_speed_limit = rospy.get_param("/planning/stopping_speed_limit")
+        self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
         self.simulate_cmd_delay = rospy.get_param("~simulate_cmd_delay")
 
         # Variables - init

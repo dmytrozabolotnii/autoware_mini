@@ -29,7 +29,7 @@ class LocalPathVisualizer:
         # Parameters
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
         #self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
-        self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
+        self.stopped_speed_limit = rospy.get_param("stopped_speed_limit")
 
         self.published_waypoints = 0
 
@@ -115,7 +115,7 @@ class LocalPathVisualizer:
 
                 if collision_point_category == CollisionPoints.GOAL_POINT:
                     color = ColorRGBA(0.9, 0.9, 0.9, 0.2)       # white - goal point
-                elif msg.closest_object_velocity < self.stopping_speed_limit:
+                elif msg.closest_object_velocity < self.stopped_speed_limit:
                     color = ColorRGBA(1.0, 0.0, 0.0, 0.5)       # red - obstacle in front and very slow
                 else:
                     color = ColorRGBA(1.0, 1.0, 0.0, 0.5)       # yellow - follow obstacle

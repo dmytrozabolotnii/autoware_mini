@@ -19,7 +19,7 @@ class PedestrianCrosswalkChecker:
 
         # parameters
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
-        self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
+        self.stopped_speed_limit = rospy.get_param("stopped_speed_limit")
         self.braking_safety_distance_crosswalk = rospy.get_param("~braking_safety_distance_crosswalk")
         self.crossing_angle_max_limit = rospy.get_param("~crossing_angle_max_limit")
         self.use_object_width = rospy.get_param("use_object_width")
@@ -99,7 +99,7 @@ class PedestrianCrosswalkChecker:
                 for obj in detected_objects:
                     object_speed = get_vector_norm_3d(obj.velocity)
                     # ignore objects that are not moving
-                    if object_speed < self.stopping_speed_limit:
+                    if object_speed < self.stopped_speed_limit:
                         continue
                     object_centroid = shapely.Point(obj.position.x, obj.position.y)
                     object_distance_from_local_path_start = local_path_linestring.project(object_centroid)
