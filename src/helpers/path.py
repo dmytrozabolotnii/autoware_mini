@@ -8,7 +8,10 @@ from geometry_msgs.msg import Point, Pose
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
 
 class PathWrapper:
-    def __init__(self, waypoints, velocities=False, blinkers=False):
+    def __init__(self, waypoints, velocities=False, blinkers=False, boundaries=False):
+
+        if len(waypoints) == 1:
+            ValueError("PathWrapper - waypoints array must be empty or have more than 1 waypoint ")
 
         self.waypoints = waypoints
         self._waypoints_xyz = np.array([(waypoint.position.x, waypoint.position.y, waypoint.position.z) for waypoint in self.waypoints])
@@ -19,6 +22,9 @@ class PathWrapper:
         d = np.cumsum(np.sqrt(np.sum(np.diff(self._waypoints_xyz[:, :2], axis=0)**2, axis=1)))
         self._distances = np.insert(d, 0, 0)
 
+        self.left_boundary = None
+        self.right_boundary = None
+
         if velocities:
             v = np.array([waypoint.speed for waypoint in self.waypoints])
             distance_to_velocity_interpolator = interp1d(self._distances, v, kind='linear', bounds_error=False, fill_value=0.0)
@@ -28,6 +34,9 @@ class PathWrapper:
             b = np.array([(waypoint.blinker_state) for waypoint in self.waypoints])
             distance_to_blinker_interpolator = interp1d(self._distances, (b).astype(np.float) , kind='previous', bounds_error=False, fill_value=Waypoint.STR_STRAIGHT)
             self._distance_to_blinker_interpolator = distance_to_blinker_interpolator
+
+        if boundaries:
+            self._generate_boundaries()
 
     def get_waypoint_index_at_distance(self, distance, side="left"):
         """
@@ -63,6 +72,76 @@ class PathWrapper:
             waypoints = self.waypoints[index_start:index_end]
 
         return waypoints
+    
+    def _generate_boundaries(self):
+        if len(self.waypoints) < 2:
+            return
+        
+        elif len(self.waypoints) == 2:
+            left_offsets = [self.waypoints[0].left_width, self.waypoints[1].left_width]
+            right_offsets = [self.waypoints[0].right_width, self.waypoints[1].right_width]
+
+            left_offset_lines = shapely.offset_curve([self.linestring, self.linestring], left_offsets)
+            right_offset_lines = shapely.offset_curve([self.linestring, self.linestring], right_offsets)
+
+            left_boundary_coords = [(left_offset_lines[0].coords[0][0], left_offset_lines[0].coords[0][1], self.waypoints[0].position.z),
+                                    (left_offset_lines[1].coords[1][0], left_offset_lines[1].coords[1][1], self.waypoints[1].position.z)]
+            right_boundary_coords = [(right_offset_lines[0].coords[0][0], right_offset_lines[0].coords[0][1], self.waypoints[0].position.z),
+                                    (right_offset_lines[1].coords[1][0], right_offset_lines[1].coords[0][1], self.waypoints[1].position.z)]
+            
+        else:
+            three_point_lines = []
+            left_offsets = []
+            right_offsets = []
+
+            # create three-point linestring segments for every waypoint
+            for i in range(len(self.waypoints)):
+                left_offsets.append(self.waypoints[i].left_width)
+                right_offsets.append(-self.waypoints[i].right_width)
+
+                # the first and last waypoints cannot be in the middle
+                if i == 0:
+                    j = i + 1
+                elif i == len(self.waypoints) - 1:
+                    j = i - 1
+                else:
+                    j = i
+
+                three_point_lines.append([[self.waypoints[j-1].position.x, self.waypoints[j-1].position.y],
+                                        [self.waypoints[j].position.x, self.waypoints[j].position.y],
+                                        [self.waypoints[j+1].position.x, self.waypoints[j+1].position.y]])
+
+            three_point_linestrings = shapely.linestrings(three_point_lines)
+            
+            left_offset_lines = shapely.offset_curve(three_point_linestrings, left_offsets, join_style="mitre")
+            right_offset_lines = shapely.offset_curve(three_point_linestrings, right_offsets, join_style="mitre")
+
+            assert len(three_point_linestrings) == len(left_offsets) == len(right_offsets)
+
+            left_boundary_coords = []
+            right_boundary_coords = []
+            for i in range(len(three_point_linestrings)):
+                z_coord = self.waypoints[i].position.z
+
+                if i == 0: # use the first point of the first segment as the first lane boundary point 
+                    j = 0
+                elif i == len(three_point_linestrings) - 1: # use the third point of the last segment as the last lane boundary point 
+                    j = 2
+                else: # take the second point from every other segment
+                    j = 1
+                    
+                left_offset_point = left_offset_lines[i].coords[j]
+                right_offset_point = right_offset_lines[i].coords[j]
+
+                left_boundary_coords.append((left_offset_point[0], left_offset_point[1], z_coord))
+                right_boundary_coords.append((right_offset_point[0], right_offset_point[1], z_coord))
+
+        left_boundary, right_boundary = shapely.linestrings([left_boundary_coords, right_boundary_coords])
+        shapely.prepare(left_boundary)
+        shapely.prepare(right_boundary)
+
+        self.left_boundary = left_boundary
+        self.right_boundary = right_boundary
 
     def extract_waypoints(self, distance_start, distance_end, trim=False, copy=False):
         """
@@ -78,7 +157,12 @@ class PathWrapper:
 
         # extend the path by one waypoint backwards
         index_start = max(0, index_start - 1)
-        waypoints = self._extract_waypoints(index_start, index_end, copy=copy)
+
+        # if indices differ by 1, then 1 waypoint is returnd and a linestring cannot be created. Therefore return empty list instead
+        if abs(index_start - index_end) == 1:
+            return []
+        
+        waypoints = self._extract_waypoints(index_start, index_end, copy=copy)        
 
         if trim:
             # modify start and end of the path by shifting waypoints to exact locations determined by distances
@@ -97,7 +181,6 @@ class PathWrapper:
             waypoints[-1].position.y = end_wp_pose.y
 
         return waypoints
-
 
     def get_velocity_at_distance(self, distance):
         """
@@ -132,6 +215,15 @@ class PathWrapper:
         """
         assert hasattr(self, '_distance_to_blinker_interpolator'), "Blinker interpolator not available, check that path was initialized with blinkers=True"
         return int(self._distance_to_blinker_interpolator(ego_distance_from_path_start))
+    
+    def get_elevation_at_distance(self, distance):
+        """
+        Get the elevation at a certain distance along the path.
+        :param distance: distance from the path start (m)
+        :return: elevation
+        """
+        point_location = self.linestring.interpolate(distance)
+        return point_location.z
 
     def get_pose_at_distance(self, distance):
         """

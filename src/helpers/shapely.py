@@ -1,5 +1,4 @@
-from shapely.affinity import rotate
-
+import shapely
 
 def get_polygon_width(polygon, heading_angle):
     """
@@ -11,7 +10,7 @@ def get_polygon_width(polygon, heading_angle):
 
     # rotate polygon to align with y axis, so the width will be in x direction
     angle = 90 - heading_angle
-    rotated_polygon = rotate(polygon, angle, origin='centroid', use_radians=False)
+    rotated_polygon = shapely.affinity.rotate(polygon, angle, origin='centroid', use_radians=False)
     minx, miny, maxx, maxy = rotated_polygon.bounds
     width = maxx - minx
     return width

@@ -25,11 +25,13 @@
     <arg name='route_id'                default=""/>                   <!-- Route ID to follow for running route scenario -->
     <arg name="generate_traffic"        default="$(eval not use_scenario_runner)" />
     <arg name="use_manual_control"      default="false"                 doc="use manual control for carla"/>
+    <arg name="use_lane_matching"       default="false" />
 
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
         <arg name="localizer"           value="$(arg localizer)" />
         <arg name="map_name"            value="$(arg map_name)" />
+        <arg name="use_lane_matching"   value="$(arg use_lane_matching)" />
     </include>
 
     <!-- Detection -->

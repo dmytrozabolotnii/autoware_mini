@@ -1,12 +1,20 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="localizer"   default="novatel"  doc="novatel, carla" />
-    <arg name="map_name"    default="tartu_demo" />
+    <arg name="localizer"           default="novatel"  doc="novatel, carla" />
+    <arg name="map_name"            default="tartu_demo" />
+    <arg name="use_lane_matching"   default="false" />
 
 
     <group ns="localization">
     
-        <node if="$(eval localizer=='novatel')" pkg="autoware_mini" type="novatel_oem7_localizer.py" name="novatel_oem7_localizer" output="screen" required="true" />
+        <node if="$(eval localizer=='novatel')" pkg="autoware_mini" type="novatel_oem7_localizer.py" name="novatel_oem7_localizer" output="screen" required="true">
+            <!-- <remap if="$(arg use_lane_matching)" from="current_pose" to="current_pose_gnss"/> -->
+            <param name="parent_frame" value="$(eval 'map_gnss' if use_lane_matching else 'map')" />
+            <remap if="$(arg use_lane_matching)" from="current_pose" to="current_pose_gnss" />
+        </node>
+
+        <!-- Lane boundary matcher -->
+        <node if="$(arg use_lane_matching)" pkg="autoware_mini" type="lane_boundary_matcher.py" name="lane_boundary_matcher" output="screen" required="true" />
 
         <group if="$(eval localizer=='carla')">
             <node pkg='autoware_mini' type='carla_localizer.py' name='carla_localizer' output='screen' required="true" />

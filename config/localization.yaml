@@ -8,3 +8,17 @@ lest97_origin_easting: 650000.0
 novatel_oem7_localizer:
   use_msl_height: True
   child_frame: base_link
+
+lane_boundary_matcher:
+  only_lateral_correction: True
+  lookahead_distance: 3.5
+  #only_lateral_correction: False
+  #lookahead_distance: 30
+  enable_height_correction: False
+  x_correction_treshold: 0.5
+  y_correction_treshold: 0.5
+  yaw_correction_treshold: 0.1
+  transform_timeout: 0.06
+  openpilot_delay_compensation: 0.1
+  alpha: 0.03
+  

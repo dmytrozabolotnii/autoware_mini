@@ -109,7 +109,7 @@ class Lanelet2GlobalPlanner:
         if path is None:
             rospy.logerr("%s - no route found, try new goal!", rospy.get_name())
             return
-
+        
         # Publish target lanelets for visualization
         start_lanelet = path[0]
         goal_lanelet = path[-1]
