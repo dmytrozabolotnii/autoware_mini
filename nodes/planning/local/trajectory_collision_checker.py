@@ -140,6 +140,7 @@ class TrajectoryCollisionChecker:
                                     # object in front with similar heading and intersecting local path
                                     continue
                                 else:
+                                    # TODO add checking if object is further than car front! if not add collision points with 0 velocity
                                     # object in front with similar heading but not on local path: add collision points with object's velocity
                                     collision_points.add_intersection_points(trajectory_intersection_points,
                                                                             z = obj.position.z,
