@@ -106,15 +106,15 @@ class TrajectoryCollisionChecker:
                             trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 
+                            # HACK to ignore trajectories from behind
+                            if math.isclose(trajectory_intersection_distance, 0.0, abs_tol=0.001):
+                                continue
+
                             object_current_heading = get_heading_from_vector(obj.velocity)
                             object_current_location = shapely.Point(obj.position.x, obj.position.y)
                             object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
                             object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
                             heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
-
-                            # HACK to ignore trajectories from behind
-                            if math.isclose(trajectory_intersection_distance, 0.0, abs_tol=0.001):
-                                continue
 
                             # 1. CHECK YIELDING
                             #    - trajectory_intersection after yiled line within 40m
@@ -135,13 +135,12 @@ class TrajectoryCollisionChecker:
                                 continue
 
                             # 2. CHECK COLLISION only the ones that are not included for yielding and not behind the ego
-                            # TODO implement time based collision checking and HACK should be removed
                             if heading_difference < self.heading_alignment_limit:
                                 if local_path_buffer.intersects(object_polygon):
                                     # object in front with similar heading and intersecting local path
                                     continue
                                 else:
-                                    # object in front with similar heading but not on local path add collision points with object's velocity
+                                    # object in front with similar heading but not on local path: add collision points with object's velocity
                                     collision_points.add_intersection_points(trajectory_intersection_points,
                                                                             z = obj.position.z,
                                                                             vx = obj.velocity.x,
