@@ -72,7 +72,6 @@ class SpeedPlanner:
 
             closest_object_distance = 0.0
             closest_object_velocity = 0.0
-            local_path_blocked = False
             stopping_point_distance = 0.0
 
             # create local path
@@ -103,7 +102,6 @@ class SpeedPlanner:
             closest_object_velocity = object_velocities[min_value_index]
             stopping_point_distance = object_distances[min_value_index] - object_braking_distances[min_value_index]
             collision_point_category = collision_points[min_value_index]["category"]
-            local_path_blocked = True
 
             # Recalculate target_velocity for all the waypoints using the closest object
             zero_speeds_onwards = False
@@ -132,7 +130,7 @@ class SpeedPlanner:
             path.waypoints = local_path.waypoints
             path.closest_object_distance = closest_object_distance
             path.closest_object_velocity = closest_object_velocity
-            path.is_blocked = local_path_blocked
+            path.is_blocked = True
             path.stopping_point_distance = stopping_point_distance
             path.collision_point_category = collision_point_category
             self.local_path_pub.publish(path)
