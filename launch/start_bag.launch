@@ -53,6 +53,7 @@
         <remap from="/localization/current_pose" to="/bag/localization/current_pose" if="$(arg use_localization)"/>
         <remap from="/localization/current_velocity" to="/bag/localization/current_velocity" if="$(arg use_localization)"/>
         <remap from="/localization/odometry" to="/bag/localization/odometry" if="$(arg use_localization)"/>
+        <remap from="/localization/lane_boundary_matcher_markers" to="/bag/localization/lane_boundary_matcher_markers" if="$(arg use_lane_matching)"/>
         <remap from="/detection/lidar/points_ground" to="/bag/detection/lidar/points_ground" if="$(arg use_detection)"/>
         <remap from="/detection/lidar/points_no_ground" to="/bag/detection/lidar/points_no_ground" if="$(arg use_detection)"/>
         <remap from="/detection/lidar/points_clustered" to="/bag/detection/lidar/points_clustered" if="$(arg use_detection)"/>
@@ -113,6 +114,7 @@
         <remap from="/dashboard/acceleration" to="/bag/dashboard/acceleration" />
         <remap from="/dashboard/acceleration_limit" to="/bag/dashboard/acceleration_limit" />
         <remap from="/dashboard/deceleration_limit" to="/bag/dashboard/deceleration_limit" />
+        <remap from="/dashboard/gnss_corrections_detailed" to="/bag/dashboard/gnss_corrections_detailed" if="$(arg use_lane_matching)"/>
         <!-- For compatibility with older bags and Vella bags -->
         <remap from="/points_raw_center" to="/lidar_center/points_raw"/>
         <remap from="/points_raw_front" to="/lidar_front/points_raw"/>
