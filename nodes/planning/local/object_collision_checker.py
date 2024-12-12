@@ -13,7 +13,7 @@ class ObjectCollisionChecker:
 
         # parameters
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
-        self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
+        self.stopped_speed_limit = rospy.get_param("stopped_speed_limit")
         self.braking_safety_distance_obstacle = rospy.get_param("~braking_safety_distance_obstacle")
 
         # variables
@@ -60,7 +60,7 @@ class ObjectCollisionChecker:
                                                             vy = obj.velocity.y,
                                                             vz = obj.velocity.z,
                                                             distance_to_stop = self.braking_safety_distance_obstacle,
-                                                            category = CollisionPoints.STOPPED_OBSTACLE_ON_PATH if object_speed < self.stopping_speed_limit else CollisionPoints.MOVING_OBSTACLE_ON_PATH)
+                                                            category = CollisionPoints.STOPPED_OBSTACLE_ON_PATH if object_speed < self.stopped_speed_limit else CollisionPoints.MOVING_OBSTACLE_ON_PATH)
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header

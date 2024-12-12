@@ -17,7 +17,6 @@ The `velocity_local_planner` node is responsible for generating a local path tha
 |`braking_reaction_time` | double | `1.6` | The time it takes the vehicle to react to an object in front of it  (s) |
 |`stopping_lateral_distance` | double | `1.35` | Obstacles within this with (m) are considered on the path and blocking |
 |`slowdown_lateral_distance` | double | `1.60` | Obstacles outside `stopping_laterl_distance`, but inside this width (m) are affecting ego vehicle speed by causing slowing down the target speed depending how close they are to the path |
-|`current_pose_to_car_front` | double | `4.0` | The distance from the current pose of the vehicle to the front of the car (m) |
 |`default_deceleration` | double | `1.0` | The maximum rate at which the vehicle can decelerate (m/s2) |
 |`tfl_maximum_deceleration` | double | `2.7` | If deceleration needed to stop behind the stop line exceeds this value then traffic light is ignored (m/s2) |
 

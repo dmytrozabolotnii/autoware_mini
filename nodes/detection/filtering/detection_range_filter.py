@@ -3,16 +3,17 @@
 import rospy
 from geometry_msgs.msg import PoseStamped, Point
 from autoware_mini.msg import DetectedObjectArray
-from helpers.geometry import get_point_using_heading_and_distance, get_heading_from_orientation, get_distance_between_two_points_2d
+from helpers.geometry import get_distance_between_two_points_2d, get_heading_from_orientation, get_point_using_heading_and_distance
+from helpers.transform import get_distance_to_car_front
 
 class DetectionRangeFilter:
     def __init__(self):
 
         # get parameters
         self.detection_range = rospy.get_param("~detection_range")
-        self.current_pose_to_car_front = rospy.get_param("/planning/current_pose_to_car_front")
 
         self.current_pose = None
+        self.distance_to_car_front = get_distance_to_car_front()
 
         # detected objects publisher
         self.objects_pub = rospy.Publisher('detected_objects_filtered', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -34,7 +35,7 @@ class DetectionRangeFilter:
         # get location of car front
         base_link_point = Point(self.current_pose.position.x, self.current_pose.position.y, self.current_pose.position.z)
         heading = get_heading_from_orientation(self.current_pose.orientation)
-        car_front = get_point_using_heading_and_distance(base_link_point, heading, self.current_pose_to_car_front)
+        car_front = get_point_using_heading_and_distance(base_link_point, heading, self.distance_to_car_front)
 
         # Create array objects
         objects = DetectedObjectArray()

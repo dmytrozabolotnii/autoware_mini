@@ -12,13 +12,13 @@ from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from helpers.path import PathWrapper
 from helpers.geometry import project_vector_to_heading, get_distance_between_two_points_2d
+from helpers.transform import get_distance_to_car_front
 
 class SpeedPlanner:
 
     def __init__(self):
 
         # parameters
-        self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         self.default_deceleration = rospy.get_param("default_deceleration")
         self.braking_reaction_time = rospy.get_param("braking_reaction_time")
         synchronization_method = rospy.get_param("~synchronization_method")
@@ -29,6 +29,7 @@ class SpeedPlanner:
         self.collision_points = None
         self.current_position = None
         self.current_speed = None
+        self.distance_to_car_front = get_distance_to_car_front()
 
         # publishers
         self.local_path_pub = rospy.Publisher('local_path', Path, queue_size=1, tcp_nodelay=True)
@@ -89,7 +90,7 @@ class SpeedPlanner:
 
             # calculate target velocity for every collision point
             # 'abs' is used to turn negative speed of approaching cars into positive, so that target distance would be smaller and thus target_speed will be decreased
-            target_distances = object_distances - self.current_pose_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
+            target_distances = object_distances - self.distance_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
             target_velocities = np.sqrt(np.maximum(0.0, np.maximum(0.0, object_velocities)**2 + 2 * self.default_deceleration * target_distances))
 
             # find the collision point causing smallest target_velocity and being closest to ego vehicle
@@ -98,7 +99,7 @@ class SpeedPlanner:
             adjusted_distances = np.where(mask, object_distances, np.inf)
             min_value_index = np.argmin(adjusted_distances)
 
-            closest_object_distance = object_distances[min_value_index] - ego_distance_from_local_path_start - self.current_pose_to_car_front
+            closest_object_distance = object_distances[min_value_index] - ego_distance_from_local_path_start - self.distance_to_car_front
             closest_object_velocity = object_velocities[min_value_index]
             stopping_point_distance = object_distances[min_value_index] - object_braking_distances[min_value_index]
             collision_point_category = collision_points[min_value_index]["category"]

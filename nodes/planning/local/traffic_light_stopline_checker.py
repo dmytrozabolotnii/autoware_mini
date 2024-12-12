@@ -8,6 +8,7 @@ from sensor_msgs.msg import PointCloud2
 from helpers.path import PathWrapper
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_traffic_light_stop_lines
+from helpers.transform import get_distance_to_car_front
 
 class TrafficLightStoplineChecker:
 
@@ -17,7 +18,6 @@ class TrafficLightStoplineChecker:
         self.braking_safety_distance_stopline = rospy.get_param("~braking_safety_distance_stopline")
         self.tfl_force_stop_speed_limit = rospy.get_param("~tfl_force_stop_speed_limit")
         self.tfl_maximum_deceleration = rospy.get_param("~tfl_maximum_deceleration")
-        self.current_pose_to_car_front = rospy.get_param("current_pose_to_car_front")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
@@ -27,6 +27,7 @@ class TrafficLightStoplineChecker:
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.all_stoplines = get_traffic_light_stop_lines(lanelet2_map)
+        self.distance_to_car_front = get_distance_to_car_front()
 
         # publishers
         self.traffic_light_stopline_pub = rospy.Publisher('tfl_stopline_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -74,7 +75,7 @@ class TrafficLightStoplineChecker:
                     
                     # check deceleration
                     distance_to_stopline = local_path.linestring.project(intersection_point)
-                    distance_for_deceleration = distance_to_stopline - ego_distance_from_local_path_start - self.current_pose_to_car_front
+                    distance_for_deceleration = distance_to_stopline - ego_distance_from_local_path_start - self.distance_to_car_front
                     deceleration = (current_speed**2) / (2 * distance_for_deceleration)
                     # base_link has not crossed the stopline and velocity is below tfl_force_stop_speed_limit or deceleration is less than maximum allowed deceleration
                     if (distance_to_stopline > 0 and current_speed < self.tfl_force_stop_speed_limit / 3.6) or 0 <= deceleration <= self.tfl_maximum_deceleration:

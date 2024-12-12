@@ -7,8 +7,8 @@ import message_filters
 import threading
 import traceback
 from helpers.geometry import get_heading_from_orientation, get_heading_between_two_points, normalize_heading_error, get_point_using_heading_and_distance
+from helpers.transform import get_distance_to_car_front
 from helpers.path import PathWrapper
-
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Pose, PoseStamped, TwistStamped, Point
 from std_msgs.msg import ColorRGBA, Float32MultiArray
@@ -24,12 +24,11 @@ class StanleyFollower:
         self.lateral_error_limit = rospy.get_param("lateral_error_limit")
         self.blinker_lookahead_time = rospy.get_param("blinker_lookahead_time")
         self.blinker_min_lookahead_distance = rospy.get_param("blinker_min_lookahead_distance")
-        self.current_pose_to_car_front = rospy.get_param("/planning/current_pose_to_car_front")
         self.publish_debug_info = rospy.get_param("~publish_debug_info")
         self.default_acceleration = rospy.get_param("/planning/default_acceleration")
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
         self.max_deceleration = rospy.get_param("/planning/max_deceleration")
-        self.stopping_speed_limit = rospy.get_param("/planning/stopping_speed_limit")
+        self.stopping_speed_limit = rospy.get_param("stopping_speed_limit")
         self.simulate_cmd_delay = rospy.get_param("~simulate_cmd_delay")
 
         # Variables - init
@@ -38,6 +37,7 @@ class StanleyFollower:
         self.closest_object_velocity = 0.0
         self.stopping_point_distance = 0.0
         self.lock = threading.Lock()
+        self.distance_to_car_front = get_distance_to_car_front()
 
         # Publishers
         self.vehicle_command_pub = rospy.Publisher('vehicle_cmd', VehicleCmd, queue_size=1, tcp_nodelay=True)
@@ -144,7 +144,7 @@ class StanleyFollower:
             emergency = 0
             if is_blocked and target_velocity < current_velocity:
                 # calculate distance from car front to stopping point
-                car_front_to_stopping_point_distance = stopping_point_distance - ego_distance_from_path_start - self.current_pose_to_car_front
+                car_front_to_stopping_point_distance = stopping_point_distance - ego_distance_from_path_start - self.distance_to_car_front
                 if car_front_to_stopping_point_distance > 0:
                     # always allow minimum deceleration, to be able to adapt to map speeds
                     acceleration = min(0.5 * (closest_object_velocity**2 - current_velocity**2) / car_front_to_stopping_point_distance, -self.default_deceleration)
