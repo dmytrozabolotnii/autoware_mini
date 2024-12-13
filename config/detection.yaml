@@ -135,7 +135,7 @@ camera_fl:
     rectify_image: False  # the distortions of Mako cameras are so small they don't matter
     transform_timeout: 0.06
     iou_threshold: 0.05
-    camera_delay_compensation: 0.15
+    camera_delay_compensation: 0.03
 
 camera_fr:
   camera_traffic_light_detector_right:
@@ -145,7 +145,7 @@ camera_fr:
     rectify_image: False  # the distortions of Mako cameras are so small they don't matter
     transform_timeout: 0.06
     iou_threshold: 0.05
-    camera_delay_compensation: 0.15
+    camera_delay_compensation: 0.03
 
 interfacea_link1:
   camera_traffic_light_detector_link1:
@@ -155,7 +155,7 @@ interfacea_link1:
     rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06
     iou_threshold: 0.05
-    camera_delay_compensation: 0.15
+    camera_delay_compensation: 0.2
 
 interfacea_link2:
   camera_traffic_light_detector_link2:
@@ -165,4 +165,4 @@ interfacea_link2:
     rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06
     iou_threshold: 0.05
-    camera_delay_compensation: 0.15
+    camera_delay_compensation: 0.2
