@@ -12,9 +12,18 @@
   <build_depend>std_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>boost</build_depend>
+  <build_depend>lanelet2_core</build_depend>
+  <build_depend>lanelet2_routing</build_depend>
+  <build_depend>lanelet2_traffic_rules</build_depend>
   <build_export_depend>std_msgs</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>lanelet2_core</build_export_depend>
+  <build_export_depend>lanelet2_routing</build_export_depend>
+  <build_export_depend>lanelet2_traffic_rules</build_export_depend>
 
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>rospy</exec_depend>
@@ -23,6 +32,7 @@
   <exec_depend>message_filters</exec_depend>
   <exec_depend>ros_numpy</exec_depend>
   <exec_depend>lanelet2</exec_depend>
+  <exec_depend>boost</exec_depend>
   <exec_depend>rviz</exec_depend>
   <exec_depend>jsk_rviz_plugins</exec_depend>
   <exec_depend>joy</exec_depend>

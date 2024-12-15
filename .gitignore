@@ -1,2 +1,3 @@
 *.pyc
 .vscode
+src/custom_routing_cost/custom_routing_cost.so
