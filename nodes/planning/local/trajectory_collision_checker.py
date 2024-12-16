@@ -6,7 +6,6 @@ import shapely
 import numpy as np
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
-from tf2_ros import TransformListener, Buffer, TransformException
 from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
@@ -27,8 +26,6 @@ class TrajectoryCollisionChecker:
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer)
         self.detected_objects = None
         self.yield_lines_on_global_path = []
 
@@ -137,25 +134,20 @@ class TrajectoryCollisionChecker:
                                 # do not check for colliding trajectory if yielding
                                 continue
 
-                            # get the car_front and projct to local_path
-                            try:
-                                transform = self.tf_buffer.lookup_transform(msg.header.frame_id, "car_front", msg.header.stamp, rospy.Duration(0.06))
-                            except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-                                rospy.logwarn("%s - %s", rospy.get_name(), e)
-                                return
-                            car_front = shapely.Point(transform.transform.translation.x, transform.transform.translation.y)
-                            car_front_distance_from_path_start = local_path.linestring.project(car_front)
-
                             # 2. CHECK COLLISION only the ones that are not included for yielding and not behind the ego and not intersecting local_path
-                            if heading_difference < self.heading_alignment_limit and object_distance_from_local_path_start > car_front_distance_from_path_start:
-                                # object in front with similar heading but not on local path: add collision points with object's velocity
-                                collision_points.add_intersection_points(trajectory_intersection_points,
-                                                                        z = obj.position.z,
-                                                                        vx = obj.velocity.x,
-                                                                        vy = obj.velocity.y,
-                                                                        vz = obj.velocity.z,
-                                                                        distance_to_stop = self.braking_safety_distance_obstacle,
-                                                                        category = CollisionPoints.COLLIDING_TRAJECTORY)
+                            if heading_difference < self.heading_alignment_limit:
+                                if object_distance_from_local_path_start > 0.0:
+                                    # object in front with similar heading but not on local path: add collision points with object's velocity
+                                    collision_points.add_intersection_points(trajectory_intersection_points,
+                                                                            z = obj.position.z,
+                                                                            vx = obj.velocity.x,
+                                                                            vy = obj.velocity.y,
+                                                                            vz = obj.velocity.z,
+                                                                            distance_to_stop = self.braking_safety_distance_obstacle,
+                                                                            category = CollisionPoints.COLLIDING_TRAJECTORY)
+                                else:
+                                    # ignore objects with similar heading, but behind (object_distance_from_local_path_start <= 0.0)
+                                    continue
                             else:
                                 # objects intersecting at angle, add with 0 velocity
                                 collision_points.add_intersection_points(trajectory_intersection_points,
