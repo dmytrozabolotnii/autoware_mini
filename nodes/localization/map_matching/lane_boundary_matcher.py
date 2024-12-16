@@ -178,11 +178,6 @@ class LaneBoundaryMatcher:
             no_correction = True
         else:
             no_correction = False
-
-        if no_correction:
-            weight = 1
-        else:
-            weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
         
         # use exponential moving average to smooth coordinate corrections 
         self.x_correction = self.calculate_updated_correction(x, self.x_correction, weight)
