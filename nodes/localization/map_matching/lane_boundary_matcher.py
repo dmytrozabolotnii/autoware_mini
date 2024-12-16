@@ -31,6 +31,7 @@ class LaneBoundaryMatcher:
         self.x_correction_treshold = rospy.get_param("~x_correction_treshold")
         self.y_correction_treshold = rospy.get_param("~y_correction_treshold")
         self.yaw_correction_treshold = rospy.get_param("~yaw_correction_treshold")
+        self.probability_treshold = rospy.get_param("~probability_treshold")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.openpilot_delay_compensation = rospy.get_param("~openpilot_delay_compensation")
         self.alpha = rospy.get_param("~alpha")
@@ -168,18 +169,15 @@ class LaneBoundaryMatcher:
                                                    openpilot_left_lane_boundary, openpilot_right_lane_boundary))
             x, y, yaw = result.x
 
+        weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
 
         # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-        if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or abs(yaw) > self.yaw_correction_treshold:
+        if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or abs(yaw) > self.yaw_correction_treshold or weight < self.probability_treshold:
             x, y, yaw = 0, 0, 0
+            weight = 1
             no_correction = True
         else:
             no_correction = False
-
-        if no_correction:
-            weight = 1
-        else:
-            weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
         
         # use exponential moving average to smooth coordinate corrections 
         self.x_correction = self.calculate_updated_correction(x, self.x_correction, weight)
