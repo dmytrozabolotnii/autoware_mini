@@ -20,8 +20,8 @@
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
     <arg name="detection_range"         default=""                  doc="enter a value in meters to enable it" />
     <arg name="more_visualizations"     default="false"             doc="By default visualize only the final detections" />
-    <arg name="use_openpilot"           default="$(eval 'openpilot' in local_planner or use_lane_matching)" />
     <arg name="use_lane_matching"       default="false" />
+    <arg name="use_openpilot"           default="$(eval 'openpilot' in local_planner or use_lane_matching)" />
 
     
     <!-- Localization -->
