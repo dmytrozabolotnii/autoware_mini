@@ -1670,6 +1670,16 @@ positions:
   y: -3348.8113451860845
   z: 64.55374908447266
 ---
+name: Raudteejaam (Vaksali tn. kaudu)
+positions:
+- x: -732.28
+  y: -1646.00
+  z: 58.415
+  delay: 10
+- x: -1120.8918419593247
+  y: -1287.549305576831
+  z: 62.53562545776367
+---
 name: Raudteejaam (Kesklinna ja Riia tn. suunas)
 positions:
 - x: -1120.8918419593247
