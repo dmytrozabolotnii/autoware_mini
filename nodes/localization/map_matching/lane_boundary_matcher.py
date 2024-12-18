@@ -13,7 +13,7 @@ from tf.transformations import compose_matrix, quaternion_from_euler
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import Path
 from vehicle_platform.msg import Float32MultiArrayStamped
-from geometry_msgs.msg import Point, Pose, PoseStamped, Transform, TransformStamped
+from geometry_msgs.msg import Point, Pose, PoseStamped, TransformStamped
 from visualization_msgs.msg import MarkerArray, Marker
 from jsk_rviz_plugins.msg import OverlayText
 
@@ -166,7 +166,8 @@ class LaneBoundaryMatcher:
             result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), options={'disp': True}, method='Nelder-Mead',
                                              args=(current_pose_tf, current_pose_tf_inv,
                                                    map_left_lane_boundary, map_right_lane_boundary, 
-                                                   openpilot_left_lane_boundary, openpilot_right_lane_boundary))
+                                                   openpilot_left_lane_boundary, openpilot_right_lane_boundary,
+                                                   openpilot_lane_boundary_probs))
             x, y, yaw = result.x
 
         weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
@@ -215,7 +216,8 @@ class LaneBoundaryMatcher:
         self.global_path = PathWrapper(msg.waypoints, boundaries=True)
 
     def find_average_distance(self, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary, probs=(1,1)):
-        dists = np.linspace(0, self.lookahead_distance, len(openpilot_left_lane_boundary.coords))
+        sample_point_count = len(openpilot_left_lane_boundary.coords)
+        dists = np.linspace(0, self.lookahead_distance, sample_point_count)
 
         map_left_points = map_left_lane_boundary.interpolate(dists)
         map_right_points = map_right_lane_boundary.interpolate(dists)
@@ -226,15 +228,15 @@ class LaneBoundaryMatcher:
         map_points = np.vstack([probs[0]*shapely.get_coordinates(map_left_points), probs[1]*shapely.get_coordinates(map_right_points)])
         openpilot_points = np.vstack([probs[0]*shapely.get_coordinates(openpilot_left_points), probs[1]*shapely.get_coordinates(openpilot_right_points)])
 
+        diffs = map_points - openpilot_points
+        mean = np.sum(diffs, axis=0) / ((np.sum(probs)*sample_point_count))
+
         if self.only_lateral_correction:
-            diffs = map_points - openpilot_points
-            mean = np.mean(diffs, axis=0) / (np.sum(probs))
             return mean[0], mean[1]
         else:
-            diffs = np.absolute(map_points - openpilot_points)
-            return np.mean(diffs)
+            return np.sum(np.absolute(mean))
 
-    def objective_function(self, input_values, current_pose_tf, current_pose_tf_inv, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary):
+    def objective_function(self, input_values, current_pose_tf, current_pose_tf_inv, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary, openpilot_probs):
         x_correction, y_correction, yaw_correction = input_values
 
         # Steps for correcting the vehicle localization error:
@@ -256,7 +258,7 @@ class LaneBoundaryMatcher:
         openpilot_left_map_lane_boundary_map_fr = shapely.LineString(openpilot_left_lane_bound_map_fr)
         openpilot_right_map_lane_boundary_map_fr = shapely.LineString(openpilot_right_lane_bound_map_fr)
 
-        return self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, openpilot_left_map_lane_boundary_map_fr, openpilot_right_map_lane_boundary_map_fr)
+        return self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, openpilot_left_map_lane_boundary_map_fr, openpilot_right_map_lane_boundary_map_fr, openpilot_probs)
 
     def get_lane_boundary_marker(self, lane_boundary, side, marker_id, frame_id, marker_color, stamp):
         points = []
