@@ -7,6 +7,7 @@ import scipy
 import scipy.optimize
 import rospy
 import tf2_ros
+import message_filters
 from ros_numpy import numpify, msgify
 from tf.transformations import compose_matrix, quaternion_from_euler
 from std_msgs.msg import ColorRGBA
@@ -30,6 +31,7 @@ class LaneBoundaryMatcher:
         self.x_correction_treshold = rospy.get_param("~x_correction_treshold")
         self.y_correction_treshold = rospy.get_param("~y_correction_treshold")
         self.yaw_correction_treshold = rospy.get_param("~yaw_correction_treshold")
+        self.probability_treshold = rospy.get_param("~probability_treshold")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.openpilot_delay_compensation = rospy.get_param("~openpilot_delay_compensation")
         self.alpha = rospy.get_param("~alpha")
@@ -57,11 +59,16 @@ class LaneBoundaryMatcher:
 
         # subscribers
         rospy.Subscriber('current_pose_gnss', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/openpilot/lane_lines', Float32MultiArrayStamped, self.lane_line_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/planning/lanelet2_global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
+        lane_lines_sub = message_filters.Subscriber('/openpilot/lane_lines', Float32MultiArrayStamped, queue_size=1, tcp_nodelay=True)
+        lane_lines_probs_sub = message_filters.Subscriber('/openpilot/lane_line_probs', Float32MultiArrayStamped, queue_size=1, tcp_nodelay=True)
 
-    def calculate_updated_correction(self, new_value, old_value):
-        return self.alpha * new_value + (1 - self.alpha) * old_value
+        ts = message_filters.TimeSynchronizer([lane_lines_sub, lane_lines_probs_sub], queue_size=2)
+        ts.registerCallback(self.lane_line_callback)
+
+    def calculate_updated_correction(self, new_value, old_value, weight=1):
+        alpha = weight*self.alpha
+        return alpha * new_value + (1 - alpha) * old_value
     
     def current_pose_callback(self, msg):
         current_pose_matrix = numpify(msg.pose)
@@ -70,13 +77,19 @@ class LaneBoundaryMatcher:
         msg.pose = msgify(Pose, corrected_current_pose_matrix)
         self.current_pose_pub.publish(msg)
 
-    def lane_line_callback(self, msg):
-        openpilot_lane_boundaries = float32_multiarray_to_numpy(msg)
+    def lane_line_callback(self, lane_lines_msg, lane_lines_probs_msg):
+        openpilot_lane_boundaries = float32_multiarray_to_numpy(lane_lines_msg)
+        openpilot_lane_boundary_probs = float32_multiarray_to_numpy(lane_lines_probs_msg)[1:3]
 
         global_path = self.global_path
-        timestamp = msg.header.stamp - rospy.Duration.from_sec(self.openpilot_delay_compensation)
+        timestamp = lane_lines_msg.header.stamp - rospy.Duration.from_sec(self.openpilot_delay_compensation)
 
         if global_path is None or global_path.left_boundary is None or global_path.right_boundary is None:
+            self.x_correction = self.calculate_updated_correction(0, self.x_correction)
+            self.y_correction = self.calculate_updated_correction(0, self.y_correction)
+            self.yaw_correction = self.calculate_updated_correction(0, self.yaw_correction)
+
+            self.publish_base_link_correction_tf(correction_stamp=timestamp)
             return
 
         # Fetch transforms
@@ -139,11 +152,12 @@ class LaneBoundaryMatcher:
         ##################################################################
         # Perform matching
         ##################################################################
-    
+
+        #if np.any(openpilot_lane_boundary_probs[1:3] < self.lane_probability_treshold)
         if self.only_lateral_correction:
             # calculate the average difference for right and left boundaries
             x, y = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
-                                                openpilot_left_lane_boundary, openpilot_right_lane_boundary)
+                                                openpilot_left_lane_boundary, openpilot_right_lane_boundary, openpilot_lane_boundary_probs)
             yaw = 0
         else:
             current_pose_tf = numpify(transform_footprint.transform)
@@ -155,18 +169,20 @@ class LaneBoundaryMatcher:
                                                    openpilot_left_lane_boundary, openpilot_right_lane_boundary))
             x, y, yaw = result.x
 
+        weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
 
         # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-        if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or abs(yaw) > self.yaw_correction_treshold:
+        if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or abs(yaw) > self.yaw_correction_treshold or weight < self.probability_treshold:
             x, y, yaw = 0, 0, 0
+            weight = 1
             no_correction = True
         else:
             no_correction = False
         
         # use exponential moving average to smooth coordinate corrections 
-        self.x_correction = self.calculate_updated_correction(x, self.x_correction)
-        self.y_correction = self.calculate_updated_correction(y, self.y_correction)
-        self.yaw_correction = self.calculate_updated_correction(yaw, self.yaw_correction)
+        self.x_correction = self.calculate_updated_correction(x, self.x_correction, weight)
+        self.y_correction = self.calculate_updated_correction(y, self.y_correction, weight)
+        self.yaw_correction = self.calculate_updated_correction(yaw, self.yaw_correction, weight)
 
         self.publish_base_link_correction_tf(correction_stamp=timestamp)
 
@@ -198,7 +214,7 @@ class LaneBoundaryMatcher:
         
         self.global_path = PathWrapper(msg.waypoints, boundaries=True)
 
-    def find_average_distance(self, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary):
+    def find_average_distance(self, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary, probs=(1,1)):
         dists = np.linspace(0, self.lookahead_distance, len(openpilot_left_lane_boundary.coords))
 
         map_left_points = map_left_lane_boundary.interpolate(dists)
@@ -207,12 +223,12 @@ class LaneBoundaryMatcher:
         openpilot_left_points = openpilot_left_lane_boundary.interpolate(dists)
         openpilot_right_points = openpilot_right_lane_boundary.interpolate(dists)
 
-        map_points = np.vstack([shapely.get_coordinates(map_left_points), shapely.get_coordinates(map_right_points)])
-        openpilot_points = np.vstack([shapely.get_coordinates(openpilot_left_points), shapely.get_coordinates(openpilot_right_points)])
+        map_points = np.vstack([probs[0]*shapely.get_coordinates(map_left_points), probs[1]*shapely.get_coordinates(map_right_points)])
+        openpilot_points = np.vstack([probs[0]*shapely.get_coordinates(openpilot_left_points), probs[1]*shapely.get_coordinates(openpilot_right_points)])
 
         if self.only_lateral_correction:
             diffs = map_points - openpilot_points
-            mean = np.mean(diffs, axis=0)
+            mean = np.mean(diffs, axis=0) / (np.sum(probs))
             return mean[0], mean[1]
         else:
             diffs = np.absolute(map_points - openpilot_points)

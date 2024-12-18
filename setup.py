@@ -5,7 +5,8 @@ from catkin_pkg.python_setup import generate_distutils_setup
 
 # fetch values from package.xml
 setup_args = generate_distutils_setup(
-    packages=['helpers', 'localization'],
-    package_dir={'': 'src'})
+    packages=['helpers', 'localization', 'custom_routing_cost'],
+    package_dir={'': 'src'},
+)
 
 setup(**setup_args)
