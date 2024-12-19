@@ -42,12 +42,14 @@ class Lanelet2GlobalPlanner:
         self.lane_change_perlane_length = rospy.get_param("lane_change_perlane_length")
         self.waypoint_interval = rospy.get_param("waypoint_interval")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        self.routing_cost = rospy.get_param("~routing_cost")
 
         # Internal variables
         self.lanelet_candidates = []
         self.current_location = None
         self.current_speed = None
         self.goal_point = None
+        self.routing_cost_map = {"distance": 0, "travel_time" : 1, "custom": 0}
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
 
@@ -55,11 +57,12 @@ class Lanelet2GlobalPlanner:
         traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany,
                                                   lanelet2.traffic_rules.Participants.VehicleTaxi)
 
-        # routing cost
-        routing_cost = BuslaneRoutingCost(10.)
-
         # routing graph
-        self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules, [routing_cost])
+        if self.routing_cost == "custom":
+            custom_routing_cost = BuslaneRoutingCost(10.)
+            self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules, [custom_routing_cost])
+        else:
+            self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
 
         # Publishers
         self.waypoints_pub = rospy.Publisher('lanelet2_global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
@@ -194,7 +197,8 @@ class Lanelet2GlobalPlanner:
         shortest_distance = math.inf
         possible_routes = list(itertools.product(*lanelet_candidates))
         for possible_route in possible_routes:
-            route = self.graph.getRouteVia(possible_route[0], possible_route[1:-1], possible_route[-1], 0, self.lane_change)
+            route = self.graph.getRouteVia(possible_route[0], possible_route[1:-1], possible_route[-1], 
+                                           self.routing_cost_map[self.routing_cost], self.lane_change)
             if route is None:
                 continue
 

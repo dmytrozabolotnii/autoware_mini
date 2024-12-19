@@ -40,6 +40,7 @@
     <arg name="rate_option"             default="$(eval '--rate ' + str(rate) if rate != '' else '')" doc="rosbag play parameter" />
     <arg name="repub_camera_info"       default="true"          doc="Republish camera_info topics using camera intrinsics files" />
     <arg name="use_lane_matching"       default="false" />
+    <arg name="routing_cost"            default="travel_time"   doc="distance, travel_time, custom"/>
 
     <!-- Use simulation time from bag -->
     <param name="/use_sim_time" value="true" />
@@ -167,6 +168,7 @@
         <arg name="use_path_smoothing"  value="$(arg use_path_smoothing)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
+        <arg name="routing_cost"        value="$(arg routing_cost)" />
     </include>
 
     <!-- Control -->
