@@ -68,6 +68,7 @@
     <!-- Vehicle platform -->
     <include file="$(find vehicle_platform)/launch/platform.launch" >
         <arg name="use_lexus_model"     value="true" />
+        <arg name="use_tf"     value="true" />
     </include>
 
     <!-- Carla platform -->
