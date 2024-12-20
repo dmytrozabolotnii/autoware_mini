@@ -3,13 +3,10 @@
 import numpy as np
 import shapely
 import shapely.ops as shpops
-import scipy
-import scipy.optimize
 import rospy
 import tf2_ros
 import message_filters
 from ros_numpy import numpify, msgify
-from tf.transformations import compose_matrix, quaternion_from_euler
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import Path
 from vehicle_platform.msg import Float32MultiArrayStamped
@@ -25,12 +22,10 @@ class LaneBoundaryMatcher:
     def __init__(self):
 
         # parameters
-        self.only_lateral_correction = rospy.get_param("~only_lateral_correction")
         self.enable_height_correction = rospy.get_param("~enable_height_correction")
         self.lookahead_distance = rospy.get_param("~lookahead_distance")
         self.x_correction_treshold = rospy.get_param("~x_correction_treshold")
         self.y_correction_treshold = rospy.get_param("~y_correction_treshold")
-        self.yaw_correction_treshold = rospy.get_param("~yaw_correction_treshold")
         self.probability_treshold = rospy.get_param("~probability_treshold")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.openpilot_delay_compensation = rospy.get_param("~openpilot_delay_compensation")
@@ -43,7 +38,6 @@ class LaneBoundaryMatcher:
         self.x_correction = 0
         self.y_correction = 0
         self.z_correction = 0
-        self.yaw_correction = 0
         self.transform_matrix = np.eye(4)
         
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
@@ -87,7 +81,6 @@ class LaneBoundaryMatcher:
         if global_path is None or global_path.left_boundary is None or global_path.right_boundary is None:
             self.x_correction = self.calculate_updated_correction(0, self.x_correction)
             self.y_correction = self.calculate_updated_correction(0, self.y_correction)
-            self.yaw_correction = self.calculate_updated_correction(0, self.yaw_correction)
 
             self.publish_base_link_correction_tf(correction_stamp=timestamp)
             return
@@ -102,9 +95,9 @@ class LaneBoundaryMatcher:
             return
         
         current_pose_openpilot = transform_point(Point(0, 0, 0), transform_openpilot)
-        current_pose_footprint = transform_point(Point(0, 0, 0), transform_footprint)
-
+        
         if self.enable_height_correction:
+            current_pose_footprint = transform_point(Point(0, 0, 0), transform_footprint)
             current_pos_dist = global_path.linestring.project(shapely.Point(current_pose_footprint.x, current_pose_footprint.y, current_pose_footprint.z))
             self.z_correction = global_path.get_elevation_at_distance(current_pos_dist) - current_pose_footprint.z
 
@@ -153,28 +146,15 @@ class LaneBoundaryMatcher:
         # Perform matching
         ##################################################################
 
-        #if np.any(openpilot_lane_boundary_probs[1:3] < self.lane_probability_treshold)
-        if self.only_lateral_correction:
-            # calculate the average difference for right and left boundaries
-            x, y = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
-                                                openpilot_left_lane_boundary, openpilot_right_lane_boundary, openpilot_lane_boundary_probs)
-            yaw = 0
-        else:
-            current_pose_tf = numpify(transform_footprint.transform)
-            current_pose_tf_inv = np.linalg.inv(current_pose_tf)
-            # use optimizer to find the best match between map boundaries and openpilot boundaries
-            result = scipy.optimize.minimize(self.objective_function, np.array([0, 0, 0]), options={'disp': True}, method='Nelder-Mead',
-                                             args=(current_pose_tf, current_pose_tf_inv,
-                                                   map_left_lane_boundary, map_right_lane_boundary, 
-                                                   openpilot_left_lane_boundary, openpilot_right_lane_boundary,
-                                                   openpilot_lane_boundary_probs))
-            x, y, yaw = result.x
+        # calculate the average difference for right and left boundaries
+        x, y = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
+                                            openpilot_left_lane_boundary, openpilot_right_lane_boundary, openpilot_lane_boundary_probs)
 
         weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
 
         # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-        if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or abs(yaw) > self.yaw_correction_treshold or weight < self.probability_treshold:
-            x, y, yaw = 0, 0, 0
+        if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or weight < self.probability_treshold:
+            x, y = 0, 0
             weight = 1
             no_correction = True
         else:
@@ -183,7 +163,6 @@ class LaneBoundaryMatcher:
         # use exponential moving average to smooth coordinate corrections 
         self.x_correction = self.calculate_updated_correction(x, self.x_correction, weight)
         self.y_correction = self.calculate_updated_correction(y, self.y_correction, weight)
-        self.yaw_correction = self.calculate_updated_correction(yaw, self.yaw_correction, weight)
 
         self.publish_base_link_correction_tf(correction_stamp=timestamp)
 
@@ -231,34 +210,7 @@ class LaneBoundaryMatcher:
         diffs = map_points - openpilot_points
         mean = np.sum(diffs, axis=0) / ((np.sum(probs)*sample_point_count))
 
-        if self.only_lateral_correction:
-            return mean[0], mean[1]
-        else:
-            return np.sum(np.absolute(mean))
-
-    def objective_function(self, input_values, current_pose_tf, current_pose_tf_inv, map_left_lane_boundary, map_right_lane_boundary, openpilot_left_lane_boundary, openpilot_right_lane_boundary, openpilot_probs):
-        x_correction, y_correction, yaw_correction = input_values
-
-        # Steps for correcting the vehicle localization error:
-        # 1. Move map origin to base_link
-        # 2. Make translation and rotation correction
-        # 3. Move map origin back to (0,0,0)
-        correction_matrix = compose_matrix(translate=(x_correction, y_correction, 0), angles=(0, 0, yaw_correction))
-        matrix = current_pose_tf_inv @ correction_matrix @ current_pose_tf
-
-        openpilot_left_lane_boundary_h = np.hstack((np.array(openpilot_left_lane_boundary.coords), np.ones((len(openpilot_left_lane_boundary.coords), 1))))
-        openpilot_right_lane_boundary_h = np.hstack((np.array(openpilot_right_lane_boundary.coords), np.ones((len(openpilot_right_lane_boundary.coords), 1))))
-
-        openpilot_left_lane_bound_map_fr_h = openpilot_left_lane_boundary_h @ matrix.T
-        openpilot_left_lane_bound_map_fr = openpilot_left_lane_bound_map_fr_h[:, :3]
-
-        openpilot_right_lane_bound_map_fr_h = openpilot_right_lane_boundary_h @ matrix.T
-        openpilot_right_lane_bound_map_fr = openpilot_right_lane_bound_map_fr_h[:, :3]
-
-        openpilot_left_map_lane_boundary_map_fr = shapely.LineString(openpilot_left_lane_bound_map_fr)
-        openpilot_right_map_lane_boundary_map_fr = shapely.LineString(openpilot_right_lane_bound_map_fr)
-
-        return self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, openpilot_left_map_lane_boundary_map_fr, openpilot_right_map_lane_boundary_map_fr, openpilot_probs)
+        return mean[0], mean[1]
 
     def get_lane_boundary_marker(self, lane_boundary, side, marker_id, frame_id, marker_color, stamp):
         points = []
@@ -293,11 +245,7 @@ class LaneBoundaryMatcher:
         t.transform.translation.x = self.x_correction
         t.transform.translation.y = self.y_correction
         t.transform.translation.z = self.z_correction
-        x, y, z, w = quaternion_from_euler(0, 0, self.yaw_correction)
-        t.transform.rotation.x = x
-        t.transform.rotation.y = y
-        t.transform.rotation.z = z
-        t.transform.rotation.w = w
+        t.transform.rotation.w = 1
         self.transform_matrix = numpify(t.transform)
 
         if correction_stamp is None:
@@ -312,10 +260,9 @@ class LaneBoundaryMatcher:
 
         x_correction_text = f"x correction: <span style='color: white;'>{self.x_correction:.5f} </span>\n"
         y_correction_text = f"y correction: <span style='color: white;'>{self.y_correction:.5f} </span>\n"
-        z_correction_text = f"z correction: <span style='color: white;'>{self.z_correction:.5f} </span>\n"
-        yaw_correction_text = f"yaw correction: <span style='color: white;'>{self.yaw_correction:.5f} </span>"
+        z_correction_text = f"z correction: <span style='color: white;'>{self.z_correction:.5f} </span>"
 
-        gnss_corrections_detailed.text = "<span style='font-style: bold; color: white;'>GNSS corrections:</span>\n" + x_correction_text + y_correction_text + z_correction_text + yaw_correction_text
+        gnss_corrections_detailed.text = "<span style='font-style: bold; color: white;'>GNSS corrections:</span>\n" + x_correction_text + y_correction_text + z_correction_text
 
         self.gnss_corrections_detailed_pub.publish(gnss_corrections_detailed)
 
