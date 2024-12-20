@@ -61,7 +61,7 @@ class MapBasedPredictor:
 
                 # Skip crosswalks - don't want to snap predictions to crosswalks
                 if lanelet.attributes:
-                    if lanelet.attributes["subtype"] == "crosswalk":
+                    if lanelet.attributes["subtype"] == "crosswalk" or lanelet.attributes["subtype"] == "bus_lane":
                         continue
 
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
