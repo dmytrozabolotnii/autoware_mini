@@ -9,6 +9,7 @@
     <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
     <arg name="map_name"                    default="tartu_demo" />
     <arg name="load_goals"                  default="true" />
+    <arg name="routing_cost"                default="travel_time" />
     
     <group ns="planning">
 
@@ -26,6 +27,7 @@
         <group if="$(eval global_planner=='lanelet2')">
             <node pkg="autoware_mini" type="lanelet2_global_planner.py" name="lanelet2_global_planner" output="screen" required="true">
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                <param name="routing_cost" value="$(arg routing_cost)" />
             </node>
             <node pkg="autoware_mini" type="global_path_visualizer.py" name="lanelet2_global_path_visualizer" output="screen" required="true">
                 <remap from="global_path" to="lanelet2_global_path"/>

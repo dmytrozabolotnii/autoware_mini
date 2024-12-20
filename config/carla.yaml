@@ -1,5 +1,5 @@
 carla_localization:
-    use_transformer: true
+    use_transformer: false
 
 carla_vehicle_interface:
     max_steer_angle: 70.0
