@@ -158,7 +158,7 @@ class LaneBoundaryMatcher:
             weight = 1
             no_correction = True
         else:
-            no_correction = False
+            no_correction = False       
         
         # use exponential moving average to smooth coordinate corrections 
         self.x_correction = self.calculate_updated_correction(x, self.x_correction, weight)
