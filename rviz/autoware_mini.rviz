@@ -4,7 +4,6 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Dashboard1
         - /Dashboard1/GNSS corrections detailed1
         - /Detection1/Lidar1
         - /Detection1/Detected objects1/Namespaces1
@@ -31,7 +30,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: All collision points
+    SyncSource: ""
   - Class: rviz_carla_plugin/CarlaControl
     Name: CarlaControl
   - Class: jsk_rviz_plugin/EmptyServiceCallInterfaceAction
@@ -1786,8 +1785,7 @@ Visualization Manager:
               Marker Topic: /localization/lane_boundary_matcher_markers
               Name: Lane boundary matcher
               Namespaces:
-                left bound: true
-                right bound: true
+                {}
               Queue Size: 100
               Value: true
           Enabled: true
@@ -2362,9 +2360,7 @@ Visualization Manager:
           Marker Topic: /planning/global_path_markers
           Name: Global path
           Namespaces:
-            Path: true
-            Velocity label: false
-            Waypoint pose: false
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -2372,9 +2368,7 @@ Visualization Manager:
           Marker Topic: /planning/local_path_markers
           Name: Local path
           Namespaces:
-            Stopping lateral distance: true
-            Stopping point: true
-            Velocity label: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -2445,7 +2439,8 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              "": true
+              Current pose: true
+              Follower markers: true
               Value: true
             Dashboard:
               Accel limit: true
@@ -2477,34 +2472,7 @@ Visualization Manager:
                 Value: true
                 Wheel: true
             Detection:
-              Detected objects: true
-              Let's go yield line: true
-              Lidar:
-                Center:
-                  Points center ground: true
-                  Points center no ground: true
-                  Value: true
-                Front:
-                  Points front filtered: true
-                  Points front ground: true
-                  Points front no ground: true
-                  Value: true
-                Lidar detections: true
-                Points clustered: true
-                Points filtered: true
-                Points ground: true
-                Points no ground: true
-                Value: true
-              Predicted objects: true
-              Radar:
-                Radar detections: true
-                Value: true
-              Tracked objects: true
-              Traffic lights:
-                Forward camera ROI image: true
-                Right camera ROI image: true
-                Stop line status: true
-                Value: true
+              "": true
               Value: true
             Grid: true
             Map:
@@ -2596,7 +2564,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: 0.004999999888241291
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
