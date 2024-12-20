@@ -22,7 +22,6 @@
     <arg name="more_visualizations"     default="false"             doc="By default visualize only the final detections" />
     <arg name="use_lane_matching"       default="false" />
     <arg name="use_openpilot"           default="$(eval 'openpilot' in local_planner or use_lane_matching)" />
-    <arg name="routing_cost"            default="travel_time"       doc="distance, travel_time, custom"/>
 
     
     <!-- Localization -->
@@ -56,7 +55,6 @@
         <arg name="waypoints_file"      value="$(arg waypoints_file)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
-        <arg name="routing_cost"        value="$(arg routing_cost)" />
     </include>
 
     <!-- Control -->
