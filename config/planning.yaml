@@ -20,6 +20,7 @@ lanelet2_global_planner:
   distance_to_centerline_limit: 5.0
   lane_change: False
   lanelet_search_radius: 0.5
+  routing_cost: travel_time
 
 lanelet2_map_visualizer:
   use_map_extraction: False     # extract smaller map area around the ego vehicle for visualization
