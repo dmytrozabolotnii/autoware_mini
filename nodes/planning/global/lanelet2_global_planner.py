@@ -15,7 +15,6 @@ from visualization_msgs.msg import MarkerArray, Marker
 from helpers.geometry import get_heading_between_two_points
 from helpers.lanelet2 import load_lanelet2_map, find_following_lane_change_lanelet
 from helpers.path import PathWrapper
-from custom_routing_cost import BuslaneRoutingCost
 
 LANELET_TURN_DIRECTION_TO_WAYPOINT_STATE_MAP = {
     "straight": Waypoint.STR_STRAIGHT,
@@ -58,11 +57,7 @@ class Lanelet2GlobalPlanner:
                                                   lanelet2.traffic_rules.Participants.VehicleTaxi)
 
         # routing graph
-        if self.routing_cost == "custom":
-            custom_routing_cost = BuslaneRoutingCost(10.)
-            self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules, [custom_routing_cost])
-        else:
-            self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
+        self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
 
         # Publishers
         self.waypoints_pub = rospy.Publisher('lanelet2_global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
@@ -112,13 +107,9 @@ class Lanelet2GlobalPlanner:
         lanelet_candidates.append(goal_lanelet_candidates)
 
         # Find shortest path and shortest route
-        route, stops = self.get_shortest_route(lanelet_candidates)
-        if route is None:
-            rospy.logerr("%s - no route found, try new goal!", rospy.get_name())
-            return
-        path = route.shortestPath()
+        path, route, stops = self.get_shortest_path_with_route(lanelet_candidates)
         if path is None:
-            rospy.logerr("%s - no path found, try new goal!", rospy.get_name())
+            rospy.logerr("%s - no route found, try new goal!", rospy.get_name())
             return
         
         # Publish target lanelets for visualization
@@ -191,7 +182,8 @@ class Lanelet2GlobalPlanner:
         rospy.loginfo("%s - route cancelled!", rospy.get_name())
         return EmptyResponse()
 
-    def get_shortest_route(self, lanelet_candidates):
+    def get_shortest_path_with_route(self, lanelet_candidates):
+        shortest_path = None
         shortest_route = None
         shortest_stops = None
         shortest_distance = math.inf
@@ -202,13 +194,18 @@ class Lanelet2GlobalPlanner:
             if route is None:
                 continue
 
-            route_length = route.length2d()
-            if route_length < shortest_distance:
-                shortest_distance = route_length
+            path = route.shortestPath()
+            if path is None:
+                continue
+
+            path_length = sum(map(length2d, path))
+            if path_length < shortest_distance:
+                shortest_distance = path_length
                 shortest_route = route
                 shortest_stops = possible_route
+                shortest_path = path
 
-        return shortest_route, shortest_stops
+        return shortest_path, shortest_route, shortest_stops
 
     def convert_to_waypoints(self, lanelet_sequence, route):
         waypoints = []
