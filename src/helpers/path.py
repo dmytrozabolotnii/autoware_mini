@@ -6,6 +6,7 @@ import shapely.ops
 from autoware_mini.msg import Waypoint
 from geometry_msgs.msg import Point, Pose
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
+from helpers.shapely import get_heading_at_distance_along_linestring
 
 class PathWrapper:
     def __init__(self, waypoints, velocities=False, blinkers=False, boundaries=False):
@@ -258,15 +259,7 @@ class PathWrapper:
         :return: heading angle in radians
         """
 
-        point_after_object = self.linestring.interpolate(distance + 0.1)
-        # if distance is negative it is measured from the end of the linestring in reverse direction
-        point_before_object = self.linestring.interpolate(max(0, distance - 0.1))
-
-        # get heading between two points
-        path_heading = math.atan2(point_after_object.y - point_before_object.y, point_after_object.x - point_before_object.x)
-
-        return path_heading
-
+        return get_heading_at_distance_along_linestring(self.linestring, distance)
 
     def get_cross_track_error(self, current_position):
         """

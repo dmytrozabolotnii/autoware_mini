@@ -10,7 +10,7 @@ from tf2_ros import TransformListener, Buffer, TransformException
 from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_heading_between_two_points, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
-from helpers.shapely import get_polygon_width
+from helpers.shapely import get_polygon_width, get_heading_at_distance_along_linestring
 
 class PedestrianCrosswalkChecker:
 
@@ -126,12 +126,17 @@ class PedestrianCrosswalkChecker:
                         # NON-INTERSECTING OBJECTS - CONSIDER TRAJECTORIES
                         elif len(obj.candidate_trajectories.paths) > 0:
                             for path in obj.candidate_trajectories.paths:
-                                trajectory = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in path.waypoints])
+                                trajectory_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in path.waypoints])
+                                trajectory = trajectory_linestring
 
                                 if self.use_object_width:
                                     trajectory = trajectory.buffer(object_width / 2, cap_style="flat")
 
-                                if crosswalk['polygon'].intersects(trajectory) and object_path_approach_angle < self.crossing_angle_max_limit:
+                                if crosswalk['polygon'].intersects(trajectory):
+                                    intersection_points = shapely.get_coordinates(crosswalk['polygon'].intersection(trajectory))
+                                    closest_distance_to_object = min([trajectory_linestring.project(shapely.Point(x, y)) for x, y in intersection_points])
+                                    trajectory_heading = get_heading_at_distance_along_linestring(trajectory_linestring, closest_distance_to_object)
+                                    if math.degrees(get_angle_between_two_headings(trajectory_heading, object_projection_on_path_heading)) < self.crossing_angle_max_limit:
                                         collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
                                         crosswalks_on_local_path.remove(crosswalk)
                                         break
