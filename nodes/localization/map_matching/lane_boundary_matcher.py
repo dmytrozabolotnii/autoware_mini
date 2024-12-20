@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
+import traceback
 import numpy as np
 import shapely
-import shapely.ops as shpops
+import shapely.ops
 import rospy
 import tf2_ros
 import message_filters
 from ros_numpy import numpify, msgify
+
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import Path
 from vehicle_platform.msg import Float32MultiArrayStamped
@@ -72,120 +74,123 @@ class LaneBoundaryMatcher:
         self.current_pose_pub.publish(msg)
 
     def lane_line_callback(self, lane_lines_msg, lane_lines_probs_msg):
-        openpilot_lane_boundaries = float32_multiarray_to_numpy(lane_lines_msg)
-        openpilot_lane_boundary_probs = float32_multiarray_to_numpy(lane_lines_probs_msg)[1:3]
+        try:
+            openpilot_lane_boundaries = float32_multiarray_to_numpy(lane_lines_msg)
+            openpilot_lane_boundary_probs = float32_multiarray_to_numpy(lane_lines_probs_msg)[1:3]
 
-        global_path = self.global_path
-        timestamp = lane_lines_msg.header.stamp - rospy.Duration.from_sec(self.openpilot_delay_compensation)
+            global_path = self.global_path
+            timestamp = lane_lines_msg.header.stamp - rospy.Duration.from_sec(self.openpilot_delay_compensation)
 
-        if global_path is None or global_path.left_boundary is None or global_path.right_boundary is None:
-            self.x_correction = self.calculate_updated_correction(0, self.x_correction)
-            self.y_correction = self.calculate_updated_correction(0, self.y_correction)
+            if global_path is None or global_path.left_boundary is None or global_path.right_boundary is None:
+                self.x_correction = self.calculate_updated_correction(0, self.x_correction)
+                self.y_correction = self.calculate_updated_correction(0, self.y_correction)
+
+                self.publish_base_link_correction_tf(correction_stamp=timestamp)
+                return
+
+            # Fetch transforms
+            try:
+                transform_openpilot = self.tf_buffer.lookup_transform("map_gnss", "openpilot", timestamp, rospy.Duration(self.transform_timeout))
+                tf_matrix_openpilot = numpify(transform_openpilot.transform)
+                transform_footprint = self.tf_buffer.lookup_transform("map_gnss", "base_footprint", timestamp, rospy.Duration(self.transform_timeout))
+            except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
+                rospy.logwarn("%s - %s", rospy.get_name(), e)
+                return
+            
+            current_pose_openpilot = transform_point(Point(0, 0, 0), transform_openpilot)
+            
+            if self.enable_height_correction:
+                current_pose_footprint = transform_point(Point(0, 0, 0), transform_footprint)
+                current_pos_dist = global_path.linestring.project(shapely.Point(current_pose_footprint.x, current_pose_footprint.y, current_pose_footprint.z))
+                self.z_correction = global_path.get_elevation_at_distance(current_pos_dist) - current_pose_footprint.z
+
+            ##################################################################
+            # Trim map lane boundaries
+            ##################################################################
+
+            # find the distance of current position
+            left_cur_pos_dist = global_path.left_boundary.project(shapely.Point(current_pose_openpilot.x, current_pose_openpilot.y, current_pose_openpilot.z))
+            right_cur_pos_dist = global_path.right_boundary.project(shapely.Point(current_pose_openpilot.x, current_pose_openpilot.y, current_pose_openpilot.z))
+            
+            # make sure that lookahead distance does not go beyond the end of global path
+            left_end_dist = min(left_cur_pos_dist + self.lookahead_distance, global_path.left_boundary.length)
+            right_end_dist = min(right_cur_pos_dist + self.lookahead_distance, global_path.right_boundary.length)
+
+            # cut out the relevant sections from the global path boundaries
+            map_left_lane_boundary = shapely.ops.substring(global_path.left_boundary, left_cur_pos_dist, left_end_dist)
+            map_right_lane_boundary = shapely.ops.substring(global_path.right_boundary, right_cur_pos_dist, right_end_dist)
+
+            # return if one boundary given by substring is not a LineString type
+            if not isinstance(map_left_lane_boundary, shapely.LineString) or not isinstance(map_right_lane_boundary, shapely.LineString):
+                return
+            
+            ##################################################################
+            # Transform openpilot lane boundaries and create linestrings
+            ##################################################################
+
+            # transfrom openpilot predicted lane boundaries to map_gnss frame
+            center_openpilot_lane_boundaries = np.transpose(openpilot_lane_boundaries, (0, 2, 1))[1:3, :, :] # transpose axis 1 and 2
+            flattened_openpilot_lane_boundaries = center_openpilot_lane_boundaries.reshape(-1, 4) # flatten to (2*n_points, 4)
+            flattened_openpilot_lane_boundaries[:, 3] = 1 # replace the time dimension with ones to get homogeneous points
+            homogeneous_openpilot_lane_boundaries = flattened_openpilot_lane_boundaries @ tf_matrix_openpilot.T # do the transform
+            openpilot_lane_boundary_points = homogeneous_openpilot_lane_boundaries[:, :3].reshape(2, -1, 3) # convert back to 3d matrix with 3d points
+
+            # trim openpilot lane boundaries
+            openpilot_left_lane_boundary, openpilot_right_lane_boundary = shapely.linestrings(openpilot_lane_boundary_points)
+
+            # make sure that lookahead distance does not go beyond the end of global path
+            openpilot_left_end_dist = min(global_path.left_boundary.length - left_cur_pos_dist,  self.lookahead_distance)
+            openpilot_right_end_dist = min(global_path.right_boundary.length - right_cur_pos_dist,  self.lookahead_distance)
+
+            openpilot_left_lane_boundary = shapely.ops.substring(openpilot_left_lane_boundary, 0, openpilot_left_end_dist)
+            openpilot_right_lane_boundary = shapely.ops.substring(openpilot_right_lane_boundary, 0, openpilot_right_end_dist)
+
+            ##################################################################
+            # Perform matching
+            ##################################################################
+
+            # calculate the average difference for right and left boundaries
+            x, y = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
+                                                openpilot_left_lane_boundary, openpilot_right_lane_boundary, openpilot_lane_boundary_probs)
+
+            weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
+
+            # if the difference between map and openpilot lane boundaries is too big then don't use the correction
+            if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or weight < self.probability_treshold:
+                x, y = 0, 0
+                weight = 1
+                no_correction = True
+            else:
+                no_correction = False       
+            
+            # use exponential moving average to smooth coordinate corrections 
+            self.x_correction = self.calculate_updated_correction(x, self.x_correction, weight)
+            self.y_correction = self.calculate_updated_correction(y, self.y_correction, weight)
 
             self.publish_base_link_correction_tf(correction_stamp=timestamp)
-            return
 
-        # Fetch transforms
-        try:
-            transform_openpilot = self.tf_buffer.lookup_transform("map_gnss", "openpilot", timestamp, rospy.Duration(self.transform_timeout))
-            tf_matrix_openpilot = numpify(transform_openpilot.transform)
-            transform_footprint = self.tf_buffer.lookup_transform("map_gnss", "base_footprint", timestamp, rospy.Duration(self.transform_timeout))
-        except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-            rospy.logwarn("%s - %s", rospy.get_name(), e)
-            return
-        
-        current_pose_openpilot = transform_point(Point(0, 0, 0), transform_openpilot)
-        
-        if self.enable_height_correction:
-            current_pose_footprint = transform_point(Point(0, 0, 0), transform_footprint)
-            current_pos_dist = global_path.linestring.project(shapely.Point(current_pose_footprint.x, current_pose_footprint.y, current_pose_footprint.z))
-            self.z_correction = global_path.get_elevation_at_distance(current_pos_dist) - current_pose_footprint.z
+            ##################################################################
+            # Visualization
+            ##################################################################
 
-        ##################################################################
-        # Trim map lane boundaries
-        ##################################################################
+            openpilot_color = ColorRGBA(0.5, 0.8, 0.7, 1.0) if no_correction else ColorRGBA(1.0, 1.0, 0.0, 1.0)
+            map_color = ColorRGBA(0.6, 0.5, 0.4, 1.0) if no_correction else ColorRGBA(1.0, 1.0, 0.0, 1.0)
 
-        # find the distance of current position
-        left_cur_pos_dist = global_path.left_boundary.project(shapely.Point(current_pose_openpilot.x, current_pose_openpilot.y, current_pose_openpilot.z))
-        right_cur_pos_dist = global_path.right_boundary.project(shapely.Point(current_pose_openpilot.x, current_pose_openpilot.y, current_pose_openpilot.z))
-        
-        # make sure that lookahead distance does not go beyond the end of global path
-        left_end_dist = min(left_cur_pos_dist + self.lookahead_distance, global_path.left_boundary.length)
-        right_end_dist = min(right_cur_pos_dist + self.lookahead_distance, global_path.right_boundary.length)
+            lanes_marker_array = MarkerArray()
+            marker1 = self.get_lane_boundary_marker(openpilot_right_lane_boundary, "right", 0, "map_gnss", openpilot_color, timestamp)
+            marker2 = self.get_lane_boundary_marker(openpilot_left_lane_boundary, "left", 1, "map_gnss", openpilot_color, timestamp)
+            lanes_marker_array.markers.append(marker1)
+            lanes_marker_array.markers.append(marker2)
 
-        # cut out the relevant sections from the global path boundaries
-        map_left_lane_boundary = shpops.substring(global_path.left_boundary, left_cur_pos_dist, left_end_dist)
-        map_right_lane_boundary = shpops.substring(global_path.right_boundary, right_cur_pos_dist, right_end_dist)
-
-        # return if one boundary given by substring is not a LineString type
-        if not isinstance(map_left_lane_boundary, shapely.LineString) or not isinstance(map_right_lane_boundary, shapely.LineString):
-            return
-        
-        ##################################################################
-        # Transform openpilot lane boundaries and create linestrings
-        ##################################################################
-
-        # transfrom openpilot predicted lane boundaries to map_gnss frame
-        center_openpilot_lane_boundaries = np.transpose(openpilot_lane_boundaries, (0, 2, 1))[1:3, :, :] # transpose axis 1 and 2
-        flattened_openpilot_lane_boundaries = center_openpilot_lane_boundaries.reshape(-1, 4) # flatten to (2*n_points, 4)
-        flattened_openpilot_lane_boundaries[:, 3] = 1 # replace the time dimension with ones to get homogeneous points
-        homogeneous_openpilot_lane_boundaries = flattened_openpilot_lane_boundaries @ tf_matrix_openpilot.T # do the transform
-        openpilot_lane_boundary_points = homogeneous_openpilot_lane_boundaries[:, :3].reshape(2, -1, 3) # convert back to 3d matrix with 3d points
-
-        # trim openpilot lane boundaries
-        openpilot_left_lane_boundary, openpilot_right_lane_boundary = shapely.linestrings(openpilot_lane_boundary_points)
-
-        # make sure that lookahead distance does not go beyond the end of global path
-        openpilot_left_end_dist = min(global_path.left_boundary.length - left_cur_pos_dist,  self.lookahead_distance)
-        openpilot_right_end_dist = min(global_path.right_boundary.length - right_cur_pos_dist,  self.lookahead_distance)
-
-        openpilot_left_lane_boundary = shpops.substring(openpilot_left_lane_boundary, 0, openpilot_left_end_dist)
-        openpilot_right_lane_boundary = shpops.substring(openpilot_right_lane_boundary, 0, openpilot_right_end_dist)
-
-        ##################################################################
-        # Perform matching
-        ##################################################################
-
-        # calculate the average difference for right and left boundaries
-        x, y = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
-                                            openpilot_left_lane_boundary, openpilot_right_lane_boundary, openpilot_lane_boundary_probs)
-
-        weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
-
-        # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-        if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or weight < self.probability_treshold:
-            x, y = 0, 0
-            weight = 1
-            no_correction = True
-        else:
-            no_correction = False       
-        
-        # use exponential moving average to smooth coordinate corrections 
-        self.x_correction = self.calculate_updated_correction(x, self.x_correction, weight)
-        self.y_correction = self.calculate_updated_correction(y, self.y_correction, weight)
-
-        self.publish_base_link_correction_tf(correction_stamp=timestamp)
-
-        ##################################################################
-        # Visualization
-        ##################################################################
-
-        openpilot_color = ColorRGBA(0.5, 0.8, 0.7, 1.0) if no_correction else ColorRGBA(1.0, 1.0, 0.0, 1.0)
-        map_color = ColorRGBA(0.6, 0.5, 0.4, 1.0) if no_correction else ColorRGBA(1.0, 1.0, 0.0, 1.0)
-
-        lanes_marker_array = MarkerArray()
-        marker1 = self.get_lane_boundary_marker(openpilot_right_lane_boundary, "right", 0, "map_gnss", openpilot_color, timestamp)
-        marker2 = self.get_lane_boundary_marker(openpilot_left_lane_boundary, "left", 1, "map_gnss", openpilot_color, timestamp)
-        lanes_marker_array.markers.append(marker1)
-        lanes_marker_array.markers.append(marker2)
-
-        marker3 = self.get_lane_boundary_marker(map_right_lane_boundary, "right", 2, "map", map_color, timestamp)
-        marker4 = self.get_lane_boundary_marker(map_left_lane_boundary, "left", 3, "map", map_color, timestamp)
-        lanes_marker_array.markers.append(marker3)
-        lanes_marker_array.markers.append(marker4)
-        
-        self.lane_bound_markers_pub.publish(lanes_marker_array)
-        self.publish_gnss_corrections_detailed()
+            marker3 = self.get_lane_boundary_marker(map_right_lane_boundary, "right", 2, "map", map_color, timestamp)
+            marker4 = self.get_lane_boundary_marker(map_left_lane_boundary, "left", 3, "map", map_color, timestamp)
+            lanes_marker_array.markers.append(marker3)
+            lanes_marker_array.markers.append(marker4)
+            
+            self.lane_bound_markers_pub.publish(lanes_marker_array)
+            self.publish_gnss_corrections_detailed()
+        except Exception as e:
+            rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
 
     def global_path_callback(self, msg):
         if len(msg.waypoints) == 0:
@@ -204,13 +209,11 @@ class LaneBoundaryMatcher:
         openpilot_left_points = openpilot_left_lane_boundary.interpolate(dists)
         openpilot_right_points = openpilot_right_lane_boundary.interpolate(dists)
 
-        map_points = np.vstack([probs[0]*shapely.get_coordinates(map_left_points), probs[1]*shapely.get_coordinates(map_right_points)])
-        openpilot_points = np.vstack([probs[0]*shapely.get_coordinates(openpilot_left_points), probs[1]*shapely.get_coordinates(openpilot_right_points)])
+        diffs_left = np.mean(shapely.get_coordinates(map_left_points) - shapely.get_coordinates(openpilot_left_points), axis=0)
+        diffs_right = np.mean(shapely.get_coordinates(map_right_points) - shapely.get_coordinates(openpilot_right_points), axis=0)
+        diffs_x, diffs_y = (probs[0]*diffs_left + probs[1]*diffs_right) / (probs[0] + probs[1])
 
-        diffs = map_points - openpilot_points
-        mean = np.sum(diffs, axis=0) / ((np.sum(probs)*sample_point_count))
-
-        return mean[0], mean[1]
+        return diffs_x, diffs_y
 
     def get_lane_boundary_marker(self, lane_boundary, side, marker_id, frame_id, marker_color, stamp):
         points = []

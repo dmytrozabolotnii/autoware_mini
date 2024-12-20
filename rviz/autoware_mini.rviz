@@ -30,7 +30,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: All collision points
   - Class: rviz_carla_plugin/CarlaControl
     Name: CarlaControl
   - Class: jsk_rviz_plugin/EmptyServiceCallInterfaceAction
@@ -1785,7 +1785,8 @@ Visualization Manager:
               Marker Topic: /localization/lane_boundary_matcher_markers
               Name: Lane boundary matcher
               Namespaces:
-                {}
+                left bound: true
+                right bound: true
               Queue Size: 100
               Value: true
           Enabled: true
@@ -2360,7 +2361,9 @@ Visualization Manager:
           Marker Topic: /planning/global_path_markers
           Name: Global path
           Namespaces:
-            {}
+            Path: true
+            Velocity label: false
+            Waypoint pose: false
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -2368,7 +2371,9 @@ Visualization Manager:
           Marker Topic: /planning/local_path_markers
           Name: Local path
           Namespaces:
-            {}
+            Stopping lateral distance: true
+            Stopping point: true
+            Velocity label: true
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -2439,8 +2444,7 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              Current pose: true
-              Follower markers: true
+              "": true
               Value: true
             Dashboard:
               Accel limit: true
@@ -2476,7 +2480,8 @@ Visualization Manager:
               Value: true
             Grid: true
             Map:
-              "": true
+              Lanelet2 map: true
+              Road area: true
               Value: true
             Planning:
               "": true
@@ -2564,7 +2569,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0.004999999888241291
+      Angle: 0
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -2574,10 +2579,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.0010000000474974513
-      Scale: 17.096769332885742
+      Scale: 20
       Target Frame: base_link
-      X: -0.23396232724189758
-      Y: -1.3452833890914917
+      X: 0
+      Y: 0
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho
