@@ -3,6 +3,7 @@
 import math
 import rospy
 import message_filters
+import traceback
 from tf.transformations import quaternion_from_euler
 from tf2_ros import TransformBroadcaster
 
@@ -86,45 +87,47 @@ class NovatelOem7Localizer:
 
 
     def synchronized_callback(self, inspva_msg, imu_msg):
+        try:
+            stamp = inspva_msg.header.stamp
 
-        stamp = inspva_msg.header.stamp
+            # transform GNSS coordinates and correct azimuth
+            x, y = self.transformer.transform_lat_lon(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.height)
+            azimuth = self.transformer.correct_azimuth(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.azimuth)
 
-        # transform GNSS coordinates and correct azimuth
-        x, y = self.transformer.transform_lat_lon(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.height)
-        azimuth = self.transformer.correct_azimuth(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.azimuth)
+            linear_velocity = math.sqrt(inspva_msg.east_velocity**2 + inspva_msg.north_velocity**2)
+            angular_velocity = imu_msg.angular_velocity
 
-        linear_velocity = math.sqrt(inspva_msg.east_velocity**2 + inspva_msg.north_velocity**2)
-        angular_velocity = imu_msg.angular_velocity
+            # angles from GNSS (degrees) need to be converted to orientation (quaternion) in map frame
+            orientation = convert_angles_to_orientation(inspva_msg.roll, inspva_msg.pitch, azimuth)
 
-        # angles from GNSS (degrees) need to be converted to orientation (quaternion) in map frame
-        orientation = convert_angles_to_orientation(inspva_msg.roll, inspva_msg.pitch, azimuth)
+            # inspva_msg contains ellipsoid height if msl (mean sea level) height is wanted then undulation is subtracted
+            height = inspva_msg.height
+            if self.use_msl_height:
+                height -= self.undulation
 
-        # inspva_msg contains ellipsoid height if msl (mean sea level) height is wanted then undulation is subtracted
-        height = inspva_msg.height
-        if self.use_msl_height:
-            height -= self.undulation
+            current_pose = Pose()
+            current_pose.position.x = x
+            current_pose.position.y = y
+            current_pose.position.z = height
+            current_pose.orientation = orientation
 
-        current_pose = Pose()
-        current_pose.position.x = x
-        current_pose.position.y = y
-        current_pose.position.z = height
-        current_pose.orientation = orientation
+            # set true current_pose (from GNSS) to class variable
+            self.current_pose = current_pose
 
-        # set true current_pose (from GNSS) to class variable
-        self.current_pose = current_pose
+            # if initalpose is set reposition car
+            if self.relative_pose_matrix is not None:
+                current_pose_matrix = numpify(self.current_pose)
+                new_current_pose_matrix = self.relative_pose_matrix.dot(current_pose_matrix)
+                # replace current_pose with new_current_pose
+                current_pose = msgify(Pose, new_current_pose_matrix)
 
-        # if initalpose is set reposition car
-        if self.relative_pose_matrix is not None:
-            current_pose_matrix = numpify(self.current_pose)
-            new_current_pose_matrix = self.relative_pose_matrix.dot(current_pose_matrix)
-            # replace current_pose with new_current_pose
-            current_pose = msgify(Pose, new_current_pose_matrix)
-
-        # Publish 
-        self.publish_current_pose(stamp, current_pose)
-        self.publish_current_velocity(stamp, linear_velocity, angular_velocity)
-        self.publish_map_to_baselink_tf(stamp, current_pose)
-        self.publish_odometry(stamp, linear_velocity, current_pose, angular_velocity)
+            # Publish 
+            self.publish_current_pose(stamp, current_pose)
+            self.publish_current_velocity(stamp, linear_velocity, angular_velocity)
+            self.publish_map_to_baselink_tf(stamp, current_pose)
+            self.publish_odometry(stamp, linear_velocity, current_pose, angular_velocity)
+        except Exception as e:
+            rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
 
     def bestpos_callback(self, bestpos_msg):
         self.undulation = bestpos_msg.undulation
