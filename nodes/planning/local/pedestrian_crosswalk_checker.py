@@ -9,6 +9,7 @@ from sensor_msgs.msg import PointCloud2
 from tf2_ros import TransformListener, Buffer, TransformException
 from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_heading_between_two_points, get_angle_between_two_headings, get_minimum_angle_between_two_lines
 from helpers.collision import CollisionPoints
+from helpers.path import PathWrapper
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
 from helpers.shapely import get_polygon_width, get_heading_at_distance_along_linestring
 
@@ -46,15 +47,14 @@ class PedestrianCrosswalkChecker:
         self.detected_objects = msg.objects
 
     def global_path_callback(self, msg):
-
-        global_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
-        global_path_linestring = global_path_linestring.simplify(0.01)
-        shapely.prepare(global_path_linestring)
+        global_path = PathWrapper(msg.waypoints)
+        global_path.linestring = global_path.linestring.simplify(0.01)
+        shapely.prepare(global_path.linestring)
 
         crosswalks_on_global_path = []
         for crosswalk in self.crosswalks:
-            if crosswalk['polygon'].intersects(global_path_linestring):
-                crosswalk['intersection_points'] = shapely.get_coordinates(global_path_linestring.intersection(crosswalk['polygon']))
+            if crosswalk['polygon'].intersects(global_path.linestring):
+                crosswalk['intersection_points'] = shapely.get_coordinates(global_path.linestring.intersection(crosswalk['polygon']))
                 crosswalks_on_global_path.append(crosswalk)
 
         self.crosswalks_on_global_path = crosswalks_on_global_path
@@ -126,24 +126,24 @@ class PedestrianCrosswalkChecker:
                         # NON-INTERSECTING OBJECTS - CONSIDER TRAJECTORIES
                         elif len(obj.candidate_trajectories.paths) > 0:
                             for path in obj.candidate_trajectories.paths:
-                                trajectory_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in path.waypoints])
-                                trajectory = trajectory_linestring
+                                trajectory = PathWrapper(path.waypoints)
+                                trajectory_to_check = trajectory.linestring
 
                                 if self.use_object_width:
-                                    trajectory = trajectory.buffer(object_width / 2, cap_style="flat")
+                                    trajectory_to_check = trajectory.linestring.buffer(object_width / 2, cap_style="flat")
 
-                                if crosswalk['polygon'].intersects(trajectory):
-                                    intersection_points = shapely.get_coordinates(crosswalk['polygon'].intersection(trajectory))
+                                if crosswalk['polygon'].intersects(trajectory_to_check):
+                                    intersection_points = shapely.get_coordinates(crosswalk['polygon'].intersection(trajectory_to_check))
                                     closest_distance_to_object = float('inf')
                                     closest_intersection_point = None
                                     for x, y in intersection_points:
-                                        distance = trajectory_linestring.project(shapely.Point(x, y))
+                                        distance = trajectory.linestring.project(shapely.Point(x, y))
                                         if distance < closest_distance_to_object:
                                             closest_distance_to_object = distance
                                             closest_intersection_point = (x, y)
 
                                     closest_intersection_point = shapely.Point(closest_intersection_point)
-                                    trajectory_heading_at_closest_intersection = get_heading_at_distance_along_linestring(trajectory_linestring, closest_distance_to_object)
+                                    trajectory_heading_at_closest_intersection = get_heading_at_distance_along_linestring(trajectory.linestring, closest_distance_to_object)
                                     # find heading from the closest intersection point to its projection on local_path
                                     closest_intersection_distance_from_local_path_start = local_path_linestring.project(closest_intersection_point)
                                     closest_intersection_on_path = local_path_linestring.interpolate(closest_intersection_distance_from_local_path_start)
