@@ -136,11 +136,11 @@ class PedestrianCrosswalkChecker:
                                     intersection_points = shapely.get_coordinates(crosswalk['polygon'].intersection(trajectory_to_check))
                                     closest_distance_to_object = float('inf')
                                     closest_intersection_point = None
-                                    for x, y in intersection_points:
-                                        distance = trajectory.linestring.project(shapely.Point(x, y))
+                                    for p in intersection_points:
+                                        distance = trajectory.linestring.project(shapely.Point(p))
                                         if distance < closest_distance_to_object:
                                             closest_distance_to_object = distance
-                                            closest_intersection_point = (x, y)
+                                            closest_intersection_point = p
 
                                     closest_intersection_point = shapely.Point(closest_intersection_point)
                                     trajectory_heading_at_closest_intersection = get_heading_at_distance_along_linestring(trajectory.linestring, closest_distance_to_object)
