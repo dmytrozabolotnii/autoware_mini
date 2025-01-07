@@ -174,18 +174,6 @@ def get_angle_between_two_headings(angle1, angle2):
         difference = 2*math.pi - difference
     return difference
 
-def get_minimum_angle_between_two_lines(angle1, angle2):
-    """
-    Get minimum angle difference between two lines defined by heading angles
-    :param angle1: angle 1 from -pi to pi
-    :param angle2: angle 2 from -pi to pi
-    :return: minimum angle difference
-    """
-    difference = get_angle_between_two_headings(angle1, angle2)
-    if difference > math.pi/2:
-        difference = math.pi - difference
-    return difference
-
 def convert_geometry_to_line_list(geometry, delta_z=0):
     """
     Convert geometry to line list

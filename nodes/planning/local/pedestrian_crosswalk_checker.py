@@ -7,7 +7,7 @@ import shapely.ops
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from tf2_ros import TransformListener, Buffer, TransformException
-from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_heading_between_two_points, get_angle_between_two_headings, get_minimum_angle_between_two_lines
+from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_heading_between_two_points, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.path import PathWrapper
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
@@ -147,9 +147,10 @@ class PedestrianCrosswalkChecker:
                                     closest_intersection_distance_from_local_path_start = local_path.linestring.project(closest_intersection_point)
                                     closest_intersection_on_path = local_path.linestring.interpolate(closest_intersection_distance_from_local_path_start)
                                     closest_intersection_on_path_heading = get_heading_between_two_points(closest_intersection_point, closest_intersection_on_path)
-                                    closest_intersection_path_min_angle = math.degrees(get_minimum_angle_between_two_lines(trajectory_heading_at_closest_intersection, closest_intersection_on_path_heading))
+                                    closest_intersection_path_approach_angle = math.degrees(get_angle_between_two_headings(trajectory_heading_at_closest_intersection, closest_intersection_on_path_heading))
 
-                                    if closest_intersection_path_min_angle < self.crossing_angle_max_limit:
+                                    if closest_intersection_path_approach_angle < self.crossing_angle_max_limit or \
+                                        (180 - closest_intersection_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(trajectory_to_check)):
                                         collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
                                         crosswalks_on_local_path.remove(crosswalk)
                                         break
