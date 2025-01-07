@@ -148,8 +148,9 @@ class PedestrianCrosswalkChecker:
                                     closest_intersection_distance_from_local_path_start = local_path_linestring.project(closest_intersection_point)
                                     closest_intersection_on_path = local_path_linestring.interpolate(closest_intersection_distance_from_local_path_start)
                                     closest_intersection_on_path_heading = get_heading_between_two_points(closest_intersection_point, closest_intersection_on_path)
+                                    closest_intersection_path_min_angle = math.degrees(get_minimum_angle_between_two_lines(trajectory_heading_at_closest_intersection, closest_intersection_on_path_heading))
 
-                                    if math.degrees(get_minimum_angle_between_two_lines(trajectory_heading_at_closest_intersection, closest_intersection_on_path_heading)) < self.crossing_angle_max_limit:
+                                    if closest_intersection_path_min_angle < self.crossing_angle_max_limit:
                                         collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
                                         crosswalks_on_local_path.remove(crosswalk)
                                         break
