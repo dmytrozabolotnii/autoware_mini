@@ -7,14 +7,38 @@ import numpy as np
 import time
 
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
+from math import atan2
+
+from shapely.geometry import LinearRing
 
 from net_sub import NetSubscriber
 from shapely import GeometryCollection, Polygon, LineString, Point
 from shapely.affinity import affine_transform, rotate
 from shapely.ops import orient, polygonize_full
 
+pedestrian_normal_walking_speed = 1.3888888
+MAX_STEPS_LONG_BRUTEFORCE = 10
+MAX_STEPS_LAT_BRUTEFORCE = 10
 
-def minkowski_sum(polygon_a, polygon_b):
+
+def oriented_angle(a, b):
+    dot = a[0] * b[0] + a[1] * b[1]
+    det = a[0] * b[1] - a[1] * b[0]
+
+    return atan2(det, dot)
+
+def cross_prod(a, b):
+    return a[0] * b[1] - a[1] * b[0]
+
+def distance(a, b):
+    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
+
+def simple_affine_transform(pol, mult, offset):
+    pol = np.array(pol.exterior.coords) * mult + offset
+
+    return Polygon(pol)
+
+def minkowski_sum(polygon_a, polygon_b, mult = 1.0):
     # to numpyland
     pol_a = np.array(polygon_a.exterior.coords[:])
     pol_b = np.array(polygon_b.exterior.coords[:])
@@ -23,13 +47,14 @@ def minkowski_sum(polygon_a, polygon_b):
     pol_a = np.vstack((pol_a[min_a:-1], pol_a[:min_a]))
     pol_b = np.vstack((pol_b[min_b:-1], pol_b[:min_b]))
     # Minkowski sum
-    msum = []
     i, j = 0, 0
     l1, l2 = len(pol_a), len(pol_b)
+    msum = np.zeros((l1 + l2, 2))
+
     # iterate through all the vertices
     while i < l1 or j < l2:
-        msum.append(pol_a[i % l1] + pol_b[j % l2])
-        cross = np.cross(pol_a[(i + 1) % l1] - pol_a[i % l1], pol_b[(j + 1) % l2] - pol_b[j % l2])
+        msum[i + j] = (pol_a[i % l1] + pol_b[j % l2]) * mult
+        cross = cross_prod(pol_a[(i + 1) % l1] - pol_a[i % l1], pol_b[(j + 1) % l2] - pol_b[j % l2])
         # using right-hand rule choose the vector with the lower polar angle and iterate this polygon's vertex
         if cross >= 0:
             i += 1
@@ -38,18 +63,91 @@ def minkowski_sum(polygon_a, polygon_b):
 
     return Polygon(msum)
 
+def single_check_solution(solution, check_id, pure_deviation_vectors, representative_vectors):
+    # Switch to coordinate system of other deviation vector
+    temp_vector = solution - pure_deviation_vectors[check_id]
+    # Find directed angle between representing vector and solution, this angle should be positive
+    angle = oriented_angle(temp_vector, representative_vectors[check_id])
+
+    return angle > 0
+
+
+def check_solution(solution, do_not_check_id, pure_deviation_vectors, representative_vectors):
+    solution_passes = True
+    for i in range(len(pure_deviation_vectors)):
+        if i != do_not_check_id:
+            solution_passes = single_check_solution(solution, i, pure_deviation_vectors, representative_vectors)
+            if not solution_passes:
+                break
+
+    return solution_passes
+
+def resolve_hard_rvo(velocity, deviation_vectors):
+    # Move to velocity vector center coordinate system:
+    pure_deviation_vectors = np.zeros((len(deviation_vectors), 2))
+    representative_vectors = np.zeros_like(pure_deviation_vectors)
+    pure_deviation_vectors_size = np.zeros((len(deviation_vectors)))
+    for i in range(len(deviation_vectors)):
+        coords = np.asarray(deviation_vectors[i].coords)
+        pure_deviation_vectors[i] = coords[1] - coords[0]
+        representative_vectors[i] = [pure_deviation_vectors[i][1], -1 * pure_deviation_vectors[i][0]]
+        pure_deviation_vectors_size = distance(pure_deviation_vectors[i], [0, 0])
+    # Find the max length deviation vector which is minimal valid solution
+    max_deviation_vector_index = np.argmax(pure_deviation_vectors_size)
+    max_deviation_vector = pure_deviation_vectors[max_deviation_vector_index]
+    max_deviation_vector_length = np.max(pure_deviation_vectors_size)
+    # Check if it is valid solution for all constraints
+    if check_solution(max_deviation_vector, max_deviation_vector_index, pure_deviation_vectors, representative_vectors):
+        return velocity + max_deviation_vector
+    else:
+        # Start bruteforce =(
+        longitudal_range = max(distance(velocity, [0, 0]) - max_deviation_vector_length,
+                               pedestrian_normal_walking_speed - max_deviation_vector_length)
+        # Longitudal bruteforce
+        for i in range(MAX_STEPS_LONG_BRUTEFORCE):
+            # Find new solution vector
+            new_solution = max_deviation_vector / max_deviation_vector_length * (max_deviation_vector_length + longitudal_range * (i + 1) / MAX_STEPS_LONG_BRUTEFORCE)
+            if check_solution(new_solution, max_deviation_vector_index, pure_deviation_vectors, representative_vectors):
+                return velocity + new_solution
+            # Latitudal bruteforce
+            for j in range(MAX_STEPS_LAT_BRUTEFORCE // 2):
+                angle_to_rotate = (np.pi / 2) * (j + 1) / (MAX_STEPS_LAT_BRUTEFORCE // 2)
+                # Counter clockwise solution
+                c, s = np.cos(angle_to_rotate), np.sin(angle_to_rotate)
+                R = np.array(((c, -s), (s, c)))
+                new_solution_cc = np.dot(R, new_solution)
+                # Single check if we are out of bounds of original half-plane
+                if not single_check_solution(new_solution_cc, max_deviation_vector_index, pure_deviation_vectors, representative_vectors):
+                    break
+                if check_solution(new_solution_cc, max_deviation_vector_index, pure_deviation_vectors, representative_vectors):
+                    return velocity + new_solution_cc
+                # Clockwise solution
+                c, s = np.cos(-1 * angle_to_rotate), np.sin(-1 * angle_to_rotate)
+                R = np.array(((c, -s), (s, c)))
+                new_solution_c = np.dot(R, new_solution)
+                if check_solution(new_solution_c, max_deviation_vector_index, pure_deviation_vectors, representative_vectors):
+                    return velocity + new_solution_c
+
+    return None
+
+
 class RVOPredictor(NetSubscriber):
     def __init__(self):
         super().__init__()
         # Parameters
         self.prediction_horizon = rospy.get_param('prediction_horizon')
         self.prediction_interval = rospy.get_param('step_length')
+        self.prediction_horizon_time = self.prediction_horizon * self.prediction_interval
+
         self.constant_velocity_mode = bool(rospy.get_param('~constant_velocity'))
         self.is_cluster_detector = bool(rospy.get_param('~is_cluster_detector'))
         self.responsibility_factor = 0.5
         self.line_length = 10000
-        # self.range_limit = 10 if self.is_cluster_detector else 100
-        self.range_limit = 10
+        self.range_limit = 10 if self.is_cluster_detector else 100
+        # self.range_limit = 10
+        # Debug
+        self.average_time = 0
+        self.average_time_counter = 0
         # Publishers
 
 
@@ -97,91 +195,95 @@ class RVOPredictor(NetSubscriber):
             rvo_objects_array[0] = tracked_objects_array[['centroid', 'velocity']]
             # RVO
             mink_time = 0
+            mink_count = 0
             total_time = time.time()
             for i in range(0, len(tracked_objects_array)):
                 # Change to coordinate system from ego object (and reverse ego polygon for minkowski)
-                polygon_a = orient(affine_transform(tracked_objects_convex_hull_array.geoms[i], matrix=[
-                    -1, 0, 0, -1, tracked_objects_array[i]['centroid'][0], tracked_objects_array[i]['centroid'][1]]),
-                                   sign=1)
+                # polygon_a = affine_transform(tracked_objects_convex_hull_array.geoms[i], matrix=[
+                #     -1, 0, 0, -1, tracked_objects_array[i]['centroid'][0], tracked_objects_array[i]['centroid'][1]])
+                polygon_a = simple_affine_transform(tracked_objects_convex_hull_array.geoms[i], -1, tracked_objects_array[i]['centroid'])
 
-                zero_speed_flag = False
+                collision_flag = False
                 deviation_vectors = []
                 deviation_vectors_directions = []
                 for j in range(0, len(tracked_objects_array)):
-                    if i != j and np.linalg.norm(tracked_objects_array[i]['centroid'] - tracked_objects_array[j]['centroid']) < self.range_limit:
-                        polygon_b = orient(affine_transform(tracked_objects_convex_hull_array.geoms[j], matrix=[
-                            1, 0, 0, 1, -1 * tracked_objects_array[i]['centroid'][0], -1 * tracked_objects_array[i]['centroid'][1]]), sign=1)
+                    if i != j and distance(tracked_objects_array[i]['centroid'], tracked_objects_array[j]['centroid']) < self.range_limit:
+                        polygon_b = simple_affine_transform(tracked_objects_convex_hull_array.geoms[j], 1,
+                                                            -1 * tracked_objects_array[i]['centroid'])
                         # Calculate minkowski sum
                         t0 = time.time()
-                        polygon_min = minkowski_sum(polygon_a, polygon_b)
+                        polygon_min = minkowski_sum(polygon_a, polygon_b, 1 / self.prediction_horizon_time)
                         t1 = time.time()
                         mink_time += t1 - t0
-                        # print(i, j, polygon_b)
-                        # print('end')
-                        # Reduce minkowski sum by time of planning
-                        prediction_horizon_time = self.prediction_horizon * self.prediction_interval
-                        polygon_min = affine_transform(polygon_min, [1.0 / prediction_horizon_time, 0, 0, 1.0 / prediction_horizon_time, 0, 0])
+                        mink_count += 1
                         # Find if relative speed vector intersects reduced minkowski sum
                         rel_speed_vector = tracked_objects_array[i]['velocity'] - tracked_objects_array[j]['velocity']
                         rel_speed_vector_line = LineString([(0, 0), rel_speed_vector])
                         if rel_speed_vector_line.intersects(polygon_min):
                             # print('RVO intersection ', tracked_objects_array_ids[i], tracked_objects_array_ids[j])
                             if polygon_min.contains(Point(0, 0)):
-                                zero_speed_flag = True
-                                # print('RVO intersection contains point of origin', tracked_objects_array[i]['centroid'], tracked_objects_array[j]['centroid'])
-                            # Find the min and max signed angle between relative speed vector and obstacle
-                            angles = (np.arctan2(np.array(polygon_min.exterior.coords[:])[:, 1], np.array(polygon_min.exterior.coords[:])[:, 0])
-                                      - np.arctan2(rel_speed_vector[1], rel_speed_vector[0]))
-                            angles[angles > np.pi] = angles[angles > np.pi] - 2 * np.pi
-                            angles[angles < -1 * np.pi] = angles[angles < -1 * np.pi] + 2 * np.pi
-                            # Calculate deviation vector
-                            if angles[np.argmax(angles)] >= abs(angles[np.argmin(angles)]):
-                                min_angle_to_deviate = angles[np.argmin(angles)]
-                                deviation_vector = affine_transform(rotate(rel_speed_vector_line, min_angle_to_deviate - (np.pi / 2),
-                                                          Point((0, 0)), use_radians=True),
-                                                                    [self.responsibility_factor * np.tan(min_angle_to_deviate), 0, 0,
-                                                                     self.responsibility_factor * np.tan(min_angle_to_deviate), tracked_objects_array[i]['velocity'][0], tracked_objects_array[i]['velocity'][1]])
-                                deviation_vectors_direction = -1
+                                collision_flag = True
+                                if polygon_min.contains(Point(rel_speed_vector[0], rel_speed_vector[1])):
+                                    polygon_min_ext = LinearRing(polygon_min.exterior.coords)
+                                    d = polygon_min_ext.project(Point(rel_speed_vector[0], rel_speed_vector[1]))
+                                    closest_point = polygon_min_ext.interpolate(d)
+                                    change_vector = tracked_objects_array[i]['velocity'] + (np.array(closest_point.coords) - rel_speed_vector) * self.responsibility_factor
+                                    deviation_vector = LineString([(tracked_objects_array[i]['velocity'][0], tracked_objects_array[i]['velocity'][1]),
+                                                                   (change_vector[0, 0], change_vector[0, 1])])
+                                    deviation_vectors_direction = 0
+
+                                    deviation_vectors.append(deviation_vector)
+                                    deviation_vectors_directions.append(deviation_vectors_direction)
                             else:
-                                min_angle_to_deviate = angles[np.argmax(angles)]
-                                deviation_vector = affine_transform(rotate(rel_speed_vector_line, min_angle_to_deviate + (np.pi / 2),
-                                                          Point((0, 0)), use_radians=True),
-                                                                    [self.responsibility_factor * np.tan(min_angle_to_deviate), 0, 0,
-                                                                     self.responsibility_factor * np.tan(min_angle_to_deviate), tracked_objects_array[i]['velocity'][0], tracked_objects_array[i]['velocity'][1]])
-                                deviation_vectors_direction = 1
+                                # Find the min and max signed angle between relative speed vector and obstacle
+                                angles = [oriented_angle(rel_speed_vector, polygon_min.exterior.coords[i]) for i in range(len(polygon_min.exterior.coords))]
+                                # Calculate deviation vector
+                                if angles[np.argmax(angles)] >= abs(angles[np.argmin(angles)]):
+                                    min_angle_to_deviate = angles[np.argmin(angles)]
+                                    deviation_vector = affine_transform(rotate(rel_speed_vector_line, min_angle_to_deviate - (np.pi / 2),
+                                                              Point((0, 0)), use_radians=True),
+                                                                        [self.responsibility_factor * abs(np.sin(min_angle_to_deviate)), 0, 0,
+                                                                         self.responsibility_factor * abs(np.sin(min_angle_to_deviate)), tracked_objects_array[i]['velocity'][0], tracked_objects_array[i]['velocity'][1]])
+                                    deviation_vectors_direction = -1
+
+                                else:
+                                    min_angle_to_deviate = angles[np.argmax(angles)]
+                                    deviation_vector = affine_transform(rotate(rel_speed_vector_line, min_angle_to_deviate + (np.pi / 2),
+                                                              Point((0, 0)), use_radians=True),
+                                                                        [self.responsibility_factor * abs(np.sin(min_angle_to_deviate)), 0, 0,
+                                                                         self.responsibility_factor * abs(np.sin(min_angle_to_deviate)), tracked_objects_array[i]['velocity'][0], tracked_objects_array[i]['velocity'][1]])
+                                    deviation_vectors_direction = 1
+                                deviation_vectors.append(deviation_vector)
+                                deviation_vectors_directions.append(deviation_vectors_direction)
 
                             # print(angles)
                             # print(min_angle_to_deviate)
                             # print(deviation_vector)
 
-                            deviation_vectors.append(deviation_vector)
-                            deviation_vectors_directions.append(deviation_vectors_direction)
                 # Construct free from obstacle zone from deviation vectors
-                if zero_speed_flag:
-                    print('Collision RVO case')
-                    # predicted_objects_array[0, i]['velocity'] = [0, 0]
 
-                elif len(deviation_vectors) > 1:
-                    half_planes = []
-                    # for deviation_vector in deviation_vectors:
-                    #     left = deviation_vector.parallel_offset(self.line_length / 2, 'left')
-                    #     right = deviation_vector.parallel_offset(self.line_length / 2, 'right')
-                    #     c = left.coords[1]
-                    #     d = right.coords[0]  # note the different orientation for right offset
-                    #     # print(LineString([c, d]))
-                    #     half_planes.append(LineString([c, d]))
-                    # result, cuts, dangles, invalids = polygonize_full(half_planes)
-                    print('Hard RVO case')
-                    # print(result.geoms[:])
-                    # print(cuts.geoms[:])
-                    # print(dangles.geoms[:])
+                if len(deviation_vectors) > 1:
+                    print('Hard RVO case, maybesupported for now')
+                    result = resolve_hard_rvo(rvo_objects_array[0, i]['velocity'], deviation_vectors)
+                    if result is not None:
+                        rvo_objects_array[0, i]['velocity'] = result
+                    else:
+                        print('Hard RVO resolver failed, not adjusting speed')
 
                 elif len(deviation_vectors) == 1:
                     print('Simple RVO case')
                     # predicted_objects_array[0, i]['velocity'] = deviation_vectors[0].coords[1]
                     rvo_objects_array[0, i]['velocity'] = deviation_vectors[0].coords[1]
 
-            # print('Total time', time.time() - total_time, 'Minkowski sum time', mink_time)
+                if collision_flag and len(deviation_vectors) == 0:
+                    print('Collision case without change')
+                elif collision_flag and len(deviation_vectors) > 0:
+                    print('Collision flag with change')
+
+            callback_time = time.time() - total_time
+            self.average_time = (self.average_time * self.average_time_counter + callback_time) / (self.average_time_counter + 1)
+            self.average_time_counter += 1
+            print('Total time', callback_time, 'Average time', self.average_time, 'Minkowski sum time', mink_time, 'Minkowski sum counts', mink_count)
 
             for i in range(1, num_timesteps):
                 predicted_objects_array[i]['centroid'] = predicted_objects_array[i - 1]['centroid'] + \

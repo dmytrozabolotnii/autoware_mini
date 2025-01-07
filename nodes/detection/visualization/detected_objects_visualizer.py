@@ -93,6 +93,21 @@ class DetectedObjectsVisualizer:
             marker.color = ColorRGBA(1.0, 1.0, 0.0, 1.0)
             markers.markers.append(marker)
 
+            # Temp candidate visualization with different colors
+            if len(obj.candidate_trajectories.paths) > 0:
+                for i, candidate_trajectory in enumerate(obj.candidate_trajectories.paths):
+                    marker = Marker(header=header)
+                    marker.ns = 'candidate_trajectories_' + str(i)
+                    marker.id = obj.id
+                    marker.type = marker.LINE_STRIP
+                    marker.action = marker.ADD
+                    marker.pose.orientation.w = 1.0
+                    marker.scale.x = 0.1
+                    color_mod = (i + 1) / len(obj.candidate_trajectories.paths)
+                    marker.color = ColorRGBA(1.0 * color_mod, 1.0 * color_mod, 0.0, 1.0 * color_mod)
+                    marker.points = [Point(wp.position.x, wp.position.y, wp.position.z) for wp in candidate_trajectory.waypoints]
+                    markers.markers.append(marker)
+
             # candidate trajectories
             # if len(obj.candidate_trajectories.paths) > 0:
             # extract and visualize object width - used in object detection
@@ -168,6 +183,7 @@ class DetectedObjectsVisualizer:
             marker.action = marker.DELETE
             markers.markers.append(marker)
 
+            # Temp visualization removal
             for i in range(20):
                 marker = Marker(header=header)
                 marker.ns = 'candidate_trajectories_' + str(i)

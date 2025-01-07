@@ -122,7 +122,7 @@ pedestrian_predictor:
   inference_timer: 0.4 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
-  results_category_folder: "_contrib_2_adl_seminar"
+  results_category_folder: "_contrib_2_complex_rvo"
 
   pecnet_predictor:
     predictions_amount: 5
