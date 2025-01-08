@@ -59,8 +59,8 @@ class LaneChangePlanner:
                 blinker_state = waypoints[start_idx].blinker_state
 
                 # Skip all lane change waypoints
-                while idx < len(waypoints) and waypoints[idx].wpstate.lanechange_state > 0:
-                    lanechange_state = waypoints[idx].wpstate.lanechange_state
+                while idx < len(waypoints) and waypoints[idx].lanechange_state > 0:
+                    lanechange_state = waypoints[idx].lanechange_state
                     idx += 1
 
                 # Skip all non lane change waypoints until enough distance to perform lane change
@@ -107,11 +107,8 @@ class LaneChangePlanner:
         # Calculate Bezier curve control points p0, p1, p2, p3
         ##################################################################
 
-        start_heading = get_heading_from_orientation(start_waypoint.orientation)
-        control_point1 = get_point_using_heading_and_distance(start_waypoint.position, start_heading, lanechange_length / 3)
-
-        end_heading = get_heading_from_orientation(end_waypoint.orientation)
-        control_point2 = get_point_using_heading_and_distance(end_waypoint.position, end_heading + math.pi, lanechange_length / 3)
+        control_point1 = get_point_using_heading_and_distance(start_waypoint.position, start_waypoint.heading, lanechange_length / 3)
+        control_point2 = get_point_using_heading_and_distance(end_waypoint.position, end_waypoint.heading + math.pi, lanechange_length / 3)
 
         bezier_points = calculate_points_on_bezier_curve(
             start_waypoint.position,
@@ -150,7 +147,7 @@ class LaneChangePlanner:
         waypoints = []
         for i in range(len(bezier_points)):
             if i == len(bezier_points) - 1:
-                heading = end_heading
+                heading = end_waypoint.heading
             else:
                 point = Point(x=bezier_points[i, 0], y=bezier_points[i, 1])
                 next_point = Point(x=bezier_points[i+1, 0], y=bezier_points[i+1, 1])

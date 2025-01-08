@@ -6,6 +6,7 @@ import rospy
 import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import to2D, findWithin2d, length2d, distance as lanelet2_distance
+from lanelet2.routing import LaneletRelation, RelationType
 from geometry_msgs.msg import PoseStamped, TwistStamped, Point
 from autoware_mini.msg import Path, Waypoint
 from std_msgs.msg import ColorRGBA
@@ -62,6 +63,26 @@ class Lanelet2GlobalPlanner:
 
         # routing graph
         self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
+        # Prepare functions to monkey-patch the leftRelation and rightRelation methods of route
+        # While route.leftRelation() and graph.left() should behave the same, in practice they don't
+        def leftRelation(lanelet):
+            lanelet = self.graph.left(lanelet, ROUTING_COST_MAP[self.routing_cost])
+            if lanelet is None:
+                return None
+            rel = LaneletRelation()
+            rel.lanelet = lanelet
+            rel.type = RelationType.Left
+            return rel
+        def rightRelation(lanelet):
+            lanelet = self.graph.right(lanelet, ROUTING_COST_MAP[self.routing_cost])
+            if lanelet is None:
+                return None
+            rel = LaneletRelation()
+            rel.lanelet = lanelet
+            rel.type = RelationType.Right
+            return rel
+        self.leftRelation = leftRelation
+        self.rightRelation = rightRelation
 
         # Publishers
         self.waypoints_pub = rospy.Publisher('lanelet2_global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
@@ -119,7 +140,11 @@ class Lanelet2GlobalPlanner:
         if path is None:
             rospy.logerr("%s - no path found, try new goal!", rospy.get_name())
             return
-        
+        # Monkey-patch the leftRelation and rightRelation methods of route to fix lane change error with travel_time routing cost
+        # This method is also used in find_following_lane_change_lanelet() helper, that's why we fix it with monkey-patching
+        route.leftRelation = self.leftRelation
+        route.rightRelation = self.rightRelation
+
         # Publish target lanelets for visualization
         start_lanelet = path[0]
         goal_lanelet = path[-1]
