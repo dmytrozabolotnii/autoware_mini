@@ -17,6 +17,7 @@ COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
     CollisionPoints.STOPPED_OBSTACLE_ON_PATH:           "Stopping for object",
     CollisionPoints.MOVING_OBSTACLE_ON_PATH:            "Following an object",
     CollisionPoints.COLLIDING_TRAJECTORY:               "Stopping for prediction",
+    CollisionPoints.MERGING_TRAJECTORY:                 "Following a prediction",
     CollisionPoints.OBJECT_ON_CROSSWALK:                "Stopping for crosswalk",
     CollisionPoints.TRAJECTORY_ON_CROSSWALK:            "Stopping for crosswalk (P)",
     CollisionPoints.YIELDING_TRAJECTORY:                "Yielding for object",

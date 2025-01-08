@@ -144,7 +144,7 @@ class TrajectoryCollisionChecker:
                                                                             vy = obj.velocity.y,
                                                                             vz = obj.velocity.z,
                                                                             distance_to_stop = self.braking_safety_distance_obstacle,
-                                                                            category = CollisionPoints.COLLIDING_TRAJECTORY)
+                                                                            category = CollisionPoints.MERGING_TRAJECTORY)
                                 else:
                                     # ignore objects with similar heading, but behind (object_distance_from_local_path_start <= 0.0)
                                     continue
