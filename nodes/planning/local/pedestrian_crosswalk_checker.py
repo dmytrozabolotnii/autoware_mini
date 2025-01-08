@@ -11,7 +11,7 @@ from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_he
 from helpers.collision import CollisionPoints
 from helpers.path import PathWrapper
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
-from helpers.shapely import get_polygon_width, get_heading_at_distance_along_linestring
+from helpers.shapely import get_polygon_width
 
 class PedestrianCrosswalkChecker:
 
@@ -143,7 +143,7 @@ class PedestrianCrosswalkChecker:
                                             closest_intersection_point = p
 
                                     closest_intersection_point = shapely.Point(closest_intersection_point)
-                                    trajectory_heading_at_closest_intersection = get_heading_at_distance_along_linestring(trajectory.linestring, closest_distance_to_object)
+                                    trajectory_heading_at_closest_intersection = trajectory.get_heading_at_distance(closest_distance_to_object)
                                     # find heading from the closest intersection point to its projection on local_path
                                     closest_intersection_distance_from_local_path_start = local_path_linestring.project(closest_intersection_point)
                                     closest_intersection_on_path = local_path_linestring.interpolate(closest_intersection_distance_from_local_path_start)
