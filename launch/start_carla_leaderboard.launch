@@ -13,6 +13,12 @@
   <arg name='use_tf'                  default='true'/>
   <arg name='use_lexus_model'         default='true'/>
   <arg name='rviz'                    default='true'/>
+  <arg name="enable_goal_checker"          default="true" />
+  <arg name="enable_object_checker"        default="true" />
+  <arg name="enable_auto_stop_checker"     default="true" />
+  <arg name="enable_traffic_light_checker" default="true" />
+  <arg name="enable_crosswalk_checker"     default="true" />
+  <arg name="enable_trajectory_checker"    default="true" />
 
   <!-- Localization -->
   <include file="$(find autoware_mini)/launch/localization.launch">
@@ -33,6 +39,12 @@
     <arg name="local_planner"       value="$(arg local_planner)" />
     <arg name="use_path_smoothing"  value="$(arg use_path_smoothing)" />
     <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
+    <arg name="enable_goal_checker"          value="$(arg enable_goal_checker)" />
+    <arg name="enable_object_checker"        value="$(arg enable_object_checker)" />
+    <arg name="enable_auto_stop_checker"     value="$(arg enable_auto_stop_checker)" />
+    <arg name="enable_traffic_light_checker" value="$(arg enable_traffic_light_checker)" />
+    <arg name="enable_crosswalk_checker"     value="$(arg enable_crosswalk_checker)" />
+    <arg name="enable_trajectory_checker"    value="$(arg enable_trajectory_checker)" />
   </include>
 
   <!-- Control -->

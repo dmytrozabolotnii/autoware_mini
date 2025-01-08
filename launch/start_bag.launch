@@ -40,6 +40,12 @@
     <arg name="rate_option"             default="$(eval '--rate ' + str(rate) if rate != '' else '')" doc="rosbag play parameter" />
     <arg name="repub_camera_info"       default="true"          doc="Republish camera_info topics using camera intrinsics files" />
     <arg name="use_lane_matching"       default="false" />
+    <arg name="enable_goal_checker"          default="true" />
+    <arg name="enable_object_checker"        default="true" />
+    <arg name="enable_auto_stop_checker"     default="true" />
+    <arg name="enable_traffic_light_checker" default="true" />
+    <arg name="enable_crosswalk_checker"     default="true" />
+    <arg name="enable_trajectory_checker"    default="true" />
 
     <!-- Use simulation time from bag -->
     <param name="/use_sim_time" value="true" />
@@ -167,6 +173,12 @@
         <arg name="use_path_smoothing"  value="$(arg use_path_smoothing)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
+        <arg name="enable_goal_checker"          value="$(arg enable_goal_checker)" />
+        <arg name="enable_object_checker"        value="$(arg enable_object_checker)" />
+        <arg name="enable_auto_stop_checker"     value="$(arg enable_auto_stop_checker)" />
+        <arg name="enable_traffic_light_checker" value="$(arg enable_traffic_light_checker)" />
+        <arg name="enable_crosswalk_checker"     value="$(arg enable_crosswalk_checker)" />
+        <arg name="enable_trajectory_checker"    value="$(arg enable_trajectory_checker)" />
     </include>
 
     <!-- Control -->

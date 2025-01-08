@@ -26,6 +26,12 @@
     <arg name='route_id'                default=""/>                   <!-- Route ID to follow for running route scenario -->
     <arg name="generate_traffic"        default="$(eval not use_scenario_runner)" />
     <arg name="use_manual_control"      default="false"                 doc="use manual control for carla"/>
+    <arg name="enable_goal_checker"          default="true" />
+    <arg name="enable_object_checker"        default="true" />
+    <arg name="enable_auto_stop_checker"     default="true" />
+    <arg name="enable_traffic_light_checker" default="true" />
+    <arg name="enable_crosswalk_checker"     default="true" />
+    <arg name="enable_trajectory_checker"    default="true" />
 
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -58,6 +64,12 @@
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
         <arg name="load_goals"          value="$(eval not use_scenario_runner)" />
+        <arg name="enable_goal_checker"          value="$(arg enable_goal_checker)" />
+        <arg name="enable_object_checker"        value="$(arg enable_object_checker)" />
+        <arg name="enable_auto_stop_checker"     value="$(arg enable_auto_stop_checker)" />
+        <arg name="enable_traffic_light_checker" value="$(arg enable_traffic_light_checker)" />
+        <arg name="enable_crosswalk_checker"     value="$(arg enable_crosswalk_checker)" />
+        <arg name="enable_trajectory_checker"    value="$(arg enable_trajectory_checker)" />
     </include>
 
     <!-- Control -->

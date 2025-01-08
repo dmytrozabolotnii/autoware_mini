@@ -22,6 +22,12 @@
     <arg name="more_visualizations"     default="false"             doc="By default visualize only the final detections" />
     <arg name="use_lane_matching"       default="false" />
     <arg name="use_openpilot"           default="$(eval 'openpilot' in local_planner or use_lane_matching)" />
+    <arg name="enable_goal_checker"          default="true" />
+    <arg name="enable_object_checker"        default="true" />
+    <arg name="enable_auto_stop_checker"     default="true" />
+    <arg name="enable_traffic_light_checker" default="true" />
+    <arg name="enable_crosswalk_checker"     default="true" />
+    <arg name="enable_trajectory_checker"    default="true" />
 
     
     <!-- Localization -->
@@ -55,6 +61,12 @@
         <arg name="waypoints_file"      value="$(arg waypoints_file)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
+        <arg name="enable_goal_checker"          value="$(arg enable_goal_checker)" />
+        <arg name="enable_object_checker"        value="$(arg enable_object_checker)" />
+        <arg name="enable_auto_stop_checker"     value="$(arg enable_auto_stop_checker)" />
+        <arg name="enable_traffic_light_checker" value="$(arg enable_traffic_light_checker)" />
+        <arg name="enable_crosswalk_checker"     value="$(arg enable_crosswalk_checker)" />
+        <arg name="enable_trajectory_checker"    value="$(arg enable_trajectory_checker)" />
     </include>
 
     <!-- Control -->
