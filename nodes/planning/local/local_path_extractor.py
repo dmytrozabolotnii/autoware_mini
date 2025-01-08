@@ -35,7 +35,7 @@ class LocalPathExtractor:
             self.global_path = None
             rospy.loginfo("%s - Empty global path received", rospy.get_name())
         else:
-            self.global_path = PathWrapper(msg.waypoints)
+            self.global_path = PathWrapper(msg.waypoints, distances=True)
             rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(self.global_path.waypoints))
 
     def extract_local_path(self):

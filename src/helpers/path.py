@@ -9,7 +9,7 @@ from helpers.geometry import get_heading_between_two_points, get_orientation_fro
 from helpers.shapely import get_heading_at_distance_along_linestring
 
 class PathWrapper:
-    def __init__(self, waypoints, velocities=False, blinkers=False, boundaries=False):
+    def __init__(self, waypoints, velocities=False, blinkers=False, boundaries=False, distances=False):
 
         if len(waypoints) == 1:
             ValueError("PathWrapper - waypoints array must be empty or have more than 1 waypoint ")
@@ -20,8 +20,9 @@ class PathWrapper:
         self.linestring = shapely.LineString(self._waypoints_xyz)
         shapely.prepare(self.linestring)
 
-        d = np.cumsum(np.sqrt(np.sum(np.diff(self._waypoints_xyz[:, :2], axis=0)**2, axis=1)))
-        self._distances = np.insert(d, 0, 0)
+        if distances or velocities or blinkers:
+            d = np.cumsum(np.sqrt(np.sum(np.diff(self._waypoints_xyz[:, :2], axis=0)**2, axis=1)))
+            self._distances = np.insert(d, 0, 0)
 
         self.left_boundary = None
         self.right_boundary = None
