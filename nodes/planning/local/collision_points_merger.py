@@ -16,45 +16,46 @@ class CollisionPointsMerger:
         synchronization_queue_size = rospy.get_param("~synchronization_queue_size")
         synchronization_slop = rospy.get_param("~synchronization_slop")
 
+        topics = [
+            rospy.get_param("~goal_checker_topic", None),
+            rospy.get_param("~object_checker_topic", None),
+            rospy.get_param("~traffic_light_checker_topic", None),
+            rospy.get_param("~crosswalk_checker_topic", None),
+            rospy.get_param("~auto_stop_checker_topic", None),
+            rospy.get_param("~trajectory_checker_topic", None)
+        ]
+
         # publishers
         self.collision_points_pub = rospy.Publisher('collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        collision_goal_sub = message_filters.Subscriber('goal_collision_points', PointCloud2, tcp_nodelay=True)
-        collision_object_sub = message_filters.Subscriber('object_collision_points', PointCloud2, tcp_nodelay=True)
-        collision_tfl_stopline_sub = message_filters.Subscriber('tfl_stopline_collision_points', PointCloud2, tcp_nodelay=True)
-        collision_crosswalk_sub = message_filters.Subscriber('crosswalk_collision_points', PointCloud2, tcp_nodelay=True)
-        collision_trajectory_sub = message_filters.Subscriber('trajectory_collision_points', PointCloud2, tcp_nodelay=True)
-        collision_stop_line_sub = message_filters.Subscriber('stop_line_collision_points', PointCloud2, tcp_nodelay=True)
+        subscribers = []
+        for topic in topics:
+            if topic is not None:
+                subscribers.append(message_filters.Subscriber(topic, PointCloud2, tcp_nodelay=True))
 
+        if not subscribers:
+            raise ValueError("No topics to subscribe to.")
+
+        # Synchronize messages
         if synchronization_method == "approximate":
-            ts = message_filters.ApproximateTimeSynchronizer([collision_goal_sub, collision_object_sub, collision_tfl_stopline_sub, 
-                                                              collision_crosswalk_sub, collision_stop_line_sub, collision_trajectory_sub], 
-                                                              queue_size=synchronization_queue_size, slop=synchronization_slop)
+            ts = message_filters.ApproximateTimeSynchronizer(subscribers, queue_size=synchronization_queue_size, slop=synchronization_slop)
         elif synchronization_method == "exact":
-            ts = message_filters.TimeSynchronizer([collision_goal_sub, collision_object_sub, collision_tfl_stopline_sub, 
-                                                   collision_crosswalk_sub, collision_stop_line_sub, collision_trajectory_sub], queue_size=2)
+            ts = message_filters.TimeSynchronizer(subscribers, queue_size=2)
         else:
             raise ValueError(f"'{synchronization_method}' is not a known synchronization method")
 
         ts.registerCallback(self.collision_points_callback)
 
-    def collision_points_callback(self, collision_goal_points_msg, collision_object_msg, collision_tfl_stopline_msg, collision_crosswalk_msg, collision_stop_line_msg, trajectory_collision_msg):
+    def collision_points_callback(self, *msgs):
         try:
-            # Convert the messages to numpy arrays
-            collision_object_np = numpify(collision_object_msg)
-            collision_tfl_stopline_np =  numpify(collision_tfl_stopline_msg)
-            collision_goal_points_np = numpify(collision_goal_points_msg)
-            collision_crosswalk_np = numpify(collision_crosswalk_msg)
-            collision_stop_line_np = numpify(collision_stop_line_msg)
-            collision_trajectory_np = numpify(trajectory_collision_msg)
-
-            # Concatenate all the collision points
-            collision_points_np = np.concatenate((collision_object_np, collision_tfl_stopline_np, collision_goal_points_np, collision_crosswalk_np, collision_stop_line_np, collision_trajectory_np))
+            # Convert all incoming messages to numpy arrays
+            collision_points_np_list = [numpify(msg) for msg in msgs]
+            collision_points_np = np.concatenate(collision_points_np_list)
 
             # Create a new PointCloud2 message
             collision_points_msg = msgify(PointCloud2, collision_points_np)
-            collision_points_msg.header = collision_object_msg.header
+            collision_points_msg.header = msgs[0].header  # Use the header of the first message
 
             # Publish the merged collision points
             self.collision_points_pub.publish(collision_points_msg)
