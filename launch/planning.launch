@@ -84,14 +84,13 @@
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
             <node pkg="autoware_mini" type="collision_points_merger.py" name="collision_points_merger" output="screen" required="true" >
-                <param name="synchronization_method" value="$(arg synchronization_method)" />
-                <param if="$(arg enable_goal_checker)" name="goal_checker_topic" value="goal_collision_points"/>
-                <param if="$(arg enable_object_checker)" name="object_checker_topic" value="object_collision_points"/>
-                <param if="$(arg enable_auto_stop_checker)" name="auto_stop_checker_topic" value="stop_line_collision_points"/>
-                <param if="$(arg enable_traffic_light_checker)" name="traffic_light_checker_topic" value="tfl_stopline_collision_points"/>
-                <param if="$(arg enable_crosswalk_checker)" name="crosswalk_checker_topic" value="crosswalk_collision_points"/>
-                <param if="$(arg enable_trajectory_checker)" name="trajectory_checker_topic" value="trajectory_collision_points"/>
-
+                <param name="synchronization_method"        value="$(arg synchronization_method)" />
+                <param name="enable_goal_checker"           value="$(arg enable_goal_checker)"/>
+                <param name="enable_object_checker"         value="$(arg enable_object_checker)"/>
+                <param name="enable_auto_stop_checker"      value="$(arg enable_auto_stop_checker)"/>
+                <param name="enable_traffic_light_checker"  value="$(arg enable_traffic_light_checker)"/>
+                <param name="enable_crosswalk_checker"      value="$(arg enable_crosswalk_checker)"/>
+                <param name="enable_trajectory_checker"     value="$(arg enable_trajectory_checker)"/>
             </node>
             <node pkg="autoware_mini" type="speed_planner.py" name="speed_planner" output="screen" required="true" >
                 <remap if="$(eval 'openpilot' in local_planner)" from="extracted_local_path" to="openpilot_local_path"/>

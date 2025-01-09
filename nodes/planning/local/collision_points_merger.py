@@ -16,26 +16,33 @@ class CollisionPointsMerger:
         synchronization_queue_size = rospy.get_param("~synchronization_queue_size")
         synchronization_slop = rospy.get_param("~synchronization_slop")
 
-        topics = [
-            rospy.get_param("~goal_checker_topic", None),
-            rospy.get_param("~object_checker_topic", None),
-            rospy.get_param("~traffic_light_checker_topic", None),
-            rospy.get_param("~crosswalk_checker_topic", None),
-            rospy.get_param("~auto_stop_checker_topic", None),
-            rospy.get_param("~trajectory_checker_topic", None)
-        ]
+        # Enable/disable topic subscriptions based on parameters
+        enable_goal_checker = rospy.get_param("~enable_goal_checker")
+        enable_object_checker = rospy.get_param("~enable_object_checker")
+        enable_auto_stop_checker = rospy.get_param("~enable_auto_stop_checker")
+        enable_traffic_light_checker = rospy.get_param("~enable_traffic_light_checker")
+        enable_crosswalk_checker = rospy.get_param("~enable_crosswalk_checker")
+        enable_trajectory_checker = rospy.get_param("~enable_trajectory_checker")
 
-        # publishers
-        self.collision_points_pub = rospy.Publisher('collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
-
-        # subscribers
         subscribers = []
-        for topic in topics:
-            if topic is not None:
-                subscribers.append(message_filters.Subscriber(topic, PointCloud2, tcp_nodelay=True))
+        if enable_goal_checker:
+            subscribers.append(message_filters.Subscriber("goal_collision_points", PointCloud2, tcp_nodelay=True))
+        if enable_object_checker:
+            subscribers.append(message_filters.Subscriber("object_collision_points", PointCloud2, tcp_nodelay=True))
+        if enable_auto_stop_checker:
+            subscribers.append(message_filters.Subscriber("stop_line_collision_points", PointCloud2, tcp_nodelay=True))
+        if enable_traffic_light_checker:
+            subscribers.append(message_filters.Subscriber("tfl_stopline_collision_points", PointCloud2, tcp_nodelay=True))
+        if enable_crosswalk_checker:
+            subscribers.append(message_filters.Subscriber("crosswalk_collision_points", PointCloud2, tcp_nodelay=True))
+        if enable_trajectory_checker:
+            subscribers.append(message_filters.Subscriber("trajectory_collision_points", PointCloud2, tcp_nodelay=True))
 
         if not subscribers:
             raise ValueError("No topics to subscribe to.")
+
+        # publishers
+        self.collision_points_pub = rospy.Publisher('collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # Synchronize messages
         if synchronization_method == "approximate":
