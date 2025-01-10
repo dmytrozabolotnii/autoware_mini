@@ -9,8 +9,9 @@ from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 from helpers.path import calculate_cross_track_error
-from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, create_vector_from_heading_and_scalar, get_angle_between_two_headings
+from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
 from helpers.lanelet2 import load_lanelet2_map
+from helpers.shapely import get_polygon_width_and_prediction_origin
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
     'straight': {'straight': 1, 'left': 0.5, 'right': 0.5},
@@ -105,13 +106,18 @@ class MapBasedPredictor:
                     all_trajectories_evaluated = self.evaluate_paths(all_trajectories_with_turn_directions, object_indicator)
                     selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
+                # calculate objcet width and origin for prediction
+                object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                object_heading = get_heading_from_vector(obj.velocity)
+                buffer_width, center_front, center_center = get_polygon_width_and_prediction_origin(object_polygon, object_heading)
+
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
                 trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
                 trajectory_linestring = trajectory_linestring.simplify(0.01, preserve_topology=True)
                 if self.use_offset_for_prediction:
-                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, shapely.Point(obj.position.x, obj.position.y, obj.position.z))
+                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, center_center)
                     trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style=1)
-                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(shapely.Point(object_location.x, object_location.y))
+                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(center_front)
 
                 path = Path()
                 for i, d in enumerate(distances):
@@ -120,6 +126,8 @@ class MapBasedPredictor:
                     wp.position.x = p.x
                     wp.position.y = p.y
                     wp.position.z = obj.position.z
+                    wp.left_width = buffer_width
+                    wp.right_width = buffer_width
                     # TODO Recalculating velocity vector based on lanelet heading at the object location.
                     # Wrong when lanelet changes direction (turns), but good enough for now?
                     wp.speed = velocities[i]

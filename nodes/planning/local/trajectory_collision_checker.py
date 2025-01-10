@@ -9,7 +9,6 @@ from sensor_msgs.msg import PointCloud2
 from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
-from helpers.shapely import get_polygon_width
 from helpers.path import PathWrapper
 
 class TrajectoryCollisionChecker:
@@ -86,19 +85,14 @@ class TrajectoryCollisionChecker:
             for obj in detected_objects:
 
                 if len(obj.candidate_trajectories.paths) > 0:
-
-                    if self.use_object_width:
-                        object_polygon = shapely.geometry.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
-                        object_heading = get_heading_from_vector(obj.velocity)
-                        object_width = get_polygon_width(object_polygon, object_heading)
-
                     for trajectory in obj.candidate_trajectories.paths:
 
                         trajectory_to_check = shapely.LineString([(p.position.x, p.position.y, p.position.z) for p in trajectory.waypoints])
                         shapely.prepare(trajectory_to_check)
 
                         if self.use_object_width:
-                            trajectory_to_check = trajectory_to_check.buffer(object_width / 2, cap_style="flat")
+                            buffer_width = trajectory.waypoints[0].right_width
+                            trajectory_to_check = trajectory_to_check.buffer(buffer_width / 2, cap_style="flat")
                             shapely.prepare(trajectory_to_check)
 
                         if local_path_buffer.intersects(trajectory_to_check):
@@ -106,8 +100,12 @@ class TrajectoryCollisionChecker:
                             trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 
-                            # HACK to ignore trajectories from behind and objects intersecting with local_path
-                            if math.isclose(trajectory_intersection_distance, 0.0, abs_tol=0.001) or local_path_buffer.intersects(object_polygon):
+                            # HACK to ignore trajectories from behind
+                            if math.isclose(trajectory_intersection_distance, 0.0, abs_tol=0.001):
+                                continue
+
+                            object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                            if local_path_buffer.intersects(object_polygon):
                                 continue
 
                             object_current_heading = get_heading_from_vector(obj.velocity)

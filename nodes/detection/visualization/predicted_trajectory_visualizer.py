@@ -9,8 +9,6 @@ from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point
 from std_msgs.msg import Header, ColorRGBA
 
-from helpers.shapely import get_polygon_width
-
 class PredictedTrajectoryVisualizer:
     def __init__(self):
 
@@ -45,9 +43,7 @@ class PredictedTrajectoryVisualizer:
                 marker.pose.orientation.w = 1.0
                 marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
                 if self.use_object_width:
-                    object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
-                    object_heading = math.atan2(obj.velocity.y, obj.velocity.x)
-                    marker.scale.x = get_polygon_width(object_polygon, object_heading)
+                    marker.scale.x = 2 * obj.candidate_trajectories.paths[0].waypoints[0].right_width
                 else:
                     marker.scale.x = 0.2
                 # visualize possible multiple trajectories

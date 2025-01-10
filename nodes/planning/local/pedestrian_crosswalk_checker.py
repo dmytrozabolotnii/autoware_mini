@@ -11,7 +11,6 @@ from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_an
 from helpers.collision import CollisionPoints
 from helpers.path import PathWrapper
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
-from helpers.shapely import get_polygon_width
 
 class PedestrianCrosswalkChecker:
 
@@ -128,7 +127,9 @@ class PedestrianCrosswalkChecker:
                                 trajectory_to_check = trajectory.linestring
 
                                 if self.use_object_width:
-                                    trajectory_to_check = trajectory.linestring.buffer(object_width / 2, cap_style="flat")
+                                    buffer_width = path.waypoints[0].right_width
+                                    trajectory_to_check = trajectory.linestring.buffer(buffer_width / 2, cap_style="flat")
+                                    shapely.prepare(trajectory_to_check)
 
                                 if crosswalk['polygon'].intersects(trajectory_to_check):
                                     intersection_points = shapely.get_coordinates(crosswalk['polygon'].intersection(trajectory_to_check))
