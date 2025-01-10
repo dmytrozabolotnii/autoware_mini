@@ -24,7 +24,7 @@ class NaivePredictor:
         num_objects = len(msg.objects)
 
         # Convert tracked objects to numpy array
-        tracked_objects_array = np.empty(num_objects, dtype=[
+        tracked_objects_array = np.zeros(num_objects, dtype=[
             ('prediction_origin', np.float32, (2,)),
             ('velocity', np.float32, (2,)),
             ('acceleration', np.float32, (2,)),
