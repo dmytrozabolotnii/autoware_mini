@@ -66,23 +66,16 @@ class Lanelet2GlobalPlanner:
         # Prepare functions to monkey-patch the leftRelation and rightRelation methods of route
         # While route.leftRelation() and graph.left() should behave the same, in practice they don't
         def leftRelation(lanelet):
-            lanelet = self.graph.left(lanelet, ROUTING_COST_MAP[self.routing_cost])
-            if lanelet is None:
-                return None
-            rel = LaneletRelation()
-            rel.lanelet = lanelet
-            rel.type = RelationType.Left
-            return rel
+            rels = self.graph.leftRelations(lanelet, ROUTING_COST_MAP[self.routing_cost])
+            return rels[0] if rels else None
         def rightRelation(lanelet):
-            lanelet = self.graph.right(lanelet, ROUTING_COST_MAP[self.routing_cost])
-            if lanelet is None:
-                return None
-            rel = LaneletRelation()
-            rel.lanelet = lanelet
-            rel.type = RelationType.Right
-            return rel
+            rels = self.graph.rightRelations(lanelet, ROUTING_COST_MAP[self.routing_cost])
+            return rels[0] if rels else None
+        def followingRelations(lanelet):
+            return self.graph.followingRelations(lanelet, ROUTING_COST_MAP[self.routing_cost])
         self.leftRelation = leftRelation
         self.rightRelation = rightRelation
+        self.followingRelations = followingRelations
 
         # Publishers
         self.waypoints_pub = rospy.Publisher('lanelet2_global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
@@ -144,6 +137,7 @@ class Lanelet2GlobalPlanner:
         # This method is also used in find_following_lane_change_lanelet() helper, that's why we fix it with monkey-patching
         route.leftRelation = self.leftRelation
         route.rightRelation = self.rightRelation
+        route.followingRelations = self.followingRelations
 
         # Publish target lanelets for visualization
         start_lanelet = path[0]
