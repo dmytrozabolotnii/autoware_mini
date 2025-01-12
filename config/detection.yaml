@@ -90,7 +90,7 @@ obstacle_simulation:
   publish_rate: 10
 
 ema_tracker:
-  enable_initial_velocity_estimate: True
+  enable_initial_velocity_estimate: False
   enable_initial_acceleration_estimate: False
   enable_missed_detection_propagation: True
   detection_counter_threshold: 4
@@ -117,12 +117,12 @@ map_based_predictor:
 pedestrian_predictor:
   prediction_horizon: 12 # prediction horizon in steps
   prediction_history: 8 # prediction data history in steps
-  prediction_history_hide: 4 # hide the last X values in prediction history
+  prediction_history_hide: 0 # hide the last X values in prediction history
   step_length: 0.4 # step length in seconds
   inference_timer: 0.4 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
-  results_category_folder: "_contrib_2_complex_rvo"
+  results_category_folder: "_contrib_2_complex_rvo_comparison"
 
   pecnet_predictor:
     predictions_amount: 5

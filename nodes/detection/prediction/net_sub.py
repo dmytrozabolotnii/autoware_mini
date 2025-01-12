@@ -18,7 +18,10 @@ class NetSubscriber(metaclass=ABCMeta):
         # Caching structure
         # Dict of Message Cache class values
         self.cache = {}
+        self.cache_cars = {}
         self.active_keys = set()
+        self.active_keys_cars = set()
+        self.collect_car_info = rospy.get_param('~cars_constraints', False)
         # Basic inference values
 
         # Inference is run every these seconds:
@@ -44,8 +47,9 @@ class NetSubscriber(metaclass=ABCMeta):
     def detected_objects_sub_callback(self, detectedobjectarray):
         # cache objects with filter, so we can refer to them at inference time
         active_keys = set()
+        active_keys_cars = set()
         for i, detectedobject in enumerate(detectedobjectarray.objects):
-            if detectedobject.label == 'pedestrian' or detectedobject.label == 'bicycle' or detectedobject.label == 'unknown':
+            if detectedobject.label == 'pedestrian' or detectedobject.label == 'unknown':
                 position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
                 velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
                 acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
@@ -60,8 +64,25 @@ class NetSubscriber(metaclass=ABCMeta):
                     else:
                         self.cache[_id].move_endpoints()
                         self.cache[_id].update_last_trajectory(position, velocity, acceleration, header)
+            elif self.collect_car_info and (detectedobject.label == 'bicycle' or detectedobject.label == 'car'):
+                position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
+                velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
+                acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
+                header = detectedobjectarray.header
+                _id = detectedobject.id
+                active_keys_cars.add(_id)
+                with self.lock:
+                    if _id not in self.cache_cars:
+                        self.cache_cars[_id] = MessageCache(_id, position, velocity, acceleration, header,
+                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=detectedobject.convex_hull)
+
+                    else:
+                        self.cache_cars[_id].move_endpoints()
+                        self.cache_cars[_id].update_last_trajectory(position, velocity, acceleration, header)
+
         with self.lock:
             self.active_keys = self.active_keys.union(active_keys)
+            self.active_keys_cars = self.active_keys_cars.union(active_keys_cars)
         # Publish objects back retrieving candidate trajectories from history of inferences
         self.publish_predicted_objects(detectedobjectarray)
 
@@ -103,6 +124,7 @@ class NetSubscriber(metaclass=ABCMeta):
 
             # Resets active keys
             self.active_keys = set()
+            self.active_keys_cars = set()
 
     def run(self):
         rospy.spin()
