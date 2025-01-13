@@ -28,6 +28,7 @@ class MapBasedPredictor:
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
         self.angle_threshold = rospy.get_param('~angle_threshold')
         self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
+        self.use_object_width = rospy.get_param('/planning/use_object_width')
 
         lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
 
@@ -66,7 +67,8 @@ class MapBasedPredictor:
                         continue
 
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
-                object_distance_from_lanelet_start = linestring.project(shapely.Point(object_location.x, object_location.y))
+                object_centroid = shapely.Point(object_location.x, object_location.y)
+                object_distance_from_lanelet_start = linestring.project(object_centroid)
                 trajectory_start_point = linestring.interpolate(object_distance_from_lanelet_start)
 
                 # Skip lanelet if angle difference between object heading and lanelet heading is over limit
@@ -109,15 +111,21 @@ class MapBasedPredictor:
                 # calculate objcet width and origin for prediction
                 object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
                 object_heading = get_heading_from_vector(obj.velocity)
-                buffer_width, center_front, center_center = get_polygon_width_and_prediction_origin(object_polygon, object_heading)
+                if self.use_object_width:
+                    buffer_width, center_front, center_center = get_polygon_width_and_prediction_origin(object_polygon, object_heading)
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
                 trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
                 trajectory_linestring = trajectory_linestring.simplify(0.01, preserve_topology=True)
                 if self.use_offset_for_prediction:
-                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, center_center)
+                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, center_center if self.use_object_width else object_centroid)
                     trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style=1)
-                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(center_front)
+
+                if self.use_object_width:
+                    object_distance_from_trajectory_linestring_start = trajectory_linestring.project(center_front)
+                else:
+                    object_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_centroid)
+                    buffer_width = 0.0
 
                 path = Path()
                 for i, d in enumerate(distances):

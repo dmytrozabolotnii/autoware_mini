@@ -13,6 +13,7 @@ class NaivePredictor:
         self.prediction_horizon = rospy.get_param('~prediction_horizon')
         self.prediction_interval = rospy.get_param('~prediction_interval')
         self.prediction_min_speed = rospy.get_param('~prediction_min_speed')
+        self.use_object_width = rospy.get_param('/planning/use_object_width')
 
         # Publishers
         self.predicted_objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -42,9 +43,13 @@ class NaivePredictor:
             # calculate objcet width and origin for prediction
             object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
             object_heading = get_heading_from_vector(obj.velocity)
-            buffer_width, center_front, center_center = get_polygon_width_and_prediction_origin(object_polygon, object_heading)
+            if self.use_object_width:
+                buffer_width, center_front, _ = get_polygon_width_and_prediction_origin(object_polygon, object_heading)
+                tracked_objects_array[i]['prediction_origin'] = (center_front.x, center_front.y)
+            else:
+                buffer_width = 0.0
+                tracked_objects_array[i]['prediction_origin'] = (obj.position.x, obj.position.y)
 
-            tracked_objects_array[i]['prediction_origin'] = (center_front.x, center_front.y)
             tracked_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y)
             tracked_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
 
