@@ -100,6 +100,7 @@
         <remap from="/planning/stop_line_collision_points" to="/bag/planning/stop_line_collision_points" if="$(arg use_planning)"/>
         <remap from="/planning/trajectory_collision_points" to="/bag/planning/trajectory_collision_points" if="$(arg use_planning)"/>
         <remap from="/planning/collision_points" to="/bag/planning/collision_points" if="$(arg use_planning)"/>
+        <remap from="/planning/tfl_stop_line_markers" to="/bag/planning/tfl_stop_line_markers" if="$(arg use_detection)"/>
         <remap from="/detection/traffic_light_status" to="/bag/detection/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/detection/camera_fl/traffic_light_status" to="/bag/detection/camera_fl/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/detection/camera_fl/traffic_light_roi" to="/bag/detection/camera_fl/traffic_light_roi" if="$(arg use_detection)"/>
