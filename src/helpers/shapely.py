@@ -15,14 +15,3 @@ def get_polygon_width(polygon, heading_angle):
     minx, miny, maxx, maxy = rotated_polygon.bounds
     width = maxx - minx
     return width
-
-def get_heading_at_distance_along_linestring(linestring, distance):
-
-    point_after_object = linestring.interpolate(distance + 0.1)
-    # if distance is negative it is measured from the end of the linestring in reverse direction
-    point_before_object = linestring.interpolate(max(0, distance - 0.1))
-
-    # get heading between two points
-    path_heading = math.atan2(point_after_object.y - point_before_object.y, point_after_object.x - point_before_object.x)
-
-    return path_heading
