@@ -107,8 +107,6 @@ class PedestrianCrosswalkChecker:
                     object_heading = get_heading_from_vector(obj.velocity)
                     object_to_path_heading = local_path.get_heading_towards_path(object_centroid)
                     object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_to_path_heading))
-                    if self.use_object_width:
-                        object_width = get_polygon_width(object_polygon, object_heading)
 
                     for crosswalk in crosswalks_on_local_path[:]:
 
