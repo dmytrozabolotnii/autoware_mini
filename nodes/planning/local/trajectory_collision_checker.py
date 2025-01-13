@@ -91,7 +91,7 @@ class TrajectoryCollisionChecker:
                         shapely.prepare(trajectory_to_check)
 
                         if self.use_object_width:
-                            buffer_width = trajectory.waypoints[0].right_width
+                            buffer_width = trajectory.waypoints[0].left_width
                             trajectory_to_check = trajectory_to_check.buffer(buffer_width / 2, cap_style="flat")
                             shapely.prepare(trajectory_to_check)
 
