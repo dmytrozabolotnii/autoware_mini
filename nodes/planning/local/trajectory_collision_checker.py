@@ -67,7 +67,7 @@ class TrajectoryCollisionChecker:
         collision_points = CollisionPoints()
 
         if len(msg.waypoints) > 0 and len(detected_objects) > 0:
-            local_path = PathWrapper(msg.waypoints, distances=False)
+            local_path = PathWrapper(msg.waypoints)
             local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
             shapely.prepare(local_path_buffer)
 

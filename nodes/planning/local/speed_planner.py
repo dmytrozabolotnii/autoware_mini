@@ -76,7 +76,7 @@ class SpeedPlanner:
             stopping_point_distance = 0.0
 
             # create local path
-            local_path = PathWrapper(local_path_msg.waypoints, distances=False)
+            local_path = PathWrapper(local_path_msg.waypoints)
             ego_distance_from_local_path_start = local_path.linestring.project(current_position)
 
             # extract object distances, velocities and braking distances
