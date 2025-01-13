@@ -8,7 +8,7 @@ from geometry_msgs.msg import Point, Pose
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
 
 class PathWrapper:
-    def __init__(self, waypoints, velocities=False, blinkers=False, boundaries=False):
+    def __init__(self, waypoints, distances=False, velocities=False, blinkers=False, boundaries=False):
 
         if len(waypoints) == 1:
             ValueError("PathWrapper - waypoints array must be empty or have more than 1 waypoint ")
@@ -19,8 +19,9 @@ class PathWrapper:
         self.linestring = shapely.LineString(self._waypoints_xyz)
         shapely.prepare(self.linestring)
 
-        d = np.cumsum(np.sqrt(np.sum(np.diff(self._waypoints_xyz[:, :2], axis=0)**2, axis=1)))
-        self._distances = np.insert(d, 0, 0)
+        if distances or velocities or blinkers:
+            d = np.cumsum(np.sqrt(np.sum(np.diff(self._waypoints_xyz[:, :2], axis=0)**2, axis=1)))
+            self._distances = np.insert(d, 0, 0)
 
         self.left_boundary = None
         self.right_boundary = None
@@ -227,28 +228,17 @@ class PathWrapper:
 
     def get_pose_at_distance(self, distance):
         """
-        Get perpendicular pose at a certain distance along the path
+        Get pose at a certain distance along the path
         :param distance: distance along the path (m)
         :return: Pose
         """
 
         # Find the point on the path
         point_location = self.linestring.interpolate(distance)
-        # if distance is negative for interpolate it is measured from the end of the linestring in reverse direction
+        heading = self.get_heading_at_distance(distance)
 
-        # point is not at the very beginning of the path
-        if distance >= 0.1:
-            point_before = self.linestring.interpolate(distance - 0.1)
-            heading = get_heading_between_two_points(point_before, point_location)
-        # use forward point if distance is negative
-        else:
-            point_after = self.linestring.interpolate(distance + 0.1)
-            heading = get_heading_between_two_points(point_location, point_after)
-
-        pose = Pose(position = Point(x = point_location.x, y = point_location.y, z = point_location.z),
+        return Pose(position = Point(x = point_location.x, y = point_location.y, z = point_location.z),
                     orientation = get_orientation_from_heading(heading))
-
-        return pose
 
 
     def get_heading_at_distance(self, distance):
@@ -277,6 +267,17 @@ class PathWrapper:
 
         current_position = shapely.Point(current_position.x, current_position.y, current_position.z)
         return calculate_cross_track_error(self.linestring, current_position)
+    
+    def get_heading_towards_path(self, point):
+        """
+        Get heading from point towards the closest point on path
+        :param point: Shapely point
+        :return: heading angle in radians
+        """
+
+        distance = self.linestring.project(point)
+        location = self.linestring.interpolate(distance)
+        return get_heading_between_two_points(point, location)
 
 
 def get_blinker_state(steering_state):
