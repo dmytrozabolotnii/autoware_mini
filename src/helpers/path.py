@@ -267,6 +267,17 @@ class PathWrapper:
 
         current_position = shapely.Point(current_position.x, current_position.y, current_position.z)
         return calculate_cross_track_error(self.linestring, current_position)
+    
+    def get_heading_towards_path(self, point):
+        """
+        Get heading from point towards the closest point on path
+        :param point: Shapely point
+        :return: heading angle in radians
+        """
+
+        distance = self.linestring.project(point)
+        location = self.linestring.interpolate(distance)
+        return get_heading_between_two_points(point, location)
 
 
 def get_blinker_state(steering_state):

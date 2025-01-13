@@ -7,7 +7,7 @@ import shapely.ops
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from tf2_ros import TransformListener, Buffer, TransformException
-from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_heading_between_two_points, get_angle_between_two_headings
+from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.path import PathWrapper
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
@@ -106,9 +106,8 @@ class PedestrianCrosswalkChecker:
                         continue
                     object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
                     object_heading = get_heading_from_vector(obj.velocity)
-                    object_projection_on_path = local_path.linestring.interpolate(object_distance_from_local_path_start)
-                    object_projection_on_path_heading = get_heading_between_two_points(object_centroid, object_projection_on_path)
-                    object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_projection_on_path_heading))
+                    object_to_path_heading = local_path.get_heading_towards_path(object_centroid)
+                    object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_to_path_heading))
                     if self.use_object_width:
                         object_width = get_polygon_width(object_polygon, object_heading)
 
@@ -144,10 +143,8 @@ class PedestrianCrosswalkChecker:
 
                                     trajectory_heading_at_closest_intersection = trajectory.get_heading_at_distance(closest_distance_to_object)
                                     # find heading from the closest intersection point to its projection on local_path
-                                    closest_intersection_distance_from_local_path_start = local_path.linestring.project(closest_intersection_point)
-                                    closest_intersection_on_path = local_path.linestring.interpolate(closest_intersection_distance_from_local_path_start)
-                                    closest_intersection_on_path_heading = get_heading_between_two_points(closest_intersection_point, closest_intersection_on_path)
-                                    closest_intersection_path_approach_angle = math.degrees(get_angle_between_two_headings(trajectory_heading_at_closest_intersection, closest_intersection_on_path_heading))
+                                    closest_intersection_to_path_heading = local_path.get_heading_towards_path(closest_intersection_point)
+                                    closest_intersection_path_approach_angle = math.degrees(get_angle_between_two_headings(trajectory_heading_at_closest_intersection, closest_intersection_to_path_heading))
 
                                     if closest_intersection_path_approach_angle < self.crossing_angle_max_limit or \
                                         (180 - closest_intersection_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(trajectory_to_check)):
