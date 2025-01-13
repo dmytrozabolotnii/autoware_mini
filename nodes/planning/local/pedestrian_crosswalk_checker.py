@@ -136,12 +136,12 @@ class PedestrianCrosswalkChecker:
                                     closest_distance_to_object = float('inf')
                                     closest_intersection_point = None
                                     for p in intersection_points:
-                                        distance = trajectory.linestring.project(shapely.Point(p))
+                                        point = shapely.Point(p)
+                                        distance = trajectory.linestring.project(point)
                                         if distance < closest_distance_to_object:
                                             closest_distance_to_object = distance
-                                            closest_intersection_point = p
+                                            closest_intersection_point = point
 
-                                    closest_intersection_point = shapely.Point(closest_intersection_point)
                                     trajectory_heading_at_closest_intersection = trajectory.get_heading_at_distance(closest_distance_to_object)
                                     # find heading from the closest intersection point to its projection on local_path
                                     closest_intersection_distance_from_local_path_start = local_path.linestring.project(closest_intersection_point)
