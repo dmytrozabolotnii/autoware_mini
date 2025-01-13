@@ -111,7 +111,7 @@ class LocalPathVisualizer:
 
             if msg.is_blocked:
 
-                path = PathWrapper(msg.waypoints)
+                path = PathWrapper(msg.waypoints, distances=False)
                 pose = path.get_pose_at_distance(stopping_point_distance)
 
                 if collision_point_category == CollisionPoints.GOAL_POINT:

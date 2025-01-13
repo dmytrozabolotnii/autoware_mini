@@ -64,7 +64,7 @@ class TrafficLightStoplineChecker:
         collision_points = CollisionPoints()
 
         if len(msg.waypoints) > 0 and len(stopline_statuses) > 0:
-            local_path = PathWrapper(msg.waypoints)
+            local_path = PathWrapper(msg.waypoints, distances=False)
             ego_distance_from_local_path_start = local_path.linestring.project(current_position)
 
             for stopline_id, stopline_linestring in self.all_stoplines.items():

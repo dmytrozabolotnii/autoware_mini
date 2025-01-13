@@ -47,7 +47,7 @@ class PedestrianCrosswalkChecker:
         self.detected_objects = msg.objects
 
     def global_path_callback(self, msg):
-        global_path = PathWrapper(msg.waypoints)
+        global_path = PathWrapper(msg.waypoints, distances=False)
         global_path.linestring = global_path.linestring.simplify(0.01)
         shapely.prepare(global_path.linestring)
 
@@ -126,7 +126,7 @@ class PedestrianCrosswalkChecker:
                         # NON-INTERSECTING OBJECTS - CONSIDER TRAJECTORIES
                         elif len(obj.candidate_trajectories.paths) > 0:
                             for path in obj.candidate_trajectories.paths:
-                                trajectory = PathWrapper(path.waypoints)
+                                trajectory = PathWrapper(path.waypoints, distances=False)
                                 trajectory_to_check = trajectory.linestring
 
                                 if self.use_object_width:

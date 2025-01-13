@@ -8,7 +8,7 @@ from geometry_msgs.msg import Point, Pose
 from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
 
 class PathWrapper:
-    def __init__(self, waypoints, velocities=False, blinkers=False, boundaries=False, distances=False):
+    def __init__(self, waypoints, distances=True, velocities=False, blinkers=False, boundaries=False):
 
         if len(waypoints) == 1:
             ValueError("PathWrapper - waypoints array must be empty or have more than 1 waypoint ")
