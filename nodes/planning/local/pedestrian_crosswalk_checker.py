@@ -73,9 +73,8 @@ class PedestrianCrosswalkChecker:
 
         collision_points = CollisionPoints()
         if len(msg.waypoints) > 0 and len(self.crosswalks) > 0 and len(detected_objects) > 0:
-            local_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
-            shapely.prepare(local_path_linestring)
-            local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
+            local_path = PathWrapper(msg.waypoints, distances=False)
+            local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
             # get the car_front and projct to local_path
@@ -85,13 +84,13 @@ class PedestrianCrosswalkChecker:
                 rospy.logwarn("%s - %s", rospy.get_name(), e)
                 return
             car_front = shapely.Point(transform.transform.translation.x, transform.transform.translation.y)
-            car_front_distance_from_path_start = local_path_linestring.project(car_front)
-            linestring_up_to_car_front = shapely.ops.substring(local_path_linestring, 0, car_front_distance_from_path_start)
+            car_front_distance_from_path_start = local_path.linestring.project(car_front)
+            local_path_from_car_front = shapely.ops.substring(local_path.linestring, car_front_distance_from_path_start, local_path.linestring.length)
 
-            # extract crosswalks that intersect with local path and ego vehicleis not on them
+            # extract crosswalks that ego vehicle has not reached yet and that intersect with local path
             crosswalks_on_local_path = []
             for crosswalk in crosswalks_on_global_path:
-                if crosswalk['polygon'].intersects(local_path_linestring) and not crosswalk['polygon'].intersects(linestring_up_to_car_front):
+                if crosswalk['polygon'].intersects(local_path_from_car_front):
                     crosswalks_on_local_path.append(crosswalk)
 
             if len(crosswalks_on_local_path) > 0:
@@ -101,13 +100,13 @@ class PedestrianCrosswalkChecker:
                     if object_speed < self.stopped_speed_limit:
                         continue
                     object_centroid = shapely.Point(obj.position.x, obj.position.y)
-                    object_distance_from_local_path_start = local_path_linestring.project(object_centroid)
+                    object_distance_from_local_path_start = local_path.linestring.project(object_centroid)
                     # ignore objects behind the ego vehicle
                     if math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
                         continue
                     object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
                     object_heading = get_heading_from_vector(obj.velocity)
-                    object_projection_on_path = local_path_linestring.interpolate(object_distance_from_local_path_start)
+                    object_projection_on_path = local_path.linestring.interpolate(object_distance_from_local_path_start)
                     object_projection_on_path_heading = get_heading_between_two_points(object_centroid, object_projection_on_path)
                     object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_projection_on_path_heading))
                     if self.use_object_width:
@@ -145,8 +144,8 @@ class PedestrianCrosswalkChecker:
                                     closest_intersection_point = shapely.Point(closest_intersection_point)
                                     trajectory_heading_at_closest_intersection = trajectory.get_heading_at_distance(closest_distance_to_object)
                                     # find heading from the closest intersection point to its projection on local_path
-                                    closest_intersection_distance_from_local_path_start = local_path_linestring.project(closest_intersection_point)
-                                    closest_intersection_on_path = local_path_linestring.interpolate(closest_intersection_distance_from_local_path_start)
+                                    closest_intersection_distance_from_local_path_start = local_path.linestring.project(closest_intersection_point)
+                                    closest_intersection_on_path = local_path.linestring.interpolate(closest_intersection_distance_from_local_path_start)
                                     closest_intersection_on_path_heading = get_heading_between_two_points(closest_intersection_point, closest_intersection_on_path)
                                     closest_intersection_path_min_angle = math.degrees(get_minimum_angle_between_two_lines(trajectory_heading_at_closest_intersection, closest_intersection_on_path_heading))
 
