@@ -20,29 +20,30 @@ def get_polygon_width_and_prediction_origin(polygon, heading_angle):
     front_y = maxy
     center_y = (miny + maxy) / 2
 
-    center_front = rotate_point_back_to_original_coordinates(center_x, front_y, polygon.centroid, angle)
-    center_center = rotate_point_back_to_original_coordinates(center_x, center_y, polygon.centroid, angle)
+    # Reverse rotate the point to get the coordinates in the original coordinate system (correct orientation)
+    center_front = rotate_point_around_origin(center_x, front_y, polygon.centroid, -angle)
+    center_center = rotate_point_around_origin(center_x, center_y, polygon.centroid, -angle)
 
     return buffer_width, center_front, center_center
 
 
-def rotate_point_back_to_original_coordinates(point_x, point_y, rotation_center, angle):
+def rotate_point_around_origin(point_x, point_y, rotation_center, angle):
     """
-    Rotate point back to original coordinates, by doing a reverse rotation.
-    :param point_x: x coordinate of the point that needs to be rotated back
-    :param point_y: y coordinate of the point that needs to be rotated back
+    Rotate point around origin point and return new coordinates of the rotated point
+    :param point_x: x coordinate of the point that needs to be rotated
+    :param point_y: y coordinate of the point that needs to be rotated
     :param rotation_center: shapely Point, center of the rotation
-    :param angle: angle in radians for reverse rotation
-    :return: shapely Point, rotated point back to original coordinates
+    :param angle: angle in radians for rotation
+    :return: shapely Point with coordinates of the rotatetd point
     """
     # Rotate the center point back to original coordinates
-    rotated_center_x = point_x - rotation_center.x
-    rotated_center_y = point_y - rotation_center.y
+    relative_x = point_x - rotation_center.x
+    relative_y = point_y - rotation_center.y
 
     # Apply inverse rotation (backwards rotation)
-    cos_angle = math.cos(-angle)
-    sin_angle = math.sin(-angle)
-    origin_x = cos_angle * rotated_center_x - sin_angle * rotated_center_y + rotation_center.x
-    origin_y = sin_angle * rotated_center_x + cos_angle * rotated_center_y + rotation_center.y
+    cos_angle = math.cos(angle)
+    sin_angle = math.sin(angle)
+    rotated_point_x = cos_angle * relative_x - sin_angle * relative_y + rotation_center.x
+    rotated_point_y = sin_angle * relative_x + cos_angle * relative_y + rotation_center.y
 
-    return shapely.Point(origin_x, origin_y)
+    return shapely.Point(rotated_point_x, rotated_point_y)

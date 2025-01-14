@@ -109,9 +109,8 @@ class MapBasedPredictor:
                     selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
                 # calculate objcet width and origin for prediction
-                object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
-                object_heading = get_heading_from_vector(obj.velocity)
                 if self.use_object_width:
+                    object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
                     buffer_width, center_front, center_center = get_polygon_width_and_prediction_origin(object_polygon, object_heading)
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
