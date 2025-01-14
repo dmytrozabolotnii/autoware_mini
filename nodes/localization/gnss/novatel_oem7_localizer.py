@@ -91,7 +91,15 @@ class NovatelOem7Localizer:
             stamp = inspva_msg.header.stamp
 
             # transform GNSS coordinates and correct azimuth
-            x, y = self.transformer.transform_lat_lon(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.height)
+            try:
+                x, y = self.transformer.transform_lat_lon(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.height)
+            except RuntimeError as e:
+                if "Latitude 0, longitude 0 out of legal range" in str(e):
+                    x, y = 0, 0
+                    rospy.logerr_throttle(30, f"Error transforming lat/lon to UTM: {e}. Assigned x=0, y=0.")
+                else:
+                    # Re-raise the exception if it's a different RuntimeError
+                    raise
             azimuth = self.transformer.correct_azimuth(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.azimuth)
 
             linear_velocity = math.sqrt(inspva_msg.east_velocity**2 + inspva_msg.north_velocity**2)
