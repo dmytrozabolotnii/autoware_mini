@@ -30,6 +30,8 @@ class NovatelOem7Localizer:
         self.lest97_origin_northing = rospy.get_param("lest97_origin_northing")
         self.lest97_origin_easting = rospy.get_param("lest97_origin_easting")
         self.use_msl_height = rospy.get_param("~use_msl_height")
+        self.default_height = rospy.get_param("~default_height")
+        self.default_azimuth = rospy.get_param("~default_azimuth")
         self.parent_frame = rospy.get_param("~parent_frame")
         self.child_frame = rospy.get_param("~child_frame")
 
@@ -90,28 +92,26 @@ class NovatelOem7Localizer:
         try:
             stamp = inspva_msg.header.stamp
 
-            # transform GNSS coordinates and correct azimuth
-            try:
+            # unless lat and lon = 0, transform GNSS coordinates and correct azimuth
+            if inspva_msg.latitude == 0 and inspva_msg.longitude == 0:
+                rospy.logwarn_throttle(30, "Received 0 Latitude and Longitude. Skipping transformation and using UTM origin coordinates")
+                x = self.utm_origin_lon
+                y = self.utm_origin_lat
+                azimuth = self.default_azimuth
+                height = self.default_height
+            else:
                 x, y = self.transformer.transform_lat_lon(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.height)
-            except RuntimeError as e:
-                if "Latitude 0, longitude 0 out of legal range" in str(e):
-                    x, y = 0, 0
-                    rospy.logerr_throttle(30, f"Error transforming lat/lon to UTM: {e}. Assigned x=0, y=0.")
-                else:
-                    # Re-raise the exception if it's a different RuntimeError
-                    raise
-            azimuth = self.transformer.correct_azimuth(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.azimuth)
+                azimuth = self.transformer.correct_azimuth(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.azimuth)
+                # inspva_msg contains ellipsoid height if msl (mean sea level) height is wanted then undulation is subtracted
+                height = inspva_msg.height
+                if self.use_msl_height:
+                    height -= self.undulation
 
             linear_velocity = math.sqrt(inspva_msg.east_velocity**2 + inspva_msg.north_velocity**2)
             angular_velocity = imu_msg.angular_velocity
 
             # angles from GNSS (degrees) need to be converted to orientation (quaternion) in map frame
             orientation = convert_angles_to_orientation(inspva_msg.roll, inspva_msg.pitch, azimuth)
-
-            # inspva_msg contains ellipsoid height if msl (mean sea level) height is wanted then undulation is subtracted
-            height = inspva_msg.height
-            if self.use_msl_height:
-                height -= self.undulation
 
             current_pose = Pose()
             current_pose.position.x = x
