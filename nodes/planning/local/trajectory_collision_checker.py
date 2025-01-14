@@ -91,8 +91,7 @@ class TrajectoryCollisionChecker:
                         shapely.prepare(trajectory_to_check)
 
                         if self.use_object_width:
-                            buffer_width = trajectory.waypoints[0].left_width
-                            trajectory_to_check = trajectory_to_check.buffer(buffer_width / 2, cap_style="flat")
+                            trajectory_to_check = trajectory_to_check.buffer(trajectory.waypoints[0].left_width, cap_style="flat")
                             shapely.prepare(trajectory_to_check)
 
                         if local_path_buffer.intersects(trajectory_to_check):

@@ -125,8 +125,7 @@ class PedestrianCrosswalkChecker:
                                 trajectory_to_check = trajectory.linestring
 
                                 if self.use_object_width:
-                                    buffer_width = path.waypoints[0].left_width
-                                    trajectory_to_check = trajectory.linestring.buffer(buffer_width / 2, cap_style="flat")
+                                    trajectory_to_check = trajectory.linestring.buffer(path.waypoints[0].left_width, cap_style="flat")
                                     shapely.prepare(trajectory_to_check)
 
                                 if crosswalk['polygon'].intersects(trajectory_to_check):
