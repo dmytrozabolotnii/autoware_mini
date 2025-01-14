@@ -85,13 +85,12 @@ class TrajectoryCollisionChecker:
             for obj in detected_objects:
 
                 if len(obj.candidate_trajectories.paths) > 0:
-                    for trajectory in obj.candidate_trajectories.paths:
+                    for path in obj.candidate_trajectories.paths:
 
-                        trajectory_to_check = shapely.LineString([(p.position.x, p.position.y, p.position.z) for p in trajectory.waypoints])
-                        shapely.prepare(trajectory_to_check)
+                        trajectory_to_check = PathWrapper(path.waypoints).linestring
 
                         if self.use_object_width:
-                            trajectory_to_check = trajectory_to_check.buffer(trajectory.waypoints[0].left_width, cap_style="flat")
+                            trajectory_to_check = trajectory_to_check.buffer(path.waypoints[0].left_width, cap_style="flat")
                             shapely.prepare(trajectory_to_check)
 
                         if local_path_buffer.intersects(trajectory_to_check):
@@ -99,7 +98,7 @@ class TrajectoryCollisionChecker:
                             trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 
-                            # HACK to ignore trajectories from behind
+                            # Ignore trajectories from behind
                             if math.isclose(trajectory_intersection_distance, 0.0, abs_tol=0.001):
                                 continue
 

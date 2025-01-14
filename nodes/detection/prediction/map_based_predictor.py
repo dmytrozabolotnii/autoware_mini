@@ -67,7 +67,7 @@ class MapBasedPredictor:
                         continue
 
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
-                object_centroid = shapely.Point(object_location.x, object_location.y)
+                object_centroid = shapely.Point(obj.position.x, obj.position.y)
                 object_distance_from_lanelet_start = linestring.project(object_centroid)
                 trajectory_start_point = linestring.interpolate(object_distance_from_lanelet_start)
 
@@ -83,9 +83,8 @@ class MapBasedPredictor:
             # 2. CREATE MAP BASED TRAJECTORIES FOR OBJECT
             if selected_lanelet is not None:
 
-                object_accel = get_vector_norm_3d(obj.acceleration)
-
                 # Predict future positions and velocities
+                object_accel = get_vector_norm_3d(obj.acceleration)
                 timesteps = np.arange(num_timesteps) * self.prediction_interval
                 velocities = object_speed + object_accel * timesteps
                 distances = np.cumsum(np.insert(velocities[:-1] * self.prediction_interval, 0, 0))
@@ -111,20 +110,20 @@ class MapBasedPredictor:
                 # calculate objcet width and origin for prediction
                 if self.use_object_width:
                     object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
-                    buffer_width, center_front, center_center = get_polygon_width_and_prediction_origin(object_polygon, object_heading)
+                    # buffer width, center_front, center_center
+                    buffer_width, prediction_origin, error_point = get_polygon_width_and_prediction_origin(object_polygon, object_heading)
+                else:
+                    buffer_width = 0.0
+                    prediction_origin = error_point = object_centroid
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
                 trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
                 trajectory_linestring = trajectory_linestring.simplify(0.01, preserve_topology=True)
                 if self.use_offset_for_prediction:
-                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, center_center if self.use_object_width else object_centroid)
+                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, error_point)
                     trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style=1)
 
-                if self.use_object_width:
-                    object_distance_from_trajectory_linestring_start = trajectory_linestring.project(center_front)
-                else:
-                    object_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_centroid)
-                    buffer_width = 0.0
+                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(prediction_origin)
 
                 path = Path()
                 for i, d in enumerate(distances):

@@ -13,7 +13,7 @@ def get_polygon_width_and_prediction_origin(polygon, heading_angle):
     angle = math.pi/2 - heading_angle
     rotated_polygon = shapely.affinity.rotate(polygon, angle, origin='centroid', use_radians=True)
     minx, miny, maxx, maxy = rotated_polygon.bounds
-    buffer_width = min(max((maxx - minx) / 2, 0.25), 2.0)
+    buffer_width = (maxx - minx) / 2
 
     # Calculate x and y coordinates in rotated coordinate system
     center_x = (minx + maxx) / 2
