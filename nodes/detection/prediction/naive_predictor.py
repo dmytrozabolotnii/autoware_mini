@@ -32,7 +32,7 @@ class NaivePredictor:
         ])
 
         buffer_widths = []
-        valid_indices = []  # Keep track of indices for valid objects only
+        valid_indices = []  # Keep track of indices for objects that need naive prediction
 
         for i, obj in enumerate(msg.objects):
             # Skip objects that do not need predictions
@@ -76,7 +76,6 @@ class NaivePredictor:
                 wp = Waypoint()
                 wp.position.x, wp.position.y = predicted_objects_array[t][i]['prediction_origin']
                 wp.position.z = obj.position.z
-                #wp.speed = (predicted_objects_array[t][i]['velocity'][0]**2 + predicted_objects_array[t][i]['velocity'][1]**2)**0.5
                 wp.speed = np.linalg.norm(predicted_objects_array[t][i]['velocity'])
                 wp.left_width = buffer_widths[i]
                 wp.right_width = buffer_widths[i]
