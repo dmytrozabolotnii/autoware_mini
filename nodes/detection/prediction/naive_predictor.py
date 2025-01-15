@@ -2,9 +2,8 @@
 
 import rospy
 import numpy as np
-import shapely
-from helpers.shapely import get_polygon_width_and_prediction_origin
-from helpers.geometry import get_vector_norm_3d, get_heading_from_vector
+from helpers.detection import get_prediction_origin
+from helpers.geometry import get_vector_norm_3d
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
 class NaivePredictor:
@@ -41,19 +40,17 @@ class NaivePredictor:
                 continue
 
             # calculate objcet width and origin for prediction
-            object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
-            object_heading = get_heading_from_vector(obj.velocity)
             if self.use_object_width:
-                buffer_width, center_front, _ = get_polygon_width_and_prediction_origin(object_polygon, object_heading)
-                tracked_objects_array[i]['prediction_origin'] = (center_front.x, center_front.y)
+                origin, width, _ = get_prediction_origin(obj)
+                tracked_objects_array[i]['prediction_origin'] = (origin.x, origin.y)
             else:
-                buffer_width = 0.0
+                width = 0.0
                 tracked_objects_array[i]['prediction_origin'] = (obj.position.x, obj.position.y)
 
             tracked_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y)
             tracked_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
 
-            buffer_widths.append(buffer_width)
+            buffer_widths.append(width)
             valid_indices.append(i)
 
         # Predict future positions and velocities - includes also initial step, thus + 1

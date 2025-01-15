@@ -1,10 +1,9 @@
 import math
 import cv2
 import numpy as np
-
+import shapely
 from geometry_msgs.msg import Polygon, Point
-
-from helpers.geometry import get_heading_from_orientation
+from helpers.geometry import get_heading_from_vector
 
 def create_hull(obj):
 
@@ -73,6 +72,35 @@ def get_axis_oriented_bounding_box(obj):
     maxx, maxy = np.max(points, axis=0)
 
     return minx, miny, maxx, maxy
+
+def get_prediction_origin(obj):
+    """
+    Get width of the polygon and origin points for prediction center_front and center_center.
+    :param polygon: shapely Polygon
+    :param heading_angle: heading angle in radians
+    :return: half width of the polygon to be used as a prediction buffer width
+    """
+    
+    polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+    centroid = shapely.Point(obj.position.x, obj.position.y)
+    heading_angle = get_heading_from_vector(obj.velocity)
+    
+    #polygon, centroid, heading_angle
+    # rotate polygon to align with x axis, so the width will be in y direction
+    rotated_polygon = shapely.affinity.rotate(polygon, -heading_angle, centroid, use_radians=True)
+    minx, miny, maxx, maxy = rotated_polygon.bounds
+    width = (maxy - miny) / 2
+
+    # Calculate x and y coordinates in rotated coordinate system
+    center_x = (minx + maxx) / 2
+    front_x = maxx
+    center_y = (miny + maxy) / 2
+
+    # Reverse rotate the point to get the coordinates in the original coordinate system (correct orientation)
+    front_center = shapely.affinity.rotate(shapely.Point(front_x, center_y), heading_angle, centroid, use_radians=True)
+    center_center = shapely.affinity.rotate(shapely.Point(center_x, center_y), heading_angle, centroid, use_radians=True)
+
+    return front_center, width, center_center
 
 if __name__ == '__main__':
     boxes1 = np.array([[0, 0, 10, 10], [10, 10, 20, 20]])
