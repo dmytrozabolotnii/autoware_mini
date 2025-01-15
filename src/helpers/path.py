@@ -46,7 +46,7 @@ class PathWrapper:
         :param side: side to search for the distance
         :return: waypoint
         """
-
+        assert hasattr(self, '_distances'), "Distances not available, check that path was initialized with distances=True"
         return np.searchsorted(self._distances, distance, side)
 
     def _extract_waypoints(self, index_start, index_end, copy=False):
