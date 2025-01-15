@@ -103,6 +103,7 @@ class TrajectoryCollisionChecker:
                                 continue
 
                             object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                            # ignore obects trajectories that are already on local path
                             if local_path_buffer.intersects(object_polygon):
                                 continue
 
