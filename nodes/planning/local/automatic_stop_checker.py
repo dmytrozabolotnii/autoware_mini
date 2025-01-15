@@ -10,7 +10,7 @@ from autoware_mini.msg import Path
 from sensor_msgs.msg import PointCloud2
 from std_srvs.srv import Empty, EmptyResponse
 
-class AutomaticStopBehavior:
+class AutomaticStopChecker:
 
     def __init__(self):
 
@@ -119,6 +119,6 @@ class AutomaticStopBehavior:
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('automatic_stop_behavior')
-    node = AutomaticStopBehavior()
+    rospy.init_node('automatic_stop_checker')
+    node = AutomaticStopChecker()
     node.run()

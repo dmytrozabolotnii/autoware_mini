@@ -85,7 +85,7 @@
             <node if="$(arg enable_trajectory_checker)" pkg="autoware_mini" type="trajectory_collision_checker.py" name="trajectory_collision_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
-            <node if="$(arg enable_auto_stop_checker)" pkg="autoware_mini" type="automatic_stop_behavior.py" name="automatic_stop_behavior" output="screen" required="true" >
+            <node if="$(arg enable_auto_stop_checker)" pkg="autoware_mini" type="automatic_stop_checker.py" name="automatic_stop_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
             <node pkg="autoware_mini" type="collision_points_merger.py" name="collision_points_merger" output="screen" required="true" >

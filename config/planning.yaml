@@ -61,7 +61,7 @@ yielding_checker:
 trajectory_collision_checker:
   braking_safety_distance_obstacle: 4     # m
   heading_alignment_limit: 20.0           # degrees
-automatic_stop_behavior:
+automatic_stop_checker:
   braking_safety_distance_stop_line: 0.1      # m
   keep_stop_line_for: 15.0                    # s
 collision_points_merger:
