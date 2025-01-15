@@ -18,6 +18,7 @@
   <arg name="enable_auto_stop_checker"     default="true" />
   <arg name="enable_traffic_light_checker" default="true" />
   <arg name="enable_crosswalk_checker"     default="true" />
+  <arg name="enable_yielding_checker"      default="true" />
   <arg name="enable_trajectory_checker"    default="true" />
 
   <!-- Localization -->
@@ -44,6 +45,7 @@
     <arg name="enable_auto_stop_checker"     value="$(arg enable_auto_stop_checker)" />
     <arg name="enable_traffic_light_checker" value="$(arg enable_traffic_light_checker)" />
     <arg name="enable_crosswalk_checker"     value="$(arg enable_crosswalk_checker)" />
+    <arg name="enable_yielding_checker"      value="$(arg enable_yielding_checker)" />
     <arg name="enable_trajectory_checker"    value="$(arg enable_trajectory_checker)" />
   </include>
 
