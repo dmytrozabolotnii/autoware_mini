@@ -91,7 +91,7 @@ class MapBasedPredictor:
                 object_accel = get_vector_norm_3d(obj.acceleration)
                 timesteps = np.arange(num_timesteps) * self.prediction_interval
                 velocities = object_speed + object_accel * timesteps
-                distances = np.cumsum(np.insert(velocities[:-1] * self.prediction_interval, 0, 0))
+                distances = (object_accel * timesteps**2) / 2 + object_speed * timesteps
 
                 # get all possible paths (lanelet branching), from selected lanelet to max distance
                 all_trajectories = self.graph.possiblePaths(selected_lanelet, object_distance_from_lanelet_start + distances[-1])
