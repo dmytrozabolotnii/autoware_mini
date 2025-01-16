@@ -7,7 +7,7 @@ lest97_origin_easting: 650000.0
 
 novatel_oem7_localizer:
   use_msl_height: True
-  default_azimuth: 185.0  # degrees
+  default_azimuth: 0.0    # degrees
   default_height: 34.5    # meters
   child_frame: base_link
 
