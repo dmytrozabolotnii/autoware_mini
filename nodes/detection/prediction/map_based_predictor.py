@@ -73,12 +73,12 @@ class MapBasedPredictor:
 
                     linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
                     object_distance_from_lanelet_start = linestring.project(object_centroid)
-                    trajectory_start_point = linestring.interpolate(object_distance_from_lanelet_start)
+                    object_location_on_lanelet = linestring.interpolate(object_distance_from_lanelet_start)
 
                     # Skip lanelet if angle difference between object heading and lanelet heading is over limit
                     
                     forward_point = linestring.interpolate(object_distance_from_lanelet_start + 0.1)
-                    lanelet_heading = get_heading_between_two_points(trajectory_start_point, forward_point)
+                    lanelet_heading = get_heading_between_two_points(object_location_on_lanelet, forward_point)
                     heading_difference_degrees = math.degrees(get_angle_between_two_headings(object_heading, lanelet_heading))
                     if heading_difference_degrees < self.angle_threshold and heading_difference_degrees < min_heading_difference:
                         min_heading_difference = heading_difference_degrees
