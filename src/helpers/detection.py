@@ -94,13 +94,13 @@ def get_prediction_origin(obj, centroid=None, heading_angle=None):
     width = (maxy - miny) / 2
 
     # Calculate x and y coordinates in rotated coordinate system
-    center_x = (minx + maxx) / 2
+    centroid_x = obj.position.x
     front_x = maxx
     center_y = (miny + maxy) / 2
 
     # Reverse rotate the point to get the coordinates in the original coordinate system (correct orientation)
     front_center = shapely.affinity.rotate(shapely.Point(front_x, center_y), heading_angle, centroid, use_radians=True)
-    center_center = shapely.affinity.rotate(shapely.Point(center_x, center_y), heading_angle, centroid, use_radians=True)
+    center_center = shapely.affinity.rotate(shapely.Point(centroid_x, center_y), heading_angle, centroid, use_radians=True)
 
     return front_center, width, center_center
 
