@@ -73,18 +73,20 @@ def get_axis_oriented_bounding_box(obj):
 
     return minx, miny, maxx, maxy
 
-def get_prediction_origin(obj):
+def get_prediction_origin(obj, centroid=None, heading_angle=None):
     """
     Get width of the polygon and origin points for prediction center_front and center_center.
     :param polygon: shapely Polygon
     :param heading_angle: heading angle in radians
     :return: half width of the polygon to be used as a prediction buffer width
     """
-    
+
     polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
-    centroid = shapely.Point(obj.position.x, obj.position.y)
-    heading_angle = get_heading_from_vector(obj.velocity)
-    
+    if centroid is None:
+        centroid = shapely.Point(obj.position.x, obj.position.y)
+    if heading_angle is None:
+        heading_angle = get_heading_from_vector(obj.velocity)
+
     #polygon, centroid, heading_angle
     # rotate polygon to align with x axis, so the width will be in y direction
     rotated_polygon = shapely.affinity.rotate(polygon, -heading_angle, centroid, use_radians=True)
