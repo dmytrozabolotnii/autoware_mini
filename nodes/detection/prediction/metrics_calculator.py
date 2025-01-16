@@ -6,11 +6,15 @@ from os import path as osp
 
 import rospy
 import numpy as np
-from shapely import LineString, prepare
+from shapely import Polygon, LineString, prepare
 from helpers.geometry import get_distance_between_two_points_2d
 from std_msgs.msg import Float32
 from autoware_mini.msg import Path
 
+import lanelet2
+from lanelet2.core import BasicPoint2d
+from lanelet2.geometry import findWithin2d
+from helpers.lanelet2 import load_lanelet2_map
 
 def calculate_ade(x, y):
     return np.mean(((x[:, 0] - y[:, 0]) ** 2 + (x[:, 1] - y[:, 1]) ** 2) ** 0.5)
@@ -25,15 +29,57 @@ def calculate_ade_grad(x, y, danger_zone=10.0):
 
     return np.sum(np.interp(distance_between_points, [danger_zone, danger_zone * 2], [1, 0]))
 
+def calculate_dac(lanelet2_map, predictions, danger_zone=10.0):
+    # search matching lanelets to a initial point of all predictions
+    x, y = float(predictions[0][0, 0]), float(predictions[0][0, 1])
+    object_location = BasicPoint2d(x, y)
+    # find lanelets within distance to object_location - distance measured from lanelet borders
+    lanelets_within_distance = findWithin2d(lanelet2_map.laneletLayer, object_location, danger_zone)
+    crosswalks = []
+    lanelets = []
+
+    for d, lanelet in lanelets_within_distance:
+        if lanelet.attributes and lanelet.attributes["subtype"] == 'crosswalk':
+            crosswalk = Polygon([(p.x, p.y) for p in lanelet.polygon2d()])
+            prepare(crosswalk)
+            crosswalks.append(crosswalk)
+        else:
+            lanelet = Polygon([(p.x, p.y) for p in lanelet.polygon2d()])
+            prepare(lanelet)
+            lanelets.append(lanelet)
+    m = 0.0
+    n = len(predictions)
+
+    for prediction in predictions:
+        prediction_linestring  = LineString(np.array(prediction)[1:])
+        on_crosswalk = False
+        for crosswalk in crosswalks:
+            if crosswalk.intersects(prediction_linestring):
+                on_crosswalk = True
+                break
+        if not on_crosswalk:
+            for lanelet in lanelets:
+                if lanelet.intersects(prediction_linestring):
+                    m += 1
+                    break
+
+    return (n - m) / n
+
+MR_LIMIT = 2.0
 
 class MetricsCalculator:
     def __init__(self):
         self.lock = threading.Lock()
+
         self.ade_history = {}
         self.ade_grad_history = {}
         self.aware_ade_history = {}
         self.fde_history = {}
+        self.mr_history = {}
+        self.dac_history = {}
         # self.cache = cache
+        lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
+        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.planned_local_path_cache = {}
 
         self.metrics_timer_duration = rospy.get_param('inference_timer')
@@ -51,13 +97,14 @@ class MetricsCalculator:
         self.ade = rospy.Publisher('/dashboard/ade', Float32, queue_size=1)
         self.fde = rospy.Publisher('/dashboard/fde', Float32, queue_size=1)
         self.aware_ade = rospy.Publisher('/dashboard/aware_ade', Float32, queue_size=1)
-        self.aware_fde = rospy.Publisher('/dashboard/aware_fde', Float32, queue_size=1)
+        self.mr = rospy.Publisher('/dashboard/mr', Float32, queue_size=1)
+        self.dac = rospy.Publisher('/dashboard/dac', Float32, queue_size=1)
 
         # self.sub = rospy.Subscriber('predicted_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         self.local_path_sub = rospy.Subscriber('/planning/local_path', Path, self.local_path_callback, queue_size=1)
         rospy.on_shutdown(self.shutdown)
         with open(self.csvfilename, 'w') as file:
-            file.write('stamp,ade,fde,aware_ade,n_ped')
+            file.write('stamp,ade,fde,aware_ade,mr,dac,n_ped')
             file.write('\n')
 
         rospy.loginfo("%s - initialized", rospy.get_name())
@@ -75,46 +122,10 @@ class MetricsCalculator:
                 self.fde_history[_id] = []
                 self.ade_grad_history[_id] = []
                 self.aware_ade_history[_id] = []
+                self.mr_history[_id] = []
+                self.dac_history[_id] = []
 
-            # if detectedobject.label == 'pedestrian' and len(detectedobject.candidate_trajectories.lanes) > 0:
-                # position = np.array([detectedobject.candidate_trajectories.lanes[0].waypoints[0].pose.pose.position.x,
-                #                      detectedobject.candidate_trajectories.lanes[0].waypoints[0].pose.pose.position.y])
-                # velocity = np.array([0, 0])
-                # acceleration = np.array([0, 0])
-                # candidate_traj_header = detectedobject.candidate_trajectories.lanes[0].header
-                # _id = detectedobject.id
-                # Create new cached messages
-                # if _id not in self.cache:
-                #     self.cache[_id] = MessageCache(_id, position, velocity, acceleration, candidate_traj_header,
-                #                                    delta_t=self.metrics_timer_duration)
-                #     predictions = []
-                #     for lane in detectedobject.candidate_trajectories.lanes:
-                #         predictions.append([
-                #             (wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in lane.waypoints[1:]])
-                #     self.cache[_id].extend_prediction_history(predictions)
-                #     self.cache[_id].extend_prediction_header_history(candidate_traj_header)
-                #     self.ade_history[_id] = []
-                #     self.fde_history[_id] = []
-                #     self.ade_grad_history[_id] = []
-                #     self.aware_ade_history[_id] = []
-
-            # Extend and update only if header stamp time attached to candidate trajectories is different
-            # (means inference happened)
-            # if (candidate_traj_header.stamp - self.cache[_id].return_last_header().stamp >=
-            #         rospy.Duration(self.metrics_timer_duration)):
-            #     if (candidate_traj_header.stamp - self.cache[_id].return_last_header().stamp >=
-            #           4 * rospy.Duration(self.metrics_timer_duration)):
-            #         rospy.logwarn_throttle(3, "%s - Predictions lagging behind messages",
-            #                                rospy.get_name())
-                # self.cache[_id].move_endpoints()
-                # self.cache[_id].update_last_trajectory(position, velocity, acceleration, candidate_traj_header)
-                # predictions = []
-                # for lane in detectedobject.candidate_trajectories.lanes:
-                #     predictions.append(
-                #         [(wp.pose.pose.position.x, wp.pose.pose.position.y) for wp in lane.waypoints[1:]])
-                # self.cache[_id].extend_prediction_history(predictions)
-                # self.cache[_id].extend_prediction_header_history(candidate_traj_header)
-                # Check what prediction we can check for metrics
+            # Check what prediction we can check for metrics
             prediction_we_can_check = 0
             header = message.return_last_header()
             for i, prediction_header in enumerate(message.predictions_history_headers[1:]):
@@ -123,18 +134,9 @@ class MetricsCalculator:
                     break
             if prediction_we_can_check > 0:
                 # Obtain ground-truth trajectory
-                # gt_trajectory = np.array(message.raw_trajectories[-1::-1 * (self.skip_points
-                #                                                         + 1)][:self.pad_future][::-1])
                 gt_trajectory = message.return_last_interpolated_trajectory(self.pad_future, self.metrics_timer_duration)
                 num_of_predictions = len(message.prediction_history[prediction_we_can_check])
-                # gt_trajectory_linestring = LineString(gt_trajectory)
-                # minx, miny, maxx, maxy = gt_trajectory_linestring.bounds
-                # if (maxx - minx < 2.0) and (maxy - miny < 2.0):
-                #     print('Bounding box of ground truth movement of pedestrian', _id, 'too small, skipping')
-                #     continue
                 n_ped += 1
-                # print('Ground truth traj:')
-                # print(gt_trajectory)
                 # Obtain closest planned local path according to stamp
                 if len(list(local_planned_local_path_cache.keys())) > 0:
                     header_pred_trajectory = message.predictions_history_headers[
@@ -152,10 +154,9 @@ class MetricsCalculator:
                 temp_ade = np.zeros(num_of_predictions)
                 temp_fde = np.zeros(num_of_predictions)
                 temp_ade_grad = np.zeros(num_of_predictions)
+                temp_dac = calculate_dac(self.lanelet2_map, message.prediction_history[prediction_we_can_check])
                 for i in range(num_of_predictions):
                     pred_trajectory = np.array(message.prediction_history[prediction_we_can_check][i])[1:]
-                    # print('Pred traj:')
-                    # print(pred_trajectory)
                     # Calculate grad for every planned trajectory separately
                     if planned_local_path_at_stamp is not None:
                         temp_ade_grad[i] = calculate_ade_grad(pred_trajectory, planned_local_path_at_stamp)
@@ -164,6 +165,11 @@ class MetricsCalculator:
                 # Add dynamic minADE/FDE from multiple predictions to history
                 self.ade_history[_id].append(np.min(temp_ade))
                 self.fde_history[_id].append(np.min(temp_fde))
+                self.dac_history[_id].append(temp_dac)
+                if np.min(temp_fde) <= MR_LIMIT:
+                    self.mr_history[_id].append(0.0)
+                else:
+                    self.mr_history[_id].append(1.0)
                 # Store sum of gradients of this one agent
                 if planned_local_path_at_stamp is not None:
                     self.ade_grad_history[_id].append(np.sum(temp_ade_grad))
@@ -187,22 +193,32 @@ class MetricsCalculator:
                          if len(self.fde_history[agent_id]) > 0]
         non_empty_aware_ade = [self.aware_ade_history[agent_id] for agent_id in self.aware_ade_history
                                if len(self.aware_ade_history[agent_id]) > 0]
+        non_empty_mr = [self.mr_history[agent_id] for agent_id in self.mr_history
+                         if len(self.mr_history[agent_id]) > 0]
+        non_empty_dac = [self.dac_history[agent_id] for agent_id in self.dac_history
+                         if len(self.dac_history[agent_id]) > 0]
         # Calculate global dynamic ADE/FDE by first averaging over all dynamic metrics of every agent,
         # then averaging the resulted averages
         if len(non_empty_ade) > 0 and len(non_empty_fde) > 0:
             global_ade = np.mean([np.mean(dyn_ade) for dyn_ade in non_empty_ade])
             global_fde = np.mean([np.mean(dyn_fde) for dyn_fde in non_empty_fde])
             global_aware_ade = np.mean([np.mean(dyn_aware_ade) for dyn_aware_ade in non_empty_aware_ade])
+            global_mr = np.mean([np.mean(dyn_mr) for dyn_mr in non_empty_mr])
+            global_dac = np.mean([np.mean(dyn_dac) for dyn_dac in non_empty_dac])
         else:
             global_ade = 0
             global_fde = 0
             global_aware_ade = 0
+            global_mr = 0
+            global_dac = 1
 
         self.ade.publish(Float32(global_ade))
         self.fde.publish(Float32(global_fde))
         self.aware_ade.publish(Float32(global_aware_ade))
+        self.mr.publish(Float32(global_mr))
+        self.dac.publish(Float32(global_dac))
         self.result_log.append(','.join([str(header_stamp),
-                                         str(global_ade), str(global_fde), str(global_aware_ade), str(n_ped)]))
+                                         str(global_ade), str(global_fde), str(global_aware_ade), str(global_mr), str(global_dac), str(n_ped)]))
 
     def local_path_callback(self, lane):
         # Calculate planned local path from the autoware message

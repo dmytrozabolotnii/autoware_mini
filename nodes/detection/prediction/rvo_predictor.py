@@ -330,10 +330,10 @@ class RVOPredictor(NetSubscriber):
                 if self.map_constraints:
                     crosswalks = []
                     lanelets = []
-                    # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
+                    # search matching lanelets to a centroid
                     x, y = float(tracked_objects_array[i]['centroid'][0]), float(tracked_objects_array[i]['centroid'][1])
                     object_location = BasicPoint2d(x, y)
-                    # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
+                    # find lanelets within distance to object_location - distance measured from lanelet borders
                     lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, object_location,
                                                             max(2 * distance(tracked_objects_array[i]['velocity'], [0, 0]), 2 * pedestrian_normal_walking_speed))
                     for d, lanelet in lanelets_within_distance:
