@@ -113,7 +113,7 @@ class MapBasedPredictor:
 
                 # calculate objcet width and origin for prediction
                 if self.use_object_width:
-                    prediction_origin, width, offset_point = get_prediction_origin(obj, centroid=object_centroid, heading_angle=object_heading)
+                    prediction_origin, width, offset_point = get_prediction_origin(obj, heading_angle=object_heading)
                 else:
                     width = 0.0
                     prediction_origin = offset_point = object_centroid
