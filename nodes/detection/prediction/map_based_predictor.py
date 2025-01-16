@@ -120,7 +120,6 @@ class MapBasedPredictor:
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
                 trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
-                trajectory_linestring = trajectory_linestring.simplify(0.01, preserve_topology=True)
                 if self.use_offset_for_prediction:
                     cross_track_offset = -calculate_cross_track_error(trajectory_linestring, offset_point)
                     trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style=1)
