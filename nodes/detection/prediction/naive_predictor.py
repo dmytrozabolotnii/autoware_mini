@@ -40,7 +40,7 @@ class NaivePredictor:
 
             # calculate object width and origin for prediction
             if self.use_object_width:
-                origin, width, _ = get_prediction_origin(obj)
+                (origin, _), width  = get_prediction_origin(obj)
                 tracked_objects_array[i]['position'] = origin
                 tracked_objects_array[i]['width'] = width
             else:

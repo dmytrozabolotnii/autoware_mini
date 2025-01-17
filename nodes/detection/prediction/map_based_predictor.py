@@ -113,7 +113,7 @@ class MapBasedPredictor:
 
                 # calculate objcet width and origin for prediction
                 if self.use_object_width:
-                    front_center, width, center_center = get_prediction_origin(obj)
+                    (front_center, center_center), width  = get_prediction_origin(obj)
                     prediction_origin = shapely.Point(front_center)
                     offset_point = shapely.Point(center_center)
                 else:

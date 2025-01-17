@@ -1,9 +1,8 @@
 import math
 import cv2
 import numpy as np
-import shapely
 from geometry_msgs.msg import Polygon, Point
-from helpers.geometry import get_heading_from_vector
+from helpers.geometry import get_heading_from_vector, create_2d_rotation_translation_matrix
 
 def create_hull(obj):
 
@@ -86,31 +85,37 @@ def get_prediction_origin(obj):
     points = np.array([(p.x, p.y) for p in obj.convex_hull.points])
     centroid = np.array([obj.position.x, obj.position.y])
 
-    # Define rotation matrix and its inverse
-    cos_angle = np.cos(-heading_angle)
-    sin_angle = np.sin(-heading_angle)
-    rotation_matrix = np.array([[cos_angle, -sin_angle], [sin_angle, cos_angle]])
-    inverse_rotation_matrix = np.linalg.inv(rotation_matrix)  # For reverse rotation
+    # Create combined rotation + translation matrix
+    matrix = create_2d_rotation_translation_matrix(-heading_angle, centroid)
 
-    # Rotate polygon points to align with x-axis
-    translated_points = points - centroid
-    rotated_points = np.dot(translated_points, rotation_matrix.T)
+    # Convert points to homogeneous coordinates
+    points_homogeneous = np.hstack((points, np.ones((points.shape[0], 1))))
+
+    # Apply transformation to rotate and translate points
+    rotated_points = (matrix @ points_homogeneous.T).T[:, :2]
 
     # Calculate bounds in the rotated coordinate system
     minx, miny = rotated_points.min(axis=0)
     maxx, maxy = rotated_points.max(axis=0)
     width = (maxy - miny) / 2
 
-    # Calculate x and y coordinates in the rotated coordinate system
+    # Define x and y coordinates in the rotated coordinate system
     centroid_x = 0
     front_x = maxx
     center_y = (miny + maxy) / 2
 
-    # Rotate back to original coordinate system using the inverse rotation matrix
-    front_center = np.dot(np.array([front_x, center_y]), inverse_rotation_matrix.T) + centroid
-    center_center = np.dot(np.array([centroid_x, center_y]), inverse_rotation_matrix.T) + centroid
+    # Combine coordinates into a single homogeneous array
+    target_points = np.array([
+        [front_x, center_y, 1],  # Front center in rotated space
+        [centroid_x, center_y, 1]  # Center center in rotated space
+    ])
 
-    return front_center, width, center_center
+    # Apply inverse transformation to target points
+    inverse_matrix = np.linalg.inv(matrix)
+    transformed_points = (inverse_matrix @ target_points.T).T[:, :2]
+
+    return transformed_points, width
+
 
 if __name__ == '__main__':
     boxes1 = np.array([[0, 0, 10, 10], [10, 10, 20, 20]])
