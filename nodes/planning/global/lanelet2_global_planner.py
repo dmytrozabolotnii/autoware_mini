@@ -6,7 +6,7 @@ import rospy
 import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import to2D, findWithin2d, length2d, distance as lanelet2_distance
-from lanelet2.routing import LaneletRelation, RelationType
+from lanelet2.routing import RoutingCostDistance, RoutingCostTravelTime
 from geometry_msgs.msg import PoseStamped, TwistStamped, Point
 from autoware_mini.msg import Path, Waypoint
 from std_msgs.msg import ColorRGBA
@@ -26,8 +26,6 @@ LANELET_TURN_DIRECTION_TO_WAYPOINT_STATE_MAP = {
 RED = ColorRGBA(1.0, 0.0, 0.0, 0.8)
 GREEN = ColorRGBA(0.0, 1.0, 0.0, 0.8)
 
-ROUTING_COST_MAP = {"distance": 0, "travel_time" : 1}
-
 class Lanelet2GlobalPlanner:
 
     def __init__(self):
@@ -46,7 +44,11 @@ class Lanelet2GlobalPlanner:
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
         self.routing_cost = rospy.get_param("~routing_cost")
 
-        if self.routing_cost not in ROUTING_COST_MAP:
+        if self.routing_cost == 'distance':
+            routing_costs = [RoutingCostDistance(10)]
+        elif self.routing_cost == 'travel_time':
+            routing_costs = [RoutingCostTravelTime(5)]
+        else:
             raise ValueError(f"{rospy.get_name()} - 'routing_cost' must be one of 'distance' or 'travel_time', not '{self.routing_cost}'")
 
         # Internal variables
@@ -62,20 +64,7 @@ class Lanelet2GlobalPlanner:
                                                   lanelet2.traffic_rules.Participants.VehicleTaxi)
 
         # routing graph
-        self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
-        # Prepare functions to monkey-patch the leftRelation and rightRelation methods of route
-        # While route.leftRelation() and graph.left() should behave the same, in practice they don't
-        def leftRelation(lanelet):
-            rels = self.graph.leftRelations(lanelet, ROUTING_COST_MAP[self.routing_cost])
-            return rels[0] if rels else None
-        def rightRelation(lanelet):
-            rels = self.graph.rightRelations(lanelet, ROUTING_COST_MAP[self.routing_cost])
-            return rels[0] if rels else None
-        def followingRelations(lanelet):
-            return self.graph.followingRelations(lanelet, ROUTING_COST_MAP[self.routing_cost])
-        self.leftRelation = leftRelation
-        self.rightRelation = rightRelation
-        self.followingRelations = followingRelations
+        self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules, routing_costs)
 
         # Publishers
         self.waypoints_pub = rospy.Publisher('lanelet2_global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
@@ -133,11 +122,6 @@ class Lanelet2GlobalPlanner:
         if path is None:
             rospy.logerr("%s - no path found, try new goal!", rospy.get_name())
             return
-        # Monkey-patch the leftRelation and rightRelation methods of route to fix lane change error with travel_time routing cost
-        # This method is also used in find_following_lane_change_lanelet() helper, that's why we fix it with monkey-patching
-        route.leftRelation = self.leftRelation
-        route.rightRelation = self.rightRelation
-        route.followingRelations = self.followingRelations
 
         # Publish target lanelets for visualization
         start_lanelet = path[0]
@@ -215,8 +199,7 @@ class Lanelet2GlobalPlanner:
         shortest_distance = math.inf
         possible_routes = list(itertools.product(*lanelet_candidates))
         for possible_route in possible_routes:
-            route = self.graph.getRouteVia(possible_route[0], possible_route[1:-1], possible_route[-1], 
-                                           ROUTING_COST_MAP[self.routing_cost], self.lane_change)
+            route = self.graph.getRouteVia(possible_route[0], possible_route[1:-1], possible_route[-1], 0, self.lane_change)
             if route is None:
                 continue
 
