@@ -73,16 +73,14 @@ def get_axis_oriented_bounding_box(obj):
 
     return minx, miny, maxx, maxy
 
-def get_prediction_origin(obj, heading_angle=None):
+def get_prediction_origin(obj):
     """
     Get width of the object polygon and origin points for prediction center_front and center_center.
     :param obj: DetectedObject
-    :param heading_angle: heading angle in radians
-    :return: Shapely Point of center_front, width, Shapely Point of center_center
+    :return: center_front, width, center_center
     """
-    # Set heading_angle if not provided
-    if heading_angle is None:
-        heading_angle = get_heading_from_vector(obj.velocity)
+
+    heading_angle = get_heading_from_vector(obj.velocity)
 
     # Collect points from convex_hull and extract rotation center
     points = np.array([(p.x, p.y) for p in obj.convex_hull.points])
@@ -112,7 +110,7 @@ def get_prediction_origin(obj, heading_angle=None):
     front_center = np.dot(np.array([front_x, center_y]), inverse_rotation_matrix.T) + centroid
     center_center = np.dot(np.array([centroid_x, center_y]), inverse_rotation_matrix.T) + centroid
 
-    return shapely.Point(front_center), width, shapely.Point(center_center)
+    return front_center, width, center_center
 
 if __name__ == '__main__':
     boxes1 = np.array([[0, 0, 10, 10], [10, 10, 20, 20]])

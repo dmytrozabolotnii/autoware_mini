@@ -134,6 +134,7 @@ class TrajectoryCollisionChecker:
                             if heading_difference < self.heading_alignment_limit:
                                 if object_distance_from_local_path_start > 0.0:
                                     # object in front with similar heading but not on local path: add collision points with object's velocity
+                                    # TODO use here interpolated velocity at the closest trajectory_intersection_points, projected to trajectory_to_check
                                     collision_points.add_intersection_points(trajectory_intersection_points,
                                                                             z = obj.position.z,
                                                                             vx = obj.velocity.x,
