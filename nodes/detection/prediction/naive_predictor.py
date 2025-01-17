@@ -38,7 +38,7 @@ class NaivePredictor:
             if get_vector_norm_3d(obj.velocity) < self.prediction_min_speed or len(obj.candidate_trajectories.paths) > 0:
                 continue
 
-            # calculate objcet width and origin for prediction
+            # calculate object width and origin for prediction
             if self.use_object_width:
                 origin, width, _ = get_prediction_origin(obj)
                 tracked_objects_array[i]['position'] = (origin.x, origin.y)
@@ -53,14 +53,18 @@ class NaivePredictor:
 
         # Predict future positions and velocities - includes also initial step, thus + 1
         num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
-        predicted_objects_array = np.empty((num_timesteps, num_objects), dtype=[
-            ('position', np.float32, (2,)),
-            ('velocity', np.float32, (2,)),
-        ])
-        predicted_objects_array[0] = tracked_objects_array[['position', 'velocity']]
-        for t in range(1, num_timesteps):
-            predicted_objects_array[t]['velocity'] = predicted_objects_array[t - 1]['velocity'] + tracked_objects_array['acceleration'] * self.prediction_interval
-            predicted_objects_array[t]['position'] = predicted_objects_array[t - 1]['position'] + predicted_objects_array[t - 1]['velocity'] * self.prediction_interval
+        timesteps = np.arange(num_timesteps) * self.prediction_interval
+        timesteps = timesteps[:, None, None]  # Reshape for broadcasting
+
+        predicted_positions = (
+            tracked_objects_array['position'][None, :, :]  # Shape (1, num_objects, 2)
+            + tracked_objects_array['velocity'][None, :, :] * timesteps  # v0 * t
+            + 0.5 * tracked_objects_array['acceleration'][None, :, :] * timesteps**2  # (1/2) * a * t^2
+        )
+        predicted_velocities = (
+            tracked_objects_array['velocity'][None, :, :]  # Shape (1, num_objects, 2)
+            + tracked_objects_array['acceleration'][None, :, :] * timesteps  # v0 + a * t
+        )
 
         # Create candidate trajectories
         for i in valid_indices:
@@ -69,9 +73,9 @@ class NaivePredictor:
 
             for t in range(num_timesteps):
                 wp = Waypoint()
-                wp.position.x, wp.position.y = predicted_objects_array[t][i]['position']
+                wp.position.x, wp.position.y = predicted_positions[t, i]
                 wp.position.z = obj.position.z
-                wp.speed = np.linalg.norm(predicted_objects_array[t][i]['velocity'])
+                wp.speed = np.linalg.norm(predicted_velocities[t, i])
                 wp.left_width = tracked_objects_array[i]['width']
                 wp.right_width = tracked_objects_array[i]['width']
                 path.waypoints.append(wp)
