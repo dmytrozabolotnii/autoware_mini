@@ -195,28 +195,3 @@ def convert_geometry_to_line_list(geometry, delta_z=0):
         line_list_points.append(points[i + 1])
     
     return line_list_points
-
-def create_2d_rotation_matrix(angle):
-    """
-    Create a 2D rotation matrix for a given angle.
-    :param angle: Angle in radians
-    :return: 2x2 rotation matrix
-    """
-    cos_angle = np.cos(angle)
-    sin_angle = np.sin(angle)
-    return np.array([[cos_angle, -sin_angle], [sin_angle, cos_angle]])
-
-def create_2d_rotation_translation_matrix(angle, translation):
-    """
-    Create a 2D rotation + translation matrix for a given angle and translation.
-    The translation is applied before rotation (pre-rotation translation).
-    :param angle: Angle in radians
-    :param translation: 2D translation vector to be subtracted
-    :return: 3x3 rotation + translation matrix
-    """
-    rotation_matrix = create_2d_rotation_matrix(angle)
-    transformation_matrix = np.eye(3)
-    transformation_matrix[:2, :2] = rotation_matrix
-    # Apply translation pre-rotation
-    transformation_matrix[:2, 2] = -np.dot(rotation_matrix, translation)
-    return transformation_matrix

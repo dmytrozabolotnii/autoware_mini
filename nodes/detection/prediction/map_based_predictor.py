@@ -11,7 +11,7 @@ from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 from helpers.path import calculate_cross_track_error
 from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
 from helpers.lanelet2 import load_lanelet2_map
-from helpers.detection import get_prediction_origin
+from helpers.detection import get_prediction_width
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
     'straight': {'straight': 1, 'left': 0.5, 'right': 0.5},
@@ -113,9 +113,9 @@ class MapBasedPredictor:
 
                 # calculate objcet width and origin for prediction
                 if self.use_object_width:
-                    (front_center, center_center), width  = get_prediction_origin(obj)
-                    prediction_origin = shapely.Point(front_center)
-                    offset_point = shapely.Point(center_center)
+                    width, origin, offset  = get_prediction_width(obj)
+                    prediction_origin = shapely.Point(origin)
+                    offset_point = shapely.Point(offset)
                 else:
                     width = 0.0
                     prediction_origin = offset_point = object_centroid
