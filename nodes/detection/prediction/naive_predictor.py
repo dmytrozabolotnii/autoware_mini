@@ -54,16 +54,16 @@ class NaivePredictor:
         # Predict future positions and velocities - includes also initial step, thus + 1
         num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
         timesteps = np.arange(num_timesteps) * self.prediction_interval
-        timesteps = timesteps[:, None, None]  # Reshape for broadcasting
+        timesteps = timesteps[:, np.newaxis, np.newaxis]  # Reshape for broadcasting
 
         predicted_positions = (
-            tracked_objects_array['position'][None, :, :]  # Shape (1, num_objects, 2)
-            + tracked_objects_array['velocity'][None, :, :] * timesteps  # v0 * t
-            + 0.5 * tracked_objects_array['acceleration'][None, :, :] * timesteps**2  # (1/2) * a * t^2
+            tracked_objects_array['position'][np.newaxis, :, :]  # Shape (1, num_objects, 2)
+            + tracked_objects_array['velocity'][np.newaxis, :, :] * timesteps  # v0 * t
+            + 0.5 * tracked_objects_array['acceleration'][np.newaxis, :, :] * timesteps**2  # (1/2) * a * t^2
         )
         predicted_velocities = (
-            tracked_objects_array['velocity'][None, :, :]  # Shape (1, num_objects, 2)
-            + tracked_objects_array['acceleration'][None, :, :] * timesteps  # v0 + a * t
+            tracked_objects_array['velocity'][np.newaxis, :, :]  # Shape (1, num_objects, 2)
+            + tracked_objects_array['acceleration'][np.newaxis, :, :] * timesteps  # v0 + a * t
         )
 
         # Create candidate trajectories
