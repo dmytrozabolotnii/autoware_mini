@@ -13,7 +13,7 @@ from math import atan2
 from shapely.geometry import LinearRing
 
 from net_sub import NetSubscriber
-from shapely import GeometryCollection, Polygon, LineString, Point
+from shapely import GeometryCollection, Polygon, LineString, Point, prepare
 from shapely.affinity import affine_transform, rotate
 from shapely.geometry.polygon import orient
 
@@ -190,6 +190,8 @@ class RVOPredictor(NetSubscriber):
         self.fov_constraint = rospy.get_param('~fov_constraint', False)
         self.map_constraints = rospy.get_param('~map_constraints', False)
         self.cars_constraints = rospy.get_param('~cars_constraints', False)
+        self.rvo_only = rospy.get_param('~rvo_only', False)
+
         self.prediction_horizon_time = self.prediction_horizon * self.prediction_interval
 
         self.constant_velocity_mode = bool(rospy.get_param('~constant_velocity'))
@@ -335,17 +337,17 @@ class RVOPredictor(NetSubscriber):
                     object_location = BasicPoint2d(x, y)
                     # find lanelets within distance to object_location - distance measured from lanelet borders
                     lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, object_location,
-                                                            max(2 * distance(tracked_objects_array[i]['velocity'], [0, 0]), 2 * pedestrian_normal_walking_speed))
+                                                            max(2 * self.prediction_horizon_time * distance(tracked_objects_array[i]['velocity'], [0, 0]), 2 * self.prediction_horizon_time * pedestrian_normal_walking_speed))
                     for d, lanelet in lanelets_within_distance:
                         # print(lanelet.attributes["subtype"])
                         # print(dir(lanelet))
                         # print(lanelet.polygon2d())
                         # print(dir(lanelet.polygon2d()))
                         if lanelet.attributes and lanelet.attributes["subtype"] == 'crosswalk':
-                            crosswalks.append(Polygon([(p.x - x, p.y - y) for p in lanelet.polygon2d()]))
+                            crosswalks.append(Polygon([((p.x - x) / self.prediction_horizon_time, (p.y - y) / self.prediction_horizon_time) for p in lanelet.polygon2d()]))
                             # print('Crosswalks', crosswalks)
                         else:
-                            lanelets.append(Polygon([(p.x - x, p.y - y) for p in lanelet.polygon2d()]))
+                            lanelets.append(Polygon([((p.x - x)  / self.prediction_horizon_time, (p.y - y)  / self.prediction_horizon_time) for p in lanelet.polygon2d()]))
                             # print('Lanelets', lanelets)
 
                 # Construct free from obstacle zone from deviation vectors
@@ -369,7 +371,7 @@ class RVOPredictor(NetSubscriber):
             callback_time = time.time() - total_time
             self.average_time = (self.average_time * self.average_time_counter + callback_time) / (self.average_time_counter + 1)
             self.average_time_counter += 1
-            print('Total time', callback_time, 'Average time', self.average_time, 'Minkowski sum time', mink_time, 'Minkowski sum counts', mink_count)
+            # print('Total time', callback_time, 'Average time', self.average_time, 'Minkowski sum time', mink_time, 'Minkowski sum counts', mink_count)
 
             for i in range(1, num_timesteps):
                 predicted_objects_array[i]['centroid'] = predicted_objects_array[i - 1]['centroid'] + \
@@ -389,7 +391,10 @@ class RVOPredictor(NetSubscriber):
             with self.lock:
                 # Create candidate trajectories
                 for i, _id in enumerate(temp_active_keys):
-                    self.cache[_id].extend_prediction_history([predicted_objects_array[:, i]['centroid'], rvo_objects_array[:, i]['centroid']])
+                    if self.rvo_only:
+                        self.cache[_id].extend_prediction_history([rvo_objects_array[:, i]['centroid']])
+                    else:
+                        self.cache[_id].extend_prediction_history([predicted_objects_array[:, i]['centroid'], rvo_objects_array[:, i]['centroid']])
                     self.cache[_id].extend_prediction_header_history(temp_headers[i])
             self.move_endpoints()
 

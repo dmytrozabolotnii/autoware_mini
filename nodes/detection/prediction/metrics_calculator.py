@@ -77,6 +77,7 @@ class MetricsCalculator:
         self.fde_history = {}
         self.mr_history = {}
         self.dac_history = {}
+        self.presence_time_cache = {}
         # self.cache = cache
         lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
@@ -104,7 +105,7 @@ class MetricsCalculator:
         self.local_path_sub = rospy.Subscriber('/planning/local_path', Path, self.local_path_callback, queue_size=1)
         rospy.on_shutdown(self.shutdown)
         with open(self.csvfilename, 'w') as file:
-            file.write('stamp,ade,fde,aware_ade,mr,dac,n_ped')
+            file.write('stamp,ade,fde,aware_ade,mr,dac,n_ped_max,n_ped_total,ped_avg_time')
             file.write('\n')
 
         rospy.loginfo("%s - initialized", rospy.get_name())
@@ -124,10 +125,13 @@ class MetricsCalculator:
                 self.aware_ade_history[_id] = []
                 self.mr_history[_id] = []
                 self.dac_history[_id] = []
+                self.presence_time_cache[_id] = 0
 
+            header = message.return_last_header()
+            # Update presence time of pedestrian
+            self.presence_time_cache[_id] = (header.stamp - message.headers[0].stamp).to_sec() + 0.05
             # Check what prediction we can check for metrics
             prediction_we_can_check = 0
-            header = message.return_last_header()
             for i, prediction_header in enumerate(message.predictions_history_headers[1:]):
                 if abs((header.stamp - prediction_header.stamp).to_sec() - self.pad_future * self.metrics_timer_duration) < self.metrics_timer_duration:
                     prediction_we_can_check = i + 1
@@ -218,7 +222,7 @@ class MetricsCalculator:
         self.mr.publish(Float32(global_mr))
         self.dac.publish(Float32(global_dac))
         self.result_log.append(','.join([str(header_stamp),
-                                         str(global_ade), str(global_fde), str(global_aware_ade), str(global_mr), str(global_dac), str(n_ped)]))
+                                         str(global_ade), str(global_fde), str(global_aware_ade), str(global_mr), str(global_dac), str(n_ped), str(len(self.presence_time_cache)), str(np.mean(list(self.presence_time_cache.values())))]))
 
     def local_path_callback(self, lane):
         # Calculate planned local path from the autoware message

@@ -167,6 +167,16 @@
                 <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
             </node>
 
+            <node if="$(eval predictor=='pedestrianrvobestonly')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
+                <param name="constant_velocity" value="true" />
+                <param name="fov_constraint" value="false" />
+                <param name="map_constraints" value="true" />
+                <param name="cars_constraints" value="false" />
+                <param name="rvo_only" value="true" />
+                <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
+            </node>
+
+
 
             <node if="$(eval predictor=='pedestrian')" type="pecnet_sub.py" name="pecnet_predictor" pkg="autoware_mini" output="screen" required="true" />
 
