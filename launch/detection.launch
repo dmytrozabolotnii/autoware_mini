@@ -12,6 +12,7 @@
     <arg name="predictor"           default="none"              doc="none, naive, map, map_naive" />
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
+    <arg name="ground_removal"      default="naive"             doc="naive, jcp" />
 
     <group ns="detection">
 
@@ -27,6 +28,7 @@
             <arg name="detection_range"     value="$(arg detection_range)" />
             <arg name="map_name"            value="$(arg map_name)" />
             <arg name="use_road_area_filter" value="$(arg use_road_area_filter)" />
+            <arg name="ground_removal"      value="$(arg ground_removal)" />
         </include>
 
         <!-- Traffic light detection -->

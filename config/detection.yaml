@@ -12,7 +12,7 @@ lidar:
       negative: True
       input_frame: lidar_center
       output_frame: lidar_center
-    ground_removal:
+    naive_ground_removal:
       min_x: -60.0
       max_x: 60.0
       min_y: -60.0
@@ -23,6 +23,11 @@ lidar:
       tolerance: 0.15
       filter: average                    # none, median, average, minimum
       filter_size: 3
+    jcp_ground_removal:
+      range_img_width: 1024
+      range_img_height: 32
+      sensor_height: 2.11
+      delta_R: 1
   front:
     crop_box:
       min_x: -2.0
@@ -34,7 +39,7 @@ lidar:
       negative: True
       input_frame: lidar_center
       output_frame: lidar_center
-    ground_removal:
+    naive_ground_removal:
       min_x: -60.0
       max_x: 60.0
       min_y: -60.0
@@ -45,6 +50,11 @@ lidar:
       tolerance: 0.15
       filter: average                    # none, median, average, minimum
       filter_size: 3
+    jcp_ground_removal:
+      range_img_width: 1024
+      range_img_height: 128
+      sensor_height: 1.7
+      delta_R: 1
   points_concatenator:
     transform_timeout: 0.06
   voxel_grid_filter:
