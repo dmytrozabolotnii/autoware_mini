@@ -94,7 +94,7 @@ class NovatelOem7Localizer:
 
             # unless lat and lon = 0, transform GNSS coordinates and correct azimuth
             if inspva_msg.latitude == 0 and inspva_msg.longitude == 0:
-                rospy.logwarn_throttle(30, "Received 0 Latitude and Longitude. Skipping transformation and using UTM origin coordinates")
+                rospy.logwarn_throttle(30, "Received 0 Latitude and Longitude from INSPVA message. Skipping transformation.")
                 # Place the car at the map origin (0,0)
                 x = 0.0
                 y = 0.0
