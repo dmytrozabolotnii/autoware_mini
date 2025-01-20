@@ -55,7 +55,6 @@ class TrajectoryCollisionChecker:
 
                     if self.use_object_width:
                         trajectory_to_check = trajectory_to_check.buffer(path.waypoints[0].left_width, cap_style="flat")
-                        shapely.prepare(trajectory_to_check)
 
                     if local_path_buffer.intersects(trajectory_to_check):
                         trajectory_intersection_result = trajectory_to_check.intersection(local_path_buffer)
@@ -77,7 +76,7 @@ class TrajectoryCollisionChecker:
                         object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
                         heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
 
-                        # CHECK COLLISION only the ones that are not included for yielding and not behind the ego and not intersecting local_path
+                        # CHECK COLLISION only the ones that and not behind the ego and not intersecting local_path
                         if heading_difference < self.heading_alignment_limit:
                             if object_distance_from_local_path_start > 0.0:
                                 # object in front with similar heading but not on local path: add collision points with object's velocity
