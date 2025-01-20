@@ -46,7 +46,7 @@ class PathWrapper:
         :param side: side to search for the distance
         :return: waypoint
         """
-        assert hasattr(self, '_distances'), "Distances not available, check that path was initialized with distances=True"
+        assert hasattr(self, '_distances'), "Waypoint distances not available, check that path was initialized with distances=True"
         return np.searchsorted(self._distances, distance, side)
 
     def _extract_waypoints(self, index_start, index_end, copy=False):
@@ -208,14 +208,14 @@ class PathWrapper:
             lookahead_blinker_state = int(self._distance_to_blinker_interpolator(blinker_lookahead_distance))
             return get_blinker_state(lookahead_blinker_state)
         
-    def get_blinker_at_distance(self, ego_distance_from_path_start):
+    def get_blinker_at_distance(self, distance):
         """
         Get blinker steering state. 
         :param ego_distance_from_path_start: distance from path start (m)
         :return: steering state
         """
         assert hasattr(self, '_distance_to_blinker_interpolator'), "Blinker interpolator not available, check that path was initialized with blinkers=True"
-        return int(self._distance_to_blinker_interpolator(ego_distance_from_path_start))
+        return int(self._distance_to_blinker_interpolator(distance))
     
     def get_elevation_at_distance(self, distance):
         """
@@ -234,12 +234,11 @@ class PathWrapper:
         """
 
         # Find the point on the path
-        point_location = self.linestring.interpolate(distance)
+        point = self.linestring.interpolate(distance)
         heading = self.get_heading_at_distance(distance)
 
-        return Pose(position = Point(x = point_location.x, y = point_location.y, z = point_location.z),
+        return Pose(position = Point(x = point.x, y = point.y, z = point.z),
                     orientation = get_orientation_from_heading(heading))
-
 
     def get_heading_at_distance(self, distance):
         """
@@ -253,10 +252,7 @@ class PathWrapper:
         point_before_object = self.linestring.interpolate(max(0, distance - 0.1))
 
         # get heading between two points
-        path_heading = math.atan2(point_after_object.y - point_before_object.y, point_after_object.x - point_before_object.x)
-
-        return path_heading
-
+        return get_heading_between_two_points(point_before_object, point_after_object)
 
     def get_cross_track_error(self, current_position):
         """
@@ -306,11 +302,11 @@ def calculate_cross_track_error(linestring, position):
     :return: cross track error
     """
 
-    ego_distance_from_path_start = linestring.project(position)
+    distance_from_path_start = linestring.project(position)
 
     # if distance is negative it is measured from the end of the linestring in reverse direction
-    pos1 = linestring.interpolate(max(0, ego_distance_from_path_start - 0.1))
-    pos2 = linestring.interpolate(ego_distance_from_path_start + 0.1)
+    pos1 = linestring.interpolate(max(0, distance_from_path_start - 0.1))
+    pos2 = linestring.interpolate(distance_from_path_start + 0.1)
 
     numerator = (pos2.x - pos1.x) * (pos1.y - position.y) - (pos1.x - position.x) * (pos2.y - pos1.y)
     denominator = math.sqrt((pos2.x - pos1.x) ** 2 + (pos2.y - pos1.y) ** 2)

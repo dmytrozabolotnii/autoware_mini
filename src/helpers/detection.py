@@ -1,10 +1,8 @@
 import math
 import cv2
 import numpy as np
-
 from geometry_msgs.msg import Polygon, Point
-
-from helpers.geometry import get_heading_from_orientation
+from helpers.geometry import get_heading_from_vector
 
 def create_hull(obj):
 
@@ -73,6 +71,50 @@ def get_axis_oriented_bounding_box(obj):
     maxx, maxy = np.max(points, axis=0)
 
     return minx, miny, maxx, maxy
+
+def get_prediction_width(obj):
+    """
+    Get width of the object polygon and prediction origin and offset.
+    :param obj: DetectedObject
+    :return: width, origin, offset
+    """
+
+    # Collect points from convex_hull and extract rotation center
+    points = np.array([(p.x, p.y) for p in obj.convex_hull.points])
+    centroid = np.array([obj.position.x, obj.position.y])
+    heading_angle = get_heading_from_vector(obj.velocity)
+
+    # Create rotation matrices
+    cos_angle = np.cos(-heading_angle)
+    sin_angle = np.sin(-heading_angle)
+    rotation_matrix = np.array([
+        [cos_angle, -sin_angle],
+        [sin_angle, cos_angle]
+    ])
+    inverse_rotation_matrix = np.linalg.inv(rotation_matrix)
+
+    # Translate and rotate points
+    points -= centroid
+    points = points @ rotation_matrix.T
+
+    # Calculate bounds in the rotated coordinate system
+    minx, miny = points.min(axis=0)
+    maxx, maxy = points.max(axis=0)
+    width = (maxy - miny) / 2
+    center_y = (miny + maxy) / 2
+
+    # Combine coordinates into a single array
+    target_points = np.array([
+        [maxx, center_y], # Origin in rotated space
+        [0, center_y]     # Offset in rotated space
+    ])
+
+    # Apply inverse rotation to target points, then translation
+    target_points = target_points @ inverse_rotation_matrix.T
+    target_points += centroid
+
+    return (width, *target_points)
+
 
 if __name__ == '__main__':
     boxes1 = np.array([[0, 0, 10, 10], [10, 10, 20, 20]])
