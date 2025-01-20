@@ -32,6 +32,8 @@ class NovatelOem7Localizer:
         self.use_msl_height = rospy.get_param("~use_msl_height")
         self.default_height = rospy.get_param("~default_height")
         self.default_azimuth = rospy.get_param("~default_azimuth")
+        self.default_x = rospy.get_param("~default_x")
+        self.default_y = rospy.get_param("~default_y")
         self.parent_frame = rospy.get_param("~parent_frame")
         self.child_frame = rospy.get_param("~child_frame")
 
@@ -96,8 +98,8 @@ class NovatelOem7Localizer:
             if inspva_msg.latitude == 0 and inspva_msg.longitude == 0:
                 rospy.logwarn_throttle(30, "Received 0 Latitude and Longitude from INSPVA message. Skipping transformation.")
                 # Place the car at the map origin (0,0)
-                x = 0.0
-                y = 0.0
+                x = self.default_x
+                y = self.default_y
                 azimuth = self.default_azimuth
                 height = self.default_height
             else:
