@@ -20,7 +20,6 @@ class TrajectoryCollisionChecker:
         self.heading_alignment_limit = rospy.get_param("~heading_alignment_limit")
         self.use_object_width = rospy.get_param("use_object_width")
         self.stopped_speed_limit = rospy.get_param("stopped_speed_limit")
-        self.map_prediction_horizon = rospy.get_param("/detection/map_based_predictor/prediction_horizon")
 
         # variables
         self.detected_objects = None
@@ -43,7 +42,6 @@ class TrajectoryCollisionChecker:
 
         detected_objects = self.detected_objects
         current_velocity = self.current_velocity
-        reachable_distance = current_velocity * self.map_prediction_horizon
 
         if detected_objects is None:
             rospy.logwarn_throttle(3, "%s - detected objects not received!", rospy.get_name())
@@ -71,10 +69,6 @@ class TrajectoryCollisionChecker:
                             trajectory_intersection_result = trajectory_to_check.intersection(local_path_buffer)
                             trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
-
-                            # Ignore trajectory if further than ego can reach within prediction horizon
-                            if trajectory_intersection_distance > reachable_distance:
-                                continue
 
                             object_current_location = shapely.Point(obj.position.x, obj.position.y)
                             object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
