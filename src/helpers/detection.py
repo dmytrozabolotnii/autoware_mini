@@ -84,14 +84,13 @@ def get_prediction_width(obj):
     centroid = np.array([obj.position.x, obj.position.y])
     heading_angle = get_heading_from_vector(obj.velocity)
 
-    # Create rotation matrices
+    # Create rotation matrix
     cos_angle = np.cos(-heading_angle)
     sin_angle = np.sin(-heading_angle)
     rotation_matrix = np.array([
         [cos_angle, -sin_angle],
         [sin_angle, cos_angle]
     ])
-    inverse_rotation_matrix = np.linalg.inv(rotation_matrix)
 
     # Translate and rotate points
     points -= centroid
@@ -107,6 +106,14 @@ def get_prediction_width(obj):
     target_points = np.array([
         [maxx, center_y], # Origin in rotated space
         [0, center_y]     # Offset in rotated space
+    ])
+
+    # Create inverse rotation matrix
+    cos_angle = np.cos(heading_angle)
+    sin_angle = np.sin(heading_angle)
+    inverse_rotation_matrix = np.array([
+        [cos_angle, -sin_angle],
+        [sin_angle, cos_angle]
     ])
 
     # Apply inverse rotation to target points, then translation

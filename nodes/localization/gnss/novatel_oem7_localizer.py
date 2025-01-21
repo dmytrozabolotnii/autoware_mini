@@ -78,7 +78,7 @@ class NovatelOem7Localizer:
         initialpose_matrix = numpify(pose_msg.pose.pose)
         current_pose_matrix = numpify(self.current_pose)
         # get the difference between initialpose and current_pose
-        self.relative_pose_matrix = initialpose_matrix.dot(np.linalg.inv(current_pose_matrix))
+        self.relative_pose_matrix = initialpose_matrix.dot(np.linalg.pinv(current_pose_matrix))
 
 
     def cancel_pose_callback(self, req):
