@@ -42,13 +42,11 @@ class YieldingChecker:
         self.detected_objects = msg.objects
 
     def global_path_callback(self, msg):
-        global_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
-        global_path_linestring = global_path_linestring.simplify(0.01)
-        shapely.prepare(global_path_linestring)
+        global_path = PathWrapper(msg.waypoints)
 
         yield_lines_on_global_path = []
         for id, yield_line in self.yield_lines.items():
-            if yield_line.intersects(global_path_linestring):
+            if yield_line.intersects(global_path.linestring):
                 yield_lines_on_global_path.append(yield_line)
 
         self.yield_lines_on_global_path = yield_lines_on_global_path
@@ -84,48 +82,47 @@ class YieldingChecker:
             if yield_line_point is not None:
                 yielding_found = False
                 for obj in detected_objects:
-                    if len(obj.candidate_trajectories.paths) > 0:
-                        for path in obj.candidate_trajectories.paths:
+                    for path in obj.candidate_trajectories.paths:
 
-                            trajectory_to_check = PathWrapper(path.waypoints).linestring
+                        trajectory_to_check = PathWrapper(path.waypoints).linestring
 
-                            if self.use_object_width:
-                                trajectory_to_check = trajectory_to_check.buffer(path.waypoints[0].left_width, cap_style="flat")
+                        if self.use_object_width:
+                            trajectory_to_check = trajectory_to_check.buffer(path.waypoints[0].left_width, cap_style="flat")
 
-                            if local_path_buffer.intersects(trajectory_to_check):
-                                trajectory_intersection_result = trajectory_to_check.intersection(local_path_buffer)
-                                trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
-                                trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
+                        if local_path_buffer.intersects(trajectory_to_check):
+                            trajectory_intersection_result = trajectory_to_check.intersection(local_path_buffer)
+                            trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
+                            trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 
-                                # Ignore trajectories from behind
-                                if math.isclose(trajectory_intersection_distance, 0.0, abs_tol=0.001):
-                                    continue
+                            # Ignore trajectories from behind
+                            if math.isclose(trajectory_intersection_distance, 0.0, abs_tol=0.001):
+                                continue
 
-                                object_current_heading = get_heading_from_vector(obj.velocity)
-                                object_current_location = shapely.Point(obj.position.x, obj.position.y)
-                                object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
-                                object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
-                                heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
+                            object_current_heading = get_heading_from_vector(obj.velocity)
+                            object_current_location = shapely.Point(obj.position.x, obj.position.y)
+                            object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
+                            object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
+                            heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
 
-                                # CHECK YIELDING
-                                #    - trajectory_intersection after yiled line within 40m
-                                #    - ignore objects that align with the local_path (for example car in front)
-                                if yield_line_distance < trajectory_intersection_distance and trajectory_intersection_distance - yield_line_distance < self.yielding_distance_limit \
-                                    and heading_difference > self.heading_alignment_limit:
+                            # CHECK YIELDING
+                            #    - trajectory_intersection after yiled line within 40m
+                            #    - ignore objects that align with the local_path (for example car in front)
+                            if yield_line_distance < trajectory_intersection_distance and trajectory_intersection_distance - yield_line_distance < self.yielding_distance_limit \
+                                and heading_difference > self.heading_alignment_limit:
 
-                                    collision_points.add_point(x = yield_line_point.x,
-                                                            y = yield_line_point.y,
-                                                            z = obj.position.z,
-                                                            vx = 0.0,
-                                                            vy = 0.0, 
-                                                            vz = 0.0,
-                                                            distance_to_stop = self.braking_safety_distance_yield,
-                                                            category = CollisionPoints.YIELDING_TRAJECTORY)
-                                    # if one found then break the path and object loops
-                                    yielding_found = True
-                                    break
-                        if yielding_found:
-                            break
+                                collision_points.add_point(x = yield_line_point.x,
+                                                        y = yield_line_point.y,
+                                                        z = obj.position.z,
+                                                        vx = 0.0,
+                                                        vy = 0.0, 
+                                                        vz = 0.0,
+                                                        distance_to_stop = self.braking_safety_distance_yield,
+                                                        category = CollisionPoints.YIELDING_TRAJECTORY)
+                                # if one found then break the path and object loops
+                                yielding_found = True
+                                break
+                    if yielding_found:
+                        break
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header
