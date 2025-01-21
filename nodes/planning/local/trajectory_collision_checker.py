@@ -18,8 +18,8 @@ class TrajectoryCollisionChecker:
         self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
         self.braking_safety_distance_obstacle = rospy.get_param("~braking_safety_distance_obstacle")
         self.heading_alignment_limit = rospy.get_param("~heading_alignment_limit")
-        self.use_object_width = rospy.get_param("/planning/use_object_width")
-        self.stopped_speed_limit = rospy.get_param("/planning/stopped_speed_limit")
+        self.use_object_width = rospy.get_param("use_object_width")
+        self.stopped_speed_limit = rospy.get_param("stopped_speed_limit")
         self.map_prediction_horizon = rospy.get_param("/detection/map_based_predictor/prediction_horizon")
 
         # variables
