@@ -30,10 +30,10 @@ class NovatelOem7Localizer:
         self.lest97_origin_northing = rospy.get_param("lest97_origin_northing")
         self.lest97_origin_easting = rospy.get_param("lest97_origin_easting")
         self.use_msl_height = rospy.get_param("~use_msl_height")
-        self.default_height = rospy.get_param("~default_height")
-        self.default_azimuth = rospy.get_param("~default_azimuth")
-        self.default_x = rospy.get_param("~default_x")
-        self.default_y = rospy.get_param("~default_y")
+        self.offline_height = rospy.get_param("~offline_height")
+        self.offline_azimuth = rospy.get_param("~offline_azimuth")
+        self.offline_lat = rospy.get_param("~offline_lat")
+        self.offline_lon = rospy.get_param("~offline_lon")
         self.parent_frame = rospy.get_param("~parent_frame")
         self.child_frame = rospy.get_param("~child_frame")
 
@@ -94,14 +94,13 @@ class NovatelOem7Localizer:
         try:
             stamp = inspva_msg.header.stamp
 
-            # unless lat and lon = 0, transform GNSS coordinates and correct azimuth
+            # transform GNSS coordinates and correct azimuth, if lat=lon=0 from INSPVA message use offline values
             if inspva_msg.latitude == 0 and inspva_msg.longitude == 0:
-                rospy.logwarn_throttle(30, "Received 0 Latitude and Longitude from INSPVA message. Skipping transformation.")
+                rospy.logwarn_throttle(30, "Received 0 Latitude and Longitude from INSPVA message, using offline values")
                 # Place the car at the map origin (0,0)
-                x = self.default_x
-                y = self.default_y
-                azimuth = self.default_azimuth
-                height = self.default_height
+                x, y = self.transformer.transform_lat_lon(self.offline_lat, self.offline_lon, self.offline_height)
+                azimuth = self.transformer.correct_azimuth(self.offline_lat, self.offline_lon, self.offline_azimuth)
+                height = self.offline_height
             else:
                 x, y = self.transformer.transform_lat_lon(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.height)
                 azimuth = self.transformer.correct_azimuth(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.azimuth)
