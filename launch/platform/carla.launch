@@ -3,7 +3,7 @@
   <!-- Map to load on startup, ideally this should match with CARLA environments (tartu_demo) is exception-->
   <arg name="map_name" />
   <!-- use comma separated format "x,y,z,roll,pitch,yaw" -->
-  <arg name="spawn_point"         default="$(eval '0.0,0.0,36,0,0,-98' if 'tartu' in map_name else '')" />
+  <arg name="spawn_point"         default="$(eval '4.70,342.07,36,0,0,-98' if 'tartu' in map_name else '')" />
   <!-- Module type -->
   <arg name="use_lidar"           default="false"/>
   <arg name="use_radar"           default="false"/>
