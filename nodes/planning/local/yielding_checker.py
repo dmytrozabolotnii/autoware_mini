@@ -112,7 +112,7 @@ class YieldingChecker:
 
                                 collision_points.add_point(x = yield_line_point.x,
                                                         y = yield_line_point.y,
-                                                        z = obj.position.z,
+                                                        z = yield_line_point.z,
                                                         vx = 0.0,
                                                         vy = 0.0, 
                                                         vz = 0.0,
