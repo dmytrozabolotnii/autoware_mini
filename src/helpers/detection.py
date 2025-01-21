@@ -109,11 +109,10 @@ def get_prediction_width(obj):
     ])
 
     # Create inverse rotation matrix
-    cos_angle = np.cos(heading_angle)
-    sin_angle = np.sin(heading_angle)
+    # sin(-a) = -sin(a), cos(-a) = cos(a)
     inverse_rotation_matrix = np.array([
-        [cos_angle, -sin_angle],
-        [sin_angle, cos_angle]
+        [cos_angle, sin_angle],
+        [-sin_angle, cos_angle]
     ])
 
     # Apply inverse rotation to target points, then translation
