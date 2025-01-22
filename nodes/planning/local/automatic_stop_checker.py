@@ -77,7 +77,7 @@ class AutomaticStopChecker:
                 if id != self.ignore_stop_line_id:
                     collision_points.add_point(x = stop_line_intersection_result.x,
                                                 y = stop_line_intersection_result.y,
-                                                z = stop_line.coords[0][2],
+                                                z = stop_line_intersection_result.z,
                                                 vx = 0.0,
                                                 vy = 0.0, 
                                                 vz = 0.0,
