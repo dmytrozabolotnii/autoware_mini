@@ -33,7 +33,7 @@ ROS node that clusters point cloud data and publishes detected objects.
 
 
 
-## ground_removal
+## naive_ground_removal
 
 ROS node for filtering ground points from a 3D point cloud.
 

@@ -9,7 +9,7 @@ import cv2
 from ros_numpy import numpify, msgify
 from sensor_msgs.msg import PointCloud2
 
-class GroundRemovalNode:
+class NaiveGroundRemovalNode:
     def __init__(self):
         self.min_x = rospy.get_param('~min_x')
         self.max_x = rospy.get_param('~max_x')
@@ -92,6 +92,6 @@ class GroundRemovalNode:
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('ground_removal', log_level=rospy.INFO)
-    node = GroundRemovalNode()
+    rospy.init_node('naive_ground_removal', log_level=rospy.INFO)
+    node = NaiveGroundRemovalNode()
     node.run()

@@ -11,6 +11,7 @@
     <arg name="predictor"           default="none"              doc="none, naive, map, map_naive" />
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
+    <arg name="ground_removal"      default="naive"             doc="naive, jcp" />
 
     <group>
         <group if="$(eval 'lidar' in detector)" ns="lidar">
@@ -22,22 +23,22 @@
                         <remap from="~input" to="/lidar_center/pointcloud" />
                         <remap from="~output" to="/lidar_center/points_raw" />
                     </node>
-                    <node type="ground_removal.py" name="ground_removal" pkg="autoware_mini" output="screen" required="true">
-                        <remap from="points_raw" to="/lidar_center/points_raw" />
-                        <remap unless="$(arg use_lidar_front)" from="points_ground" to="/detection/lidar/points_ground" />
-                        <remap unless="$(arg use_lidar_front)" from="points_no_ground" to="/detection/lidar/points_no_ground" />
-                    </node>
+                    <remap from="points_raw" to="/lidar_center/points_raw" />
+                    <remap from="points_ground" to="/detection/lidar/points_ground" />
+                    <remap from="points_no_ground" to="/detection/lidar/points_no_ground" />
+                    <node if="$(eval ground_removal == 'naive')" type="naive_ground_removal.py" name="naive_ground_removal" pkg="autoware_mini" output="screen" required="true" />
+                    <node if="$(eval ground_removal == 'jcp')" type="jcp_ground_removal.py" name="jcp_ground_removal" pkg="autoware_mini" output="screen" required="true" />
                 </group>
                 <group if="$(arg use_lidar_front)" ns="front">
                     <node pkg="nodelet" type="nodelet" name="crop_box" args="standalone pcl/CropBox" output="screen" required="true">
                         <remap from="~input" to="/lidar_front/points" />
                         <remap from="~output" to="/lidar_front/points_cleaned" />
                     </node>
-                    <node type="ground_removal.py" name="ground_removal" pkg="autoware_mini" output="screen" required="true">
-                        <remap from="points_raw" to="/lidar_front/points_cleaned" />
-                        <remap unless="$(arg use_lidar_center)" from="points_ground" to="/detection/lidar/points_ground" />
-                        <remap unless="$(arg use_lidar_center)" from="points_no_ground" to="/detection/lidar/points_no_ground" />
-                    </node>
+                    <remap from="points_raw" to="/lidar_front/points_cleaned" />
+                    <remap unless="$(arg use_lidar_center)" from="points_ground" to="/detection/lidar/points_ground" />
+                    <remap unless="$(arg use_lidar_center)" from="points_no_ground" to="/detection/lidar/points_no_ground" />
+                    <node if="$(eval ground_removal == 'naive')" type="naive_ground_removal.py" name="naive_ground_removal" pkg="autoware_mini" output="screen" required="true" />
+                    <node if="$(eval ground_removal == 'jcp')" type="jcp_ground_removal.py" name="jcp_ground_removal" pkg="autoware_mini" output="screen" required="true" />
                 </group>
                 <group if="$(eval use_lidar_center and use_lidar_front)">
                     <node type="points_concatenator.py" name="points_concatenator" pkg="autoware_mini" output="screen" required="true">
