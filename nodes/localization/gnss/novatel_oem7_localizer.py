@@ -30,6 +30,10 @@ class NovatelOem7Localizer:
         self.lest97_origin_northing = rospy.get_param("lest97_origin_northing")
         self.lest97_origin_easting = rospy.get_param("lest97_origin_easting")
         self.use_msl_height = rospy.get_param("~use_msl_height")
+        self.offline_height = rospy.get_param("~offline_height")
+        self.offline_azimuth = rospy.get_param("~offline_azimuth")
+        self.offline_lat = rospy.get_param("~offline_lat")
+        self.offline_lon = rospy.get_param("~offline_lon")
         self.parent_frame = rospy.get_param("~parent_frame")
         self.child_frame = rospy.get_param("~child_frame")
 
@@ -90,20 +94,30 @@ class NovatelOem7Localizer:
         try:
             stamp = inspva_msg.header.stamp
 
-            # transform GNSS coordinates and correct azimuth
-            x, y = self.transformer.transform_lat_lon(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.height)
-            azimuth = self.transformer.correct_azimuth(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.azimuth)
+            # transform GNSS coordinates and correct azimuth, if lat=lon=0 from INSPVA message use offline values
+            if inspva_msg.latitude == 0 and inspva_msg.longitude == 0:
+                rospy.logwarn_throttle(30, "Received 0 Latitude and Longitude from INSPVA message, using offline values")
+                latitude = self.offline_lat
+                longitude = self.offline_lon
+                azimuth = self.offline_azimuth
+                # offline_height uses msl height
+                height = self.offline_height
+            else:
+                latitude = inspva_msg.latitude
+                longitude = inspva_msg.longitude
+                azimuth = inspva_msg.azimuth
+                # inspva_msg contains ellipsoid height if msl (mean sea level) height is wanted then undulation is subtracted
+                height = inspva_msg.height
+                if self.use_msl_height:
+                    height -= self.undulation
 
+            x, y = self.transformer.transform_lat_lon(latitude, longitude, height)
+            azimuth = self.transformer.correct_azimuth(latitude, longitude, azimuth)
             linear_velocity = math.sqrt(inspva_msg.east_velocity**2 + inspva_msg.north_velocity**2)
             angular_velocity = imu_msg.angular_velocity
 
             # angles from GNSS (degrees) need to be converted to orientation (quaternion) in map frame
             orientation = convert_angles_to_orientation(inspva_msg.roll, inspva_msg.pitch, azimuth)
-
-            # inspva_msg contains ellipsoid height if msl (mean sea level) height is wanted then undulation is subtracted
-            height = inspva_msg.height
-            if self.use_msl_height:
-                height -= self.undulation
 
             current_pose = Pose()
             current_pose.position.x = x

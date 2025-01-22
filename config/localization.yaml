@@ -7,6 +7,10 @@ lest97_origin_easting: 650000.0
 
 novatel_oem7_localizer:
   use_msl_height: True
+  offline_azimuth: 185.0  # degrees, from North cw
+  offline_height: 34.5    # meters above sea level (MSL height)
+  offline_lat: 58.3854    # degrees
+  offline_lon: 26.7264    # degrees
   child_frame: base_link
 
 lane_boundary_matcher:
