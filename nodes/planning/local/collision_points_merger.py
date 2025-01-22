@@ -22,6 +22,7 @@ class CollisionPointsMerger:
         enable_auto_stop_checker = rospy.get_param("~enable_auto_stop_checker")
         enable_traffic_light_checker = rospy.get_param("~enable_traffic_light_checker")
         enable_crosswalk_checker = rospy.get_param("~enable_crosswalk_checker")
+        enable_yielding_checker = rospy.get_param("~enable_yielding_checker")
         enable_trajectory_checker = rospy.get_param("~enable_trajectory_checker")
 
         subscribers = []
@@ -35,6 +36,8 @@ class CollisionPointsMerger:
             subscribers.append(message_filters.Subscriber("tfl_stopline_collision_points", PointCloud2, tcp_nodelay=True))
         if enable_crosswalk_checker:
             subscribers.append(message_filters.Subscriber("crosswalk_collision_points", PointCloud2, tcp_nodelay=True))
+        if enable_yielding_checker:
+            subscribers.append(message_filters.Subscriber("yielding_collision_points", PointCloud2, tcp_nodelay=True))
         if enable_trajectory_checker:
             subscribers.append(message_filters.Subscriber("trajectory_collision_points", PointCloud2, tcp_nodelay=True))
 

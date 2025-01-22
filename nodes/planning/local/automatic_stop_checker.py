@@ -10,7 +10,7 @@ from autoware_mini.msg import Path
 from sensor_msgs.msg import PointCloud2
 from std_srvs.srv import Empty, EmptyResponse
 
-class AutomaticStopBehavior:
+class AutomaticStopChecker:
 
     def __init__(self):
 
@@ -77,7 +77,7 @@ class AutomaticStopBehavior:
                 if id != self.ignore_stop_line_id:
                     collision_points.add_point(x = stop_line_intersection_result.x,
                                                 y = stop_line_intersection_result.y,
-                                                z = stop_line.coords[0][2],
+                                                z = stop_line_intersection_result.z,
                                                 vx = 0.0,
                                                 vy = 0.0, 
                                                 vz = 0.0,
@@ -119,6 +119,6 @@ class AutomaticStopBehavior:
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('automatic_stop_behavior')
-    node = AutomaticStopBehavior()
+    rospy.init_node('automatic_stop_checker')
+    node = AutomaticStopChecker()
     node.run()

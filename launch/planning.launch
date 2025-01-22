@@ -14,6 +14,7 @@
     <arg name="enable_auto_stop_checker"    default="true" />
     <arg name="enable_traffic_light_checker" default="true" />
     <arg name="enable_crosswalk_checker"    default="true" />
+    <arg name="enable_yielding_checker"     default="true" />
     <arg name="enable_trajectory_checker"   default="true" />
 
     <group ns="planning">
@@ -78,10 +79,13 @@
             <node if="$(arg enable_crosswalk_checker)" pkg="autoware_mini" type="pedestrian_crosswalk_checker.py" name="pedestrian_crosswalk_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
+            <node if="$(arg enable_yielding_checker)" pkg="autoware_mini" type="yielding_checker.py" name="yielding_checker" output="screen" required="true" >
+                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+            </node>
             <node if="$(arg enable_trajectory_checker)" pkg="autoware_mini" type="trajectory_collision_checker.py" name="trajectory_collision_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
-            <node if="$(arg enable_auto_stop_checker)" pkg="autoware_mini" type="automatic_stop_behavior.py" name="automatic_stop_behavior" output="screen" required="true" >
+            <node if="$(arg enable_auto_stop_checker)" pkg="autoware_mini" type="automatic_stop_checker.py" name="automatic_stop_checker" output="screen" required="true" >
                 <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
             </node>
             <node pkg="autoware_mini" type="collision_points_merger.py" name="collision_points_merger" output="screen" required="true" >
@@ -91,6 +95,7 @@
                 <param name="enable_auto_stop_checker"      value="$(arg enable_auto_stop_checker)"/>
                 <param name="enable_traffic_light_checker"  value="$(arg enable_traffic_light_checker)"/>
                 <param name="enable_crosswalk_checker"      value="$(arg enable_crosswalk_checker)"/>
+                <param name="enable_yielding_checker"       value="$(arg enable_yielding_checker)"/>
                 <param name="enable_trajectory_checker"     value="$(arg enable_trajectory_checker)"/>
             </node>
             <node pkg="autoware_mini" type="speed_planner.py" name="speed_planner" output="screen" required="true" >
