@@ -47,7 +47,6 @@ class TrajectoryCollisionChecker:
         shapely.prepare(local_path_buffer)
 
         for obj in detected_objects:
-
             for path in obj.candidate_trajectories.paths:
 
                 trajectory_to_check = PathWrapper(path.waypoints).linestring
