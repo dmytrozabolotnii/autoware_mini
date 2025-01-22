@@ -30,7 +30,7 @@ class MapBasedPredictor:
         self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
         self.use_object_width = rospy.get_param('/planning/use_object_width')
 
-        lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
+        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.Vehicle)
