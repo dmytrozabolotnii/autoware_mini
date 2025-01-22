@@ -21,6 +21,7 @@
         <!-- Lanelet2 map visualizer -->
         <node pkg="autoware_mini" type="lanelet2_map_visualizer.py" name="lanelet2_map_visualizer" output="screen" required="true">
             <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+            <param name="enable_auto_stop_checker" value="$(arg enable_auto_stop_checker)" />
         </node>
 
         <!-- Waypoint loader -->

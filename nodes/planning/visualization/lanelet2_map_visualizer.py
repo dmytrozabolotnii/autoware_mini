@@ -52,6 +52,7 @@ class Lanelet2MapVisualizer:
         self.local_path_length = rospy.get_param("local_path_length")
         self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
         self.use_map_extraction = rospy.get_param("~use_map_extraction")
+        self.enable_auto_stop_checker = rospy.get_param("~enable_auto_stop_checker")
 
         self.map_extraction_location = None
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
@@ -70,9 +71,9 @@ class Lanelet2MapVisualizer:
             # for filtering trafiiclight stopline statuses
             self.filtered_linestrings = None
         else:
-            lanelet_markers = visualize_laneletLayer(self.lanelet2_map.laneletLayer)
-            linestring_markers = visualize_lineStringLayer(self.lanelet2_map.lineStringLayer)
-            reg_el_markers = visualize_regulatoryElementLayer(self.lanelet2_map.regulatoryElementLayer)
+            lanelet_markers = self.visualize_laneletLayer(self.lanelet2_map.laneletLayer)
+            linestring_markers = self.visualize_lineStringLayer(self.lanelet2_map.lineStringLayer)
+            reg_el_markers = self.visualize_regulatoryElementLayer(self.lanelet2_map.regulatoryElementLayer)
             marker_array = MarkerArray()
             marker_array.markers = lanelet_markers.markers + linestring_markers.markers + reg_el_markers.markers
             self.lanelet2_map_markers_pub.publish(marker_array)
@@ -92,9 +93,9 @@ class Lanelet2MapVisualizer:
             filtered_regulatory_elements = self.lanelet2_map.regulatoryElementLayer.search(search_box)
 
             # Visualize different parts of the map
-            lanelet_markers = visualize_laneletLayer(filtered_lanelets)
-            linestring_markers = visualize_lineStringLayer(filtered_linestrings)
-            reg_el_markers = visualize_regulatoryElementLayer(filtered_regulatory_elements)
+            lanelet_markers = self.visualize_laneletLayer(filtered_lanelets)
+            linestring_markers = self.visualize_lineStringLayer(filtered_linestrings)
+            reg_el_markers = self.visualize_regulatoryElementLayer(filtered_regulatory_elements)
 
            # conactenate the MarkerArrays with delete all at front
             marker_array = MarkerArray()
@@ -151,7 +152,7 @@ class Lanelet2MapVisualizer:
 
             # check if string contains "FLASH" string in it
             if "FLASH" in result.recognition_result_str:
-                color = ColorRGBA(color.r, color.g, color.b, color.a * get_multiplier())
+                color = ColorRGBA(color.r, color.g, color.b, color.a * 0.5 if time.time() % 1 < 0.5 else 1.0)
 
             # create linestring marker
             stopline_marker = linelist_to_marker(points, "Stop line", stop_line.id, color, 0.5, rospy.Time.now())
@@ -170,131 +171,123 @@ class Lanelet2MapVisualizer:
     def run(self):
         rospy.spin()
 
+    def visualize_laneletLayer(self, lanelets):
 
-def get_multiplier():
-    if time.time() % 1 < 0.5:
-        return 0.5
-    else:
-        return 1.0
+        # Create a MarkerArray
+        marker_array = MarkerArray()
 
+        left_boundary_points = []
+        right_boundary_points = []
+        centerline_points = []
+        crosswalk_points = []
+        bus_lane_points = []
 
-def visualize_laneletLayer(lanelets):
+        for lanelet in lanelets:
 
-    # Create a MarkerArray
-    marker_array = MarkerArray()
-
-    left_boundary_points = []
-    right_boundary_points = []
-    centerline_points = []
-    crosswalk_points = []
-    bus_lane_points = []
-
-    for lanelet in lanelets:
-
-        stamp = rospy.Time.now()
-
-        if lanelet.attributes["subtype"] == "road" or lanelet.attributes["subtype"] == "bus_lane":
-            left_boundary_points.extend(convert_geometry_to_line_list(lanelet.leftBound))
-            right_boundary_points.extend(convert_geometry_to_line_list(lanelet.rightBound))
-
-        if lanelet.attributes["subtype"] == "road":
-            centerline_points.extend(convert_geometry_to_line_list(lanelet.centerline))
-        elif lanelet.attributes["subtype"] == "crosswalk":
-            # create "polygon points" from crosswalk lanelet and then create line list from them
-            crosswalk_border = [point for point in lanelet.leftBound]
-            crosswalk_border.extend([point for point in lanelet.rightBound.invert()])
-            crosswalk_border.append(lanelet.leftBound[0])
-            crosswalk_points.extend(convert_geometry_to_line_list(crosswalk_border))
-        elif lanelet.attributes["subtype"] == "bus_lane":
-            bus_lane_points.extend(convert_geometry_to_line_list(lanelet.centerline))
-
-    left_boundary_marker = linelist_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
-    right_boundary_marker = linelist_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
-    centerline_marker = linelist_to_marker(centerline_points, "Centerline", 0, CYAN, 1.5, stamp)
-    crosswalk_marker = linelist_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 0.3, stamp)
-    bus_lane_marker = linelist_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 0.3, stamp)
-
-    marker_array.markers.append(left_boundary_marker)
-    marker_array.markers.append(right_boundary_marker)
-    marker_array.markers.append(centerline_marker)
-    marker_array.markers.append(crosswalk_marker)
-    marker_array.markers.append(bus_lane_marker)
-
-    return marker_array
-
-def visualize_regulatoryElementLayer(regulatory_elements):
-    
-    # Create a MarkerArray
-    marker_array = MarkerArray()
-
-    # Iterate over all the regulatory elements
-    for reg_el in regulatory_elements:
-        # Check if the regulatory element is a traffic light group
-        if reg_el.attributes["subtype"] == "traffic_light":
             stamp = rospy.Time.now()
-            # can have several individual traffic lights
-            for tfl in reg_el.parameters["refers"]:
-                p1 = tfl[0]
-                p2 = tfl[1]
 
-                tfl_height = float(tfl.attributes["height"])
+            if lanelet.attributes["subtype"] == "road" or lanelet.attributes["subtype"] == "bus_lane":
+                left_boundary_points.extend(convert_geometry_to_line_list(lanelet.leftBound))
+                right_boundary_points.extend(convert_geometry_to_line_list(lanelet.rightBound))
 
-                # calculate bulb positions
-                bulb_x = (p1.x + p2.x) / 2
-                bulb_y = (p1.y + p2.y) / 2
-                bulb_z = p1.z + 5*tfl_height/6
+            if lanelet.attributes["subtype"] == "road":
+                centerline_points.extend(convert_geometry_to_line_list(lanelet.centerline))
+            elif lanelet.attributes["subtype"] == "crosswalk":
+                # create "polygon points" from crosswalk lanelet and then create line list from them
+                crosswalk_border = [point for point in lanelet.leftBound]
+                crosswalk_border.extend([point for point in lanelet.rightBound.invert()])
+                crosswalk_border.append(lanelet.leftBound[0])
+                crosswalk_points.extend(convert_geometry_to_line_list(crosswalk_border))
+            elif lanelet.attributes["subtype"] == "bus_lane":
+                bus_lane_points.extend(convert_geometry_to_line_list(lanelet.centerline))
 
-                for i in range(3):
-                    # Create a marker for the traffic light bulb
-                    marker = Marker()
-                    marker.header.frame_id = "map"
-                    marker.header.stamp = stamp
-                    marker.ns = "Traffic lights"
-                    marker.id = len(marker_array.markers)
-                    marker.type = marker.SPHERE
-                    marker.action = marker.ADD
-                    marker.scale.x = tfl_height/6
-                    marker.scale.y = tfl_height/6
-                    marker.scale.z = tfl_height/6
-                    marker.color = INDEX_TO_MARKER_COLOR[i]
-                    marker.pose.position.x = bulb_x
-                    marker.pose.position.y = bulb_y
-                    marker.pose.position.z = bulb_z
-                    marker.pose.orientation.w = 1.0
+        left_boundary_marker = linelist_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
+        right_boundary_marker = linelist_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
+        centerline_marker = linelist_to_marker(centerline_points, "Centerline", 0, CYAN, 1.5, stamp)
+        crosswalk_marker = linelist_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 0.3, stamp)
+        bus_lane_marker = linelist_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 0.3, stamp)
 
-                    marker_array.markers.append(marker)
-                    bulb_z -= tfl_height/6
-    return marker_array
+        marker_array.markers.append(left_boundary_marker)
+        marker_array.markers.append(right_boundary_marker)
+        marker_array.markers.append(centerline_marker)
+        marker_array.markers.append(crosswalk_marker)
+        marker_array.markers.append(bus_lane_marker)
+
+        return marker_array
+
+    def visualize_regulatoryElementLayer(self, regulatory_elements):
+        
+        # Create a MarkerArray
+        marker_array = MarkerArray()
+
+        # Iterate over all the regulatory elements
+        for reg_el in regulatory_elements:
+            # Check if the regulatory element is a traffic light group
+            if reg_el.attributes["subtype"] == "traffic_light":
+                stamp = rospy.Time.now()
+                # can have several individual traffic lights
+                for tfl in reg_el.parameters["refers"]:
+                    p1 = tfl[0]
+                    p2 = tfl[1]
+
+                    tfl_height = float(tfl.attributes["height"])
+
+                    # calculate bulb positions
+                    bulb_x = (p1.x + p2.x) / 2
+                    bulb_y = (p1.y + p2.y) / 2
+                    bulb_z = p1.z + 5*tfl_height/6
+
+                    for i in range(3):
+                        # Create a marker for the traffic light bulb
+                        marker = Marker()
+                        marker.header.frame_id = "map"
+                        marker.header.stamp = stamp
+                        marker.ns = "Traffic lights"
+                        marker.id = len(marker_array.markers)
+                        marker.type = marker.SPHERE
+                        marker.action = marker.ADD
+                        marker.scale.x = tfl_height/6
+                        marker.scale.y = tfl_height/6
+                        marker.scale.z = tfl_height/6
+                        marker.color = INDEX_TO_MARKER_COLOR[i]
+                        marker.pose.position.x = bulb_x
+                        marker.pose.position.y = bulb_y
+                        marker.pose.position.z = bulb_z
+                        marker.pose.orientation.w = 1.0
+
+                        marker_array.markers.append(marker)
+                        bulb_z -= tfl_height/6
+        return marker_array
 
 
-def visualize_lineStringLayer(linestrings):
+    def visualize_lineStringLayer(self, linestrings):
 
-    marker_array = MarkerArray()
+        marker_array = MarkerArray()
 
-    points_traffic_light = []
-    points_yield_stop = []
-    points_yield = []
+        points_traffic_light = []
+        points_yield_stop = []
+        points_yield = []
 
-    for line in linestrings:
-            # if has attributes
-            if line.attributes:
-                # select stop lines
-                if line.attributes["type"] == "stop_line":
-                    # points = [point for point in line]
-                    points = convert_geometry_to_line_list(line)
-                    if "subtype" in line.attributes:
-                        if line.attributes["subtype"]=="traffic_light":
-                            points_traffic_light.extend(points)
-                        elif line.attributes["subtype"]=="yield_stop":
-                            points_yield_stop.extend(points)
-                        elif line.attributes["subtype"]=="yield":
-                            points_yield.extend(points)
+        for line in linestrings:
+                # if has attributes
+                if line.attributes:
+                    # select stop lines
+                    if line.attributes["type"] == "stop_line":
+                        # points = [point for point in line]
+                        points = convert_geometry_to_line_list(line)
+                        if "subtype" in line.attributes:
+                            if line.attributes["subtype"]=="traffic_light":
+                                points_traffic_light.extend(points)
+                            elif line.attributes["subtype"]=="yield_stop":
+                                points_yield_stop.extend(points)
+                            elif line.attributes["subtype"]=="yield":
+                                points_yield.extend(points)
 
-    marker_array.markers.append(linelist_to_marker(points_traffic_light, "Traffic light stop lines", 0, WHITE, 0.5, rospy.Time.now()))
-    marker_array.markers.append(linelist_to_marker(points_yield_stop, "Yield stop line", 0, RED, 0.5, rospy.Time.now()))
-    marker_array.markers.append(linelist_to_marker(points_yield, "Yield line", 0, YELLOW, 0.3, rospy.Time.now()))
+        marker_array.markers.append(linelist_to_marker(points_traffic_light, "Traffic light stop lines", 0, WHITE, 0.5, rospy.Time.now()))
+        marker_array.markers.append(linelist_to_marker(points_yield_stop, "Yield stop line", 0, RED if self.enable_auto_stop_checker else GREEN, 0.5, rospy.Time.now()))
+        marker_array.markers.append(linelist_to_marker(points_yield, "Yield line", 0, YELLOW, 0.3, rospy.Time.now()))
 
-    return marker_array
+        return marker_array
 
 
 def linelist_to_marker(points, namespace, id, color, scale, stamp):

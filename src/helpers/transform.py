@@ -22,5 +22,5 @@ def get_distance_to_car_front():
     # get the distance between the current_pose (base_link) and the front of the car
     tf_buffer = Buffer()
     tf_listener = TransformListener(tf_buffer)
-    transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time.now(), rospy.Duration(10.0))
+    transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time.now(), rospy.Duration(20.0))
     return transform.transform.translation.x

@@ -28,7 +28,7 @@
     <arg name="use_manual_control"      default="false"                 doc="use manual control for carla"/>
     <arg name="enable_goal_checker"          default="true" />
     <arg name="enable_object_checker"        default="true" />
-    <arg name="enable_auto_stop_checker"     default="true" />
+    <arg name="enable_auto_stop_checker"     default="false" />
     <arg name="enable_traffic_light_checker" default="true" />
     <arg name="enable_crosswalk_checker"     default="true" />
     <arg name="enable_trajectory_checker"    default="true" />
@@ -80,6 +80,7 @@
     <!-- Vehicle platform -->
     <include file="$(find vehicle_platform)/launch/platform.launch" >
         <arg name="use_lexus_model"     value="true" />
+        <arg name="use_tf"              value="true" />
     </include>
 
     <!-- Carla platform -->

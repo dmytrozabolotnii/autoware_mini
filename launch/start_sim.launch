@@ -17,7 +17,7 @@
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
     <arg name="enable_goal_checker"          default="true" />
     <arg name="enable_object_checker"        default="true" />
-    <arg name="enable_auto_stop_checker"     default="true" />
+    <arg name="enable_auto_stop_checker"     default="false" />
     <arg name="enable_traffic_light_checker" default="true" />
     <arg name="enable_crosswalk_checker"     default="true" />
     <arg name="enable_trajectory_checker"    default="true" />
