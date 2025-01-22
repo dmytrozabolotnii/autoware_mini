@@ -97,18 +97,22 @@ class NovatelOem7Localizer:
             # transform GNSS coordinates and correct azimuth, if lat=lon=0 from INSPVA message use offline values
             if inspva_msg.latitude == 0 and inspva_msg.longitude == 0:
                 rospy.logwarn_throttle(30, "Received 0 Latitude and Longitude from INSPVA message, using offline values")
-                # Place the car at the map origin (0,0)
-                x, y = self.transformer.transform_lat_lon(self.offline_lat, self.offline_lon, self.offline_height)
-                azimuth = self.transformer.correct_azimuth(self.offline_lat, self.offline_lon, self.offline_azimuth)
+                latitude = self.offline_lat
+                longitude = self.offline_lon
+                azimuth = self.offline_azimuth
+                # offline_height uses msl height
                 height = self.offline_height
             else:
-                x, y = self.transformer.transform_lat_lon(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.height)
-                azimuth = self.transformer.correct_azimuth(inspva_msg.latitude, inspva_msg.longitude, inspva_msg.azimuth)
+                latitude = inspva_msg.latitude
+                longitude = inspva_msg.longitude
+                azimuth = inspva_msg.azimuth
                 # inspva_msg contains ellipsoid height if msl (mean sea level) height is wanted then undulation is subtracted
                 height = inspva_msg.height
                 if self.use_msl_height:
                     height -= self.undulation
 
+            x, y = self.transformer.transform_lat_lon(latitude, longitude, height)
+            azimuth = self.transformer.correct_azimuth(latitude, longitude, azimuth)
             linear_velocity = math.sqrt(inspva_msg.east_velocity**2 + inspva_msg.north_velocity**2)
             angular_velocity = imu_msg.angular_velocity
 
