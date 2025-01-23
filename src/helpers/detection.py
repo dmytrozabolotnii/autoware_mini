@@ -126,6 +126,22 @@ def get_prediction_box(obj):
 
     return obj
 
+def calculate_time_to_destination(velocity, acceleration, distances):
+    """
+    Calculate the time it takes to reach a certain distance given a constant velocity and acceleration.
+    :param velocity: float, the velocity of the object
+    :param acceleration: float, the acceleration of the object
+    :param distances: numpy array of floats, the distances to calculate the time to reach
+    :return: numpy array of floats, the time it takes to reach the distances
+    """
+
+    if acceleration == 0:
+         time_to_destination = distances / velocity
+    else:
+        time_to_destination = (-velocity + np.sqrt(velocity**2 + 2 * acceleration * distances)) / acceleration
+
+    return time_to_destination
+
 
 if __name__ == '__main__':
     boxes1 = np.array([[0, 0, 10, 10], [10, 10, 20, 20]])

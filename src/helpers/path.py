@@ -162,7 +162,7 @@ class PathWrapper:
         # if indices differ by 1, then 1 waypoint is returnd and a linestring cannot be created. Therefore return empty list instead
         if abs(index_start - index_end) == 1:
             return []
-        
+
         waypoints = self._extract_waypoints(index_start, index_end, copy=copy)        
 
         if trim:
@@ -182,6 +182,21 @@ class PathWrapper:
             waypoints[-1].position.y = end_wp_pose.y
 
         return waypoints
+
+    def extract_distances(self, distance_start, distance_end):
+
+        index_start = self.get_waypoint_index_at_distance(distance_start, side="right")
+        index_end = self.get_waypoint_index_at_distance(distance_end, side="left")
+
+        return self._distances[index_start:index_end]
+
+    def extract_points(self, distance_start, distance_end):
+        index_start = self.get_waypoint_index_at_distance(distance_start, side="right")
+        index_end = self.get_waypoint_index_at_distance(distance_end, side="left")
+
+        points = self.linestring.coords[index_start:index_end]
+        return [shapely.Point(point) for point in points]
+
 
     def get_velocity_at_distance(self, distance):
         """
