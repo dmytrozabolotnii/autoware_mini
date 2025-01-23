@@ -3,13 +3,15 @@
 import rospy
 import math
 import shapely
+import numpy as np
 
 from autoware_mini.msg import Path, DetectedObjectArray
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import PointCloud2
-
+from tf2_ros import TransformListener, Buffer, TransformException
 
 from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings
+from helpers.detection import calculate_time_to_destination
 from helpers.collision import CollisionPoints
 from helpers.path import PathWrapper
 
@@ -24,8 +26,11 @@ class TrajectoryCollisionChecker:
         self.use_object_width = rospy.get_param("use_object_width")
 
         # variables
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer)
         self.detected_objects = None
         self.current_velocity = None
+        self.current_acceleration = None
 
         # publishers
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -40,11 +45,13 @@ class TrajectoryCollisionChecker:
 
     def current_velocity_callback(self, msg):
         self.current_velocity = msg.twist.linear.x
+        self.current_acceleration = msg.twist.linear.x
 
     def local_path_callback(self, msg):
 
         detected_objects = self.detected_objects
         current_velocity = self.current_velocity
+        current_acceleration = self.current_acceleration
 
         if detected_objects is None or current_velocity is None:
             rospy.logwarn_throttle(3, "%s - detected objects or current velocity not received!", rospy.get_name())
@@ -52,85 +59,125 @@ class TrajectoryCollisionChecker:
 
         collision_points = CollisionPoints()
 
-        local_path = PathWrapper(msg.waypoints)
-        local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
-        shapely.prepare(local_path_buffer)
+        if len(msg.waypoints) > 0:
+            local_path = PathWrapper(msg.waypoints, distances=True)
+            local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
+            shapely.prepare(local_path_buffer)
 
-        for obj in detected_objects:
-            for path in obj.candidate_trajectories.paths:
+            # get the car_front and projct to local_path
+            try:
+                transform = self.tf_buffer.lookup_transform(msg.header.frame_id, "car_front", msg.header.stamp, rospy.Duration(0.06))
+            except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
+                rospy.logwarn("%s - %s", rospy.get_name(), e)
+                return
+            car_front = shapely.Point(transform.transform.translation.x, transform.transform.translation.y)
+            car_front_distance_from_path_start = local_path.linestring.project(car_front)
 
-                trajectory = PathWrapper(path.waypoints)
-                trajectory_to_check = trajectory.linestring
+            for obj in detected_objects:
+                for path in obj.candidate_trajectories.paths:
 
-                if self.use_object_width:
-                    trajectory_to_check = trajectory_to_check.buffer(path.waypoints[0].left_width, cap_style="flat")
+                    trajectory = PathWrapper(path.waypoints)
+                    trajectory_to_check = trajectory.linestring
 
-                if local_path_buffer.intersects(trajectory_to_check):
-                    trajectory_intersection_result = trajectory_to_check.intersection(local_path_buffer)
-                    trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
+                    if self.use_object_width:
+                        trajectory_to_check = trajectory_to_check.buffer(path.waypoints[0].left_width, cap_style="flat")
 
-                    # calculate trajectory intersection distances for ego vehicle and object
-                    ego_trajectory_intersection_distance_min = object_trajectory_intersection_distance_min = float('inf')
-                    ego_trajectory_intersection_distance_max = object_trajectory_intersection_distance_max = 0.0
-                    for x, y in trajectory_intersection_points:
-                        distance = local_path.linestring.project(shapely.Point(x, y))
-                        ego_trajectory_intersection_distance_min = min(ego_trajectory_intersection_distance_min, distance)
-                        ego_trajectory_intersection_distance_max = max(ego_trajectory_intersection_distance_max, distance)
-                        distance = trajectory.linestring.project(shapely.Point(x, y))
-                        object_trajectory_intersection_distance_min = min(object_trajectory_intersection_distance_min, distance)
-                        object_trajectory_intersection_distance_max = max(object_trajectory_intersection_distance_max, distance)
+                    if local_path_buffer.intersects(trajectory_to_check):
+                        trajectory_intersection_result = trajectory_to_check.intersection(local_path_buffer)
+                        trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
 
-                    object_current_location = shapely.Point(obj.position.x, obj.position.y)
-                    object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
+                        # calculate trajectory intersection distances for ego vehicle and object
+                        trajectory_distance_from_local_path_start_min = float('inf')
+                        trajectory_distance_from_local_path_start_max = 0.0
+                        for x, y in trajectory_intersection_points:
+                            distance = local_path.linestring.project(shapely.Point(x, y))
+                            trajectory_distance_from_local_path_start_min = min(trajectory_distance_from_local_path_start_min, distance)
+                            trajectory_distance_from_local_path_start_max = max(trajectory_distance_from_local_path_start_max, distance)
 
-                    # Ignore trajectories from behind
-                    if math.isclose(ego_trajectory_intersection_distance_min, 0.0, abs_tol=0.001) and math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
-                        continue
 
-                    object_current_heading = get_heading_from_vector(obj.velocity)
-                    object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
-                    heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
-                    object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                        object_current_location = shapely.Point(obj.position.x, obj.position.y)
+                        object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
 
-                    # Ignore object trajectories that are on our path and with similar heading - must be in front of us
-                    if local_path_buffer.intersects(object_polygon) and heading_difference < self.heading_alignment_limit:
-                        continue
+                        # Ignore trajectories from behind
+                        if math.isclose(trajectory_distance_from_local_path_start_min, 0.0, abs_tol=0.001) and math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
+                            continue
 
-                    # TODO length calulation and adjust min max distances
-                    # TODO add time buffer for ego vehicle + params
+                        object_current_heading = get_heading_from_vector(obj.velocity)
+                        object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
+                        heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
+                        object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
 
-                    # TODO calc using closed loop formula, include acceleration for ego and object
-                    # calculate intersection times
-                    ego_intersection_time_min = ego_trajectory_intersection_distance_min / current_velocity
-                    ego_intersection_time_max = ego_trajectory_intersection_distance_max / current_velocity
-                    object_intersection_time_min = object_trajectory_intersection_distance_min / obj.velocity.x
-                    object_intersection_time_max = object_trajectory_intersection_distance_max / obj.velocity.x
+                        # Ignore object trajectories that are on our path and with similar heading - must be in front of us
+                        if local_path_buffer.intersects(object_polygon) and heading_difference < self.heading_alignment_limit:
+                            continue
 
-                    print(f"{obj.id} ego_t: {ego_intersection_time_min:.2f} ... {ego_intersection_time_max:.2f} object_t: {object_intersection_time_min:.2f} ... {object_intersection_time_max:.2f}")
+                        trajectory_distance_from_local_path_start_min = max(trajectory_distance_from_local_path_start_min - 1.0, 0.0)
+                        trajectory_distance_from_local_path_start_max += 1.0
 
-                    # Check if there is no overlap between ego and object min max arrival time values
-                    if ego_intersection_time_max < object_intersection_time_min or object_intersection_time_max < ego_intersection_time_min:
-                        print("IGNORE TRAJ")
-                        continue
+                        collision_area_distances = local_path.extract_distances(trajectory_distance_from_local_path_start_min, trajectory_distance_from_local_path_start_max)
+                        collision_area_points = local_path.extract_points(trajectory_distance_from_local_path_start_min, trajectory_distance_from_local_path_start_max)
+                        collision_distance_from_ego_front = np.array(collision_area_distances) - car_front_distance_from_path_start
 
-                    if heading_difference < self.heading_alignment_limit:
-                        # objects with similar heading - add collision points with object's velocity
-                        collision_points.add_intersection_points(trajectory_intersection_points,
-                                                                z = obj.position.z,
-                                                                vx = obj.velocity.x,
-                                                                vy = obj.velocity.y,
-                                                                vz = obj.velocity.z,
-                                                                distance_to_stop = self.braking_safety_distance_obstacle,
-                                                                category = CollisionPoints.MERGING_TRAJECTORY)
-                    else:
-                        # objects intersecting at angle, add with 0 velocity
-                        collision_points.add_intersection_points(trajectory_intersection_points,
-                                z = obj.position.z,
-                                vx = 0,
-                                vy = 0,
-                                vz = 0,
-                                distance_to_stop = self.braking_safety_distance_obstacle,
-                                category = CollisionPoints.COLLIDING_TRAJECTORY)
+                        ego_arrival_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front)
+                        # TODO could use collision_area_distances or car length param.
+                        ego_leaving_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front - 5)
+
+                        # OBJ side
+                        # project points to object path and get distances in the array
+                        
+
+
+
+                        # Calculate arrival time of ego vehicle
+                        if current_acceleration != 0:
+                            ego_arrival_times = (-current_velocity + np.sqrt(current_velocity**2 + 2 * current_acceleration * collision_distance_from_ego_front)) / current_acceleration
+                        else:
+                            ego_arrival_times = collision_distance_from_ego_front / current_velocity
+
+                        
+
+
+
+                        #print(obj.id, "d:", max(trajectory_distance_from_local_path_start_min - 1, 0), trajectory_distance_from_local_path_start_max + 1)
+                        #print(obj.id, "coll dist", collision_area_distances)
+                        #print(obj.id, "coll dist", collision_distance_from_car_front)
+
+                        # TODO get array with distances (already present in _distances)
+                        # modify distances for ego arrival: car front + buffer
+                        # duaration or leaving distance ( simplification - from local path start? - leave the same dist)
+                        # TODO add time buffer for ego vehicle + params - is it time or distance based? easiest is to use distance
+                        # TODO calc using closed loop formula - arrival and leaving time
+                        # 
+                        # TODO project points to trajectory and get distances. it is objcet front
+                        # for object leave time adjust distance - subtract (car length)
+                        # closed loop formula for arrival and leave times for object
+
+                        # subtract arrays to find any points within buffer.
+
+                        # TODO length calulation and adjust min max distances
+                        
+
+                        # calculate intersection times
+
+
+                        if heading_difference < self.heading_alignment_limit:
+                            # objects with similar heading - add collision points with object's velocity
+                            collision_points.add_intersection_points(trajectory_intersection_points,
+                                                                    z = obj.position.z,
+                                                                    vx = obj.velocity.x,
+                                                                    vy = obj.velocity.y,
+                                                                    vz = obj.velocity.z,
+                                                                    distance_to_stop = self.braking_safety_distance_obstacle,
+                                                                    category = CollisionPoints.MERGING_TRAJECTORY)
+                        else:
+                            # objects intersecting at angle, add with 0 velocity
+                            collision_points.add_intersection_points(trajectory_intersection_points,
+                                    z = obj.position.z,
+                                    vx = 0,
+                                    vy = 0,
+                                    vz = 0,
+                                    distance_to_stop = self.braking_safety_distance_obstacle,
+                                    category = CollisionPoints.COLLIDING_TRAJECTORY)
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header
