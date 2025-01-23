@@ -5,7 +5,7 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from autoware_mini.msg import DetectedObjectArray
-from helpers.detection import calculate_iou, get_axis_oriented_bounding_box
+from helpers.detection import calculate_iou, get_axis_oriented_bounding_box, get_prediction_box
 
 class EMATracker:
     def __init__(self):
@@ -194,6 +194,11 @@ class EMATracker:
         tracked_objects_indices = np.where(self.tracked_objects_array['detection_counter'] >= self.detection_counter_threshold)[0]
         tracked_objects = [self.tracked_objects[idx] for idx in tracked_objects_indices]
         assert len(tracked_objects) == len(tracked_objects_indices)
+
+        ### 8. update tracked objects dimensions, position, heading based on velocity vector ###
+        for i, obj in enumerate(tracked_objects):
+            updated_obj = get_prediction_box(obj)
+            tracked_objects[i] = updated_obj
 
         # publish tracked objects
         tracked_objects_msg = DetectedObjectArray()

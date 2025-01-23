@@ -7,11 +7,13 @@ import shapely
 import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
+
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
+
 from helpers.path import calculate_cross_track_error
-from helpers.geometry import get_heading_from_vector, get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
+from helpers.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
 from helpers.lanelet2 import load_lanelet2_map
-from helpers.detection import get_prediction_width
+from helpers.geometry import get_point_using_heading_and_distance
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
     'straight': {'straight': 1, 'left': 0.5, 'right': 0.5},
@@ -62,7 +64,6 @@ class MapBasedPredictor:
             if len(lanelets_within_distance) > 0:
                 min_heading_difference = math.inf
                 object_centroid = shapely.Point(obj.position.x, obj.position.y)
-                object_heading = get_heading_from_vector(obj.velocity)
 
                 for d, lanelet in lanelets_within_distance:
 
@@ -79,7 +80,7 @@ class MapBasedPredictor:
                     
                     forward_point = linestring.interpolate(object_distance_from_lanelet_start + 0.1)
                     lanelet_heading = get_heading_between_two_points(object_location_on_lanelet, forward_point)
-                    heading_difference_degrees = math.degrees(get_angle_between_two_headings(object_heading, lanelet_heading))
+                    heading_difference_degrees = math.degrees(get_angle_between_two_headings(obj.heading, lanelet_heading))
                     if heading_difference_degrees < self.angle_threshold and heading_difference_degrees < min_heading_difference:
                         min_heading_difference = heading_difference_degrees
                         selected_lanelet = lanelet
@@ -111,19 +112,18 @@ class MapBasedPredictor:
                     all_trajectories_evaluated = self.evaluate_paths(all_trajectories_with_turn_directions, object_indicator)
                     selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
-                # calculate objcet width and origin for prediction
                 if self.use_object_width:
-                    width, origin, offset  = get_prediction_width(obj)
-                    prediction_origin = shapely.Point(origin)
-                    offset_point = shapely.Point(offset)
+                    prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
+                    prediction_origin = shapely.Point(prediction_origin.x, prediction_origin.y, obj.position.z)
+                    width = obj.dimensions.y / 2
                 else:
                     width = 0.0
-                    prediction_origin = offset_point = object_centroid
+                    prediction_origin = object_centroid
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
                 trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
                 if self.use_offset_for_prediction:
-                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, offset_point)
+                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, object_centroid)
                     trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style=1)
 
                 object_distance_from_trajectory_linestring_start = trajectory_linestring.project(prediction_origin)

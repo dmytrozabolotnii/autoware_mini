@@ -2,9 +2,10 @@
 
 import rospy
 import numpy as np
-from helpers.detection import get_prediction_width
-from helpers.geometry import get_vector_norm_3d
+
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
+
+from helpers.geometry import get_vector_norm_3d, get_point_using_heading_and_distance
 
 class NaivePredictor:
     def __init__(self):
@@ -40,9 +41,9 @@ class NaivePredictor:
 
             # calculate object width and origin for prediction
             if self.use_object_width:
-                width, origin, _ = get_prediction_width(obj)
-                tracked_objects_array[i]['position'] = origin
-                tracked_objects_array[i]['width'] = width
+                prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
+                tracked_objects_array[i]['position'] = (prediction_origin.x, prediction_origin.y)
+                tracked_objects_array[i]['width'] = obj.dimensions.y / 2
             else:
                 tracked_objects_array[i]['position'] = (obj.position.x, obj.position.y)
 
