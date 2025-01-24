@@ -39,7 +39,7 @@ class TrajectoryCollisionChecker:
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         # subscribers
-        rospy.Subscriber('/detection/predicted_objects', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
 
@@ -122,7 +122,7 @@ class TrajectoryCollisionChecker:
                         # EGO distances, arrival and leaving times
                         collision_distance_from_ego_front = collision_area_distances - car_front_distance_from_local_path_start
                         ego_arrival_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front)
-                        ego_leaving_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front - self.safety_box_length)
+                        ego_leaving_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front + self.safety_box_length)
                         ego_arrival_times -= self.safety_time_ego_front
                         ego_leaving_times += self.safety_time_ego_rear
 
