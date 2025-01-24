@@ -136,26 +136,23 @@ class TrajectoryCollisionChecker:
                         # FIND COLLISION AREA
                         collision_mask = ((ego_arrival_times <= obj_leaving_times) & (ego_leaving_times >= obj_arrival_times))
                         collision_area_points = collision_area_points[collision_mask]
-                        collision_area_points = [(p.x, p.y) for p in collision_area_points]
 
                         if heading_difference < self.heading_alignment_limit:
                             # objects with similar heading - add collision points with object's velocity
-                            collision_points.add_intersection_points(collision_area_points,
-                                                                    z = obj.position.z,
-                                                                    vx = obj.velocity.x,
-                                                                    vy = obj.velocity.y,
-                                                                    vz = obj.velocity.z,
-                                                                    distance_to_stop = self.braking_safety_distance_trajectory,
-                                                                    category = CollisionPoints.MERGING_TRAJECTORY)
+                            collision_points.add_collision_points(points = collision_area_points,
+                                vx = obj.velocity.x,
+                                vy = obj.velocity.y,
+                                vz = obj.velocity.z,
+                                distance_to_stop = self.braking_safety_distance_trajectory,
+                                category = CollisionPoints.MERGING_TRAJECTORY)
                         else:
                             # objects intersecting at angle, add with 0 velocity
-                            collision_points.add_intersection_points(collision_area_points,
-                                    z = obj.position.z,
-                                    vx = 0,
-                                    vy = 0,
-                                    vz = 0,
-                                    distance_to_stop = self.braking_safety_distance_trajectory,
-                                    category = CollisionPoints.COLLIDING_TRAJECTORY)
+                            collision_points.add_collision_points(points = collision_area_points,
+                                vx = 0.0,
+                                vy = 0.0,
+                                vz = 0.0,
+                                distance_to_stop = self.braking_safety_distance_trajectory,
+                                category = CollisionPoints.COLLIDING_TRAJECTORY)
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header

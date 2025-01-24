@@ -41,5 +41,9 @@ class CollisionPoints:
         for x, y in intersection_points:
             self.add_point(x, y, z, vx, vy, vz, distance_to_stop, category)
 
+    def add_collision_points(self, points, vx, vy, vz, distance_to_stop, category):
+        for point in points:
+            self.add_point(point.x, point.y, point.z, vx, vy, vz, distance_to_stop, category)
+
     def create_message(self):
         return msgify(PointCloud2, self._array)
