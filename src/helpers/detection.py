@@ -135,10 +135,44 @@ def calculate_time_to_destination(velocity, acceleration, distances):
     :return: numpy array of floats, the time it takes to reach the distances
     """
 
-    if acceleration == 0:
-         time_to_destination = distances / velocity
-    else:
-        time_to_destination = (-velocity + np.sqrt(velocity**2 + 2 * acceleration * distances)) / acceleration
+    # create a numpy array of zeros with the same shape as distances
+    time_to_destination = np.zeros_like(distances, dtype=float)
+
+    # calculate the time to reach the distances
+    for i, distance in enumerate(distances):
+        
+        # point already reached, takes no time
+        if distance < 0:
+            time_to_destination[i] = 0
+            continue
+        
+        # no acceleration - constant velocity
+        if acceleration == 0:
+            if velocity == 0:
+                # car is not moving - will never reach the point
+                time_to_destination[i] = np.inf
+            else:
+                # calculate time
+                time_to_destination[i] = distance / velocity
+        else:
+            # constant acceleration
+            discriminant = velocity**2 + 2 * acceleration * distance
+
+            # car will not reach the point with given velocity and acceleration
+            if discriminant < 0:
+                time_to_destination[i] = np.inf
+                continue
+
+            # car breaking
+            if acceleration < 0:
+                stopping_distance = velocity**2 / (-2 * acceleration)
+                # car will stop before reaching the point
+                if distance > stopping_distance:
+                    time_to_destination[i] = np.inf
+                    continue
+
+            # calculate time with acceleration and velocity
+            time_to_destination[i] = (-velocity + np.sqrt(discriminant)) / acceleration
 
     return time_to_destination
 
