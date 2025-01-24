@@ -7,7 +7,7 @@ import numpy as np
 
 from autoware_mini.msg import Path, DetectedObjectArray
 from geometry_msgs.msg import TwistStamped
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import PointCloud2, Imu
 from tf2_ros import TransformListener, Buffer, TransformException
 
 from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings, get_vector_norm_3d
@@ -28,13 +28,14 @@ class TrajectoryCollisionChecker:
         self.wp_buffer_distance = rospy.get_param("~wp_buffer_distance")
         self.safety_time_ego_front = rospy.get_param("~safety_time_ego_front")
         self.safety_time_ego_rear = rospy.get_param("~safety_time_ego_rear")
+        self.use_ego_acceleration = rospy.get_param("~use_ego_acceleration")
 
         # variables
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
         self.detected_objects = None
         self.current_velocity = None
-        self.current_acceleration = 0
+        self.current_acceleration = None
         # publishers
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
@@ -42,6 +43,8 @@ class TrajectoryCollisionChecker:
         rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
+        if self.use_ego_acceleration:
+            rospy.Subscriber('/gps/imu', Imu, self.imu_callback, queue_size=1, tcp_nodelay=True)
 
     def predicted_objects_callback(self, msg):
         self.detected_objects = msg.objects
@@ -49,11 +52,23 @@ class TrajectoryCollisionChecker:
     def current_velocity_callback(self, msg):
         self.current_velocity = msg.twist.linear.x
 
+    def imu_callback(self, msg):
+        alpha = 0.1  # smoothing factor
+        if self.current_acceleration is None:
+            self.current_acceleration = msg.linear_acceleration.x
+        else:
+            self.current_acceleration = alpha * msg.linear_acceleration.x + (1 - alpha) * self.current_acceleration
+
     def local_path_callback(self, msg):
 
         detected_objects = self.detected_objects
         current_velocity = self.current_velocity
-        current_acceleration = self.current_acceleration
+        # if no IMU data is received, assume the acceleration is 0
+
+        if self.use_ego_acceleration:
+            current_acceleration = self.current_acceleration
+        else:
+            current_acceleration = 0.0
 
         if detected_objects is None or current_velocity is None:
             rospy.logwarn_throttle(3, "%s - detected objects or current velocity not received!", rospy.get_name())

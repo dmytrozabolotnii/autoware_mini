@@ -65,6 +65,7 @@ trajectory_collision_checker:
   wp_buffer_distance: 1.5                 # m
   safety_time_ego_front: 2.0              # s
   safety_time_ego_rear: 1.0               # s
+  use_ego_acceleration: False             # use ego vehicle IMU data for trajectory collision checking
 automatic_stop_checker:
   braking_safety_distance_stop_line: 0.1      # m
   keep_stop_line_for: 15.0                    # s
