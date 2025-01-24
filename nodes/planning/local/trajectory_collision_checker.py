@@ -25,6 +25,7 @@ class TrajectoryCollisionChecker:
         self.braking_safety_distance_trajectory = rospy.get_param("~braking_safety_distance_trajectory")
         self.heading_alignment_limit = rospy.get_param("~heading_alignment_limit")
         self.use_object_width = rospy.get_param("use_object_width")
+        self.wp_buffer_distance = rospy.get_param("~wp_buffer_distance")
         self.safety_time_ego_front = rospy.get_param("~safety_time_ego_front")
         self.safety_time_ego_rear = rospy.get_param("~safety_time_ego_rear")
 
@@ -112,9 +113,9 @@ class TrajectoryCollisionChecker:
                         if local_path_buffer.intersects(object_polygon) and heading_difference < self.heading_alignment_limit:
                             continue
                         
-                        # FIND INTERSECTION AREA: distances on local_path and extract points
-                        trajectory_distance_from_local_path_start_min = max(trajectory_distance_from_local_path_start_min - 1.0, 0.0)
-                        trajectory_distance_from_local_path_start_max += 1.0
+                        # Extract INTERSECTION AREA: distances on local_path and extract points
+                        trajectory_distance_from_local_path_start_min = max(trajectory_distance_from_local_path_start_min - self.wp_buffer_distance, 0.0)
+                        trajectory_distance_from_local_path_start_max += self.wp_buffer_distance
                         collision_area_distances = np.array(local_path.extract_distances(trajectory_distance_from_local_path_start_min, trajectory_distance_from_local_path_start_max))
                         collision_area_points = np.array(local_path.extract_points(trajectory_distance_from_local_path_start_min, trajectory_distance_from_local_path_start_max))
 

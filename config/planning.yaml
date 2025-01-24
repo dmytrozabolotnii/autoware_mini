@@ -62,6 +62,7 @@ yielding_checker:
 trajectory_collision_checker:
   braking_safety_distance_trajectory: 5   # m
   heading_alignment_limit: 30.0           # degrees
+  wp_buffer_distance: 1.5                 # m
   safety_time_ego_front: 2.0              # s
   safety_time_ego_rear: 1.0               # s
 automatic_stop_checker:
