@@ -20,8 +20,9 @@ class TrajectoryCollisionChecker:
     def __init__(self):
 
         # parameters
-        self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
-        self.braking_safety_distance_obstacle = rospy.get_param("~braking_safety_distance_obstacle")
+        self.safety_box_width = rospy.get_param("safety_box_width")
+        self.safety_box_length = rospy.get_param("safety_box_length")
+        self.braking_safety_distance_trajectory = rospy.get_param("~braking_safety_distance_trajectory")
         self.heading_alignment_limit = rospy.get_param("~heading_alignment_limit")
         self.use_object_width = rospy.get_param("use_object_width")
         self.safety_time_ego_front = rospy.get_param("~safety_time_ego_front")
@@ -61,7 +62,7 @@ class TrajectoryCollisionChecker:
 
         if len(msg.waypoints) > 0:
             local_path = PathWrapper(msg.waypoints, distances=True)
-            local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
+            local_path_buffer = local_path.linestring.buffer(self.safety_box_width / 2, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
             # get the car_front and projct to local_path
@@ -119,9 +120,10 @@ class TrajectoryCollisionChecker:
 
                         # EGO distances, arrival and leaving times
                         collision_distance_from_ego_front = collision_area_distances - car_front_distance_from_local_path_start
-                        ego_arrival_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front) - self.safety_time_ego_front
-                        # TODO could use collision_area_distances or car length param.
-                        ego_leaving_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front - 5) + self.safety_time_ego_rear
+                        ego_arrival_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front)
+                        ego_leaving_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front - self.safety_box_length)
+                        ego_arrival_times -= self.safety_time_ego_front
+                        ego_leaving_times += self.safety_time_ego_rear
 
                         # OBJECT distances, arrival and leaving times
                         obj_velocity = get_vector_norm_3d(obj.velocity)
@@ -142,7 +144,7 @@ class TrajectoryCollisionChecker:
                                                                     vx = obj.velocity.x,
                                                                     vy = obj.velocity.y,
                                                                     vz = obj.velocity.z,
-                                                                    distance_to_stop = self.braking_safety_distance_obstacle,
+                                                                    distance_to_stop = self.braking_safety_distance_trajectory,
                                                                     category = CollisionPoints.MERGING_TRAJECTORY)
                         else:
                             # objects intersecting at angle, add with 0 velocity
@@ -151,7 +153,7 @@ class TrajectoryCollisionChecker:
                                     vx = 0,
                                     vy = 0,
                                     vz = 0,
-                                    distance_to_stop = self.braking_safety_distance_obstacle,
+                                    distance_to_stop = self.braking_safety_distance_trajectory,
                                     category = CollisionPoints.COLLIDING_TRAJECTORY)
 
         collision_points_msg = collision_points.create_message()

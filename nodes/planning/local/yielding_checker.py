@@ -16,7 +16,7 @@ class YieldingChecker:
     def __init__(self):
 
         # parameters
-        self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
+        self.safety_box_width = rospy.get_param("safety_box_width")
         self.braking_safety_distance_yield = rospy.get_param("~braking_safety_distance_yield")
         self.yielding_distance_limit = rospy.get_param("~yielding_distance_limit")
         self.heading_alignment_limit = rospy.get_param("~heading_alignment_limit")
@@ -64,7 +64,7 @@ class YieldingChecker:
 
         if len(msg.waypoints) > 0 and len(detected_objects) > 0 and len(yield_lines_on_global_path) > 0:
             local_path = PathWrapper(msg.waypoints)
-            local_path_buffer = local_path.linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
+            local_path_buffer = local_path.linestring.buffer(self.safety_box_width / 2, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
             # find if there are any yiled_lines on local_path and select the closest one

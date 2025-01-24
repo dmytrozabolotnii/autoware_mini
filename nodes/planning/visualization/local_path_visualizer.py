@@ -28,7 +28,7 @@ class LocalPathVisualizer:
     def __init__(self):
 
         # Parameters
-        self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
+        self.safety_box_width = rospy.get_param("safety_box_width")
         #self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
         self.stopped_speed_limit = rospy.get_param("stopped_speed_limit")
 
@@ -54,14 +54,14 @@ class LocalPathVisualizer:
 
             planner_status_text = "<div style='text-align: center; color: white;'>" + COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category] + "</div>"
 
-            # local path with stopping_lateral_distance
+            # local path with safety_box_width
             marker = Marker(header=msg.header)
             marker.ns = "Stopping lateral distance"
             marker.type = marker.LINE_STRIP
             marker.action = marker.ADD
             marker.id = 0
             marker.pose.orientation.w = 1.0
-            marker.scale.x = 2 * self.stopping_lateral_distance
+            marker.scale.x = self.safety_box_width
             marker.color = color
             marker.points = points
             marker_array.markers.append(marker)
