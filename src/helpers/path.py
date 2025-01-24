@@ -183,32 +183,22 @@ class PathWrapper:
 
         return waypoints
 
-    def extract_distances(self, distance_start, distance_end):
+    def extract_points_and_distances(self, distance_start, distance_end):
         """
-        Get distances of the waypoints between start and end distance along the path
+        Get waypoints and their distances between start and end distance along the path
         :param distance_start: start distance along the path (m)
         :param distance_end: end distance along the path (m)
-        :return: distances
+        :return: points and distances as numpy arrays
         """
 
         index_start = self.get_waypoint_index_at_distance(distance_start, side="right")
         index_end = self.get_waypoint_index_at_distance(distance_end, side="left")
 
-        return self._distances[index_start:index_end]
-
-    def extract_points(self, distance_start, distance_end):
-        """
-        Get points of the waypoints between start and end distance along the path
-        :param distance_start: start distance along the path (m)
-        :param distance_end: end distance along the path (m)
-        :return: points
-        """
-
-        index_start = self.get_waypoint_index_at_distance(distance_start, side="right")
-        index_end = self.get_waypoint_index_at_distance(distance_end, side="left")
-
+        distances = np.array(self._distances[index_start:index_end])
         points = self.linestring.coords[index_start:index_end]
-        return [shapely.Point(point) for point in points]
+        points = np.array([shapely.Point(point) for point in points])
+
+        return points, distances
 
 
     def get_velocity_at_distance(self, distance):

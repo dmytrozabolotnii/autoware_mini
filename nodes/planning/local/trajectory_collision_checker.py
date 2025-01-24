@@ -116,8 +116,7 @@ class TrajectoryCollisionChecker:
                         # Extract INTERSECTION AREA: distances on local_path and extract points
                         trajectory_distance_from_local_path_start_min = max(trajectory_distance_from_local_path_start_min - self.wp_buffer_distance, 0.0)
                         trajectory_distance_from_local_path_start_max += self.wp_buffer_distance
-                        collision_area_distances = np.array(local_path.extract_distances(trajectory_distance_from_local_path_start_min, trajectory_distance_from_local_path_start_max))
-                        collision_area_points = np.array(local_path.extract_points(trajectory_distance_from_local_path_start_min, trajectory_distance_from_local_path_start_max))
+                        collision_area_points, collision_area_distances = local_path.extract_points_and_distances(trajectory_distance_from_local_path_start_min, trajectory_distance_from_local_path_start_max)
 
                         # EGO distances, arrival and leaving times
                         collision_distance_from_ego_front = collision_area_distances - car_front_distance_from_local_path_start
