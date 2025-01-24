@@ -74,9 +74,10 @@ def get_axis_oriented_bounding_box(obj):
 
 def get_prediction_box(obj):
     """
-    Get width of the object polygon and prediction origin and offset.
+    Get width, length and position of the object's velocity vector aligned bounding box
+    Update object's position, dimensions and heading
     :param obj: DetectedObject
-    :return: width, length, origin, offset
+    :return: obj
     """
 
     # Collect points from convex_hull and extract rotation center
