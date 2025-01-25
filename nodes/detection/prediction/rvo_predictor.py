@@ -23,6 +23,7 @@ from lanelet2.geometry import findWithin2d
 from helpers.lanelet2 import load_lanelet2_map
 
 pedestrian_normal_walking_speed = 1.3888888
+fov_acceptable_circle_radius = 0.5
 MAX_STEPS_LONG_BRUTEFORCE = 10
 MAX_STEPS_LAT_BRUTEFORCE = 10
 
@@ -84,11 +85,20 @@ def single_check_solution(solution, check_id, pure_deviation_vectors, representa
     return angle >= 0
 
 
-def check_solution(solution, do_not_check_id, pure_deviation_vectors, representative_vectors, crosswalks, lanelets):
+def check_solution(solution, do_not_check_id, pure_deviation_vectors, representative_vectors,
+                   fov_deviation_vectors, fov_representative_vectors, crosswalks, lanelets):
     solution_passes = True
     for i in range(len(pure_deviation_vectors)):
         if i != do_not_check_id:
             solution_passes = single_check_solution(solution, i, pure_deviation_vectors, representative_vectors)
+            if not solution_passes:
+                return solution_passes
+
+    for fov_deviation_vector, fov_representative_vector in zip(fov_deviation_vectors, fov_representative_vectors):
+        center_distance = distance(solution - fov_deviation_vector, [0, 0])
+        if center_distance > fov_acceptable_circle_radius:
+            solution_passes = single_check_solution(solution, 0,
+                                                    [fov_deviation_vector], [fov_representative_vector])
             if not solution_passes:
                 return solution_passes
 
@@ -146,12 +156,16 @@ def resolve_hard_rvo(velocity, deviation_vectors, fov_constraint=False, crosswal
         # pure_deviation_vectors = np.vstack((pure_deviation_vectors, [-1 * velocity]))
         # representative_vectors = np.vstack((representative_vectors, [simple_rotate(velocity, -1 * np.pi / 2)]))
 
-        pure_deviation_vectors = np.vstack((pure_deviation_vectors, [-1 * velocity] * 2))
-        representative_vectors = np.vstack((representative_vectors, [-1 * simple_rotate(velocity, np.pi / 3), simple_rotate(velocity, -1 * np.pi / 3)]))
+        fov_deviation_vectors = np.array([-1 * velocity] * 2)
+        fov_representative_vectors = np.array([-1 * simple_rotate(velocity, np.pi / 3), simple_rotate(velocity, -1 * np.pi / 3)])
         # representative_vectors = np.vstack((representative_vectors, [simple_rotate(velocity, np.pi / 3), -1 * simple_rotate(velocity, -1 * np.pi / 3)]))
+    else:
+        fov_deviation_vectors = []
+        fov_representative_vectors = []
 
     # Check if it is valid solution for all constraints
-    if check_solution(max_deviation_vector, max_deviation_vector_index, pure_deviation_vectors, representative_vectors, crosswalks, lanelets):
+    if check_solution(max_deviation_vector, max_deviation_vector_index, pure_deviation_vectors, representative_vectors,
+                      fov_deviation_vectors, fov_representative_vectors, crosswalks, lanelets):
         return velocity + max_deviation_vector
     else:
         # Start bruteforce =(
@@ -161,7 +175,8 @@ def resolve_hard_rvo(velocity, deviation_vectors, fov_constraint=False, crosswal
         for i in range(MAX_STEPS_LONG_BRUTEFORCE):
             # Find new solution vector
             new_solution = max_deviation_vector / max_deviation_vector_length * (max_deviation_vector_length + longitudal_range * (i + 1) / MAX_STEPS_LONG_BRUTEFORCE)
-            if check_solution(new_solution, max_deviation_vector_index, pure_deviation_vectors, representative_vectors, crosswalks, lanelets):
+            if check_solution(new_solution, max_deviation_vector_index, pure_deviation_vectors, representative_vectors,
+                              fov_deviation_vectors, fov_representative_vectors, crosswalks, lanelets):
                 return velocity + new_solution
             # Latitudal bruteforce
             for j in range(MAX_STEPS_LAT_BRUTEFORCE // 2 + no_deviation_vectors * MAX_STEPS_LAT_BRUTEFORCE // 2):
@@ -171,11 +186,13 @@ def resolve_hard_rvo(velocity, deviation_vectors, fov_constraint=False, crosswal
                 # Single check if we are out of bounds of original half-plane if we are checking half-plane
                 if not no_deviation_vectors and not single_check_solution(new_solution_cc, max_deviation_vector_index, pure_deviation_vectors, representative_vectors):
                     break
-                if check_solution(new_solution_cc, max_deviation_vector_index, pure_deviation_vectors, representative_vectors, crosswalks, lanelets):
+                if check_solution(new_solution_cc, max_deviation_vector_index, pure_deviation_vectors, representative_vectors,
+                                  fov_deviation_vectors, fov_representative_vectors, crosswalks, lanelets):
                     return velocity + new_solution_cc
                 # Clockwise solution
                 new_solution_c = simple_rotate(new_solution, -1 * angle_to_rotate)
-                if check_solution(new_solution_c, max_deviation_vector_index, pure_deviation_vectors, representative_vectors, crosswalks, lanelets):
+                if check_solution(new_solution_c, max_deviation_vector_index, pure_deviation_vectors, representative_vectors,
+                                  fov_deviation_vectors, fov_representative_vectors, crosswalks, lanelets):
                     return velocity + new_solution_c
 
     return None
@@ -190,6 +207,7 @@ class RVOPredictor(NetSubscriber):
         self.fov_constraint = rospy.get_param('~fov_constraint', False)
         self.map_constraints = rospy.get_param('~map_constraints', False)
         self.cars_constraints = rospy.get_param('~cars_constraints', False)
+        self.cars_constraints_minimum_speed = pedestrian_normal_walking_speed
         self.rvo_only = rospy.get_param('~rvo_only', False)
 
         self.prediction_horizon_time = self.prediction_horizon * self.prediction_interval
@@ -281,7 +299,8 @@ class RVOPredictor(NetSubscriber):
                 collision_flag = False
                 deviation_vectors = []
                 for j in range(0, len(tracked_objects_array)):
-                    if i != j and distance(tracked_objects_array[i]['centroid'], tracked_objects_array[j]['centroid']) < self.range_limit:
+                    if i != j and distance(tracked_objects_array[i]['centroid'], tracked_objects_array[j]['centroid']) < self.range_limit \
+                        and (j<ped_count or distance(tracked_objects_array[j]['velocity'], [0, 0]) >= self.cars_constraints_minimum_speed):
                         polygon_b = simple_affine_transform(tracked_objects_convex_hull_array.geoms[j], 1,
                                                             -1 * tracked_objects_array[i]['centroid'])
                         # Calculate minkowski sum
@@ -357,11 +376,12 @@ class RVOPredictor(NetSubscriber):
                     if result is not None:
                         rvo_objects_array[0, i]['velocity'] = result
                     else:
-                        print('Hard RVO resolver failed, adjusting speed to zero, id:', tracked_objects_array_ids[i])
+                        # print('Hard RVO resolver failed, adjusting speed to zero, id:', tracked_objects_array_ids[i])
                         # print(len(deviation_vectors), deviation_vectors)
                         # print('Crosswalks:', crosswalks)
                         # print('Lanelets:', lanelets)
-                        rvo_objects_array[0, i]['velocity'] = 0
+                        # rvo_objects_array[0, i]['velocity'] = 0
+                        print('Hard RVO resolver failed, adjusting speed to base velocity, id:', tracked_objects_array_ids[i])
 
                 if collision_flag and len(deviation_vectors) == 0:
                     print('Collision case without change, id:', tracked_objects_array_ids[i])
