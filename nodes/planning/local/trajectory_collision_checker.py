@@ -34,7 +34,7 @@ class TrajectoryCollisionChecker:
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
         self.detected_objects = None
-        self.current_velocity = None
+        self.current_speed = None
         self.current_acceleration = None
         # publishers
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -50,7 +50,7 @@ class TrajectoryCollisionChecker:
         self.detected_objects = msg.objects
 
     def current_velocity_callback(self, msg):
-        self.current_velocity = msg.twist.linear.x
+        self.current_speed = msg.twist.linear.x
 
     def imu_callback(self, msg):
         alpha = 0.1  # smoothing factor
@@ -62,7 +62,7 @@ class TrajectoryCollisionChecker:
     def local_path_callback(self, msg):
 
         detected_objects = self.detected_objects
-        current_velocity = self.current_velocity
+        current_speed = self.current_speed
         # if no IMU data is received, assume the acceleration is 0
 
         if self.use_ego_acceleration:
@@ -70,7 +70,7 @@ class TrajectoryCollisionChecker:
         else:
             current_acceleration = 0.0
 
-        if detected_objects is None or current_velocity is None:
+        if detected_objects is None or current_speed is None:
             rospy.logwarn_throttle(3, "%s - detected objects or current velocity not received!", rospy.get_name())
             return
 
@@ -104,24 +104,23 @@ class TrajectoryCollisionChecker:
                         trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
 
                         # calculate trajectory intersection distances for ego vehicle and object
-                        trajectory_distance_from_local_path_start_min = float('inf')
-                        trajectory_distance_from_local_path_start_max = 0.0
+                        intersection_distance_from_local_path_start_min = float('inf')
+                        intersection_distance_from_local_path_start_max = 0.0
                         for x, y in trajectory_intersection_points:
                             distance = local_path.linestring.project(shapely.Point(x, y))
-                            trajectory_distance_from_local_path_start_min = min(trajectory_distance_from_local_path_start_min, distance)
-                            trajectory_distance_from_local_path_start_max = max(trajectory_distance_from_local_path_start_max, distance)
+                            intersection_distance_from_local_path_start_min = min(intersection_distance_from_local_path_start_min, distance)
+                            intersection_distance_from_local_path_start_max = max(intersection_distance_from_local_path_start_max, distance)
 
 
                         object_current_location = shapely.Point(obj.position.x, obj.position.y)
                         object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
 
                         # Ignore trajectories from behind
-                        if math.isclose(trajectory_distance_from_local_path_start_min, 0.0, abs_tol=0.001) and math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
+                        if math.isclose(intersection_distance_from_local_path_start_min, 0.0, abs_tol=0.001) and math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
                             continue
 
-                        object_current_heading = get_heading_from_vector(obj.velocity)
                         object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
-                        heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
+                        heading_difference = math.degrees(get_angle_between_two_headings(obj.heading, object_local_path_heading))
                         object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
 
                         # Ignore object trajectories that are on our path and with similar heading - must be in front of us
@@ -129,14 +128,14 @@ class TrajectoryCollisionChecker:
                             continue
                         
                         # Extract INTERSECTION AREA: distances on local_path and extract points
-                        trajectory_distance_from_local_path_start_min = max(trajectory_distance_from_local_path_start_min - self.wp_buffer_distance, 0.0)
-                        trajectory_distance_from_local_path_start_max += self.wp_buffer_distance
-                        collision_area_points, collision_area_distances = local_path.extract_points_and_distances(trajectory_distance_from_local_path_start_min, trajectory_distance_from_local_path_start_max)
+                        intersection_distance_from_local_path_start_min = max(intersection_distance_from_local_path_start_min - self.wp_buffer_distance, 0.0)
+                        intersection_distance_from_local_path_start_max += self.wp_buffer_distance
+                        collision_area_points, collision_area_distances = local_path.extract_points_and_distances(intersection_distance_from_local_path_start_min, intersection_distance_from_local_path_start_max)
 
                         # EGO distances, arrival and leaving times
                         collision_distance_from_ego_front = collision_area_distances - car_front_distance_from_local_path_start
-                        ego_arrival_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front)
-                        ego_leaving_times = calculate_time_to_destination(current_velocity, current_acceleration, collision_distance_from_ego_front + self.safety_box_length)
+                        ego_arrival_times = calculate_time_to_destination(current_speed, current_acceleration, collision_distance_from_ego_front)
+                        ego_leaving_times = calculate_time_to_destination(current_speed, current_acceleration, collision_distance_from_ego_front + self.safety_box_length)
                         ego_arrival_times -= self.safety_time_ego_front
                         ego_leaving_times += self.safety_time_ego_rear
 
