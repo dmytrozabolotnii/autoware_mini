@@ -28,8 +28,7 @@ class NaivePredictor:
         tracked_objects_array = np.zeros(num_objects, dtype=[
             ('position', np.float32, (2,)),
             ('velocity', np.float32, (2,)),
-            ('acceleration', np.float32, (2,)),
-            ('width', np.float32),
+            ('acceleration', np.float32, (2,))
         ])
 
         valid_indices = []  # Keep track of indices for objects that need naive prediction
@@ -43,7 +42,6 @@ class NaivePredictor:
             if self.use_object_width:
                 prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
                 tracked_objects_array[i]['position'] = (prediction_origin.x, prediction_origin.y)
-                tracked_objects_array[i]['width'] = obj.dimensions.y / 2
             else:
                 tracked_objects_array[i]['position'] = (obj.position.x, obj.position.y)
 
@@ -77,8 +75,6 @@ class NaivePredictor:
                 wp.position.x, wp.position.y = predicted_positions[t, i]
                 wp.position.z = obj.position.z
                 wp.speed = np.linalg.norm(predicted_velocities[t, i])
-                wp.left_width = tracked_objects_array[i]['width']
-                wp.right_width = tracked_objects_array[i]['width']
                 path.waypoints.append(wp)
             obj.candidate_trajectories.paths.append(path)
 

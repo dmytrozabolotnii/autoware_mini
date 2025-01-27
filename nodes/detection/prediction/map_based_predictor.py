@@ -114,9 +114,7 @@ class MapBasedPredictor:
                 if self.use_object_width:
                     prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
                     prediction_origin = shapely.Point(prediction_origin.x, prediction_origin.y, prediction_origin.z)
-                    width = obj.dimensions.y / 2
                 else:
-                    width = 0.0
                     prediction_origin = object_centroid
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
@@ -134,8 +132,6 @@ class MapBasedPredictor:
                     wp.position.x = p.x
                     wp.position.y = p.y
                     wp.position.z = obj.position.z
-                    wp.left_width = width
-                    wp.right_width = width
                     wp.speed = velocity
                     path.waypoints.append(wp)
                 obj.candidate_trajectories.paths.append(path)
