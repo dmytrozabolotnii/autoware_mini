@@ -13,7 +13,6 @@ class NaivePredictor:
         self.prediction_horizon = rospy.get_param('~prediction_horizon')
         self.prediction_interval = rospy.get_param('~prediction_interval')
         self.prediction_min_speed = rospy.get_param('~prediction_min_speed')
-        self.use_object_width = rospy.get_param('/planning/use_object_width')
 
         # Publishers
         self.predicted_objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -38,12 +37,9 @@ class NaivePredictor:
             if get_vector_norm_3d(obj.velocity) < self.prediction_min_speed or len(obj.candidate_trajectories.paths) > 0:
                 continue
 
-            # calculate object width and origin for prediction
-            if self.use_object_width:
-                prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
-                tracked_objects_array[i]['position'] = (prediction_origin.x, prediction_origin.y)
-            else:
-                tracked_objects_array[i]['position'] = (obj.position.x, obj.position.y)
+            # calculate prediction origin in front of the object
+            prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
+            tracked_objects_array[i]['position'] = (prediction_origin.x, prediction_origin.y)
 
             tracked_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y)
             tracked_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)

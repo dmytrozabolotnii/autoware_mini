@@ -29,7 +29,6 @@ class MapBasedPredictor:
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
         self.angle_threshold = rospy.get_param('~angle_threshold')
         self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
-        self.use_object_width = rospy.get_param('/planning/use_object_width')
 
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
@@ -111,18 +110,15 @@ class MapBasedPredictor:
                     all_trajectories_evaluated = self.evaluate_paths(all_trajectories_with_turn_directions, object_indicator)
                     selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
-                if self.use_object_width:
-                    prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
-                    prediction_origin = shapely.Point(prediction_origin.x, prediction_origin.y, prediction_origin.z)
-                else:
-                    prediction_origin = object_centroid
-
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
                 trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
                 if self.use_offset_for_prediction:
                     cross_track_offset = -calculate_cross_track_error(trajectory_linestring, object_centroid)
-                    trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style=1)
+                    trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style="mitre")
 
+                # get prediction origin right in front of the object
+                prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
+                prediction_origin = shapely.Point(prediction_origin.x, prediction_origin.y, prediction_origin.z)
                 object_distance_from_trajectory_linestring_start = trajectory_linestring.project(prediction_origin)
 
                 path = Path()
