@@ -72,12 +72,10 @@ def get_axis_oriented_bounding_box(obj):
 
     return minx, miny, maxx, maxy
 
-def get_prediction_box(obj):
+def update_object_position_dimensions(obj):
     """
-    Get width, length and position of the object's velocity vector aligned bounding box
-    Update object's position, dimensions and heading
+    Update width, length and position of the object, based on object's velocity vector aligned bounding box
     :param obj: DetectedObject
-    :return: obj
     """
 
     # Collect points from convex_hull and extract rotation center
@@ -125,7 +123,6 @@ def get_prediction_box(obj):
     obj.dimensions.y = width
     obj.heading = heading_angle 
 
-    return obj
 
 def calculate_time_to_destination(velocity, acceleration, distances):
     """
