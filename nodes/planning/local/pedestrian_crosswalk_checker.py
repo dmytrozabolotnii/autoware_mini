@@ -6,11 +6,12 @@ import shapely
 import shapely.ops
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
-from tf2_ros import TransformListener, Buffer, TransformException
+from tf2_ros import TransformListener, Buffer
 from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.path import PathWrapper
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
+from helpers.transform import get_car_front_point
 
 class PedestrianCrosswalkChecker:
 
@@ -76,13 +77,7 @@ class PedestrianCrosswalkChecker:
             local_path_buffer = local_path.linestring.buffer(self.safety_box_width / 2, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
-            # get the car_front and projct to local_path
-            try:
-                transform = self.tf_buffer.lookup_transform(msg.header.frame_id, "car_front", msg.header.stamp, rospy.Duration(0.06))
-            except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-                rospy.logwarn("%s - %s", rospy.get_name(), e)
-                return
-            car_front = shapely.Point(transform.transform.translation.x, transform.transform.translation.y)
+            car_front = get_car_front_point(self.tf_buffer, msg.header.frame_id)
             car_front_distance_from_path_start = local_path.linestring.project(car_front)
             local_path_up_to_car_front = shapely.ops.substring(local_path.linestring, 0, car_front_distance_from_path_start)
 

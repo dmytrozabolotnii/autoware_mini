@@ -8,12 +8,13 @@ import numpy as np
 from autoware_mini.msg import Path, DetectedObjectArray
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import PointCloud2, Imu
-from tf2_ros import TransformListener, Buffer, TransformException
+from tf2_ros import TransformListener, Buffer
 
 from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings, get_vector_norm_3d
 from helpers.detection import calculate_time_to_destination
 from helpers.collision import CollisionPoints
 from helpers.path import PathWrapper
+from helpers.transform import get_car_front_point
 
 class TrajectoryCollisionChecker:
 
@@ -81,13 +82,7 @@ class TrajectoryCollisionChecker:
             local_path_buffer = local_path.linestring.buffer(self.safety_box_width / 2, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
-            # get the car_front and projct to local_path
-            try:
-                transform = self.tf_buffer.lookup_transform(msg.header.frame_id, "car_front", msg.header.stamp, rospy.Duration(0.06))
-            except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
-                rospy.logwarn("%s - %s", rospy.get_name(), e)
-                return
-            car_front = shapely.Point(transform.transform.translation.x, transform.transform.translation.y)
+            car_front = get_car_front_point(self.tf_buffer, msg.header.frame_id)
             car_front_distance_from_local_path_start = local_path.linestring.project(car_front)
 
             for obj in detected_objects:
