@@ -196,7 +196,7 @@ class PathWrapper:
 
         distances = np.array(self._distances[index_start:index_end])
         points = self.linestring.coords[index_start:index_end]
-        points = np.array([shapely.Point(point) for point in points])
+        points = shapely.points(points)
 
         return points, distances
 

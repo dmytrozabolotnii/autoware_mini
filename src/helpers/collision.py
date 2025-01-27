@@ -37,13 +37,13 @@ class CollisionPoints:
     def add_point(self, x, y, z, vx, vy, vz, distance_to_stop, category):
         self._array = np.append(self._array, np.array([(x, y, z, vx, vy, vz, distance_to_stop, category)], dtype=DTYPE))
 
+    def add_points(self, points, vx, vy, vz, distance_to_stop, category):
+        for point in points:
+            self.add_point(point.x, point.y, point.z, vx, vy, vz, distance_to_stop, category)
+
     def add_intersection_points(self, intersection_points, z, vx, vy, vz, distance_to_stop, category):
         for x, y in intersection_points:
             self.add_point(x, y, z, vx, vy, vz, distance_to_stop, category)
-
-    def add_collision_points(self, points, vx, vy, vz, distance_to_stop, category):
-        for point in points:
-            self.add_point(point.x, point.y, point.z, vx, vy, vz, distance_to_stop, category)
 
     def create_message(self):
         return msgify(PointCloud2, self._array)

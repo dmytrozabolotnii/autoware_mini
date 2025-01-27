@@ -153,7 +153,7 @@ class TrajectoryCollisionChecker:
 
                         if heading_difference < self.heading_alignment_limit:
                             # objects with similar heading - add collision points with object's velocity
-                            collision_points.add_collision_points(points = collision_area_points,
+                            collision_points.add_points(points = collision_area_points,
                                 vx = obj.velocity.x,
                                 vy = obj.velocity.y,
                                 vz = obj.velocity.z,
@@ -161,7 +161,7 @@ class TrajectoryCollisionChecker:
                                 category = CollisionPoints.MERGING_TRAJECTORY)
                         else:
                             # objects intersecting at angle, add with 0 velocity
-                            collision_points.add_collision_points(points = collision_area_points,
+                            collision_points.add_points(points = collision_area_points,
                                 vx = 0.0,
                                 vy = 0.0,
                                 vz = 0.0,
