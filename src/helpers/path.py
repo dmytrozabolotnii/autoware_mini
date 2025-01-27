@@ -163,7 +163,7 @@ class PathWrapper:
         if abs(index_start - index_end) == 1:
             return []
 
-        waypoints = self._extract_waypoints(index_start, index_end, copy=copy)        
+        waypoints = self._extract_waypoints(index_start, index_end, copy=copy)
 
         if trim:
             # modify start and end of the path by shifting waypoints to exact locations determined by distances
@@ -194,8 +194,8 @@ class PathWrapper:
         index_start = self.get_waypoint_index_at_distance(distance_start, side="right")
         index_end = self.get_waypoint_index_at_distance(distance_end, side="left")
 
-        distances = np.array(self._distances[index_start:index_end])
-        points = self.linestring.coords[index_start:index_end]
+        distances = self._distances[index_start:index_end]
+        points = self._waypoints_xyz[index_start:index_end]
         points = shapely.points(points)
 
         return points, distances
