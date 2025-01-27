@@ -10,7 +10,7 @@ from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import PointCloud2, Imu
 from tf2_ros import TransformListener, Buffer
 
-from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings, get_vector_norm_3d
+from helpers.geometry import get_angle_between_two_headings, get_vector_norm_3d
 from helpers.detection import calculate_time_to_destination
 from helpers.collision import CollisionPoints
 from helpers.path import PathWrapper
@@ -98,14 +98,9 @@ class TrajectoryCollisionChecker:
                         trajectory_intersection_result = trajectory_to_check.intersection(local_path_buffer)
                         trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
 
-                        # calculate trajectory intersection distances for ego vehicle and object
-                        intersection_distance_from_local_path_start_min = float('inf')
-                        intersection_distance_from_local_path_start_max = 0.0
-                        for x, y in trajectory_intersection_points:
-                            distance = local_path.linestring.project(shapely.Point(x, y))
-                            intersection_distance_from_local_path_start_min = min(intersection_distance_from_local_path_start_min, distance)
-                            intersection_distance_from_local_path_start_max = max(intersection_distance_from_local_path_start_max, distance)
-
+                        # Calculate trajectory intersection distances for ego vehicle and object
+                        distances = list(map(local_path.linestring.project, map(shapely.Point, trajectory_intersection_points)))
+                        intersection_distance_from_local_path_start_min, intersection_distance_from_local_path_start_max = min(distances), max(distances)
 
                         object_current_location = shapely.Point(obj.position.x, obj.position.y)
                         object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
