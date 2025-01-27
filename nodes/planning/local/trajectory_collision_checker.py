@@ -11,8 +11,7 @@ from sensor_msgs.msg import PointCloud2, Imu
 from tf2_ros import TransformListener, Buffer
 
 from helpers.geometry import get_angle_between_two_headings, get_vector_norm_3d
-from helpers.detection import calculate_time_to_destination
-from helpers.collision import CollisionPoints
+from helpers.collision import CollisionPoints, calculate_time_to_destination
 from helpers.path import PathWrapper
 from helpers.transform import get_car_front_point
 

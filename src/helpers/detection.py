@@ -124,57 +124,6 @@ def update_object_position_dimensions(obj):
     obj.heading = heading_angle 
 
 
-def calculate_time_to_destination(velocity, acceleration, distances):
-    """
-    Calculate the time it takes to reach a certain distance given a constant velocity and acceleration.
-    :param velocity: float, the velocity of the object
-    :param acceleration: float, the acceleration of the object
-    :param distances: numpy array of floats, the distances to calculate the time to reach
-    :return: numpy array of floats, the time it takes to reach the distances
-    """
-
-    # create a numpy array of zeros with the same shape as distances
-    time_to_destination = np.zeros_like(distances, dtype=float)
-
-    # calculate the time to reach the distances
-    for i, distance in enumerate(distances):
-        
-        # point already reached, takes no time
-        if distance < 0:
-            time_to_destination[i] = 0
-            continue
-        
-        # no acceleration - constant velocity
-        if acceleration == 0:
-            if velocity == 0:
-                # car is not moving - will never reach the point
-                time_to_destination[i] = np.inf
-            else:
-                # calculate time
-                time_to_destination[i] = distance / velocity
-        else:
-            # constant acceleration
-            discriminant = velocity**2 + 2 * acceleration * distance
-
-            # car will not reach the point with given velocity and acceleration
-            if discriminant < 0:
-                time_to_destination[i] = np.inf
-                continue
-
-            # car breaking
-            if acceleration < 0:
-                stopping_distance = velocity**2 / (-2 * acceleration)
-                # car will stop before reaching the point
-                if distance > stopping_distance:
-                    time_to_destination[i] = np.inf
-                    continue
-
-            # calculate time with acceleration and velocity
-            time_to_destination[i] = (-velocity + np.sqrt(discriminant)) / acceleration
-
-    return time_to_destination
-
-
 if __name__ == '__main__':
     boxes1 = np.array([[0, 0, 10, 10], [10, 10, 20, 20]])
     boxes2 = np.array([[5, 5, 15, 15], [15, 15, 25, 25]])
