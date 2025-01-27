@@ -11,9 +11,8 @@ from lanelet2.geometry import findWithin2d
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
 from helpers.path import calculate_cross_track_error
-from helpers.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
+from helpers.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings, get_point_using_heading_and_distance
 from helpers.lanelet2 import load_lanelet2_map
-from helpers.geometry import get_point_using_heading_and_distance
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
     'straight': {'straight': 1, 'left': 0.5, 'right': 0.5},
@@ -114,7 +113,7 @@ class MapBasedPredictor:
 
                 if self.use_object_width:
                     prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
-                    prediction_origin = shapely.Point(prediction_origin.x, prediction_origin.y, obj.position.z)
+                    prediction_origin = shapely.Point(prediction_origin.x, prediction_origin.y, prediction_origin.z)
                     width = obj.dimensions.y / 2
                 else:
                     width = 0.0
