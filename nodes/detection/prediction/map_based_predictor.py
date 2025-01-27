@@ -117,9 +117,9 @@ class MapBasedPredictor:
                     trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style="mitre")
 
                 # get prediction origin right in front of the object
-                prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
-                prediction_origin = shapely.Point(prediction_origin.x, prediction_origin.y, prediction_origin.z)
-                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(prediction_origin)
+                object_front = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
+                object_front = shapely.Point(object_front.x, object_front.y, object_front.z)
+                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_front)
 
                 path = Path()
                 for distance, velocity in zip(distances, velocities):
@@ -127,7 +127,7 @@ class MapBasedPredictor:
                     p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + distance)
                     wp.position.x = p.x
                     wp.position.y = p.y
-                    wp.position.z = obj.position.z
+                    wp.position.z = obj.position.z  # offset removes z coordinate
                     wp.speed = velocity
                     path.waypoints.append(wp)
                 obj.candidate_trajectories.paths.append(path)

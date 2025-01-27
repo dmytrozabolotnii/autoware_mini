@@ -26,6 +26,6 @@ def get_distance_to_car_front():
     transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time(0), rospy.Duration(20.0))
     return transform.transform.translation.x
 
-def get_car_front_point(tf_buffer, frame_id):
-    transform = tf_buffer.lookup_transform(frame_id, "car_front", rospy.Time(0), rospy.Duration(0.06))
+def get_car_front_point(tf_buffer, frame_id, stamp=rospy.Time(0)):
+    transform = tf_buffer.lookup_transform(frame_id, "car_front", stamp, rospy.Duration(0.06))
     return shapely.Point(transform.transform.translation.x, transform.transform.translation.y)

@@ -38,9 +38,8 @@ class NaivePredictor:
                 continue
 
             # calculate prediction origin in front of the object
-            prediction_origin = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
-            tracked_objects_array[i]['position'] = (prediction_origin.x, prediction_origin.y)
-
+            car_front = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
+            tracked_objects_array[i]['position'] = (car_front.x, car_front.y)
             tracked_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y)
             tracked_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
 

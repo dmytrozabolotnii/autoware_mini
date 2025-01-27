@@ -97,8 +97,9 @@ class TrajectoryCollisionChecker:
                         trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
 
                         # Calculate trajectory intersection distances for ego vehicle and object
-                        distances = list(map(local_path.linestring.project, map(shapely.Point, trajectory_intersection_points)))
-                        intersection_distance_from_local_path_start_min, intersection_distance_from_local_path_start_max = min(distances), max(distances)
+                        distances = list(map(local_path.linestring.project, shapely.points(trajectory_intersection_points)))
+                        intersection_distance_from_local_path_start_min = min(distances)
+                        intersection_distance_from_local_path_start_max = max(distances)
 
                         object_current_location = shapely.Point(obj.position.x, obj.position.y)
                         object_distance_from_local_path_start = local_path.linestring.project(object_current_location)

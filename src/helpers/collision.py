@@ -58,26 +58,26 @@ def calculate_time_to_destination(velocity, acceleration, distances):
     :return: numpy array of floats, the time it takes to reach the distances
     """
     
-    # Handle zero acceleration and zero velocity cases outside of the main calculation
-    if velocity == 0 and acceleration == 0:
-        # Object is not moving and has no acceleration
-        return np.full_like(distances, np.nan, dtype=float)
-    elif acceleration == 0:
-        # Object is moving with constant velocity
-        time_to_destination = np.where(distances >= 0, distances / velocity, np.nan)
-        return time_to_destination
-
-    # Vectorized calculation for cases with acceleration
-    discriminant = velocity**2 + 2 * acceleration * distances  # Calculate the discriminant
-    valid_discriminant = discriminant >= 0  # Mask invalid discriminants (negative values)
-
     # Initialize result with NaN (invalid cases)
     time_to_destination = np.full_like(distances, np.nan, dtype=float)
 
-    # Apply formula only where discriminant is valid
-    time_to_destination[valid_discriminant] = (
-        -velocity / acceleration +
-        np.sqrt(discriminant[valid_discriminant]) / np.abs(acceleration)
-    )
+    # Handle zero acceleration and zero velocity cases outside of the main calculation
+    if velocity == 0 and acceleration == 0:
+        # Object is not moving and has no acceleration
+        pass
+    elif acceleration == 0:
+        # Object is moving with constant velocity
+        valid_distances = distances >= 0
+        time_to_destination[valid_distances] = distances[valid_distances] / velocity
+    else:
+        # Vectorized calculation for cases with acceleration
+        discriminant = velocity**2 + 2 * acceleration * distances  # Calculate the discriminant
+        valid_discriminants = discriminant >= 0  # Mask invalid discriminants (negative values)
+
+        # Apply formula only where discriminant is valid
+        time_to_destination[valid_discriminants] = (
+            -velocity / acceleration +
+            np.sqrt(discriminant[valid_discriminants]) / np.abs(acceleration)
+        )
 
     return time_to_destination
