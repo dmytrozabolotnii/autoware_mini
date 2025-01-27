@@ -196,6 +196,18 @@ class PathWrapper:
 
         distances = self._distances[index_start:index_end]
         points = self._waypoints_xyz[index_start:index_end]
+
+        # interpolate and add start and end points if they are further than 0.05m from existing points
+        if distances[0] - distance_start > 0.05:
+            distances = np.insert(distances, 0, distance_start)
+            start_point = self.linestring.interpolate(distance_start)
+            points = np.vstack(([start_point.x, start_point.y, start_point.z], points))
+
+        if distance_end - distances[-1] > 0.05:
+            distances = np.append(distances, distance_end)
+            end_point = self.linestring.interpolate(distance_end)
+            points = np.vstack((points, [end_point.x, end_point.y, end_point.z]))
+
         points = shapely.points(points)
 
         return points, distances

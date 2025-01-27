@@ -25,7 +25,6 @@ class TrajectoryCollisionChecker:
         self.braking_safety_distance_trajectory = rospy.get_param("~braking_safety_distance_trajectory")
         self.heading_alignment_limit = rospy.get_param("~heading_alignment_limit")
         self.use_object_width = rospy.get_param("use_object_width")
-        self.wp_buffer_distance = rospy.get_param("~wp_buffer_distance")
         self.safety_time_ego_front = rospy.get_param("~safety_time_ego_front")
         self.safety_time_ego_rear = rospy.get_param("~safety_time_ego_rear")
         self.use_ego_acceleration = rospy.get_param("~use_ego_acceleration")
@@ -117,8 +116,6 @@ class TrajectoryCollisionChecker:
                             continue
                         
                         # Extract INTERSECTION AREA: distances on local_path and extract points
-                        intersection_distance_from_local_path_start_min = max(intersection_distance_from_local_path_start_min - self.wp_buffer_distance, 0.0)
-                        intersection_distance_from_local_path_start_max += self.wp_buffer_distance
                         collision_area_points, collision_area_distances = local_path.extract_points_and_distances(intersection_distance_from_local_path_start_min, intersection_distance_from_local_path_start_max)
 
                         # EGO distances, arrival and leaving times
