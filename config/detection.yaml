@@ -23,6 +23,7 @@ lidar:
       tolerance: 0.15
       filter: average                    # none, median, average, minimum
       filter_size: 3
+      filter_iterations: 1
     jcp_ground_removal:
       range_img_width: 1024
       range_img_height: 32
@@ -50,6 +51,7 @@ lidar:
       tolerance: 0.15
       filter: average                    # none, median, average, minimum
       filter_size: 3
+      filter_iterations: 1
     jcp_ground_removal:
       range_img_width: 1024
       range_img_height: 128

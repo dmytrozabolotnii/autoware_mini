@@ -21,6 +21,7 @@ class NaiveGroundRemovalNode:
         self.tolerance = rospy.get_param('~tolerance')
         self.filter = rospy.get_param('~filter')
         self.filter_size = rospy.get_param('~filter_size')
+        self.filter_iterations = rospy.get_param('~filter_iterations')
 
         self.width = int(math.ceil((self.max_x - self.min_x) / self.cell_size))
         self.height = int(math.ceil((self.max_y - self.min_y) / self.cell_size))
@@ -54,22 +55,23 @@ class NaiveGroundRemovalNode:
         self.cols[xi[idx], yi[idx]] = zi[idx]
 
         # bring cell minimum lower, if all cells around it are lower
-        if self.filter == 'median':
-            cols_filtered = cv2.medianBlur(self.cols, self.filter_size)
-            np.fmin(self.cols, cols_filtered, out=self.cols)
-        elif self.filter == 'average':
-            mask = np.isnan(self.cols)
-            self.cols[mask] = 0
-            cols_filtered = cv2.blur(self.cols, (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE) / \
-                    cv2.blur((~mask).astype(np.float32), (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE)
-            np.fmin(self.cols, cols_filtered, out=self.cols)
-        elif self.filter == 'minimum':
-            mask = np.isnan(self.cols)
-            self.cols[mask] = np.inf
-            cols_filtered = cv2.erode(self.cols, np.ones((self.filter_size, self.filter_size)), cv2.BORDER_REPLICATE)
-            np.fmin(self.cols, cols_filtered, out=self.cols)
-        elif self.filter != 'none':
-            assert False, "Unknown filter value: " + self.filter
+        for _ in range(self.filter_iterations):
+            if self.filter == 'median':
+                cols_filtered = cv2.medianBlur(self.cols, self.filter_size)
+                np.fmin(self.cols, cols_filtered, out=self.cols)
+            elif self.filter == 'average':
+                mask = np.isnan(self.cols)
+                self.cols[mask] = 0
+                cols_filtered = cv2.blur(self.cols, (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE) / \
+                        cv2.blur((~mask).astype(np.float32), (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE)
+                np.fmin(self.cols, cols_filtered, out=self.cols)
+            elif self.filter == 'minimum':
+                mask = np.isnan(self.cols)
+                self.cols[mask] = np.inf
+                cols_filtered = cv2.erode(self.cols, np.ones((self.filter_size, self.filter_size)), cv2.BORDER_REPLICATE)
+                np.fmin(self.cols, cols_filtered, out=self.cols)
+            elif self.filter != 'none':
+                assert False, "Unknown filter value: " + self.filter
 
         # filter out closest points to minimum point up to some tolerance
         ground_mask = (zi <= (self.cols[xi, yi] + self.tolerance))
