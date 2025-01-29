@@ -68,6 +68,7 @@ lidar:
   points_clusterer:
     cluster_epsilon: 0.7
     cluster_min_size: 4
+    cluster_in_2d: True
   cluster_detector:
     min_cluster_size: 4
     bounding_box_type: axis_aligned # axis_aligned, min_area

@@ -12,6 +12,7 @@ class PointsClusterer:
     def __init__(self):
         self.cluster_epsilon = rospy.get_param('~cluster_epsilon')
         self.cluster_min_size = rospy.get_param('~cluster_min_size')
+        self.cluster_in_2d = rospy.get_param('~cluster_in_2d')
 
         try:
             from cuml.cluster import DBSCAN
@@ -39,7 +40,7 @@ class PointsClusterer:
         points = structured_to_unstructured(data[['x', 'y', 'z']], dtype=np.float32)
 
         # get labels for clusters
-        labels = self.clusterer.fit_predict(points)
+        labels = self.clusterer.fit_predict(points[:, :2] if self.cluster_in_2d else points)
 
         # concatenate points with labels
         points_labeled = np.hstack((points, labels.reshape(-1, 1)))
