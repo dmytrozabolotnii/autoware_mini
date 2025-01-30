@@ -2,7 +2,6 @@ import math
 import cv2
 import numpy as np
 from geometry_msgs.msg import Polygon, Point
-from helpers.geometry import get_heading_from_vector
 
 def create_hull(obj):
 
@@ -71,57 +70,6 @@ def get_axis_oriented_bounding_box(obj):
     maxx, maxy = np.max(points, axis=0)
 
     return minx, miny, maxx, maxy
-
-def update_object_position_dimensions(obj):
-    """
-    Update width, length and position of the object, based on object's velocity vector aligned bounding box
-    :param obj: DetectedObject
-    """
-
-    # Collect points from convex_hull and extract rotation center
-    points = np.array([(p.x, p.y) for p in obj.convex_hull.points])
-    centroid = np.array([obj.position.x, obj.position.y])
-    heading_angle = get_heading_from_vector(obj.velocity)
-
-    # Create rotation matrix
-    cos_angle = np.cos(-heading_angle)
-    sin_angle = np.sin(-heading_angle)
-    rotation_matrix = np.array([
-        [cos_angle, -sin_angle],
-        [sin_angle, cos_angle]
-    ])
-
-    # Translate and rotate points
-    points -= centroid
-    points = points @ rotation_matrix.T
-
-    # Calculate bounds in the rotated coordinate system
-    minx, miny = points.min(axis=0)
-    maxx, maxy = points.max(axis=0)
-    width = (maxy - miny)
-    length = (maxx - minx)
-    center_x = (minx + maxx) / 2
-    center_y = (miny + maxy) / 2
-
-    # bounding box center
-    target_point = np.array([center_x, center_y])
-
-    # Create inverse rotation matrix
-    # sin(-a) = -sin(a), cos(-a) = cos(a)
-    inverse_rotation_matrix = np.array([
-        [cos_angle, sin_angle],
-        [-sin_angle, cos_angle]
-    ])
-
-    # Apply inverse rotation to target points, then translation
-    target_point = target_point @ inverse_rotation_matrix.T
-    target_point += centroid
-
-    obj.position.x = target_point[0]
-    obj.position.y = target_point[1]
-    obj.dimensions.x = length
-    obj.dimensions.y = width
-    obj.heading = heading_angle 
 
 
 if __name__ == '__main__':
