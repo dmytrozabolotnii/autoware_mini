@@ -13,6 +13,7 @@ from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import Path
 from vehicle_platform.msg import Float32MultiArrayStamped
 from geometry_msgs.msg import Point, Pose, PoseStamped, TransformStamped
+from novatel_oem7_msgs.msg import BESTPOS
 from visualization_msgs.msg import MarkerArray, Marker
 from jsk_rviz_plugins.msg import OverlayText
 
@@ -25,6 +26,7 @@ class LaneBoundaryMatcher:
 
         # parameters
         self.enable_height_correction = rospy.get_param("~enable_height_correction")
+        self.use_gnss_accuracy_weights = rospy.get_param("~use_gnss_accuracy_weights")
         self.lookahead_distance = rospy.get_param("~lookahead_distance")
         self.x_correction_treshold = rospy.get_param("~x_correction_treshold")
         self.y_correction_treshold = rospy.get_param("~y_correction_treshold")
@@ -32,17 +34,21 @@ class LaneBoundaryMatcher:
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.openpilot_delay_compensation = rospy.get_param("~openpilot_delay_compensation")
         self.alpha = rospy.get_param("~alpha")
+        self.no_correction_weight = rospy.get_param("~no_correction_weight")
+        self.location_accuracy_stdev_good = rospy.get_param("~location_accuracy_stdev_good")
+        self.location_accuracy_stdev_bad = rospy.get_param("~location_accuracy_stdev_bad")
 
         # variables
         self.current_pose = None
         self.global_path = None
+        self.location_stdev = 0
 
         self.x_correction = 0
         self.y_correction = 0
         self.z_correction = 0
         self.transform_matrix = np.eye(4)
         
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
@@ -54,6 +60,7 @@ class LaneBoundaryMatcher:
         self.gnss_corrections_detailed_pub = rospy.Publisher('/dashboard/gnss_corrections_detailed', OverlayText, queue_size=1)
 
         # subscribers
+        rospy.Subscriber('/novatel/oem7/bestpos', BESTPOS, self.bestpos_callback, queue_size=1)
         rospy.Subscriber('current_pose_gnss', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/planning/lanelet2_global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         lane_lines_sub = message_filters.Subscriber('/openpilot/lane_lines', Float32MultiArrayStamped, queue_size=1, tcp_nodelay=True)
@@ -63,8 +70,11 @@ class LaneBoundaryMatcher:
         ts.registerCallback(self.lane_line_callback)
 
     def calculate_updated_correction(self, new_value, old_value, weight=1):
-        alpha = weight*self.alpha
+        alpha = weight * self.alpha
         return alpha * new_value + (1 - alpha) * old_value
+    
+    def bestpos_callback(self, msg):
+        self.location_stdev = np.sqrt(msg.lat_stdev**2 + msg.lon_stdev**2)
     
     def current_pose_callback(self, msg):
         current_pose_matrix = numpify(msg.pose)
@@ -153,12 +163,26 @@ class LaneBoundaryMatcher:
             x, y = self.find_average_distance(map_left_lane_boundary, map_right_lane_boundary, 
                                                 openpilot_left_lane_boundary, openpilot_right_lane_boundary, openpilot_lane_boundary_probs)
 
-            weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
+            probability_weight = np.sqrt(np.sum(openpilot_lane_boundary_probs**2))
+
+            if self.use_gnss_accuracy_weights:
+                # don't use corrections if the GNNS accuracy is good and change the corrections more slowly when the GNNS accuracy is mediocre
+                if self.location_stdev <= self.location_accuracy_stdev_good:
+                    location_stdev_weight = 0
+                elif self.location_stdev > self.location_accuracy_stdev_bad:
+                    location_stdev_weight = 1
+                else:
+                    location_stdev_weight = 0.5
+            else:
+                location_stdev_weight = 1
+
+            weight = probability_weight * location_stdev_weight
 
             # if the difference between map and openpilot lane boundaries is too big then don't use the correction
-            if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or weight < self.probability_treshold:
+            if (abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or 
+                probability_weight < self.probability_treshold or location_stdev_weight <= 0):
                 x, y = 0, 0
-                weight = 1
+                weight = self.no_correction_weight
                 no_correction = True
             else:
                 no_correction = False       
@@ -251,11 +275,7 @@ class LaneBoundaryMatcher:
         t.transform.rotation.w = 1
         self.transform_matrix = numpify(t.transform)
 
-        if correction_stamp is None:
-            static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
-            static_tf_broadcaster.sendTransform(t)
-        else:
-            self.tf_broadcaster.sendTransform(t)
+        self.tf_broadcaster.sendTransform(t)
 
     def publish_gnss_corrections_detailed(self):
 
