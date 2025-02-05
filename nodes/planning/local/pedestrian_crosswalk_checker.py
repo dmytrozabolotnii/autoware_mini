@@ -84,12 +84,12 @@ class PedestrianCrosswalkChecker:
                 return
             car_front = shapely.Point(transform.transform.translation.x, transform.transform.translation.y)
             car_front_distance_from_path_start = local_path.linestring.project(car_front)
-            local_path_from_car_front = shapely.ops.substring(local_path.linestring, car_front_distance_from_path_start, local_path.linestring.length)
+            local_path_up_to_car_front = shapely.ops.substring(local_path.linestring, 0, car_front_distance_from_path_start)
 
             # extract crosswalks that ego vehicle has not reached yet and that intersect with local path
             crosswalks_on_local_path = []
             for crosswalk in crosswalks_on_global_path:
-                if crosswalk['polygon'].intersects(local_path_from_car_front):
+                if crosswalk['polygon'].intersects(local_path.linestring) and not crosswalk['polygon'].intersects(local_path_up_to_car_front):
                     crosswalks_on_local_path.append(crosswalk)
 
             if len(crosswalks_on_local_path) > 0:
