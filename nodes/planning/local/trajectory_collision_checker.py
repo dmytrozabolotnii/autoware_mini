@@ -7,13 +7,14 @@ import numpy as np
 
 from autoware_mini.msg import Path, DetectedObjectArray
 from geometry_msgs.msg import TwistStamped
-from sensor_msgs.msg import PointCloud2, Imu
+from sensor_msgs.msg import PointCloud2
 from tf2_ros import TransformListener, Buffer
 
 from helpers.geometry import get_angle_between_two_headings, get_vector_norm_3d
 from helpers.collision import CollisionPoints, calculate_time_to_destination
 from helpers.path import PathWrapper
 from helpers.transform import get_car_front_point
+from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 
 class TrajectoryCollisionChecker:
 
@@ -27,12 +28,18 @@ class TrajectoryCollisionChecker:
         self.use_object_width = rospy.get_param("use_object_width")
         self.safety_time_ego_front = rospy.get_param("~safety_time_ego_front")
         self.safety_time_ego_rear = rospy.get_param("~safety_time_ego_rear")
+        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
         self.detected_objects = None
         self.current_speed = None
+
+        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["stop", "traffic_light", "yield", "yield_stop"])
+        self.stop_lines_tree = shapely.STRtree(list(stop_lines.values()))
+
         # publishers
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
 
@@ -100,7 +107,12 @@ class TrajectoryCollisionChecker:
                         # Ignore object trajectories that are on our path and with similar heading - must be in front of us
                         if local_path_buffer.intersects(object_polygon) and heading_difference < self.heading_alignment_limit:
                             continue
-                        
+
+                        # if predicted trajectory intersects with any of the stop lines, ignore it - we have right of way
+                        intersecting_with_stop_line = self.stop_lines_tree.query(trajectory_to_check, predicate="intersects")
+                        if intersecting_with_stop_line:
+                            continue
+
                         # Extract INTERSECTION AREA: distances on local_path and extract points
                         collision_area_points, collision_area_distances = local_path.extract_points_and_distances(intersection_distance_from_local_path_start_min, intersection_distance_from_local_path_start_max)
 
