@@ -83,12 +83,14 @@ class TrajectoryCollisionChecker:
                         distances = list(map(local_path.linestring.project, shapely.points(trajectory_intersection_points)))
                         intersection_distance_from_local_path_start_min = min(distances)
                         intersection_distance_from_local_path_start_max = max(distances)
+                        last_point_of_trajectory = shapely.Point(trajectory.linestring.coords[-1])
 
                         object_current_location = shapely.Point(obj.position.x, obj.position.y)
                         object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
 
                         # Ignore trajectories from behind
-                        if math.isclose(intersection_distance_from_local_path_start_min, 0.0, abs_tol=0.001) and math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
+                        if math.isclose(intersection_distance_from_local_path_start_min, 0.0, abs_tol=0.001) or \
+                            (math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001) and local_path_buffer.intersects(last_point_of_trajectory)):
                             continue
 
                         object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
