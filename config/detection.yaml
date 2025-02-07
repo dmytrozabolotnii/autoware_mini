@@ -121,6 +121,7 @@ naive_predictor:
 map_based_predictor:
   prediction_horizon: 5.0           # s
   prediction_interval: 0.5          # s
+  trajectories_to_predict: 3        # number of trajectories
   distance_from_lanelet: 0.0        # m - outside of lanelet area
   angle_threshold: 30.0             # degrees - object heading and lanelet heading
   prediction_min_speed: 1.0         # m/s
