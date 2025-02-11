@@ -14,7 +14,7 @@ lidar:
       output_frame: lidar_center
     naive_ground_removal:
       min_x: -60.0
-      max_x: 60.0
+      max_x: 75.0
       min_y: -60.0
       max_y: 60.0
       min_z: -2.5
@@ -42,7 +42,7 @@ lidar:
       output_frame: lidar_center
     naive_ground_removal:
       min_x: -60.0
-      max_x: 60.0
+      max_x: 75.0
       min_y: -60.0
       max_y: 60.0
       min_z: -2.0
@@ -107,7 +107,7 @@ ema_tracker:
   detection_counter_threshold: 4
   missed_counter_threshold: 2
   iou_threshold: 0.0
-  velocity_gain: 0.1
+  velocity_gain: 0.2
   acceleration_gain: 0.0
   association_method: iou   # iou, euclidean
   max_euclidean_distance: 2.0
@@ -126,7 +126,7 @@ map_based_predictor:
   use_offset_for_prediction: True   # use offset from lanelet centerline for prediction
 
 road_area_filter:
-  filtering_method: within          # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
+  filtering_method: centroid        # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
   use_map_extraction: True         # extract smaller map area around the ego vehicle for visualization
   map_extraction_distance: 150      # m - distance from ego vehicle to extract map data
 
