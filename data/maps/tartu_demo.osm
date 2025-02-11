@@ -42744,454 +42744,394 @@
   <node id="10014247" version="1" visible="true" lat="58.377828458501874" lon="26.728948317448904">
     <tag k="ele" v="40.39" />
   </node>
-  <node id="10014248" version="1" visible="true" lat="58.37779363229985" lon="26.72900460042261">
-    <tag k="ele" v="37.24" />
-  </node>
-  <node id="10014249" version="1" visible="true" lat="58.37779192979504" lon="26.72900738514696">
-    <tag k="ele" v="37.24" />
-  </node>
-  <node id="10014250" version="1" visible="true" lat="58.37779079414771" lon="26.729008665756115">
-    <tag k="ele" v="37.23" />
-  </node>
-  <node id="10014251" version="1" visible="true" lat="58.37778909164282" lon="26.729011450480044">
-    <tag k="ele" v="37.23" />
-  </node>
-  <node id="10014252" version="1" visible="true" lat="58.37769778009094" lon="26.729164053403824">
+  <node id="10014248" version="1" visible="true" lat="58.37769778009094" lon="26.729164053403824">
     <tag k="ele" v="37.03" />
   </node>
-  <node id="10014253" version="1" visible="true" lat="58.377695890572205" lon="26.729166359939782">
+  <node id="10014249" version="1" visible="true" lat="58.377695890572205" lon="26.729166359939782">
     <tag k="ele" v="37.03" />
   </node>
-  <node id="10014254" version="1" visible="true" lat="58.37799227862409" lon="26.728693627253808">
+  <node id="10014250" version="1" visible="true" lat="58.37799227862409" lon="26.728693627253808">
     <tag k="ele" v="37.82" />
   </node>
-  <node id="10014255" version="1" visible="true" lat="58.377990757310286" lon="26.728690485317504">
+  <node id="10014251" version="1" visible="true" lat="58.377990757310286" lon="26.728690485317504">
     <tag k="ele" v="37.82" />
   </node>
-  <node id="10014256" version="1" visible="true" lat="58.37806951202333" lon="26.72881527823685">
+  <node id="10014252" version="1" visible="true" lat="58.37806951202333" lon="26.72881527823685">
     <tag k="ele" v="37.76" />
   </node>
-  <node id="10014257" version="1" visible="true" lat="58.37806799071253" lon="26.72881213628841">
+  <node id="10014253" version="1" visible="true" lat="58.37806799071253" lon="26.72881213628841">
     <tag k="ele" v="37.76" />
   </node>
-  <node id="10014258" version="1" visible="true" lat="58.37801891527185" lon="26.72875540688301">
+  <node id="10014254" version="1" visible="true" lat="58.37801891527185" lon="26.72875540688301">
     <tag k="ele" v="41.21" />
   </node>
-  <node id="10014259" version="1" visible="true" lat="58.378017393959574" lon="26.728752264941665">
+  <node id="10014255" version="1" visible="true" lat="58.378017393959574" lon="26.728752264941665">
     <tag k="ele" v="41.21" />
   </node>
-  <node id="10014260" version="1" visible="true" lat="58.37891584344569" lon="26.7278337765332">
+  <node id="10014256" version="1" visible="true" lat="58.37891584344569" lon="26.7278337765332">
     <tag k="ele" v="37.71" />
   </node>
-  <node id="10014261" version="1" visible="true" lat="58.37891762014916" lon="26.727831165108395">
+  <node id="10014257" version="1" visible="true" lat="58.37891762014916" lon="26.727831165108395">
     <tag k="ele" v="37.71" />
   </node>
-  <node id="10014262" version="1" visible="true" lat="58.37884862673478" lon="26.727948467355525">
+  <node id="10014258" version="1" visible="true" lat="58.37884862673478" lon="26.727948467355525">
     <tag k="ele" v="37.78" />
   </node>
-  <node id="10014263" version="1" visible="true" lat="58.37885013825496" lon="26.727945308258168">
+  <node id="10014259" version="1" visible="true" lat="58.37885013825496" lon="26.727945308258168">
     <tag k="ele" v="37.78" />
   </node>
-  <node id="10014264" version="1" visible="true" lat="58.378862944013434" lon="26.72743528495428">
+  <node id="10014260" version="1" visible="true" lat="58.378862944013434" lon="26.72743528495428">
     <tag k="ele" v="38.82" />
   </node>
-  <node id="10014265" version="1" visible="true" lat="58.378861422668756" lon="26.72743214299467">
+  <node id="10014261" version="1" visible="true" lat="58.378861422668756" lon="26.72743214299467">
     <tag k="ele" v="38.82" />
   </node>
-  <node id="10014266" version="1" visible="true" lat="58.37879405731873" lon="26.72728636956133">
+  <node id="10014262" version="1" visible="true" lat="58.37879405731873" lon="26.72728636956133">
     <tag k="ele" v="38.51" />
   </node>
-  <node id="10014267" version="1" visible="true" lat="58.37879253597037" lon="26.727283227614294">
+  <node id="10014263" version="1" visible="true" lat="58.37879253597037" lon="26.727283227614294">
     <tag k="ele" v="38.51" />
   </node>
-  <node id="10014268" version="1" visible="true" lat="58.37883231674696" lon="26.727366374357477">
+  <node id="10014264" version="1" visible="true" lat="58.37883231674696" lon="26.727366374357477">
     <tag k="ele" v="41.64" />
   </node>
-  <node id="10014269" version="1" visible="true" lat="58.37883079540057" lon="26.727363232403572">
+  <node id="10014265" version="1" visible="true" lat="58.37883079540057" lon="26.727363232403572">
     <tag k="ele" v="41.64" />
   </node>
-  <node id="10014270" version="1" visible="true" lat="58.378524507222835" lon="26.72755309631802">
+  <node id="10014266" version="1" visible="true" lat="58.378524507222835" lon="26.72755309631802">
     <tag k="ele" v="38.14" />
   </node>
-  <node id="10014271" version="1" visible="true" lat="58.378522856838444" lon="26.727555992586534">
+  <node id="10014267" version="1" visible="true" lat="58.378522856838444" lon="26.727555992586534">
     <tag k="ele" v="38.14" />
   </node>
-  <node id="10014272" version="1" visible="true" lat="58.37863729865" lon="26.72749790910636">
+  <node id="10014268" version="1" visible="true" lat="58.37863729865" lon="26.72749790910636">
     <tag k="ele" v="38.13" />
   </node>
-  <node id="10014273" version="1" visible="true" lat="58.37863564826688" lon="26.72750080538673">
+  <node id="10014269" version="1" visible="true" lat="58.37863564826688" lon="26.72750080538673">
     <tag k="ele" v="38.13" />
   </node>
-  <node id="10014274" version="1" visible="true" lat="58.378607136035846" lon="26.72754878292023">
+  <node id="10014270" version="1" visible="true" lat="58.378607136035846" lon="26.72754878292023">
     <tag k="ele" v="41.13" />
   </node>
-  <node id="10014275" version="1" visible="true" lat="58.378605485651576" lon="26.727551679195734">
+  <node id="10014271" version="1" visible="true" lat="58.378605485651576" lon="26.727551679195734">
     <tag k="ele" v="41.13" />
   </node>
-  <node id="10014276" version="1" visible="true" lat="58.38070263131116" lon="26.724989321058676">
+  <node id="10014272" version="1" visible="true" lat="58.38070263131116" lon="26.724989321058676">
     <tag k="ele" v="40.9" />
   </node>
-  <node id="10014277" version="1" visible="true" lat="58.380701949908115" lon="26.724985249280753">
+  <node id="10014273" version="1" visible="true" lat="58.380701949908115" lon="26.724985249280753">
     <tag k="ele" v="40.9" />
   </node>
-  <node id="10014278" version="1" visible="true" lat="58.38476372328247" lon="26.7231530392722">
+  <node id="10014274" version="1" visible="true" lat="58.38476372328247" lon="26.7231530392722">
     <tag k="ele" v="37.62" />
   </node>
-  <node id="10014279" version="1" visible="true" lat="58.384762680800065" lon="26.723149254246934">
+  <node id="10014275" version="1" visible="true" lat="58.384762680800065" lon="26.723149254246934">
     <tag k="ele" v="37.62" />
   </node>
-  <node id="10014280" version="1" visible="true" lat="58.38474877200939" lon="26.72334852528179">
+  <node id="10014276" version="1" visible="true" lat="58.38474877200939" lon="26.72334852528179">
     <tag k="ele" v="41.64" />
   </node>
-  <node id="10014281" version="1" visible="true" lat="58.3847498713745" lon="26.72334479906585">
+  <node id="10014277" version="1" visible="true" lat="58.3847498713745" lon="26.72334479906585">
     <tag k="ele" v="41.64" />
   </node>
-  <node id="10014282" version="1" visible="true" lat="58.380700338000345" lon="26.724985944692342">
+  <node id="10014278" version="1" visible="true" lat="58.380700338000345" lon="26.724985944692342">
     <tag k="ele" v="40.9" />
   </node>
-  <node id="10014283" version="1" visible="true" lat="58.38070101940336" lon="26.724990016470088">
+  <node id="10014279" version="1" visible="true" lat="58.38070101940336" lon="26.724990016470088">
     <tag k="ele" v="40.9" />
   </node>
-  <node id="10014284" version="1" visible="true" lat="58.38471508969938" lon="26.723531702870943">
+  <node id="10014280" version="1" visible="true" lat="58.38471508969938" lon="26.723531702870943">
     <tag k="ele" v="38.96" />
   </node>
-  <node id="10014285" version="1" visible="true" lat="58.38471423701479" lon="26.723535656412594">
+  <node id="10014281" version="1" visible="true" lat="58.38471423701479" lon="26.723535656412594">
     <tag k="ele" v="38.96" />
   </node>
-  <node id="10014286" version="1" visible="true" lat="58.37805807125861" lon="26.729164608980103">
+  <node id="10014282" version="1" visible="true" lat="58.37805807125861" lon="26.729164608980103">
     <tag k="ele" v="41.0" />
   </node>
-  <node id="10014287" version="1" visible="true" lat="58.37805972167953" lon="26.72916171282514">
+  <node id="10014283" version="1" visible="true" lat="58.37805972167953" lon="26.72916171282514">
     <tag k="ele" v="41.0" />
   </node>
-  <node id="10014288" version="1" visible="true" lat="58.37774626542328" lon="26.729697964569613">
+  <node id="10014284" version="1" visible="true" lat="58.37774626542328" lon="26.729697964569613">
     <tag k="ele" v="37.09" />
   </node>
-  <node id="10014289" version="1" visible="true" lat="58.37774778671233" lon="26.729701106527614">
+  <node id="10014285" version="1" visible="true" lat="58.37774778671233" lon="26.729701106527614">
     <tag k="ele" v="37.09" />
   </node>
-  <node id="10014290" version="1" visible="true" lat="58.3776718474207" lon="26.729471626660207">
+  <node id="10014286" version="1" visible="true" lat="58.3776718474207" lon="26.729471626660207">
     <tag k="ele" v="37.61" />
   </node>
-  <node id="10014291" version="1" visible="true" lat="58.377673368715335" lon="26.729474768601797">
+  <node id="10014287" version="1" visible="true" lat="58.377673368715335" lon="26.729474768601797">
     <tag k="ele" v="37.61" />
   </node>
-  <node id="10014292" version="1" visible="true" lat="58.378169491619346" lon="26.72831705224091">
+  <node id="10014288" version="1" visible="true" lat="58.378169491619346" lon="26.72831705224091">
     <tag k="ele" v="38.23" />
   </node>
-  <node id="10014293" version="1" visible="true" lat="58.378167970296296" lon="26.728313910305065">
+  <node id="10014289" version="1" visible="true" lat="58.378167970296296" lon="26.728313910305065">
     <tag k="ele" v="38.23" />
   </node>
-  <node id="10014294" version="1" visible="true" lat="58.378148752351166" lon="26.7285464640426">
+  <node id="10014290" version="1" visible="true" lat="58.378148752351166" lon="26.7285464640426">
     <tag k="ele" v="41.37" />
   </node>
-  <node id="10014295" version="1" visible="true" lat="58.37814723103374" lon="26.7285433220987">
+  <node id="10014291" version="1" visible="true" lat="58.37814723103374" lon="26.7285433220987">
     <tag k="ele" v="41.37" />
   </node>
-  <node id="10014296" version="1" visible="true" lat="58.37825824664714" lon="26.72850277294498">
+  <node id="10014292" version="1" visible="true" lat="58.37825824664714" lon="26.72850277294498">
     <tag k="ele" v="38.05" />
   </node>
-  <node id="10014297" version="1" visible="true" lat="58.37825672532867" lon="26.728499630993202">
+  <node id="10014293" version="1" visible="true" lat="58.37825672532867" lon="26.728499630993202">
     <tag k="ele" v="38.05" />
   </node>
-  <node id="10014298" version="1" visible="true" lat="58.38442346296859" lon="26.723044437599768">
+  <node id="10014294" version="1" visible="true" lat="58.38442346296859" lon="26.723044437599768">
     <tag k="ele" v="37.59" />
   </node>
-  <node id="10014299" version="1" visible="true" lat="58.3844241314281" lon="26.72304035762151">
+  <node id="10014295" version="1" visible="true" lat="58.3844241314281" lon="26.72304035762151">
     <tag k="ele" v="37.59" />
   </node>
-  <node id="10014300" version="1" visible="true" lat="58.38442830257494" lon="26.72312366829576">
+  <node id="10014296" version="1" visible="true" lat="58.38442830257494" lon="26.72312366829576">
     <tag k="ele" v="37.7" />
   </node>
-  <node id="10014301" version="1" visible="true" lat="58.384428588795856" lon="26.72311942928228">
+  <node id="10014297" version="1" visible="true" lat="58.384428588795856" lon="26.72311942928228">
     <tag k="ele" v="37.7" />
   </node>
-  <node id="10014302" version="1" visible="true" lat="58.384875884692256" lon="26.72340165646908">
+  <node id="10014298" version="1" visible="true" lat="58.384875884692256" lon="26.72340165646908">
     <tag k="ele" v="38.8" />
   </node>
-  <node id="10014303" version="1" visible="true" lat="58.38487708497092" lon="26.723398044903284">
+  <node id="10014299" version="1" visible="true" lat="58.38487708497092" lon="26.723398044903284">
     <tag k="ele" v="38.8" />
   </node>
-  <node id="10014304" version="1" visible="true" lat="58.384748173501194" lon="26.723308106393535">
+  <node id="10014300" version="1" visible="true" lat="58.384748173501194" lon="26.723308106393535">
     <tag k="ele" v="38.27" />
   </node>
-  <node id="10014305" version="1" visible="true" lat="58.38474937377724" lon="26.72330449483764">
+  <node id="10014301" version="1" visible="true" lat="58.38474937377724" lon="26.72330449483764">
     <tag k="ele" v="38.27" />
   </node>
-  <node id="10014306" version="1" visible="true" lat="58.38068384471973" lon="26.72489797883027">
+  <node id="10014302" version="1" visible="true" lat="58.38068384471973" lon="26.72489797883027">
     <tag k="ele" v="37.9" />
   </node>
-  <node id="10014307" version="1" visible="true" lat="58.38068316331377" lon="26.72489390705629">
+  <node id="10014303" version="1" visible="true" lat="58.38068316331377" lon="26.72489390705629">
     <tag k="ele" v="37.9" />
   </node>
-  <node id="10014308" version="1" visible="true" lat="58.38162237575445" lon="26.72894478121962">
+  <node id="10014304" version="1" visible="true" lat="58.38162237575445" lon="26.72894478121962">
     <tag k="ele" v="37.23" />
   </node>
-  <node id="10014309" version="1" visible="true" lat="58.381623747429394" lon="26.72894816397644">
+  <node id="10014305" version="1" visible="true" lat="58.381623747429394" lon="26.72894816397644">
     <tag k="ele" v="37.23" />
   </node>
-  <node id="10014310" version="1" visible="true" lat="58.38216481172579" lon="26.72825771309904">
+  <node id="10014306" version="1" visible="true" lat="58.38216481172579" lon="26.72825771309904">
     <tag k="ele" v="37.47" />
   </node>
-  <node id="10014311" version="1" visible="true" lat="58.38216618341886" lon="26.728261095881198">
+  <node id="10014307" version="1" visible="true" lat="58.38216618341886" lon="26.728261095881198">
     <tag k="ele" v="37.47" />
   </node>
-  <node id="10014312" version="1" visible="true" lat="58.38300788376397" lon="26.727522639702634">
+  <node id="10014308" version="1" visible="true" lat="58.38300788376397" lon="26.727522639702634">
     <tag k="ele" v="36.68" />
   </node>
-  <node id="10014313" version="1" visible="true" lat="58.38300874889352" lon="26.727526583238806">
+  <node id="10014309" version="1" visible="true" lat="58.38300874889352" lon="26.727526583238806">
     <tag k="ele" v="36.68" />
   </node>
-  <node id="10014314" version="1" visible="true" lat="58.380681864090974" lon="26.72489400436804">
+  <node id="10014310" version="1" visible="true" lat="58.380681864090974" lon="26.72489400436804">
     <tag k="ele" v="37.9" />
   </node>
-  <node id="10014315" version="1" visible="true" lat="58.3806830758086" lon="26.724897601630353">
+  <node id="10014311" version="1" visible="true" lat="58.3806830758086" lon="26.724897601630353">
     <tag k="ele" v="37.9" />
   </node>
-  <node id="10014316" version="1" visible="true" lat="58.37860051446388" lon="26.727416742258313">
+  <node id="10014312" version="1" visible="true" lat="58.37860051446388" lon="26.727416742258313">
     <tag k="ele" v="38.29" />
   </node>
-  <node id="10014317" version="1" visible="true" lat="58.3785988640826" lon="26.72741963853946">
+  <node id="10014313" version="1" visible="true" lat="58.3785988640826" lon="26.72741963853946">
     <tag k="ele" v="38.29" />
   </node>
-  <node id="10014318" version="1" visible="true" lat="58.37775287004522" lon="26.729459768474975">
+  <node id="10014314" version="1" visible="true" lat="58.37775287004522" lon="26.729459768474975">
     <tag k="ele" v="41.07" />
   </node>
-  <node id="10014319" version="1" visible="true" lat="58.37775439134013" lon="26.72946291042328">
+  <node id="10014315" version="1" visible="true" lat="58.37775439134013" lon="26.72946291042328">
     <tag k="ele" v="41.07" />
   </node>
-  <node id="10014320" version="1" visible="true" lat="58.38423393236513" lon="26.72321724608775">
+  <node id="10014316" version="1" visible="true" lat="58.38423393236513" lon="26.72321724608775">
     <tag k="ele" v="37.79" />
   </node>
-  <node id="10014321" version="1" visible="true" lat="58.38423391958967" lon="26.723221519897876">
+  <node id="10014317" version="1" visible="true" lat="58.38423391958967" lon="26.723221519897876">
     <tag k="ele" v="37.79" />
   </node>
-  <node id="10014322" version="1" visible="true" lat="58.3771210901866" lon="26.730304184302028">
+  <node id="10014318" version="1" visible="true" lat="58.3771210901866" lon="26.730304184302028">
     <tag k="ele" v="40.51" />
   </node>
-  <node id="10014323" version="1" visible="true" lat="58.37711956891232" lon="26.730301042373874">
+  <node id="10014319" version="1" visible="true" lat="58.37711956891232" lon="26.730301042373874">
     <tag k="ele" v="40.51" />
   </node>
-  <node id="10014324" version="1" visible="true" lat="58.37715546024707" lon="26.730372520539394">
+  <node id="10014320" version="1" visible="true" lat="58.37715546024707" lon="26.730372520539394">
     <tag k="ele" v="37.08" />
   </node>
-  <node id="10014325" version="1" visible="true" lat="58.377153938974466" lon="26.730369378605225">
+  <node id="10014321" version="1" visible="true" lat="58.377153938974466" lon="26.730369378605225">
     <tag k="ele" v="37.08" />
   </node>
-  <node id="10014326" version="1" visible="true" lat="58.37810591639192" lon="26.729023208148398">
-    <tag k="ele" v="37.69" />
-  </node>
-  <node id="10014327" version="1" visible="true" lat="58.3781072775641" lon="26.729019810386376">
-    <tag k="ele" v="37.69" />
-  </node>
-  <node id="10014328" version="1" visible="true" lat="58.378076299984606" lon="26.72911449866598">
+  <node id="10014322" version="1" visible="true" lat="58.378076299984606" lon="26.72911449866598">
     <tag k="ele" v="40.99" />
   </node>
-  <node id="10014329" version="1" visible="true" lat="58.37807766115922" lon="26.72911110091034">
+  <node id="10014323" version="1" visible="true" lat="58.37807766115922" lon="26.72911110091034">
     <tag k="ele" v="40.99" />
   </node>
-  <node id="10014330" version="1" visible="true" lat="58.384352744190615" lon="26.723087232748174">
+  <node id="10014324" version="1" visible="true" lat="58.384352744190615" lon="26.723087232748174">
     <tag k="ele" v="37.62" />
   </node>
-  <node id="10014331" version="1" visible="true" lat="58.384350605533854" lon="26.723088530305674">
+  <node id="10014325" version="1" visible="true" lat="58.384350605533854" lon="26.723088530305674">
     <tag k="ele" v="37.62" />
   </node>
-  <node id="10014332" version="1" visible="true" lat="58.38449543549897" lon="26.72298340516291">
+  <node id="10014326" version="1" visible="true" lat="58.38449543549897" lon="26.72298340516291">
     <tag k="ele" v="37.74" />
   </node>
-  <node id="10014333" version="1" visible="true" lat="58.384496635765835" lon="26.722979793621867">
+  <node id="10014327" version="1" visible="true" lat="58.384496635765835" lon="26.722979793621867">
     <tag k="ele" v="37.74" />
   </node>
-  <node id="10014334" version="1" visible="true" lat="58.3772584978673" lon="26.72724106909298">
+  <node id="10014328" version="1" visible="true" lat="58.3772584978673" lon="26.72724106909298">
     <tag k="ele" v="40.8" />
   </node>
-  <node id="10014335" version="1" visible="true" lat="58.3772601482447" lon="26.727238172913644">
+  <node id="10014329" version="1" visible="true" lat="58.3772601482447" lon="26.727238172913644">
     <tag k="ele" v="40.8" />
   </node>
-  <node id="10014336" version="1" visible="true" lat="58.377219829750665" lon="26.727302236837595">
+  <node id="10014330" version="1" visible="true" lat="58.377219829750665" lon="26.727302236837595">
     <tag k="ele" v="44.32" />
   </node>
-  <node id="10014337" version="1" visible="true" lat="58.37722148012945" lon="26.727299340664302">
+  <node id="10014331" version="1" visible="true" lat="58.37722148012945" lon="26.727299340664302">
     <tag k="ele" v="44.32" />
   </node>
-  <node id="10014338" version="1" visible="true" lat="58.37718510150933" lon="26.727355331364915">
+  <node id="10014332" version="1" visible="true" lat="58.37718510150933" lon="26.727355331364915">
     <tag k="ele" v="40.61" />
   </node>
-  <node id="10014339" version="1" visible="true" lat="58.37718675188931" lon="26.727352435196966">
+  <node id="10014333" version="1" visible="true" lat="58.37718675188931" lon="26.727352435196966">
     <tag k="ele" v="40.61" />
   </node>
-  <node id="10014340" version="1" visible="true" lat="58.377082436493275" lon="26.727174652944203">
+  <node id="10014334" version="1" visible="true" lat="58.377082436493275" lon="26.727174652944203">
     <tag k="ele" v="40.88" />
   </node>
-  <node id="10014341" version="1" visible="true" lat="58.37708408686917" lon="26.72717175677623">
+  <node id="10014335" version="1" visible="true" lat="58.37708408686917" lon="26.72717175677623">
     <tag k="ele" v="40.88" />
   </node>
-  <node id="10014342" version="1" visible="true" lat="58.37696167154385" lon="26.727272764981183">
+  <node id="10014336" version="1" visible="true" lat="58.37696167154385" lon="26.727272764981183">
     <tag k="ele" v="40.95" />
   </node>
-  <node id="10014343" version="1" visible="true" lat="58.376960075265345" lon="26.727275769016764">
+  <node id="10014337" version="1" visible="true" lat="58.376960075265345" lon="26.727275769016764">
     <tag k="ele" v="40.95" />
   </node>
-  <node id="10014344" version="1" visible="true" lat="58.37705241625006" lon="26.727123771958496">
+  <node id="10014338" version="1" visible="true" lat="58.37705241625006" lon="26.727123771958496">
     <tag k="ele" v="41.24" />
   </node>
-  <node id="10014345" version="1" visible="true" lat="58.37705084775846" lon="26.727126828585334">
+  <node id="10014339" version="1" visible="true" lat="58.37705084775846" lon="26.727126828585334">
     <tag k="ele" v="41.24" />
   </node>
-  <node id="10014346" version="1" visible="true" lat="58.37700965591223" lon="26.727200685007812">
+  <node id="10014340" version="1" visible="true" lat="58.37700965591223" lon="26.727200685007812">
     <tag k="ele" v="44.48" />
   </node>
-  <node id="10014347" version="1" visible="true" lat="58.37700797923579" lon="26.72720352589552">
+  <node id="10014341" version="1" visible="true" lat="58.37700797923579" lon="26.72720352589552">
     <tag k="ele" v="44.48" />
   </node>
-  <node id="10014348" version="1" visible="true" lat="58.377183278161354" lon="26.727350449650576">
+  <node id="10014342" version="1" visible="true" lat="58.377183278161354" lon="26.727350449650576">
     <tag k="ele" v="40.56" />
   </node>
-  <node id="10014349" version="1" visible="true" lat="58.37718160148161" lon="26.727353290545157">
+  <node id="10014343" version="1" visible="true" lat="58.37718160148161" lon="26.727353290545157">
     <tag k="ele" v="40.56" />
   </node>
-  <node id="10014350" version="1" visible="true" lat="58.37810592994239" lon="26.729019381449536">
-    <tag k="ele" v="37.51" />
-  </node>
-  <node id="10014351" version="1" visible="true" lat="58.378108068660346" lon="26.729018084482">
-    <tag k="ele" v="37.51" />
-  </node>
-  <node id="10014352" version="1" visible="true" lat="58.377862385584386" lon="26.72882098440019">
-    <tag k="ele" v="37.25" />
-  </node>
-  <node id="10014353" version="1" visible="true" lat="58.377864009195626" lon="26.728818033852075">
-    <tag k="ele" v="37.25" />
-  </node>
-  <node id="10014354" version="1" visible="true" lat="58.377861526585846" lon="26.728822339653448">
-    <tag k="ele" v="37.25" />
-  </node>
-  <node id="10014355" version="1" visible="true" lat="58.37786322908663" lon="26.728819554914654">
-    <tag k="ele" v="37.25" />
-  </node>
-  <node id="10014356" version="1" visible="true" lat="58.378030555999246" lon="26.729240247809983">
-    <tag k="ele" v="37.33" />
-  </node>
-  <node id="10014357" version="1" visible="true" lat="58.378028853489326" lon="26.729243032541667">
-    <tag k="ele" v="37.33" />
-  </node>
-  <node id="10014358" version="1" visible="true" lat="58.378029310462495" lon="26.72924205107825">
-    <tag k="ele" v="37.33" />
-  </node>
-  <node id="10014359" version="1" visible="true" lat="58.378027633740764" lon="26.729244891951026">
-    <tag k="ele" v="37.33" />
-  </node>
-  <node id="10014360" version="1" visible="true" lat="58.37778853651707" lon="26.729284478146898">
+  <node id="10014344" version="1" visible="true" lat="58.37778853651707" lon="26.729284478146898">
     <tag k="ele" v="37.36" />
   </node>
-  <node id="10014361" version="1" visible="true" lat="58.37778704425336" lon="26.7292812861374">
+  <node id="10014345" version="1" visible="true" lat="58.37778704425336" lon="26.7292812861374">
     <tag k="ele" v="37.36" />
   </node>
-  <node id="10014362" version="1" visible="true" lat="58.37806669753394" lon="26.728817276473414">
+  <node id="10014346" version="1" visible="true" lat="58.37806669753394" lon="26.728817276473414">
     <tag k="ele" v="37.55" />
   </node>
-  <node id="10014363" version="1" visible="true" lat="58.37806821884463" lon="26.72882041842196">
+  <node id="10014347" version="1" visible="true" lat="58.37806821884463" lon="26.72882041842196">
     <tag k="ele" v="37.55" />
   </node>
-  <node id="10014364" version="1" visible="true" lat="58.37810523047428" lon="26.729017011605034">
+  <node id="10014348" version="1" visible="true" lat="58.37810523047428" lon="26.729017011605034">
     <tag k="ele" v="37.49" />
   </node>
-  <node id="10014365" version="1" visible="true" lat="58.37810669325457" lon="26.729020252726365">
+  <node id="10014349" version="1" visible="true" lat="58.37810669325457" lon="26.729020252726365">
     <tag k="ele" v="37.49" />
   </node>
-  <node id="10014366" version="1" visible="true" lat="58.378188629833915" lon="26.72861058047528">
+  <node id="10014350" version="1" visible="true" lat="58.378188629833915" lon="26.72861058047528">
     <tag k="ele" v="37.6" />
   </node>
-  <node id="10014367" version="1" visible="true" lat="58.37819015114968" lon="26.72861372242578">
+  <node id="10014351" version="1" visible="true" lat="58.37819015114968" lon="26.72861372242578">
     <tag k="ele" v="37.6" />
   </node>
-  <node id="10014368" version="1" visible="true" lat="58.38158558073994" lon="26.729305291290324">
+  <node id="10014352" version="1" visible="true" lat="58.38158558073994" lon="26.729305291290324">
     <tag k="ele" v="37.0" />
   </node>
-  <node id="10014369" version="1" visible="true" lat="58.38158756866782" lon="26.729303306828502">
+  <node id="10014353" version="1" visible="true" lat="58.38158756866782" lon="26.729303306828502">
     <tag k="ele" v="37.0" />
   </node>
-  <node id="10014370" version="1" visible="true" lat="58.3831537821441" lon="26.727410208347333">
+  <node id="10014354" version="1" visible="true" lat="58.3831537821441" lon="26.727410208347333">
     <tag k="ele" v="36.8" />
   </node>
-  <node id="10014371" version="1" visible="true" lat="58.38315457446692" lon="26.72741420698199">
+  <node id="10014355" version="1" visible="true" lat="58.38315457446692" lon="26.72741420698199">
     <tag k="ele" v="36.8" />
   </node>
-  <node id="10014372" version="1" visible="true" lat="58.38311211737072" lon="26.72768408923626">
+  <node id="10014356" version="1" visible="true" lat="58.38311211737072" lon="26.72768408923626">
     <tag k="ele" v="36.6" />
   </node>
-  <node id="10014373" version="1" visible="true" lat="58.38311376775749" lon="26.72768119259646">
+  <node id="10014357" version="1" visible="true" lat="58.38311376775749" lon="26.72768119259646">
     <tag k="ele" v="36.6" />
   </node>
-  <node id="10014374" version="1" visible="true" lat="58.378618136357034" lon="26.72783415235566">
+  <node id="10014358" version="1" visible="true" lat="58.378618136357034" lon="26.72783415235566">
     <tag k="ele" v="38.15" />
   </node>
-  <node id="10014375" version="1" visible="true" lat="58.37861968626343" lon="26.727837243285634">
+  <node id="10014359" version="1" visible="true" lat="58.37861968626343" lon="26.727837243285634">
     <tag k="ele" v="38.15" />
   </node>
-  <node id="10014376" version="1" visible="true" lat="58.378819550637544" lon="26.72750203279937">
+  <node id="10014360" version="1" visible="true" lat="58.378819550637544" lon="26.72750203279937">
     <tag k="ele" v="38.7" />
   </node>
-  <node id="10014377" version="1" visible="true" lat="58.37882110055197" lon="26.727505123732406">
+  <node id="10014361" version="1" visible="true" lat="58.37882110055197" lon="26.727505123732406">
     <tag k="ele" v="38.7" />
   </node>
-  <node id="10014378" version="1" visible="true" lat="58.378621657907814" lon="26.72783291547397">
+  <node id="10014362" version="1" visible="true" lat="58.378621657907814" lon="26.72783291547397">
     <tag k="ele" v="38.15" />
   </node>
-  <node id="10014379" version="1" visible="true" lat="58.37862025540422" lon="26.72782957913922">
+  <node id="10014363" version="1" visible="true" lat="58.37862025540422" lon="26.72782957913922">
     <tag k="ele" v="38.15" />
   </node>
-  <node id="10014380" version="1" visible="true" lat="58.380539401708674" lon="26.725206822868984">
+  <node id="10014364" version="1" visible="true" lat="58.380539401708674" lon="26.725206822868984">
     <tag k="ele" v="38.0" />
   </node>
-  <node id="10014381" version="1" visible="true" lat="58.380538572785724" lon="26.725202851518617">
+  <node id="10014365" version="1" visible="true" lat="58.380538572785724" lon="26.725202851518617">
     <tag k="ele" v="38.0" />
   </node>
-  <node id="10014382" version="1" visible="true" lat="58.38487417373369" lon="26.723394007423668">
+  <node id="10014366" version="1" visible="true" lat="58.38487417373369" lon="26.723394007423668">
     <tag k="ele" v="38.8" />
   </node>
-  <node id="10014383" version="1" visible="true" lat="58.38487354276092" lon="26.723398109040005">
+  <node id="10014367" version="1" visible="true" lat="58.38487354276092" lon="26.723398109040005">
     <tag k="ele" v="38.8" />
   </node>
-  <node id="10014384" version="1" visible="true" lat="58.38478311657705" lon="26.72326972138306">
+  <node id="10014368" version="1" visible="true" lat="58.38478311657705" lon="26.72326972138306">
     <tag k="ele" v="38.0" />
   </node>
-  <node id="10014385" version="1" visible="true" lat="58.38478190481396" lon="26.723266123758066">
+  <node id="10014369" version="1" visible="true" lat="58.38478190481396" lon="26.723266123758066">
     <tag k="ele" v="38.0" />
   </node>
-  <node id="10014386" version="1" visible="true" lat="58.38427346092987" lon="26.723283681703816">
-    <tag k="ele" v="41.17" />
-  </node>
-  <node id="10014387" version="1" visible="true" lat="58.38427352649425" lon="26.723287953764316">
-    <tag k="ele" v="41.17" />
-  </node>
-  <node id="10014388" version="1" visible="true" lat="58.3842733600117" lon="26.723288287452963">
-    <tag k="ele" v="41.17" />
-  </node>
-  <node id="10014389" version="1" visible="true" lat="58.38427334723386" lon="26.723292561267847">
-    <tag k="ele" v="41.17" />
-  </node>
-  <node id="10014390" version="1" visible="true" lat="58.384274881466354" lon="26.723220570612575">
+  <node id="10014370" version="1" visible="true" lat="58.384274881466354" lon="26.723220570612575">
     <tag k="ele" v="37.24" />
   </node>
-  <node id="10014391" version="1" visible="true" lat="58.384275245212166" lon="26.723216353220536">
+  <node id="10014371" version="1" visible="true" lat="58.384275245212166" lon="26.723216353220536">
     <tag k="ele" v="37.24" />
   </node>
-  <node id="10014392" version="1" visible="true" lat="58.384867325031365" lon="26.72614873710399">
+  <node id="10014372" version="1" visible="true" lat="58.384867325031365" lon="26.72614873710399">
     <tag k="ele" v="36.709373474121094" />
   </node>
-  <node id="10014393" version="1" visible="true" lat="58.38486283953145" lon="26.726148389796098">
+  <node id="10014373" version="1" visible="true" lat="58.38486283953145" lon="26.726148389796098">
     <tag k="ele" v="36.72437286376953" />
   </node>
-  <node id="10014394" version="1" visible="true" lat="58.38644516991058" lon="26.72534199768286">
+  <node id="10014374" version="1" visible="true" lat="58.38644516991058" lon="26.72534199768286">
     <tag k="ele" v="37.84312438964844" />
   </node>
-  <node id="10014395" version="1" visible="true" lat="58.386441600191894" lon="26.72533681420248">
+  <node id="10014375" version="1" visible="true" lat="58.386441600191894" lon="26.72533681420248">
     <tag k="ele" v="37.81749725341797" />
   </node>
-  <node id="10014396" version="1" visible="true" lat="58.384143962171905" lon="26.723059223685844">
+  <node id="10014376" version="1" visible="true" lat="58.384143962171905" lon="26.723059223685844">
     <tag k="ele" v="37.416873931884766" />
   </node>
-  <node id="10014397" version="1" visible="true" lat="58.38413980948633" lon="26.723055976610354">
+  <node id="10014377" version="1" visible="true" lat="58.38413980948633" lon="26.723055976610354">
     <tag k="ele" v="37.416873931884766" />
   </node>
   <way id="5000000" version="1" visible="true">
@@ -71728,95 +71668,25 @@
     <nd ref="10014371" />
     <tag k="height" v="0.85" />
   </way>
-  <way id="2000970" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014372" />
-    <nd ref="10014373" />
-    <tag k="height" v="0.85" />
-  </way>
-  <way id="2000980" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014374" />
-    <nd ref="10014375" />
-    <tag k="height" v="0.85" />
-  </way>
-  <way id="2000990" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014376" />
-    <nd ref="10014377" />
-    <tag k="height" v="0.85" />
-  </way>
-  <way id="2001000" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014378" />
-    <nd ref="10014379" />
-    <tag k="height" v="0.85" />
-  </way>
-  <way id="2001010" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014380" />
-    <nd ref="10014381" />
-    <tag k="height" v="0.85" />
-  </way>
-  <way id="2001020" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014382" />
-    <nd ref="10014383" />
-    <tag k="height" v="0.85" />
-  </way>
-  <way id="2001030" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014384" />
-    <nd ref="10014385" />
-    <tag k="height" v="0.85" />
-  </way>
-  <way id="2001040" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014386" />
-    <nd ref="10014387" />
-    <tag k="height" v="0.85" />
-  </way>
-  <way id="2001050" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014388" />
-    <nd ref="10014389" />
-    <tag k="height" v="0.85" />
-  </way>
-  <way id="2001060" version="1" visible="true">
-    <tag k="type" v="traffic_light" />
-    <tag k="subtype" v="red_yellow_green" />
-    <nd ref="10014390" />
-    <nd ref="10014391" />
-    <tag k="height" v="0.85" />
-  </way>
   <way id="3000000" version="1" visible="true">
     <tag k="type" v="traffic_sign" />
     <tag k="subtype" v="stop_sign" />
-    <nd ref="10014392" />
-    <nd ref="10014393" />
+    <nd ref="10014372" />
+    <nd ref="10014373" />
     <tag k="height" v="0.5" />
   </way>
   <way id="3000010" version="1" visible="true">
     <tag k="type" v="traffic_sign" />
     <tag k="subtype" v="yield_sign" />
-    <nd ref="10014394" />
-    <nd ref="10014395" />
+    <nd ref="10014374" />
+    <nd ref="10014375" />
     <tag k="height" v="0.5" />
   </way>
   <way id="3000020" version="1" visible="true">
     <tag k="type" v="traffic_sign" />
     <tag k="subtype" v="yield_sign" />
-    <nd ref="10014396" />
-    <nd ref="10014397" />
+    <nd ref="10014376" />
+    <nd ref="10014377" />
     <tag k="height" v="0.5" />
   </way>
   <relation id="1" version="1" visible="true">
@@ -72832,7 +72702,7 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100030" role="regulatory_element" />
-    <member type="relation" ref="100092" role="regulatory_element" />
+    <member type="relation" ref="100084" role="regulatory_element" />
   </relation>
   <relation id="85" version="1" visible="true">
     <member type="way" ref="5001915" role="left" />
@@ -73014,7 +72884,6 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100034" role="regulatory_element" />
-    <member type="relation" ref="100090" role="regulatory_element" />
   </relation>
   <relation id="100" version="1" visible="true">
     <member type="way" ref="5001951" role="left" />
@@ -73027,7 +72896,6 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100035" role="regulatory_element" />
   </relation>
   <relation id="101" version="1" visible="true">
     <member type="way" ref="5001950" role="left" />
@@ -73088,7 +72956,6 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100036" role="regulatory_element" />
   </relation>
   <relation id="106" version="1" visible="true">
     <member type="way" ref="5001935" role="left" />
@@ -73294,7 +73161,6 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100033" role="regulatory_element" />
-    <member type="relation" ref="100089" role="regulatory_element" />
   </relation>
   <relation id="123" version="1" visible="true">
     <member type="way" ref="5001881" role="left" />
@@ -73319,7 +73185,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100094" role="regulatory_element" />
+    <member type="relation" ref="100086" role="regulatory_element" />
   </relation>
   <relation id="125" version="1" visible="true">
     <member type="way" ref="5001879" role="left" />
@@ -74330,7 +74196,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100059" role="regulatory_element" />
+    <member type="relation" ref="100057" role="regulatory_element" />
   </relation>
   <relation id="209" version="1" visible="true">
     <member type="way" ref="5003435" role="left" />
@@ -74403,7 +74269,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="14" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100041" role="regulatory_element" />
+    <member type="relation" ref="100039" role="regulatory_element" />
   </relation>
   <relation id="215" version="1" visible="true">
     <member type="way" ref="5001854" role="left" />
@@ -74440,7 +74306,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="14" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100042" role="regulatory_element" />
+    <member type="relation" ref="100040" role="regulatory_element" />
   </relation>
   <relation id="218" version="1" visible="true">
     <member type="way" ref="5001851" role="left" />
@@ -74670,8 +74536,8 @@
     <tag k="speed_limit" v="30" />
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100060" role="regulatory_element" />
-    <member type="relation" ref="100077" role="regulatory_element" />
+    <member type="relation" ref="100058" role="regulatory_element" />
+    <member type="relation" ref="100074" role="regulatory_element" />
   </relation>
   <relation id="237" version="1" visible="true">
     <member type="way" ref="5003483" role="left" />
@@ -75261,9 +75127,9 @@
     <tag k="speed_limit" v="30" />
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100049" role="regulatory_element" />
-    <member type="relation" ref="100064" role="regulatory_element" />
-    <member type="relation" ref="100101" role="regulatory_element" />
+    <member type="relation" ref="100047" role="regulatory_element" />
+    <member type="relation" ref="100062" role="regulatory_element" />
+    <member type="relation" ref="100093" role="regulatory_element" />
   </relation>
   <relation id="286" version="1" visible="true">
     <member type="way" ref="5002266" role="left" />
@@ -75504,7 +75370,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100070" role="regulatory_element" />
+    <member type="relation" ref="100068" role="regulatory_element" />
   </relation>
   <relation id="306" version="1" visible="true">
     <member type="way" ref="5003546" role="left" />
@@ -75517,7 +75383,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100056" role="regulatory_element" />
+    <member type="relation" ref="100054" role="regulatory_element" />
   </relation>
   <relation id="307" version="1" visible="true">
     <member type="way" ref="5003287" role="left" />
@@ -75965,7 +75831,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100055" role="regulatory_element" />
+    <member type="relation" ref="100053" role="regulatory_element" />
   </relation>
   <relation id="344" version="1" visible="true">
     <member type="way" ref="5003226" role="left" />
@@ -75979,7 +75845,7 @@
     <tag k="speed_ref" v="25" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100019" role="regulatory_element" />
-    <member type="relation" ref="100102" role="regulatory_element" />
+    <member type="relation" ref="100094" role="regulatory_element" />
   </relation>
   <relation id="345" version="1" visible="true">
     <member type="way" ref="5002230" role="left" />
@@ -76683,7 +76549,7 @@
     <tag k="speed_limit" v="30" />
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100053" role="regulatory_element" />
+    <member type="relation" ref="100051" role="regulatory_element" />
   </relation>
   <relation id="402" version="1" visible="true">
     <member type="way" ref="5002441" role="left" />
@@ -78112,8 +77978,8 @@
     <tag k="speed_limit" v="35" />
     <tag k="speed_ref" v="35" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100078" role="regulatory_element" />
-    <member type="relation" ref="100079" role="regulatory_element" />
+    <member type="relation" ref="100075" role="regulatory_element" />
+    <member type="relation" ref="100076" role="regulatory_element" />
   </relation>
   <relation id="520" version="1" visible="true">
     <member type="way" ref="5002830" role="left" />
@@ -78217,7 +78083,7 @@
     <tag k="speed_limit" v="35" />
     <tag k="speed_ref" v="35" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100082" role="regulatory_element" />
+    <member type="relation" ref="100079" role="regulatory_element" />
   </relation>
   <relation id="528" version="1" visible="true">
     <member type="way" ref="5003136" role="left" />
@@ -78378,7 +78244,7 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100027" role="regulatory_element" />
-    <member type="relation" ref="100095" role="regulatory_element" />
+    <member type="relation" ref="100087" role="regulatory_element" />
   </relation>
   <relation id="541" version="1" visible="true">
     <member type="way" ref="5002638" role="left" />
@@ -78463,8 +78329,8 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100047" role="regulatory_element" />
-    <member type="relation" ref="100069" role="regulatory_element" />
+    <member type="relation" ref="100045" role="regulatory_element" />
+    <member type="relation" ref="100067" role="regulatory_element" />
   </relation>
   <relation id="548" version="1" visible="true">
     <member type="way" ref="5002867" role="left" />
@@ -78733,8 +78599,8 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100072" role="regulatory_element" />
-    <member type="relation" ref="100073" role="regulatory_element" />
+    <member type="relation" ref="100070" role="regulatory_element" />
+    <member type="relation" ref="100071" role="regulatory_element" />
   </relation>
   <relation id="570" version="1" visible="true">
     <member type="way" ref="5002579" role="left" />
@@ -78784,8 +78650,8 @@
     <tag k="speed_limit" v="30" />
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100045" role="regulatory_element" />
-    <member type="relation" ref="100100" role="regulatory_element" />
+    <member type="relation" ref="100043" role="regulatory_element" />
+    <member type="relation" ref="100092" role="regulatory_element" />
   </relation>
   <relation id="574" version="1" visible="true">
     <member type="way" ref="5003304" role="left" />
@@ -78967,7 +78833,7 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100031" role="regulatory_element" />
-    <member type="relation" ref="100093" role="regulatory_element" />
+    <member type="relation" ref="100085" role="regulatory_element" />
   </relation>
   <relation id="589" version="1" visible="true">
     <member type="way" ref="5002099" role="left" />
@@ -79150,7 +79016,7 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100025" role="regulatory_element" />
-    <member type="relation" ref="100065" role="regulatory_element" />
+    <member type="relation" ref="100063" role="regulatory_element" />
   </relation>
   <relation id="604" version="1" visible="true">
     <member type="way" ref="5002911" role="left" />
@@ -79187,7 +79053,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100037" role="regulatory_element" />
+    <member type="relation" ref="100035" role="regulatory_element" />
   </relation>
   <relation id="607" version="1" visible="true">
     <member type="way" ref="5003400" role="left" />
@@ -79212,7 +79078,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100038" role="regulatory_element" />
+    <member type="relation" ref="100036" role="regulatory_element" />
   </relation>
   <relation id="609" version="1" visible="true">
     <member type="way" ref="5003397" role="left" />
@@ -79273,8 +79139,8 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100040" role="regulatory_element" />
-    <member type="relation" ref="100091" role="regulatory_element" />
+    <member type="relation" ref="100038" role="regulatory_element" />
+    <member type="relation" ref="100083" role="regulatory_element" />
   </relation>
   <relation id="614" version="1" visible="true">
     <member type="way" ref="5002460" role="left" />
@@ -79299,7 +79165,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100039" role="regulatory_element" />
+    <member type="relation" ref="100037" role="regulatory_element" />
   </relation>
   <relation id="616" version="1" visible="true">
     <member type="way" ref="5003332" role="left" />
@@ -79324,7 +79190,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100058" role="regulatory_element" />
+    <member type="relation" ref="100056" role="regulatory_element" />
   </relation>
   <relation id="618" version="1" visible="true">
     <member type="way" ref="5002525" role="left" />
@@ -79361,7 +79227,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100048" role="regulatory_element" />
+    <member type="relation" ref="100046" role="regulatory_element" />
   </relation>
   <relation id="621" version="1" visible="true">
     <member type="way" ref="5001876" role="left" />
@@ -79386,7 +79252,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100046" role="regulatory_element" />
+    <member type="relation" ref="100044" role="regulatory_element" />
   </relation>
   <relation id="623" version="1" visible="true">
     <member type="way" ref="5003197" role="left" />
@@ -79423,7 +79289,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100057" role="regulatory_element" />
+    <member type="relation" ref="100055" role="regulatory_element" />
   </relation>
   <relation id="626" version="1" visible="true">
     <member type="way" ref="5003338" role="left" />
@@ -79619,7 +79485,7 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100020" role="regulatory_element" />
-    <member type="relation" ref="100097" role="regulatory_element" />
+    <member type="relation" ref="100089" role="regulatory_element" />
   </relation>
   <relation id="642" version="1" visible="true">
     <member type="way" ref="5003355" role="left" />
@@ -79766,7 +79632,7 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100023" role="regulatory_element" />
-    <member type="relation" ref="100066" role="regulatory_element" />
+    <member type="relation" ref="100064" role="regulatory_element" />
   </relation>
   <relation id="654" version="1" visible="true">
     <member type="way" ref="5003454" role="left" />
@@ -80011,7 +79877,6 @@
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100018" role="regulatory_element" />
-    <member type="relation" ref="100105" role="regulatory_element" />
   </relation>
   <relation id="674" version="1" visible="true">
     <member type="way" ref="5003251" role="left" />
@@ -80037,8 +79902,8 @@
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100016" role="regulatory_element" />
-    <member type="relation" ref="100052" role="regulatory_element" />
-    <member type="relation" ref="100068" role="regulatory_element" />
+    <member type="relation" ref="100050" role="regulatory_element" />
+    <member type="relation" ref="100066" role="regulatory_element" />
   </relation>
   <relation id="676" version="1" visible="true">
     <member type="way" ref="5003360" role="left" />
@@ -80088,7 +79953,6 @@
     <tag k="speed_ref" v="25" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100013" role="regulatory_element" />
-    <member type="relation" ref="100086" role="regulatory_element" />
   </relation>
   <relation id="680" version="1" visible="true">
     <member type="way" ref="5002729" role="left" />
@@ -80149,8 +80013,7 @@
     <tag k="speed_limit" v="30" />
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100071" role="regulatory_element" />
-    <member type="relation" ref="100104" role="regulatory_element" />
+    <member type="relation" ref="100069" role="regulatory_element" />
   </relation>
   <relation id="685" version="1" visible="true">
     <member type="way" ref="5002583" role="left" />
@@ -80163,8 +80026,8 @@
     <tag k="speed_limit" v="30" />
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100050" role="regulatory_element" />
-    <member type="relation" ref="100103" role="regulatory_element" />
+    <member type="relation" ref="100048" role="regulatory_element" />
+    <member type="relation" ref="100095" role="regulatory_element" />
   </relation>
   <relation id="686" version="1" visible="true">
     <member type="way" ref="5002621" role="left" />
@@ -80190,7 +80053,7 @@
     <tag k="speed_ref" v="35" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100003" role="regulatory_element" />
-    <member type="relation" ref="100076" role="regulatory_element" />
+    <member type="relation" ref="100073" role="regulatory_element" />
   </relation>
   <relation id="688" version="1" visible="true">
     <member type="way" ref="5003323" role="left" />
@@ -80276,7 +80139,7 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100015" role="regulatory_element" />
-    <member type="relation" ref="100099" role="regulatory_element" />
+    <member type="relation" ref="100091" role="regulatory_element" />
   </relation>
   <relation id="695" version="1" visible="true">
     <member type="way" ref="5002461" role="left" />
@@ -80361,8 +80224,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100075" role="regulatory_element" />
-    <member type="relation" ref="100087" role="regulatory_element" />
+    <member type="relation" ref="100072" role="regulatory_element" />
   </relation>
   <relation id="702" version="1" visible="true">
     <member type="way" ref="5003367" role="left" />
@@ -80423,7 +80285,6 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100074" role="regulatory_element" />
   </relation>
   <relation id="707" version="1" visible="true">
     <member type="way" ref="5002339" role="left" />
@@ -80820,9 +80681,9 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="35" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100051" role="regulatory_element" />
-    <member type="relation" ref="100062" role="regulatory_element" />
-    <member type="relation" ref="100063" role="regulatory_element" />
+    <member type="relation" ref="100049" role="regulatory_element" />
+    <member type="relation" ref="100060" role="regulatory_element" />
+    <member type="relation" ref="100061" role="regulatory_element" />
   </relation>
   <relation id="740" version="1" visible="true">
     <member type="way" ref="5002600" role="left" />
@@ -80835,8 +80696,8 @@
     <tag k="speed_limit" v="30" />
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100061" role="regulatory_element" />
-    <member type="relation" ref="100106" role="regulatory_element" />
+    <member type="relation" ref="100059" role="regulatory_element" />
+    <member type="relation" ref="100096" role="regulatory_element" />
   </relation>
   <relation id="741" version="1" visible="true">
     <member type="way" ref="5003226" role="left" />
@@ -80933,7 +80794,7 @@
     <tag k="speed_limit" v="30" />
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100043" role="regulatory_element" />
+    <member type="relation" ref="100041" role="regulatory_element" />
   </relation>
   <relation id="749" version="1" visible="true">
     <member type="way" ref="5002245" role="left" />
@@ -81465,7 +81326,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="35" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100054" role="regulatory_element" />
+    <member type="relation" ref="100052" role="regulatory_element" />
   </relation>
   <relation id="793" version="1" visible="true">
     <member type="way" ref="5003139" role="left" />
@@ -81539,7 +81400,6 @@
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100029" role="regulatory_element" />
-    <member type="relation" ref="100088" role="regulatory_element" />
   </relation>
   <relation id="799" version="1" visible="true">
     <member type="way" ref="5003182" role="left" />
@@ -81684,8 +81544,8 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100080" role="regulatory_element" />
-    <member type="relation" ref="100081" role="regulatory_element" />
+    <member type="relation" ref="100077" role="regulatory_element" />
+    <member type="relation" ref="100078" role="regulatory_element" />
   </relation>
   <relation id="811" version="1" visible="true">
     <member type="way" ref="5003533" role="left" />
@@ -81882,7 +81742,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100098" role="regulatory_element" />
+    <member type="relation" ref="100090" role="regulatory_element" />
   </relation>
   <relation id="827" version="1" visible="true">
     <member type="way" ref="5002358" role="left" />
@@ -81895,7 +81755,7 @@
     <tag k="speed_limit" v="30" />
     <tag k="speed_ref" v="30" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100044" role="regulatory_element" />
+    <member type="relation" ref="100042" role="regulatory_element" />
   </relation>
   <relation id="828" version="1" visible="true">
     <member type="way" ref="5003256" role="left" />
@@ -82112,8 +81972,8 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100078" role="regulatory_element" />
-    <member type="relation" ref="100079" role="regulatory_element" />
+    <member type="relation" ref="100075" role="regulatory_element" />
+    <member type="relation" ref="100076" role="regulatory_element" />
   </relation>
   <relation id="846" version="1" visible="true">
     <member type="way" ref="5003202" role="left" />
@@ -82259,8 +82119,8 @@
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
     <member type="relation" ref="100021" role="regulatory_element" />
-    <member type="relation" ref="100067" role="regulatory_element" />
-    <member type="relation" ref="100096" role="regulatory_element" />
+    <member type="relation" ref="100065" role="regulatory_element" />
+    <member type="relation" ref="100088" role="regulatory_element" />
   </relation>
   <relation id="858" version="1" visible="true">
     <member type="way" ref="5002766" role="left" />
@@ -82297,7 +82157,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100083" role="regulatory_element" />
+    <member type="relation" ref="100080" role="regulatory_element" />
   </relation>
   <relation id="861" version="1" visible="true">
     <member type="way" ref="5003576" role="left" />
@@ -82310,8 +82170,8 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100084" role="regulatory_element" />
-    <member type="relation" ref="100085" role="regulatory_element" />
+    <member type="relation" ref="100081" role="regulatory_element" />
+    <member type="relation" ref="100082" role="regulatory_element" />
   </relation>
   <relation id="862" version="1" visible="true">
     <member type="way" ref="5003570" role="left" />
@@ -82324,7 +82184,7 @@
     <tag k="speed_limit" v="50" />
     <tag k="speed_ref" v="40" />
     <tag k="one_way" v="yes" />
-    <member type="relation" ref="100082" role="regulatory_element" />
+    <member type="relation" ref="100079" role="regulatory_element" />
   </relation>
   <relation id="863" version="1" visible="true">
     <member type="way" ref="5003516" role="left" />
@@ -83609,19 +83469,19 @@
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100035" version="1" visible="true">
-    <member type="way" ref="5000042" role="ref_line" />
+    <member type="way" ref="5000021" role="ref_line" />
     <member type="way" ref="2000350" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100036" version="1" visible="true">
-    <member type="way" ref="5000020" role="ref_line" />
+    <member type="way" ref="5000014" role="ref_line" />
     <member type="way" ref="2000360" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100037" version="1" visible="true">
-    <member type="way" ref="5000021" role="ref_line" />
+    <member type="way" ref="5000014" role="ref_line" />
     <member type="way" ref="2000370" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
@@ -83633,25 +83493,25 @@
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100039" version="1" visible="true">
-    <member type="way" ref="5000014" role="ref_line" />
+    <member type="way" ref="5000025" role="ref_line" />
     <member type="way" ref="2000390" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100040" version="1" visible="true">
-    <member type="way" ref="5000014" role="ref_line" />
+    <member type="way" ref="5000025" role="ref_line" />
     <member type="way" ref="2000400" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100041" version="1" visible="true">
-    <member type="way" ref="5000025" role="ref_line" />
+    <member type="way" ref="5000026" role="ref_line" />
     <member type="way" ref="2000410" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100042" version="1" visible="true">
-    <member type="way" ref="5000025" role="ref_line" />
+    <member type="way" ref="5000026" role="ref_line" />
     <member type="way" ref="2000420" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
@@ -83663,13 +83523,13 @@
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100044" version="1" visible="true">
-    <member type="way" ref="5000026" role="ref_line" />
+    <member type="way" ref="5000023" role="ref_line" />
     <member type="way" ref="2000440" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100045" version="1" visible="true">
-    <member type="way" ref="5000026" role="ref_line" />
+    <member type="way" ref="5000023" role="ref_line" />
     <member type="way" ref="2000450" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
@@ -83681,61 +83541,61 @@
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100047" version="1" visible="true">
-    <member type="way" ref="5000023" role="ref_line" />
+    <member type="way" ref="5000036" role="ref_line" />
     <member type="way" ref="2000470" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100048" version="1" visible="true">
-    <member type="way" ref="5000023" role="ref_line" />
+    <member type="way" ref="5000035" role="ref_line" />
     <member type="way" ref="2000480" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100049" version="1" visible="true">
-    <member type="way" ref="5000036" role="ref_line" />
+    <member type="way" ref="5000034" role="ref_line" />
     <member type="way" ref="2000490" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100050" version="1" visible="true">
-    <member type="way" ref="5000035" role="ref_line" />
+    <member type="way" ref="5000027" role="ref_line" />
     <member type="way" ref="2000500" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100051" version="1" visible="true">
-    <member type="way" ref="5000034" role="ref_line" />
+    <member type="way" ref="5000033" role="ref_line" />
     <member type="way" ref="2000510" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100052" version="1" visible="true">
-    <member type="way" ref="5000027" role="ref_line" />
+    <member type="way" ref="5000012" role="ref_line" />
     <member type="way" ref="2000520" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100053" version="1" visible="true">
-    <member type="way" ref="5000033" role="ref_line" />
+    <member type="way" ref="5000018" role="ref_line" />
     <member type="way" ref="2000530" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100054" version="1" visible="true">
-    <member type="way" ref="5000012" role="ref_line" />
+    <member type="way" ref="5000018" role="ref_line" />
     <member type="way" ref="2000540" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100055" version="1" visible="true">
-    <member type="way" ref="5000018" role="ref_line" />
+    <member type="way" ref="5000022" role="ref_line" />
     <member type="way" ref="2000550" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100056" version="1" visible="true">
-    <member type="way" ref="5000018" role="ref_line" />
+    <member type="way" ref="5000022" role="ref_line" />
     <member type="way" ref="2000560" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
@@ -83747,121 +83607,121 @@
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100058" version="1" visible="true">
-    <member type="way" ref="5000022" role="ref_line" />
+    <member type="way" ref="5000032" role="ref_line" />
     <member type="way" ref="2000580" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100059" version="1" visible="true">
-    <member type="way" ref="5000022" role="ref_line" />
+    <member type="way" ref="5000031" role="ref_line" />
     <member type="way" ref="2000590" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100060" version="1" visible="true">
-    <member type="way" ref="5000032" role="ref_line" />
+    <member type="way" ref="5000034" role="ref_line" />
     <member type="way" ref="2000600" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100061" version="1" visible="true">
-    <member type="way" ref="5000031" role="ref_line" />
+    <member type="way" ref="5000034" role="ref_line" />
     <member type="way" ref="2000610" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100062" version="1" visible="true">
-    <member type="way" ref="5000034" role="ref_line" />
+    <member type="way" ref="5000036" role="ref_line" />
     <member type="way" ref="2000620" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100063" version="1" visible="true">
-    <member type="way" ref="5000034" role="ref_line" />
+    <member type="way" ref="5000009" role="ref_line" />
     <member type="way" ref="2000630" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100064" version="1" visible="true">
-    <member type="way" ref="5000036" role="ref_line" />
+    <member type="way" ref="5000006" role="ref_line" />
     <member type="way" ref="2000640" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100065" version="1" visible="true">
-    <member type="way" ref="5000009" role="ref_line" />
+    <member type="way" ref="5000004" role="ref_line" />
     <member type="way" ref="2000650" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100066" version="1" visible="true">
-    <member type="way" ref="5000006" role="ref_line" />
+    <member type="way" ref="5000027" role="ref_line" />
     <member type="way" ref="2000660" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100067" version="1" visible="true">
-    <member type="way" ref="5000004" role="ref_line" />
+    <member type="way" ref="5000023" role="ref_line" />
     <member type="way" ref="2000670" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100068" version="1" visible="true">
-    <member type="way" ref="5000027" role="ref_line" />
+    <member type="way" ref="5000018" role="ref_line" />
     <member type="way" ref="2000680" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100069" version="1" visible="true">
-    <member type="way" ref="5000023" role="ref_line" />
+    <member type="way" ref="5000028" role="ref_line" />
     <member type="way" ref="2000690" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100070" version="1" visible="true">
-    <member type="way" ref="5000018" role="ref_line" />
+    <member type="way" ref="5000037" role="ref_line" />
     <member type="way" ref="2000700" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100071" version="1" visible="true">
-    <member type="way" ref="5000028" role="ref_line" />
+    <member type="way" ref="5000037" role="ref_line" />
     <member type="way" ref="2000710" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100072" version="1" visible="true">
-    <member type="way" ref="5000037" role="ref_line" />
+    <member type="way" ref="5000013" role="ref_line" />
     <member type="way" ref="2000720" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100073" version="1" visible="true">
-    <member type="way" ref="5000037" role="ref_line" />
+    <member type="way" ref="5000030" role="ref_line" />
     <member type="way" ref="2000730" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100074" version="1" visible="true">
-    <member type="way" ref="5000013" role="ref_line" />
+    <member type="way" ref="5000032" role="ref_line" />
     <member type="way" ref="2000740" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100075" version="1" visible="true">
-    <member type="way" ref="5000013" role="ref_line" />
+    <member type="way" ref="5000040" role="ref_line" />
     <member type="way" ref="2000750" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100076" version="1" visible="true">
-    <member type="way" ref="5000030" role="ref_line" />
+    <member type="way" ref="5000040" role="ref_line" />
     <member type="way" ref="2000760" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100077" version="1" visible="true">
-    <member type="way" ref="5000032" role="ref_line" />
+    <member type="way" ref="5000040" role="ref_line" />
     <member type="way" ref="2000770" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
@@ -83873,19 +83733,19 @@
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100079" version="1" visible="true">
-    <member type="way" ref="5000040" role="ref_line" />
+    <member type="way" ref="5000041" role="ref_line" />
     <member type="way" ref="2000790" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100080" version="1" visible="true">
-    <member type="way" ref="5000040" role="ref_line" />
+    <member type="way" ref="5000041" role="ref_line" />
     <member type="way" ref="2000800" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100081" version="1" visible="true">
-    <member type="way" ref="5000040" role="ref_line" />
+    <member type="way" ref="5000041" role="ref_line" />
     <member type="way" ref="2000810" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
@@ -83897,146 +83757,86 @@
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100083" version="1" visible="true">
-    <member type="way" ref="5000041" role="ref_line" />
+    <member type="way" ref="5000014" role="ref_line" />
     <member type="way" ref="2000830" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100084" version="1" visible="true">
-    <member type="way" ref="5000041" role="ref_line" />
+    <member type="way" ref="5000017" role="ref_line" />
     <member type="way" ref="2000840" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100085" version="1" visible="true">
-    <member type="way" ref="5000041" role="ref_line" />
+    <member type="way" ref="5000016" role="ref_line" />
     <member type="way" ref="2000850" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100086" version="1" visible="true">
-    <member type="way" ref="5000011" role="ref_line" />
+    <member type="way" ref="5000015" role="ref_line" />
     <member type="way" ref="2000860" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100087" version="1" visible="true">
-    <member type="way" ref="5000013" role="ref_line" />
+    <member type="way" ref="5000010" role="ref_line" />
     <member type="way" ref="2000870" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100088" version="1" visible="true">
-    <member type="way" ref="5000012" role="ref_line" />
+    <member type="way" ref="5000004" role="ref_line" />
     <member type="way" ref="2000880" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100089" version="1" visible="true">
-    <member type="way" ref="5000019" role="ref_line" />
+    <member type="way" ref="5000002" role="ref_line" />
     <member type="way" ref="2000890" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100090" version="1" visible="true">
-    <member type="way" ref="5000042" role="ref_line" />
+    <member type="way" ref="5000024" role="ref_line" />
     <member type="way" ref="2000900" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100091" version="1" visible="true">
-    <member type="way" ref="5000014" role="ref_line" />
+    <member type="way" ref="5000024" role="ref_line" />
     <member type="way" ref="2000910" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100092" version="1" visible="true">
-    <member type="way" ref="5000017" role="ref_line" />
+    <member type="way" ref="5000026" role="ref_line" />
     <member type="way" ref="2000920" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100093" version="1" visible="true">
-    <member type="way" ref="5000016" role="ref_line" />
+    <member type="way" ref="5000036" role="ref_line" />
     <member type="way" ref="2000930" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100094" version="1" visible="true">
-    <member type="way" ref="5000015" role="ref_line" />
+    <member type="way" ref="5000033" role="ref_line" />
     <member type="way" ref="2000940" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100095" version="1" visible="true">
-    <member type="way" ref="5000010" role="ref_line" />
+    <member type="way" ref="5000035" role="ref_line" />
     <member type="way" ref="2000950" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
   <relation id="100096" version="1" visible="true">
-    <member type="way" ref="5000004" role="ref_line" />
-    <member type="way" ref="2000960" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100097" version="1" visible="true">
-    <member type="way" ref="5000002" role="ref_line" />
-    <member type="way" ref="2000970" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100098" version="1" visible="true">
-    <member type="way" ref="5000024" role="ref_line" />
-    <member type="way" ref="2000980" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100099" version="1" visible="true">
-    <member type="way" ref="5000024" role="ref_line" />
-    <member type="way" ref="2000990" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100100" version="1" visible="true">
-    <member type="way" ref="5000026" role="ref_line" />
-    <member type="way" ref="2001000" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100101" version="1" visible="true">
-    <member type="way" ref="5000036" role="ref_line" />
-    <member type="way" ref="2001010" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100102" version="1" visible="true">
-    <member type="way" ref="5000033" role="ref_line" />
-    <member type="way" ref="2001020" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100103" version="1" visible="true">
-    <member type="way" ref="5000035" role="ref_line" />
-    <member type="way" ref="2001030" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100104" version="1" visible="true">
-    <member type="way" ref="5000028" role="ref_line" />
-    <member type="way" ref="2001040" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100105" version="1" visible="true">
-    <member type="way" ref="5000029" role="ref_line" />
-    <member type="way" ref="2001050" role="refers" />
-    <tag k="type" v="regulatory_element" />
-    <tag k="subtype" v="traffic_light" />
-  </relation>
-  <relation id="100106" version="1" visible="true">
     <member type="way" ref="5000031" role="ref_line" />
-    <member type="way" ref="2001060" role="refers" />
+    <member type="way" ref="2000960" role="refers" />
     <tag k="type" v="regulatory_element" />
     <tag k="subtype" v="traffic_light" />
   </relation>
