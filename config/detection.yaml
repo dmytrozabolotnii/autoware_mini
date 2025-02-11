@@ -66,7 +66,7 @@ lidar:
     filter_limit_max: 0.5
     filter_limit_negative: False
   points_clusterer:
-    cluster_epsilon: 0.7
+    cluster_epsilon: 0.6
     cluster_min_size: 4
     cluster_in_2d: True
   cluster_detector:
