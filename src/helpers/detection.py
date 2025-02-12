@@ -72,11 +72,10 @@ def get_axis_oriented_bounding_box(obj):
 
     return minx, miny, maxx, maxy
 
-def get_prediction_width(obj):
+def update_object_position_dimensions(obj):
     """
-    Get width of the object polygon and prediction origin and offset.
+    Update width, length and position of the object, based on object's velocity vector aligned bounding box
     :param obj: DetectedObject
-    :return: width, origin, offset
     """
 
     # Collect points from convex_hull and extract rotation center
@@ -99,14 +98,13 @@ def get_prediction_width(obj):
     # Calculate bounds in the rotated coordinate system
     minx, miny = points.min(axis=0)
     maxx, maxy = points.max(axis=0)
-    width = (maxy - miny) / 2
+    width = (maxy - miny)
+    length = (maxx - minx)
+    center_x = (minx + maxx) / 2
     center_y = (miny + maxy) / 2
 
-    # Combine coordinates into a single array
-    target_points = np.array([
-        [maxx, center_y], # Origin in rotated space
-        [0, center_y]     # Offset in rotated space
-    ])
+    # bounding box center
+    target_point = np.array([center_x, center_y])
 
     # Create inverse rotation matrix
     # sin(-a) = -sin(a), cos(-a) = cos(a)
@@ -116,10 +114,14 @@ def get_prediction_width(obj):
     ])
 
     # Apply inverse rotation to target points, then translation
-    target_points = target_points @ inverse_rotation_matrix.T
-    target_points += centroid
+    target_point = target_point @ inverse_rotation_matrix.T
+    target_point += centroid
 
-    return (width, *target_points)
+    obj.position.x = target_point[0]
+    obj.position.y = target_point[1]
+    obj.dimensions.x = length
+    obj.dimensions.y = width
+    obj.heading = heading_angle 
 
 
 if __name__ == '__main__':

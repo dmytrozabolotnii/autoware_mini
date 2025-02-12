@@ -162,8 +162,8 @@ class PathWrapper:
         # if indices differ by 1, then 1 waypoint is returnd and a linestring cannot be created. Therefore return empty list instead
         if abs(index_start - index_end) == 1:
             return []
-        
-        waypoints = self._extract_waypoints(index_start, index_end, copy=copy)        
+
+        waypoints = self._extract_waypoints(index_start, index_end, copy=copy)
 
         if trim:
             # modify start and end of the path by shifting waypoints to exact locations determined by distances
@@ -182,6 +182,30 @@ class PathWrapper:
             waypoints[-1].position.y = end_wp_pose.y
 
         return waypoints
+
+    def extract_points_and_distances(self, distance_start, distance_end):
+        """
+        Get waypoints and their distances between start and end distance along the path
+        :param distance_start: start distance along the path (m)
+        :param distance_end: end distance along the path (m)
+        :return: points and distances as numpy arrays
+        """
+
+        index_start = self.get_waypoint_index_at_distance(distance_start, side="right")
+        index_end = self.get_waypoint_index_at_distance(distance_end, side="left")
+
+        distances = self._distances[index_start:index_end]
+        points = self._waypoints_xyz[index_start:index_end]
+        points = shapely.points(points)
+
+        # interpolate and add start and end points
+        distances = np.insert(distances, 0, distance_start)
+        points = np.insert(points, 0, self.linestring.interpolate(distance_start))
+        distances = np.append(distances, distance_end)
+        points = np.append(points, self.linestring.interpolate(distance_end))
+
+        return points, distances
+
 
     def get_velocity_at_distance(self, distance):
         """

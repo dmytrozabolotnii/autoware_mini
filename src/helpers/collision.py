@@ -37,9 +37,47 @@ class CollisionPoints:
     def add_point(self, x, y, z, vx, vy, vz, distance_to_stop, category):
         self._array = np.append(self._array, np.array([(x, y, z, vx, vy, vz, distance_to_stop, category)], dtype=DTYPE))
 
+    def add_points(self, points, vx, vy, vz, distance_to_stop, category):
+        for point in points:
+            self.add_point(point.x, point.y, point.z, vx, vy, vz, distance_to_stop, category)
+
     def add_intersection_points(self, intersection_points, z, vx, vy, vz, distance_to_stop, category):
         for x, y in intersection_points:
             self.add_point(x, y, z, vx, vy, vz, distance_to_stop, category)
 
     def create_message(self):
         return msgify(PointCloud2, self._array)
+
+
+def calculate_time_to_destination(velocity, acceleration, distances):
+    """
+    Calculation of the time to reach certain distances given a constant velocity and acceleration.
+    :param velocity: float, the velocity of the object
+    :param acceleration: float, the acceleration of the object
+    :param distances: numpy array of floats, the distances to calculate the time to reach
+    :return: numpy array of floats, the time it takes to reach the distances
+    """
+    
+    # Initialize result with NaN (invalid cases)
+    time_to_destination = np.full_like(distances, np.nan, dtype=float)
+
+    # Handle zero acceleration and zero velocity cases outside of the main calculation
+    if velocity == 0 and acceleration == 0:
+        # Object is not moving and has no acceleration
+        pass
+    elif acceleration == 0:
+        # Object is moving with constant velocity
+        valid_distances = distances >= 0
+        time_to_destination[valid_distances] = distances[valid_distances] / velocity
+    else:
+        # Vectorized calculation for cases with acceleration
+        discriminant = velocity**2 + 2 * acceleration * distances  # Calculate the discriminant
+        valid_discriminants = discriminant >= 0  # Mask invalid discriminants (negative values)
+
+        # Apply formula only where discriminant is valid
+        time_to_destination[valid_discriminants] = (
+            -velocity / acceleration +
+            np.sqrt(discriminant[valid_discriminants]) / np.abs(acceleration)
+        )
+
+    return time_to_destination

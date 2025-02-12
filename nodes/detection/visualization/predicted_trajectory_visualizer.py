@@ -43,7 +43,7 @@ class PredictedTrajectoryVisualizer:
                 marker.pose.orientation.w = 1.0
                 marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
                 if self.use_object_width:
-                    marker.scale.x = 2 * obj.candidate_trajectories.paths[0].waypoints[0].left_width
+                    marker.scale.x = obj.dimensions.y
                 else:
                     marker.scale.x = 0.2
                 # visualize possible multiple trajectories

@@ -1,6 +1,7 @@
 local_path_length: 100          # m
 braking_reaction_time: 1.6      # s
-stopping_lateral_distance: 1.35 # m
+safety_box_width: 2.7           # m
+safety_box_length: 5.0          # m
 waypoint_interval: 1.0          # m
 default_acceleration: 1.0       # m/s2
 default_deceleration: 1.0       # m/s2
@@ -59,8 +60,10 @@ yielding_checker:
   yielding_distance_limit: 40.0           # m
   heading_alignment_limit: 20.0           # degrees
 trajectory_collision_checker:
-  braking_safety_distance_obstacle: 4     # m
-  heading_alignment_limit: 20.0           # degrees
+  braking_safety_distance_trajectory: 4   # m
+  heading_alignment_limit: 30.0           # degrees
+  safety_time_ego_front: 2.0              # s
+  safety_time_ego_rear: 1.0               # s
 automatic_stop_checker:
   braking_safety_distance_stop_line: 0.1      # m
   keep_stop_line_for: 15.0                    # s

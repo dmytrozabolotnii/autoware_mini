@@ -1,4 +1,5 @@
 import rospy
+import shapely
 from geometry_msgs.msg import PointStamped, Vector3Stamped, PoseStamped
 from tf2_ros import TransformListener, Buffer
 from tf2_geometry_msgs import do_transform_point, do_transform_vector3, do_transform_pose
@@ -22,5 +23,9 @@ def get_distance_to_car_front():
     # get the distance between the current_pose (base_link) and the front of the car
     tf_buffer = Buffer()
     tf_listener = TransformListener(tf_buffer)
-    transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time.now(), rospy.Duration(20.0))
+    transform = tf_buffer.lookup_transform("base_link", "car_front", rospy.Time(0), rospy.Duration(20.0))
     return transform.transform.translation.x
+
+def get_car_front_point(tf_buffer, frame_id, stamp=rospy.Time(0)):
+    transform = tf_buffer.lookup_transform(frame_id, "car_front", stamp, rospy.Duration(0.06))
+    return shapely.Point(transform.transform.translation.x, transform.transform.translation.y)

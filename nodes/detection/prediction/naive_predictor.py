@@ -2,9 +2,10 @@
 
 import rospy
 import numpy as np
-from helpers.detection import get_prediction_width
-from helpers.geometry import get_vector_norm_3d
+
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
+
+from helpers.geometry import get_vector_norm_3d, get_point_using_heading_and_distance
 
 class NaivePredictor:
     def __init__(self):
@@ -12,7 +13,6 @@ class NaivePredictor:
         self.prediction_horizon = rospy.get_param('~prediction_horizon')
         self.prediction_interval = rospy.get_param('~prediction_interval')
         self.prediction_min_speed = rospy.get_param('~prediction_min_speed')
-        self.use_object_width = rospy.get_param('/planning/use_object_width')
 
         # Publishers
         self.predicted_objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -27,8 +27,7 @@ class NaivePredictor:
         tracked_objects_array = np.zeros(num_objects, dtype=[
             ('position', np.float32, (2,)),
             ('velocity', np.float32, (2,)),
-            ('acceleration', np.float32, (2,)),
-            ('width', np.float32),
+            ('acceleration', np.float32, (2,))
         ])
 
         valid_indices = []  # Keep track of indices for objects that need naive prediction
@@ -38,14 +37,9 @@ class NaivePredictor:
             if get_vector_norm_3d(obj.velocity) < self.prediction_min_speed or len(obj.candidate_trajectories.paths) > 0:
                 continue
 
-            # calculate object width and origin for prediction
-            if self.use_object_width:
-                width, origin, _ = get_prediction_width(obj)
-                tracked_objects_array[i]['position'] = origin
-                tracked_objects_array[i]['width'] = width
-            else:
-                tracked_objects_array[i]['position'] = (obj.position.x, obj.position.y)
-
+            # calculate prediction origin in front of the object
+            car_front = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
+            tracked_objects_array[i]['position'] = (car_front.x, car_front.y)
             tracked_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y)
             tracked_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
 
@@ -76,8 +70,6 @@ class NaivePredictor:
                 wp.position.x, wp.position.y = predicted_positions[t, i]
                 wp.position.z = obj.position.z
                 wp.speed = np.linalg.norm(predicted_velocities[t, i])
-                wp.left_width = tracked_objects_array[i]['width']
-                wp.right_width = tracked_objects_array[i]['width']
                 path.waypoints.append(wp)
             obj.candidate_trajectories.paths.append(path)
 

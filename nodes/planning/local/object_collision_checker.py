@@ -12,7 +12,7 @@ class ObjectCollisionChecker:
     def __init__(self):
 
         # parameters
-        self.stopping_lateral_distance = rospy.get_param("stopping_lateral_distance")
+        self.safety_box_width = rospy.get_param("safety_box_width")
         self.stopped_speed_limit = rospy.get_param("stopped_speed_limit")
         self.braking_safety_distance_obstacle = rospy.get_param("~braking_safety_distance_obstacle")
 
@@ -42,7 +42,7 @@ class ObjectCollisionChecker:
             local_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
 
             # create buffer around local path
-            local_path_buffer = local_path_linestring.buffer(self.stopping_lateral_distance, cap_style="flat")
+            local_path_buffer = local_path_linestring.buffer(self.safety_box_width / 2, cap_style="flat")
             shapely.prepare(local_path_buffer)
 
             for obj in detected_objects:

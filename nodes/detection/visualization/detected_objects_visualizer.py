@@ -43,25 +43,25 @@ class DetectedObjectsVisualizer:
             markers.markers.append(marker)
             
             # bounding box
-            #marker = Marker(header=header)
-            #marker.ns = 'bounding_box'
-            #marker.id = obj.id
-            #marker.type = marker.LINE_STRIP
-            #marker.action = marker.ADD
-            #marker.pose.position = obj.position
-            #marker.pose.orientation = get_orientation_from_heading(obj.heading)
-            #marker.scale.x = 0.1
-            #marker.color = ColorRGBA(1.0, 0.0, 0.0, 0.8)
-            #half_length = obj.dimensions.x / 2.0
-            #half_width = obj.dimensions.y / 2.0
-            #marker.points = [
-            #    Point(-half_length, -half_width, 0.0),
-            #    Point(-half_length, half_width, 0.0),
-            #    Point(half_length, half_width, 0.0),
-            #    Point(half_length, -half_width, 0.0),
-            #    Point(-half_length, -half_width, 0.0),
-            #]
-            #markers.markers.append(marker)
+            marker = Marker(header=header)
+            marker.ns = 'bounding_box'
+            marker.id = obj.id
+            marker.type = marker.LINE_STRIP
+            marker.action = marker.ADD
+            marker.pose.position = obj.position
+            marker.pose.orientation = get_orientation_from_heading(obj.heading)
+            marker.scale.x = 0.1
+            marker.color = ColorRGBA(1.0, 0.0, 0.0, 0.8)
+            half_length = obj.dimensions.x / 2.0
+            half_width = obj.dimensions.y / 2.0
+            marker.points = [
+               Point(-half_length, -half_width, 0.0),
+               Point(-half_length, half_width, 0.0),
+               Point(half_length, half_width, 0.0),
+               Point(half_length, -half_width, 0.0),
+               Point(-half_length, -half_width, 0.0),
+            ]
+            markers.markers.append(marker)
 
             # convex hull
             if len(obj.convex_hull.points) > 0:
@@ -115,11 +115,11 @@ class DetectedObjectsVisualizer:
             marker.action = marker.DELETE
             markers.markers.append(marker)
 
-            # marker = Marker(header=header)
-            # marker.ns = 'bounding_box'
-            # marker.id = id
-            # marker.action = marker.DELETE
-            # markers.markers.append(marker)
+            marker = Marker(header=header)
+            marker.ns = 'bounding_box'
+            marker.id = id
+            marker.action = marker.DELETE
+            markers.markers.append(marker)
 
             marker = Marker(header=header)
             marker.ns = 'convex_hull'
