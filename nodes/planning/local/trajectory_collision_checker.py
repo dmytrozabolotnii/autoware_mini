@@ -6,11 +6,11 @@ import shapely
 import numpy as np
 
 from autoware_mini.msg import Path, DetectedObjectArray
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import TwistStamped, PoseStamped
 from sensor_msgs.msg import PointCloud2
 from tf2_ros import TransformListener, Buffer
 
-from helpers.geometry import get_angle_between_two_headings, get_vector_norm_3d
+from helpers.geometry import get_angle_between_two_headings, get_vector_norm_3d, get_direction_from_orientation, is_point_behind
 from helpers.collision import CollisionPoints, calculate_time_to_destination
 from helpers.path import PathWrapper
 from helpers.transform import get_car_front_point
@@ -35,6 +35,8 @@ class TrajectoryCollisionChecker:
         self.tf_listener = TransformListener(self.tf_buffer)
         self.detected_objects = None
         self.current_speed = None
+        self.current_position = None
+        self.current_orientation = None
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["stop", "traffic_light", "yield", "yield_stop"])
@@ -48,6 +50,7 @@ class TrajectoryCollisionChecker:
         rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
     def predicted_objects_callback(self, msg):
         self.detected_objects = msg.objects
@@ -55,13 +58,19 @@ class TrajectoryCollisionChecker:
     def current_velocity_callback(self, msg):
         self.current_speed = msg.twist.linear.x
 
+    def current_pose_callback(self, msg):
+        self.current_position = msg.pose.position
+        self.current_orientation = msg.pose.orientation
+
     def local_path_callback(self, msg):
 
         detected_objects = self.detected_objects
         current_speed = self.current_speed
+        current_position = self.current_position
+        current_orientation = self.current_orientation
 
-        if detected_objects is None or current_speed is None:
-            rospy.logwarn_throttle(3, "%s - detected objects or current velocity not received!", rospy.get_name())
+        if detected_objects is None or current_speed is None or current_position is None:
+            rospy.logwarn_throttle(3, "%s - detected objects or localization messages not received!", rospy.get_name())
             return
 
         collision_points = CollisionPoints()
@@ -73,10 +82,14 @@ class TrajectoryCollisionChecker:
 
             car_front = get_car_front_point(self.tf_buffer, msg.header.frame_id)
             car_front_distance_from_local_path_start = local_path.linestring.project(car_front)
+            ego_direction = get_direction_from_orientation(current_orientation)
 
             for obj in detected_objects:
-                for path in obj.candidate_trajectories.paths:
+                # Ignore objects behind ego vehicle
+                if is_point_behind(current_position, ego_direction, obj.position):
+                    continue
 
+                for path in obj.candidate_trajectories.paths:
                     trajectory = PathWrapper(path.waypoints)
                     trajectory_to_check = trajectory.linestring
 
@@ -91,16 +104,9 @@ class TrajectoryCollisionChecker:
                         distances = list(map(local_path.linestring.project, shapely.points(trajectory_intersection_points)))
                         intersection_distance_from_local_path_start_min = min(distances)
                         intersection_distance_from_local_path_start_max = max(distances)
-                        last_point_of_trajectory = shapely.Point(trajectory.linestring.coords[-1])
 
                         object_current_location = shapely.Point(obj.position.x, obj.position.y)
                         object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
-
-                        # Ignore objects behind local_path start OR trajectory passing through local_path start AND endpoint being also on local_path
-                        if math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001) or \
-                            (math.isclose(intersection_distance_from_local_path_start_min, 0.0, abs_tol=0.001) and \
-                                local_path_buffer.intersects(last_point_of_trajectory)):
-                            continue
 
                         object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
                         heading_difference = math.degrees(get_angle_between_two_headings(obj.heading, object_local_path_heading))
