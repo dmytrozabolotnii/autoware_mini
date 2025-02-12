@@ -5,10 +5,9 @@ import rospy
 import shapely
 import shapely.ops
 from autoware_mini.msg import Path, DetectedObjectArray
-from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import PointCloud2
 from tf2_ros import TransformListener, Buffer
-from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_angle_between_two_headings, get_direction_from_orientation, is_point_behind
+from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.path import PathWrapper
 from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
@@ -31,8 +30,6 @@ class PedestrianCrosswalkChecker:
         self.tf_listener = TransformListener(self.tf_buffer)
         self.detected_objects = None
         self.crosswalks_on_global_path = None
-        self.current_position = None
-        self.current_orientation = None
 
         # load lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
@@ -45,7 +42,6 @@ class PedestrianCrosswalkChecker:
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/detection/predicted_objects', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
-        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
     def predicted_objects_callback(self, msg):
         self.detected_objects = msg.objects
@@ -63,15 +59,9 @@ class PedestrianCrosswalkChecker:
 
         self.crosswalks_on_global_path = crosswalks_on_global_path
 
-    def current_pose_callback(self, msg):
-        self.current_position = msg.pose.position
-        self.current_orientation = msg.pose.orientation
-
     def local_path_callback(self, msg):
         detected_objects = self.detected_objects
         crosswalks_on_global_path = self.crosswalks_on_global_path
-        current_position = self.current_position
-        current_orientation = self.current_orientation
 
         if crosswalks_on_global_path is None:
             rospy.logwarn_throttle(3, "%s - global path not received!", rospy.get_name())
@@ -90,7 +80,6 @@ class PedestrianCrosswalkChecker:
             car_front = get_car_front_point(self.tf_buffer, msg.header.frame_id)
             car_front_distance_from_path_start = local_path.linestring.project(car_front)
             local_path_up_to_car_front = shapely.ops.substring(local_path.linestring, 0, car_front_distance_from_path_start)
-            ego_direction = get_direction_from_orientation(current_orientation)
 
             # extract crosswalks that ego vehicle has not reached yet and that intersect with local path
             crosswalks_on_local_path = []
@@ -100,16 +89,15 @@ class PedestrianCrosswalkChecker:
 
             if len(crosswalks_on_local_path) > 0:
                 for obj in detected_objects:
-
-                    # Ignore objects behind ego vehicle
-                    if is_point_behind(current_position, ego_direction, obj.position):
-                        continue
                     object_speed = get_vector_norm_3d(obj.velocity)
                     # ignore objects that are not moving
                     if object_speed < self.stopped_speed_limit:
                         continue
-
                     object_centroid = shapely.Point(obj.position.x, obj.position.y)
+                    object_distance_from_local_path_start = local_path.linestring.project(object_centroid)
+                    # ignore objects behind the ego vehicle
+                    if math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
+                        continue
                     object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
                     object_heading = get_heading_from_vector(obj.velocity)
                     object_to_path_heading = local_path.get_heading_towards_path(object_centroid)
