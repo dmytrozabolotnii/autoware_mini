@@ -1,7 +1,7 @@
 import math
 import numpy as np
-from tf.transformations import euler_from_quaternion, quaternion_from_euler, quaternion_matrix
-from geometry_msgs.msg import Point, Quaternion, Vector3
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from geometry_msgs.msg import Point, Quaternion
 
 def get_heading_from_vector(vector):
     """
@@ -23,19 +23,6 @@ def get_heading_from_orientation(orientation):
     _, _, heading = euler_from_quaternion(quaternion)
 
     return heading
-
-def get_direction_from_orientation(orientation):
-    """
-    Get direction (x-axis) from orientation
-    :param orientation: Quaternion
-    :return: direction vector
-    """
-
-    rotation_matrix = quaternion_matrix((orientation.x, orientation.y, orientation.z, orientation.w))
-
-    # Extract first column of the rotation matrix (transformed x-axis direction)
-    return Vector3(rotation_matrix[0, 0], rotation_matrix[1, 0], rotation_matrix[2, 0])
-
 
 def get_orientation_from_heading(heading):
     """
@@ -208,14 +195,3 @@ def convert_geometry_to_line_list(geometry, delta_z=0):
         line_list_points.append(points[i + 1])
     
     return line_list_points
-
-def is_point_behind(point1, direction, point2):
-    """
-    Check if point2 is behind point1 in given direction
-    :param point1: Point
-    :param direction: Vector3
-    :param point2: Point
-    :return: True if point2 is behind point1, False otherwise
-    """
-
-    return (point2.x - point1.x) * direction.x + (point2.y - point1.y) * direction.y + (point2.z - point1.z) * direction.z < 0
