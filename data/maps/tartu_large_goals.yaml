@@ -1708,6 +1708,12 @@ positions:
   y: -1259.3527030022815
   z: 62.584999084472656
 ---
+name: Raudteejaam III
+positions:
+- x: -1082.9713587907027
+  y: -1316.24675280042
+  z: 62.34187316894531
+---
 name: Ravila (Ravila tn. suunas)
 positions:
 - x: -2140.403746553173
