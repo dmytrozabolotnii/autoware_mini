@@ -115,6 +115,11 @@
         <remap from="/detection/camera/traffic_light_status" to="/bag/detection/camera/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/detection/mqtt/traffic_light_status" to="/bag/detection/mqtt/traffic_light_status" if="$(arg use_detection)"/>
         <remap from="/control/vehicle_cmd" to="/bag/control/vehicle_cmd" if="$(arg use_control)"/>
+        <remap from="/vehicle/vehicle_status" to="/bag/vehicle/vehicle_status" if="$(arg use_control)"/>
+        <remap from="/ssc/arbitrated_speed_commands" to="/bag/ssc/arbitrated_speed_commands" if="$(arg use_control)"/>
+        <remap from="/ssc/arbitrated_steering_commands" to="/bag/ssc/arbitrated_steering_commands" if="$(arg use_control)"/>
+        <remap from="/ssc/turn_signal_command" to="/bag/ssc/turn_signal_command" if="$(arg use_control)"/>
+        <remap from="/ssc/gear_select" to="/bag/ssc/gear_select" if="$(arg use_control)"/>
         <remap from="/dashboard/planner_status" to="/bag/dashboard/planner_status" if="$(eval use_detection or use_planning)" />
         <remap from="/dashboard/current_speed" to="/bag/dashboard/current_speed" />
         <remap from="/dashboard/target_speed" to="/bag/dashboard/target_speed" />
@@ -196,6 +201,7 @@
         <arg name="use_tf"               value="$(arg use_tf)" />
         <arg name="repub_camera_info"    value="$(arg repub_camera_info)" />
         <arg name="use_nvidia_cameras"   value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='nvidia')" />
+        <arg name="use_ssc"              value="$(arg use_control)" />
     </include>
 
     <!-- Rviz -->

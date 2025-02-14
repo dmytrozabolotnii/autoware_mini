@@ -3,6 +3,8 @@
     <arg name="use_tf"              default="true" />
     <arg name="repub_camera_info"   default="false" />
     <arg name="use_nvidia_cameras"  default="false" />
+    <arg name="max_speed"           default="30" />
+    <arg name="use_ssc"             default="false" />
 
     <!-- Vehicle platform -->
     <include file="$(find vehicle_platform)/launch/platform.launch">
@@ -20,6 +22,11 @@
     <node pkg="autoware_mini" type="pause_bag.py" name="pause_bag" output="screen" required="true"/>
 
     <group ns="vehicle">
+        <!-- SSC interface -->
+        <node if="$(arg use_ssc)" pkg="autoware_mini" type="ssc_interface.py" name="ssc_interface" output="screen" required="true" >
+            <param name="max_speed" value="$(arg max_speed)"/>
+        </node>
+
         <rosparam command="load" file="$(find autoware_mini)/config/vehicle.yaml" />
     </group>
 

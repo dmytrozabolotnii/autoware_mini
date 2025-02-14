@@ -33,7 +33,7 @@ Here are couple of short videos introducing the Autoware Mini features.
 
 ## Prerequisites
 
-1. You should have ROS Noetic installed, follow the official instructions for [Ubuntu 20.04](http://wiki.ros.org/noetic/Installation/Ubuntu) or [RoboStack](https://robostack.github.io/GettingStarted.html).
+1. You should have ROS Noetic installed, follow the official instructions for [Ubuntu 20.04](http://wiki.ros.org/noetic/Installation/Ubuntu).
 
 2. Some of the nodes need NVIDIA GPU, CUDA and cuDNN. At this point we suggest installing both the latest CUDA _and_ CUDA 11.8, which seems to be needed by the ONNX Runtime. **Notice that the default setup also runs without GPU.**
 
@@ -111,7 +111,7 @@ roslaunch autoware_mini start_sim.launch tfl_detector:=mqtt
 
 ## Launching against recorded bag
 
-Running the autonomy stack against recorded sensor readings is a convenient way to test the detection nodes. An example bag file can be downloaded from [here](https://drive.google.com/file/d/1zr9z21a3jZyzWFshZ7WI6zDHx157UJIp/view?usp=share_link) and it should be saved to the `data/bags` directory.
+Running the autonomy stack against recorded sensor readings is a convenient way to test the detection nodes. An example bag file can be downloaded from [here](https://drive.google.com/file/d/1rFDmUaqjApCEv8PqPAS5zCYA8VJt6xA_/view?usp=sharing) and it should be saved to the `data/bags` directory.
 
 ```
 roslaunch autoware_mini start_bag.launch
@@ -139,7 +139,7 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
 
 ### Installation (skip if already done)
 
-1. Download [Carla 0.9.13](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.13.tar.gz).
+1. Download [Carla 0.9.13](https://tiny.carla.org/carla-0-9-13-linux).
 2. Extract the file with `tar xzvf CARLA_0.9.13.tar.gz`. We will call this extracted folder `<CARLA ROOT>`.
 3. Download [Tartu.tar.gz](https://drive.google.com/file/d/10CHEOjHyiLJgD13g6WwDZ2_AWoLasG2F/view?usp=share_link).
 4. Copy `Tartu.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
