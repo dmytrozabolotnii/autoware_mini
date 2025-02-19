@@ -77,7 +77,7 @@ class LaneChangePlanner:
 
                     # Use the angle to check that the lane change doesn't happen behind us
                     # Multiply the diagonal distance with cos(a) to get the parallel distance of the lane change
-                    if abs(a) < np.pi/2 and d * np.cos(a) >= given_lanechange_length:
+                    if abs(a) < math.pi/2 and d * math.cos(a) >= given_lanechange_length:
                         end_idx = idx
                         break
 

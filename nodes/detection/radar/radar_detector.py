@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import math
 from collections import defaultdict
 import traceback
 
@@ -46,18 +47,18 @@ class RadarDetector:
 
         # Subscribers
         tracks_sub = message_filters.Subscriber('/radar_fc/radar_tracks', RadarTracks, queue_size=1, buff_size=2**20, tcp_nodelay=True)
-        ego_speed_sub = message_filters.Subscriber('/localization/current_velocity', TwistStamped, queue_size=1, tcp_nodelay=True)
+        current_velocity_sub = message_filters.Subscriber('/localization/current_velocity', TwistStamped, queue_size=1, tcp_nodelay=True)
 
         # Strict Time Sync
-        ts = message_filters.ApproximateTimeSynchronizer([tracks_sub, ego_speed_sub], queue_size=5, slop=0.02)
+        ts = message_filters.ApproximateTimeSynchronizer([tracks_sub, current_velocity_sub], queue_size=5, slop=0.02)
         ts.registerCallback(self.syncronised_callback)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
-    def syncronised_callback(self, tracks, ego_speed):
+    def syncronised_callback(self, tracks, current_velocity):
         """
         tracks: radar_msgs/RadarTracks
-        ego_speed: geometry_msgs/TwistStamped
+        current_velocity: geometry_msgs/TwistStamped
         publish: DetectedObjectArray
         """
         try:
@@ -97,7 +98,7 @@ class RadarDetector:
                 detected_object.position = transform_point(track.position, source_frame_to_output_tf)
                 detected_object.heading = 0.0
                 detected_object.position_reliable = True
-                detected_object.velocity = self.transform_velocity(track.velocity, ego_speed.twist.linear, source_frame_to_output_tf)
+                detected_object.velocity = self.transform_velocity(track, current_velocity.twist.linear, source_frame_to_output_tf)
                 detected_object.velocity_reliable = True
                 detected_object.acceleration = transform_vector3(track.acceleration, source_frame_to_output_tf)
                 detected_object.acceleration_reliable = True
@@ -111,13 +112,15 @@ class RadarDetector:
         except Exception as e:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
 
-    def transform_velocity(self, track_velocity, ego_velocity, source_frame_to_output_tf):
+    def transform_velocity(self, track, ego_velocity, source_frame_to_output_tf):
         # compute ego_velocity in radar_fc frame
         velocity = transform_vector3(ego_velocity, self.base_link_to_radar_tf)
+        # heading towards the object
+        heading = math.atan2(track.position.y, track.position.x)
         # Computing speed relative to map.
-        velocity.x += track_velocity.x
-        velocity.y += track_velocity.y # this value is zero for track velocity
-        velocity.z += track_velocity.z # this value is zero for track velocity
+        velocity.x += track.velocity.x / math.cos(heading) # correct for heading
+        velocity.y += track.velocity.y # this value is zero for track velocity
+        velocity.z += track.velocity.z # this value is zero for track velocity
         # transforming the velocity vector to the output frame
         return transform_vector3(velocity, source_frame_to_output_tf)
 
