@@ -84,8 +84,8 @@ def update_object_position_dimensions(obj):
     heading_angle = get_heading_from_vector(obj.velocity)
 
     # Create rotation matrix
-    cos_angle = np.cos(-heading_angle)
-    sin_angle = np.sin(-heading_angle)
+    cos_angle = math.cos(-heading_angle)
+    sin_angle = math.sin(-heading_angle)
     rotation_matrix = np.array([
         [cos_angle, -sin_angle],
         [sin_angle, cos_angle]
