@@ -2,7 +2,6 @@
 
 import math
 import rospy
-import message_filters
 import traceback
 from tf.transformations import quaternion_from_euler
 from tf2_ros import TransformBroadcaster
@@ -10,7 +9,6 @@ from tf2_ros import TransformBroadcaster
 from novatel_oem7_msgs.msg import INSPVA, BESTPOS
 from geometry_msgs.msg import PoseStamped, TwistStamped, Quaternion, TransformStamped, PoseWithCovarianceStamped, Pose
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import Imu
 from std_srvs.srv import Empty, EmptyResponse
 from ros_numpy import numpify, msgify
 import numpy as np
@@ -60,12 +58,7 @@ class NovatelOem7Localizer:
         rospy.Subscriber('/initialpose', PoseWithCovarianceStamped, self.initialpose_callback, queue_size=1, tcp_nodelay=True)
         if self.use_msl_height:
             self.bestpos_sub = rospy.Subscriber('/novatel/oem7/bestpos', BESTPOS, self.bestpos_callback, queue_size=1, tcp_nodelay=True)
-
-        inspva_sub = message_filters.Subscriber('/novatel/oem7/inspva', INSPVA, queue_size=1, tcp_nodelay=True)
-        imu_sub = message_filters.Subscriber('/gps/imu', Imu, queue_size=1, tcp_nodelay=True)
-
-        ts = message_filters.ApproximateTimeSynchronizer([inspva_sub, imu_sub], queue_size=5, slop=0.03)
-        ts.registerCallback(self.synchronized_callback)
+        rospy.Subscriber('/novatel/oem7/inspva', INSPVA, self.inspva_callback, queue_size=1, tcp_nodelay=True)
 
         # Services
         rospy.Service('cancel_pose', Empty, self.cancel_pose_callback)
@@ -90,7 +83,7 @@ class NovatelOem7Localizer:
         return EmptyResponse()
 
 
-    def synchronized_callback(self, inspva_msg, imu_msg):
+    def inspva_callback(self, inspva_msg):
         try:
             stamp = inspva_msg.header.stamp
 
@@ -114,7 +107,6 @@ class NovatelOem7Localizer:
             x, y = self.transformer.transform_lat_lon(latitude, longitude, height)
             azimuth = self.transformer.correct_azimuth(latitude, longitude, azimuth)
             linear_velocity = math.sqrt(inspva_msg.east_velocity**2 + inspva_msg.north_velocity**2)
-            angular_velocity = imu_msg.angular_velocity
 
             # angles from GNSS (degrees) need to be converted to orientation (quaternion) in map frame
             orientation = convert_angles_to_orientation(inspva_msg.roll, inspva_msg.pitch, azimuth)
@@ -137,9 +129,9 @@ class NovatelOem7Localizer:
 
             # Publish 
             self.publish_current_pose(stamp, current_pose)
-            self.publish_current_velocity(stamp, linear_velocity, angular_velocity)
+            self.publish_current_velocity(stamp, linear_velocity)
             self.publish_map_to_baselink_tf(stamp, current_pose)
-            self.publish_odometry(stamp, linear_velocity, current_pose, angular_velocity)
+            self.publish_odometry(stamp, linear_velocity, current_pose)
         except Exception as e:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
 
@@ -157,18 +149,17 @@ class NovatelOem7Localizer:
         self.current_pose_pub.publish(pose_msg)
 
 
-    def publish_current_velocity(self, stamp, linear_velocity, angular_velocity):
+    def publish_current_velocity(self, stamp, linear_velocity):
         
         vel_msg = TwistStamped()
 
         vel_msg.header.stamp = stamp
         vel_msg.header.frame_id = self.child_frame
         vel_msg.twist.linear.x = linear_velocity
-        vel_msg.twist.angular = angular_velocity
 
         self.current_velocity_pub.publish(vel_msg)
 
-    def publish_odometry(self, stamp, velocity, current_pose, angular_velocity):
+    def publish_odometry(self, stamp, velocity, current_pose):
 
         odom_msg = Odometry()
         odom_msg.header.stamp = stamp
@@ -176,7 +167,6 @@ class NovatelOem7Localizer:
         odom_msg.child_frame_id = 'base_link'
         odom_msg.pose.pose = current_pose
         odom_msg.twist.twist.linear.x = velocity
-        odom_msg.twist.twist.angular = angular_velocity
 
         self.odometry_pub.publish(odom_msg)
 
