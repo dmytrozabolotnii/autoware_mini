@@ -23,6 +23,7 @@ class PedestrianCrosswalkChecker:
         self.braking_safety_distance_crosswalk = rospy.get_param("~braking_safety_distance_crosswalk")
         self.crossing_angle_max_limit = rospy.get_param("~crossing_angle_max_limit")
         self.use_object_width = rospy.get_param("use_object_width")
+        self.ignore_static_obstacles = rospy.get_param("~ignore_static_obstacles")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
@@ -91,7 +92,7 @@ class PedestrianCrosswalkChecker:
                 for obj in detected_objects:
                     object_speed = get_vector_norm_3d(obj.velocity)
                     # ignore objects that are not moving
-                    if object_speed < self.stopped_speed_limit:
+                    if self.ignore_static_obstacles and object_speed < self.stopped_speed_limit:
                         continue
                     object_centroid = shapely.Point(obj.position.x, obj.position.y)
                     object_distance_from_local_path_start = local_path.linestring.project(object_centroid)
@@ -108,7 +109,7 @@ class PedestrianCrosswalkChecker:
                         # INTERSECTING OBJECTS
                         if crosswalk['polygon'].intersects(object_polygon):
                             # objects on crosswalk approaching local path or have crossed it and departing, but still within the local path buffer
-                            if object_path_approach_angle < self.crossing_angle_max_limit or \
+                            if not self.ignore_static_obstacles or object_path_approach_angle < self.crossing_angle_max_limit or \
                                 (180 - object_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(object_polygon)):
                                 collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.OBJECT_ON_CROSSWALK)
                                 crosswalks_on_local_path.remove(crosswalk)
