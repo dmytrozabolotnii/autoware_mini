@@ -66,6 +66,7 @@ class MapBasedPredictor:
 
                 # Calculate angle difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
+                lanelet_length = linestring.length
                 object_distance_from_start = linestring.project(object_centroid)
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
                 forward_point = linestring.interpolate(object_distance_from_start + 0.1)
@@ -74,30 +75,31 @@ class MapBasedPredictor:
 
                 # Add lanelet if angle difference is within threshold
                 if heading_difference_degrees < self.angle_threshold:
-                    selected_lanelets.append((lanelet, object_distance_from_start, heading_difference_degrees))
+                    selected_lanelets.append((lanelet, lanelet_length, object_distance_from_start, heading_difference_degrees))
 
                 # Sort by precomputed angle difference
-                selected_lanelets.sort(key=lambda l: l[2]) 
+                selected_lanelets.sort(key=lambda l: l[3]) 
 
             # Limit suitable lanelets to match up to `trajectories_to_predict`
             selected_lanelets = selected_lanelets[:self.trajectories_to_predict]
 
             # 2. CREATE ALL TRAJECTORIES
             all_trajectories = []
-            for lanelet, distance_from_start, _ in selected_lanelets:
+            if len(selected_lanelets) > 0:
                 object_accel = get_vector_norm_3d(obj.acceleration)
                 timesteps = np.arange(num_timesteps) * self.prediction_interval
                 velocities = object_speed + object_accel * timesteps
                 distances = (object_accel * timesteps**2) / 2 + object_speed * timesteps
 
-                # Check if current lanelet is long enough for prediction
-                remaining_length = linestring.length - distance_from_start - obj.dimensions.x / 2
-                if remaining_length >= distances[-1]:
-                    all_trajectories.append([lanelet])
-                else:
-                    # Use possiblePaths to extend trajectories
-                    extended_trajectories = self.graph.possiblePaths(lanelet, distances[-1] - remaining_length)
-                    all_trajectories.extend(extended_trajectories)
+                for lanelet, lanelet_length, object_distance_from_start, _ in selected_lanelets:
+                    object_front_distance = object_distance_from_start + obj.dimensions.x / 2
+                    remaining_length = lanelet_length - object_front_distance
+                    if remaining_length >= distances[-1]:
+                        all_trajectories.append([lanelet])
+                    else:
+                        # Use possiblePaths to extend trajectories
+                        extended_trajectories = self.graph.possiblePaths(lanelet, object_front_distance + distances[-1])
+                        all_trajectories.extend(extended_trajectories)
 
             # 3. SCORING IF NEEDED
             if len(all_trajectories) > self.trajectories_to_predict:
