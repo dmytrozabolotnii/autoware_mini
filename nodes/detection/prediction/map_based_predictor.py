@@ -45,6 +45,7 @@ class MapBasedPredictor:
 
     def tracked_objects_callback(self, msg):
         num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
+        timesteps = np.arange(num_timesteps) * self.prediction_interval
 
         for obj in msg.objects:
             object_speed = get_vector_norm_3d(obj.velocity)
@@ -59,14 +60,13 @@ class MapBasedPredictor:
             selected_lanelets = []
             object_centroid = shapely.Point(obj.position.x, obj.position.y)
 
-            for d, lanelet in lanelets_within_distance:
+            for _, lanelet in lanelets_within_distance:
                 # Skip undesired lanelets
                 if lanelet.attributes["subtype"] == "crosswalk" or lanelet.attributes["subtype"] == "bus_lane":
                     continue
 
                 # Calculate angle difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
-                lanelet_length = linestring.length
                 object_distance_from_start = linestring.project(object_centroid)
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
                 forward_point = linestring.interpolate(object_distance_from_start + 0.1)
@@ -75,31 +75,25 @@ class MapBasedPredictor:
 
                 # Add lanelet if angle difference is within threshold
                 if heading_difference_degrees < self.angle_threshold:
-                    selected_lanelets.append((lanelet, lanelet_length, object_distance_from_start, heading_difference_degrees))
+                    selected_lanelets.append((lanelet, object_distance_from_start, heading_difference_degrees))
 
-                # Sort by precomputed angle difference
-                selected_lanelets.sort(key=lambda l: l[3]) 
-
-            # Limit suitable lanelets to match up to `trajectories_to_predict`
-            selected_lanelets = selected_lanelets[:self.trajectories_to_predict]
+            if len(selected_lanelets) > self.trajectories_to_predict:
+                # Sort by precomputed angle difference and limit selection with `trajectories_to_predict`
+                selected_lanelets.sort(key=lambda l: l[2])
+                selected_lanelets = selected_lanelets[:self.trajectories_to_predict]
 
             # 2. CREATE ALL TRAJECTORIES
             all_trajectories = []
             if len(selected_lanelets) > 0:
                 object_accel = get_vector_norm_3d(obj.acceleration)
-                timesteps = np.arange(num_timesteps) * self.prediction_interval
                 velocities = object_speed + object_accel * timesteps
                 distances = (object_accel * timesteps**2) / 2 + object_speed * timesteps
 
-                for lanelet, lanelet_length, object_distance_from_start, _ in selected_lanelets:
+                for lanelet, object_distance_from_start, _ in selected_lanelets:
                     object_front_distance = object_distance_from_start + obj.dimensions.x / 2
-                    remaining_length = lanelet_length - object_front_distance
-                    if remaining_length >= distances[-1]:
-                        all_trajectories.append([lanelet])
-                    else:
-                        # Use possiblePaths to extend trajectories
-                        extended_trajectories = self.graph.possiblePaths(lanelet, object_front_distance + distances[-1])
-                        all_trajectories.extend(extended_trajectories)
+                    # Use possiblePaths to get all possible trajectories
+                    all_trajectories_from_lanelet = self.graph.possiblePaths(lanelet, object_front_distance + distances[-1])
+                    all_trajectories.extend(all_trajectories_from_lanelet)
 
             # 3. SCORING IF NEEDED
             if len(all_trajectories) > self.trajectories_to_predict:
@@ -108,11 +102,9 @@ class MapBasedPredictor:
                 # TODO use first lanelet's turn direction as object indicator, in future should be replaced by object's real indicator information
                 scores = [self.evaluate_paths(trajectory_turn_directions[i], trajectory_turn_directions[i][0]) for i in range(len(all_trajectories))]
 
-                # Pair trajectories with their scores and sort
+                # Pair trajectories with their scores, sort and limit the number of trajectories with `trajectories_to_predict`
                 scored_trajectories = list(zip(all_trajectories, scores))
                 scored_trajectories.sort(key=lambda t: t[1], reverse=True)
-                
-                # Select the top trajectories based on the score
                 all_trajectories = [trajectory for trajectory, _ in scored_trajectories[:self.trajectories_to_predict]]
 
             # 4. CREATE PREDICTIONS AND PUBLISH
