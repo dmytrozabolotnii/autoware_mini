@@ -39,11 +39,12 @@ class MessageCache:
 
         self.endpoints_count = pad_past
 
-    def update_last_trajectory(self, trajectory, velocity, acceleration, header):
+    def update_last_trajectory(self, trajectory, velocity, acceleration, header, convex_hull=None):
         self.raw_trajectories[len(self.raw_trajectories) - 1] = trajectory
         self.raw_velocities[len(self.raw_velocities) - 1] = velocity
         self.raw_accelerations[len(self.raw_accelerations) - 1] = acceleration
         self.headers[len(self.headers) - 1] = header
+        self.convex_hull = convex_hull
 
     def return_last_header(self):
         return self.headers[len(self.headers) - 1]

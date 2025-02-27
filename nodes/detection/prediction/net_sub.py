@@ -36,7 +36,6 @@ class NetSubscriber(metaclass=ABCMeta):
 
         # ROS timers/pub/sub
         self.class_init = False
-        print(self.inference_timer_duration)
         self.inference_timer = rospy.Timer(rospy.Duration(self.inference_timer_duration), self.inference_callback, reset=True)
         self.objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1,
                                            tcp_nodelay=True)
@@ -53,32 +52,34 @@ class NetSubscriber(metaclass=ABCMeta):
                 position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
                 velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
                 acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
+                convex_hull = detectedobject.convex_hull
                 header = detectedobjectarray.header
                 _id = detectedobject.id
                 active_keys.add(_id)
                 with self.lock:
                     if _id not in self.cache:
                         self.cache[_id] = MessageCache(_id, position, velocity, acceleration, header,
-                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=detectedobject.convex_hull)
+                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=convex_hull)
 
                     else:
                         self.cache[_id].move_endpoints()
-                        self.cache[_id].update_last_trajectory(position, velocity, acceleration, header)
+                        self.cache[_id].update_last_trajectory(position, velocity, acceleration, header, convex_hull=convex_hull)
             elif self.collect_car_info and (detectedobject.label == 'bicycle' or detectedobject.label == 'car'):
                 position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
                 velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
                 acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
+                convex_hull = detectedobject.convex_hull
                 header = detectedobjectarray.header
                 _id = detectedobject.id
                 active_keys_cars.add(_id)
                 with self.lock:
                     if _id not in self.cache_cars:
                         self.cache_cars[_id] = MessageCache(_id, position, velocity, acceleration, header,
-                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=detectedobject.convex_hull)
+                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=convex_hull)
 
                     else:
                         self.cache_cars[_id].move_endpoints()
-                        self.cache_cars[_id].update_last_trajectory(position, velocity, acceleration, header)
+                        self.cache_cars[_id].update_last_trajectory(position, velocity, acceleration, header, convex_hull=convex_hull)
 
         with self.lock:
             self.active_keys = self.active_keys.union(active_keys)
