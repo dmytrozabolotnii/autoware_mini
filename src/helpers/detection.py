@@ -123,6 +123,41 @@ def update_object_position_dimensions(obj):
     obj.dimensions.y = width
     obj.heading = heading_angle 
 
+def get_3d_bbox(center, dimensions, heading):
+    """
+    Compute the 8 corners of a 3D bounding box.
+
+    Args:
+        center: tuple (x, y, z) - Center of the box
+        dimensions: tuple (width, height, length) - Size of the box
+        heading: float - Yaw angle in radians (rotation around Z-axis)
+
+    Returns:
+        np.array of shape (8, 3) - 3D coordinates of the bounding box corners
+    """
+    x, y, z = center
+    w, h, l = dimensions
+    theta = heading
+
+    # Define corners before rotation (local coordinates)
+    x_corners = np.array([ w/2,  w/2, -w/2, -w/2,  w/2,  w/2, -w/2, -w/2])
+    y_corners = np.array([ l/2, -l/2, -l/2,  l/2,  l/2, -l/2, -l/2,  l/2])
+    z_corners = np.array([  h/2,  h/2,  h/2,  h/2, -h/2, -h/2, -h/2, -h/2])
+
+    # Rotation matrix around Z-axis
+    R = np.array([
+        [np.cos(theta), -np.sin(theta), 0],
+        [np.sin(theta),  np.cos(theta), 0],
+        [0,              0,             1]
+    ])
+
+    # Rotate and translate corners
+    bbox = np.dot(R, np.vstack([x_corners, y_corners, z_corners]))
+    bbox[0, :] += x
+    bbox[1, :] += y
+    bbox[2, :] += z
+
+    return bbox.T  # (8, 3) - Each row is a (x, y, z) corner
 
 if __name__ == '__main__':
     boxes1 = np.array([[0, 0, 10, 10], [10, 10, 20, 20]])

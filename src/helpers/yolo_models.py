@@ -1,11 +1,12 @@
-import cv2
-import math
 import numpy as np
 import onnxruntime
+from ast import literal_eval
+
+from helpers.yolo_common import preprocess_image, non_maximum_supression_boxes, convert_and_scale_boxes
 
 CATEGORY_NUM = 4
 
-class YoloModel(object):
+class Yolo3Model(object):
     """Class for a traffic light detector YOLO model"""
 
     def __init__(self,
@@ -44,41 +45,22 @@ class YoloModel(object):
         :return: a tuple of bounding boxes, classes and scores
         """
         # preprocess image to correct format for YOLO 
-        preprocessed_image = self.preprocess_image(image)
+        preprocessed_image = preprocess_image(image, self.input_resolution_yolo)
 
         # make a prediction
         yolo_outputs = self.yolo_model.run(None, {'000_net': preprocessed_image})
 
-        # postprocess YOLO input
+        # postprocess YOLO output
         yolo_output_shapes = [(1,27,19,19), (1,27,38,38)] #shapes for tiny yolov3
         yolo_outputs = [output.reshape(shape) for output, shape in zip(yolo_outputs, yolo_output_shapes)]
 
         boxes, classes, scores = self.postprocess(yolo_outputs)
 
         if len(boxes) > 0:
-            rois = self._convert_and_scale_boxes(boxes, image.shape[:2])
+            rois = convert_and_scale_boxes(boxes, image.shape[:2], self.input_resolution_yolo)
             return rois, classes, scores
         else:
             return boxes, classes, scores
-
-    def preprocess_image(self, img):
-        """Converts image to a suitable format for YOLO model
-
-        :param img: input image
-        :return: preprocessed image
-        """
-        # Resize to match YOLO input dimensions
-        out_img = cv2.resize(img, self.input_resolution_yolo, interpolation=cv2.INTER_LINEAR)
-        # Normalize to [0,1]
-        out_img = out_img.astype(np.float32) / 255.0
-        # HWC to CHW
-        out_img = np.transpose(out_img,[2,0,1])
-        # CHW to NCHW
-        out_img = np.expand_dims(out_img,axis = 0)
-        # Convert the image to row-major order, also known as "C order":
-        out_img = np.array(out_img, dtype = np.float32, order = 'C')
-
-        return out_img
     
     def postprocess(self, outputs):
         """Take the YOLOv3 outputs generated from a TensorRT forward pass, post-process them
@@ -147,7 +129,7 @@ class YoloModel(object):
             category = categories[idxs]
             confidence = confidences[idxs]
 
-            keep = self._nms_boxes(box, confidence)
+            keep = non_maximum_supression_boxes(box, confidence, self.nms_threshold)
 
             nms_boxes.append(box[keep])
             nms_categories.append(category[keep])
@@ -229,65 +211,82 @@ class YoloModel(object):
         scores = box_class_scores[pos]
 
         return boxes, classes, scores
-
-    def _nms_boxes(self, boxes, box_confidences):
-        """Apply the Non-Maximum Suppression (NMS) algorithm on the bounding boxes with their
-        confidence scores and return an array with the indexes of the bounding boxes we want to
-        keep (and display later).
-
-        Keyword arguments:
-        :param boxes: a NumPy array containing N bounding-box coordinates that survived filtering,
-        with shape (N,4); 4 for x,y,height,width coordinates of the boxes
-        :param box_confidences: a Numpy array containing the corresponding confidences with shape N
-        """
-        x_coord = boxes[:, 0]
-        y_coord = boxes[:, 1]
-        width = boxes[:, 2]
-        height = boxes[:, 3]
-
-        areas = width * height
-        ordered = box_confidences.argsort()[::-1]
-
-        keep = list()
-        while ordered.size > 0:
-            # Index of the current element:
-            i = ordered[0]
-            keep.append(i)
-            xx1 = np.maximum(x_coord[i], x_coord[ordered[1:]])
-            yy1 = np.maximum(y_coord[i], y_coord[ordered[1:]])
-            xx2 = np.minimum(x_coord[i] + width[i], x_coord[ordered[1:]] + width[ordered[1:]])
-            yy2 = np.minimum(y_coord[i] + height[i], y_coord[ordered[1:]] + height[ordered[1:]])
-
-            width1 = np.maximum(0.0, xx2 - xx1 + 1)
-            height1 = np.maximum(0.0, yy2 - yy1 + 1)
-            intersection = width1 * height1
-            union = (areas[i] + areas[ordered[1:]] - intersection)
-
-            # Compute the Intersection over Union (IoU) score:
-            iou = intersection / union
-
-            # The goal of the NMS algorithm is to reduce the number of adjacent bounding-box
-            # candidates to a minimum. In this step, we keep only those elements whose overlap
-            # with the current bounding box is lower than the threshold:
-            indexes = np.where(iou <= self.nms_threshold)[0]
-            ordered = ordered[indexes + 1]
-
-        keep = np.array(keep)
-        return keep
     
-    def _convert_and_scale_boxes(self, box, original_img_size):
-        """Convert yolo output of x_1 y_1 w h to x_1 y_1 x_2 y_2 and scale the boxes based on the original image size
 
-        :param box: a NumPy array containing yolo predicted box
-        :param original_img_size: size of the original input image
+class Yolo11Model(object):
+    def __init__(self, onnx_path, confidence_threshold=0.1, nms_threshold=0.3):
+    
         """
+        :param onnx_path: path of the onnx yolo model
+        :param confidence_threshold: threshold for object confidence score, float value between 0 and 1
+        :param nms_threshold: threshold for non-max suppression algorithm, float value between 0 and 1
+        """
+        self.onnx_path = onnx_path
+        self.yolo_model = onnxruntime.InferenceSession(onnx_path, providers=['CUDAExecutionProvider'])
 
-        x_scale = original_img_size[1] / self.input_resolution_yolo[0]
-        y_scale = original_img_size[0] / self.input_resolution_yolo[1]
+        # Get model metadata
+        meta = self.yolo_model.get_modelmeta()
+        custom_metadata = meta.custom_metadata_map
+        
+        self.input_name = self.yolo_model.get_inputs()[0].name
 
-        x1 = box[:, 0] * x_scale
-        y1 = box[:, 1] * y_scale
-        x2 = (box[:, 0] + box[:, 2]) * x_scale
-        y2 = (box[:, 1] + box[:, 3]) * y_scale
+        ## Get model input shape from metadata
+        assert "imgsz" in custom_metadata, f"Error: ONNX model does not contain the key 'imgsz' in metadata. Model path {onnx_path}"
+        self.yolo_input_shape = tuple(literal_eval(custom_metadata['imgsz'])[::-1])
 
-        return np.rint(np.array([x1, y1, x2, y2]).T).astype(int)
+        ## Get class name map from metadata
+        assert "names" in custom_metadata, f"Error: ONNX model does not contain the key 'names' in metadata. Model path {onnx_path}"
+        self.class_name_map = literal_eval(custom_metadata["names"])
+
+        # Yolo model warm-up
+        input_shape = self.yolo_model.get_inputs()[0].shape
+        dummy_input = np.random.rand(*input_shape).astype(np.float32)
+        self.yolo_model.run(None, {self.input_name: dummy_input})
+
+        self.confidence_threshold = confidence_threshold
+        self.nms_threshold = nms_threshold
+
+    def predict(self, image):
+        """Detects objects from image
+
+        :param image: given image
+        :return: a tuple of bounding boxes, classes and scores
+        """
+        # preprocess image to correct format for YOLO 
+        preprocessed_image = preprocess_image(image, self.yolo_input_shape)
+
+        # make a prediction
+        yolo_outputs = self.yolo_model.run(None, {self.input_name: preprocessed_image})
+
+        # postprocess YOLO input
+        boxes, classes, scores = self._postprocess_yolo_output(yolo_outputs[0])
+
+        if len(boxes) > 0:
+            scaled_boxes = convert_and_scale_boxes(boxes, image.shape[:2], self.yolo_input_shape, xy_center=True)
+            return scaled_boxes, classes, scores
+        else:
+            return boxes, classes, scores
+        
+    def _postprocess_yolo_output(self, raw_yolo_output):
+        raw_out = np.squeeze(raw_yolo_output)
+        assert raw_out.shape[0] == 4 + len(self.class_name_map), f"ONNX output not in valid shape. Model shape {raw_out.shape}. Model path {self.onnx_path}"
+        
+        n_det = raw_out.shape[1]
+        if n_det <= 0:
+            return np.empty((0,)), np.empty((0,)), np.empty((0,))
+
+        # Find out the max scored class in each detection
+        class_idxs = np.argmax(raw_out[4:, :], axis=0)
+        # Get max scores for each detection
+        max_conf_scores = np.take_along_axis(raw_out[4:, :], class_idxs[None, :], axis=0).squeeze()
+
+        # Filter out detections that have a lower confidence than the given threshold
+        filter_mask = max_conf_scores >= self.confidence_threshold
+        valid_classes = class_idxs[filter_mask]
+        valid_confidences = max_conf_scores[filter_mask]
+        valid_bboxes = raw_out[:4, filter_mask].T
+
+        # Use Non-Maximum Supression algorithm to select best fitting bounding boxes for each detected object
+        keep_idxs = non_maximum_supression_boxes(valid_bboxes, valid_confidences, self.nms_threshold)
+
+        return valid_bboxes[keep_idxs], valid_classes[keep_idxs], valid_confidences[keep_idxs]

@@ -4,6 +4,8 @@ from scipy.optimize import linear_sum_assignment
 class BoxMatcher3DTo2D:
     def __init__(self, iou_threshold):
         self.iou_threshold = iou_threshold
+        self.lidar_camera_transform = None
+        self.camera_intrinsics = None
 
     def transform_lidar_to_camera(self, box_3d):
         """
@@ -26,8 +28,11 @@ class BoxMatcher3DTo2D:
         """
         Computes 2D bounding box from projected 3D box.
         """
-        x_min, y_min = np.min(box_img, axis=0)
-        x_max, y_max = np.max(box_img, axis=0)
+        #print(box_img.shape)
+        #print("MIN", np.min(box_img, axis=0).shape)
+        #print("MIN", np.min(box_img, axis=0)[0].shape)
+        x_min, y_min = np.min(box_img, axis=0)[0]
+        x_max, y_max = np.max(box_img, axis=0)[0]
         return (int(x_min), int(y_min), int(x_max), int(y_max))
 
     def compute_iou(self, boxA, boxB):
@@ -49,6 +54,9 @@ class BoxMatcher3DTo2D:
         """
         Matches 3D bounding boxes to 2D bounding boxes using Hungarian algorithm.
         """
+        if self.lidar_camera_transform is None or self.camera_intrinsics is None:
+            return [], []
+        
         num_3d = len(boxes_3d)
         num_2d = len(boxes_2d)
         cost_matrix = np.zeros((num_3d, num_2d))
@@ -62,6 +70,7 @@ class BoxMatcher3DTo2D:
 
             for j, box_2d in enumerate(boxes_2d):
                 iou = self.compute_iou(projected_2d, box_2d)
+                #print("BOX", box_3d, box_2d)
                 cost_matrix[i, j] = -iou  # We minimize cost (maximize IoU)
 
         # Solve assignment problem

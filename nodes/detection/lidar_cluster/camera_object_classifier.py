@@ -1,45 +1,55 @@
 #!/usr/bin/env python3
 
+import cv2
 import rospy
 import tf2_ros
-import onnxruntime
 import message_filters
 from image_geometry import PinholeCameraModel
 
 from sensor_msgs.msg import CameraInfo, Image
 from autoware_mini.msg import DetectedObjectArray
+from ros_numpy import numpify
 
 from cv_bridge import CvBridge
+from helpers.yolo_models import Yolo11Model
+from helpers.box_matcher_3d_2d import BoxMatcher3DTo2D
+from helpers.detection import get_3d_bbox
 
 class CameraObjectClassifier:
     def __init__(self):
-        onnx_path = ""
-        self.iou_threshold = 0.5
+        onnx_path = rospy.get_param("~onnx_path")
+
+        confidence_threshold = 0.4
+        box_matcher_iou_threshold = 0.5
         self.transform_timeout = 0.06
 
         self.camera_model = None
         
         self.bridge = CvBridge()
-        self.model = onnxruntime.InferenceSession(onnx_path, providers=['CUDAExecutionProvider'])
+        self.yolo_model = Yolo11Model(onnx_path, confidence_threshold=confidence_threshold)
+        self.box_matcher = BoxMatcher3DTo2D(box_matcher_iou_threshold)
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # Publishers
         self.detected_objects_classified_sub = rospy.Publisher('detected_objects_classified', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
+        self.yolo_detections_pub = rospy.Publisher('yolo_detections', Image, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('camera_info', CameraInfo, self.camera_info_callback, queue_size=1, tcp_nodelay=True)
         image_raw_sub = message_filters.Subscriber('image_raw', Image, queue_size=1, buff_size=2**26, tcp_nodelay=True)
         detected_objects_sub = message_filters.Subscriber('detected_objects', DetectedObjectArray, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
-        ts = message_filters.ApproximateTimeSynchronizer([image_raw_sub, detected_objects_sub], queue_size=15, slop=0.15)
+        ts = message_filters.ApproximateTimeSynchronizer([image_raw_sub, detected_objects_sub], queue_size=4, slop=0.15)
         ts.registerCallback(self.detected_objects_callback)
 
     def camera_info_callback(self, camera_info_msg):
         if self.camera_model is None:
             self.camera_model = PinholeCameraModel()
         self.camera_model.fromCameraInfo(camera_info_msg)
+        camera_intrinsics = self.camera_model.fullIntrinsicMatrix()
+        self.box_matcher.camera_intrinsics = camera_intrinsics
 
     def detected_objects_callback(self, image_msg, det_objects_msg):
         if self.camera_model is None:
@@ -50,29 +60,50 @@ class CameraObjectClassifier:
 
         # extract image
         image = self.bridge.imgmsg_to_cv2(image_msg,  desired_encoding='rgb8')
-        
-        print(image.shape)
 
+        bboxes_2d, classes, scores = self.yolo_model.predict(image)
+        
         # extract transform
         try:
             transform = self.tf_buffer.lookup_transform(image_msg.header.frame_id, det_objects_msg.header.frame_id, image_msg.header.stamp, rospy.Duration(self.transform_timeout))
+            self.box_matcher.lidar_camera_transform = numpify(transform.transform)
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
             return
         
-        for detected_object in detected_objects:
-            pass
-            #print(detected_object)
-            """
-            for x, y, z in traffic_lights.values():
-                point_map = Point(float(x), float(y), float(z))
+        bboxes_3d = [] 
+        for obj in detected_objects:
+            bbox_3d = get_3d_bbox((obj.position.x, obj.position.y, obj.position.z), 
+                                  (obj.dimensions.x, obj.dimensions.y, obj.dimensions.z),
+                                  obj.heading)
+            bboxes_3d.append(bbox_3d)
+        
+        matches, projected_bboxes_2d = self.box_matcher.match_3d_2d_boxes(bboxes_3d, bboxes_2d)
+        print("Projected boxes", projected_bboxes_2d)
 
-                # transform point to camera frame and then to image frame
-                point_camera = transform_point(point_map, transform)
-                u, v = self.camera_model.project3dToPixel((point_camera.x, point_camera.y, point_camera.z))
-            """
-
+        self.publish_bbox_image(image, projected_bboxes_2d, bboxes_2d, classes, scores, image_msg.header.stamp)
         self.detected_objects_classified_sub.publish(det_objects_msg)
+
+    def publish_bbox_image(self, image, projected_boxes, boxes, classes, scores, image_time_stamp):
+        # add boxes and labels to image
+        if len(boxes) > 0:
+            img_size = image.shape
+            for p_box in projected_boxes:
+                pass
+
+            for cl, score, (x1, y1, x2, y2) in zip(classes, scores, boxes):
+                label = self.yolo_model.class_name_map[cl]
+                cv2.rectangle(image, (x1, y1), (x2, y2), (0,0,255), int(max(img_size) * 0.001))
+
+                font_scale = int(max(img_size) * 0.0009)
+                font_tickness = max(1, int(max(img_size) * 0.001))
+                cv2.putText(image, f"{label}({score:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0,0,255), font_tickness, cv2.LINE_AA)
+                
+        #image = cv2.resize(image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR)
+        img_msg = self.bridge.cv2_to_imgmsg(image, encoding='rgb8')
+        
+        img_msg.header.stamp = image_time_stamp
+        self.yolo_detections_pub.publish(img_msg)
 
     def run(self):
         rospy.spin()

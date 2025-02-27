@@ -13,7 +13,7 @@
     <arg name="more_visualizations"     default="false"             doc="By default only visualize final detections" />
     <arg name="detection_range"         default=""                  doc="enter a value in meters to enable it" />
     <arg name="ground_removal"          default="naive"             doc="naive, jcp" />
-    <arg name="classifier_onnx_path"    default="$(find autoware_mini)/data/models/traffic_lights/yolo11x.onnx" doc="yolo model path" />
+    <arg name="classifier_onnx_path"    default="$(find autoware_mini)/data/models/object_detection/yolo11x.onnx" doc="object detection yolo model path" />
 
     <group>
         <group if="$(eval 'lidar' in detector)" ns="lidar">
