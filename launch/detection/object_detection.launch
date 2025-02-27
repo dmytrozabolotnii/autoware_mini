@@ -114,15 +114,17 @@
     </node>
 
     <group unless="$(eval predictor=='none')">
-        <node if="$(eval 'map' in predictor)" type="map_based_predictor.py" name="map_based_predictor" pkg="autoware_mini" output="screen" required="true">
-            <remap from="predicted_objects" to="predicted_objects_map" />
-        </node>
-        <node if="$(eval predictor=='map')" pkg="topic_tools" type="relay" args="predicted_objects_map predicted_objects" name="predicted_objects_relay" output="screen" required="true" />
-        <node if="$(eval predictor=='naive')" pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
-        <node if="$(eval 'pedestrian' in predictor)" pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
-        <node if="$(eval 'naive' in predictor)" type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
-            <remap from="tracked_objects" to="predicted_objects_map" />
-        </node>
+        <group if="$(eval 'pedestrian' not in predictor)">
+            <node if="$(eval 'map' in predictor)" type="map_based_predictor.py" name="map_based_predictor" pkg="autoware_mini" output="screen" required="true">
+                <remap from="predicted_objects" to="predicted_objects_map" />
+            </node>
+            <node if="$(eval predictor=='map')" pkg="topic_tools" type="relay" args="predicted_objects_map predicted_objects" name="predicted_objects_relay" output="screen" required="true" />
+            <node if="$(eval predictor=='naive')" pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
+            <node if="$(eval 'pedestrian' in predictor)" pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
+            <node if="$(eval 'naive' in predictor)" type="naive_predictor.py" name="naive_predictor" pkg="autoware_mini" output="screen" required="true">
+                <remap from="tracked_objects" to="predicted_objects_map" />
+            </node>
+        </group>
         <group if="$(eval 'pedestrian' in predictor)" ns="pedestrian_predictor">
             <remap from="tracked_objects" to="/detection/tracked_objects" />
             <remap from="predicted_objects" to="/detection/predicted_objects" />
@@ -143,40 +145,81 @@
 
             <node if="$(eval predictor=='pedestrianrvo')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
                 <param name="constant_velocity" value="true" />
+                <param name="rvo_only" value="true" />
                 <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
             </node>
 
             <node if="$(eval predictor=='pedestrianrvofov')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
                 <param name="constant_velocity" value="true" />
                 <param name="fov_constraint" value="true" />
+                <param name="rvo_only" value="true" />
+                <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
+            </node>
+
+            <node if="$(eval predictor=='pedestrianrvomap')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
+                <param name="constant_velocity" value="true" />
+                <param name="fov_constraint" value="false" />
+                <param name="map_constraints" value="true" />
+                <param name="rvo_only" value="true" />
                 <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
             </node>
 
             <node if="$(eval predictor=='pedestrianrvofovmap')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
                 <param name="constant_velocity" value="true" />
-                <param name="fov_constraint" value="false" />
+                <param name="fov_constraint" value="true" />
                 <param name="map_constraints" value="true" />
+                <param name="rvo_only" value="true" />
                 <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
             </node>
 
             <node if="$(eval predictor=='pedestrianrvofovmapcars')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
                 <param name="constant_velocity" value="true" />
-                <param name="fov_constraint" value="false" />
+                <param name="fov_constraint" value="true" />
                 <param name="map_constraints" value="true" />
                 <param name="cars_constraints" value="true" />
+                <param name="rvo_only" value="true" />
                 <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
             </node>
 
             <node if="$(eval predictor=='pedestrianrvobestonly')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
                 <param name="constant_velocity" value="true" />
-                <param name="fov_constraint" value="false" />
+                <param name="fov_constraint" value="true" />
                 <param name="map_constraints" value="true" />
                 <param name="cars_constraints" value="false" />
                 <param name="rvo_only" value="true" />
                 <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
             </node>
 
+            <node if="$(eval predictor=='pedestrianrvobestonlyvelzero')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
+                <param name="constant_velocity" value="true" />
+                <param name="fov_constraint" value="true" />
+                <param name="map_constraints" value="true" />
+                <param name="cars_constraints" value="false" />
+                <param name="rvo_only" value="true" />
+                <param name="velocity_zero" value="true" />
+                <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
+            </node>
 
+            <node if="$(eval predictor=='pedestrianrvoall')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
+                <param name="constant_velocity" value="true" />
+                <param name="fov_constraint" value="true" />
+                <param name="map_constraints" value="true" />
+                <param name="cars_constraints" value="true" />
+                <param name="rvo_only" value="false" />
+                <param name="multi_solution" value="true" />
+                <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
+            </node>
+
+            <node if="$(eval predictor=='pedestrianrvogaaddon')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
+                <param name="constant_velocity" value="true" />
+                <param name="fov_constraint" value="true" />
+                <param name="map_constraints" value="true" />
+                <param name="cars_constraints" value="false" />
+                <param name="rvo_only" value="false" />
+                <param name="multi_solution" value="false" />
+                <param name="ga_addon" value="true" />
+                <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
+            </node>
 
             <node if="$(eval predictor=='pedestrian')" type="pecnet_sub.py" name="pecnet_predictor" pkg="autoware_mini" output="screen" required="true" />
 

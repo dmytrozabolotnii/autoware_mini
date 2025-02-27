@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-from audioop import cross
-
 # Adapted naive_predictor for pedestrian prediction experiments with RVO constraints
 
 import rospy
 import numpy as np
 import time
 
-from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 from math import atan2
 
 from shapely.geometry import LinearRing
@@ -22,8 +19,14 @@ from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
 from helpers.lanelet2 import load_lanelet2_map
 
+import torch
+from gatraj_utils import GATraj, GATrajDatasetInit, gatraj_iter
+from GATraj.GATraj_parser import get_args
+
+
 pedestrian_normal_walking_speed = 1.3888888
 fov_acceptable_circle_radius = 0.5
+half_pov_angle = np.pi / 3
 MAX_STEPS_LONG_BRUTEFORCE = 10
 MAX_STEPS_LAT_BRUTEFORCE = 10
 
@@ -81,7 +84,6 @@ def single_check_solution(solution, check_id, pure_deviation_vectors, representa
     temp_vector = solution - pure_deviation_vectors[check_id]
     # Find directed angle between representing vector and solution, this angle should be positive
     angle = oriented_angle(representative_vectors[check_id], temp_vector)
-    # print(check_id, solution, temp_vector, representative_vectors[check_id], angle)
     return angle >= 0
 
 
@@ -153,12 +155,8 @@ def resolve_hard_rvo(velocity, deviation_vectors, fov_constraint=False, crosswal
 
     # Add fov constraints if necessary
     if fov_constraint:
-        # pure_deviation_vectors = np.vstack((pure_deviation_vectors, [-1 * velocity]))
-        # representative_vectors = np.vstack((representative_vectors, [simple_rotate(velocity, -1 * np.pi / 2)]))
-
         fov_deviation_vectors = np.array([-1 * velocity] * 2)
         fov_representative_vectors = np.array([-1 * simple_rotate(velocity, np.pi / 3), simple_rotate(velocity, -1 * np.pi / 3)])
-        # representative_vectors = np.vstack((representative_vectors, [simple_rotate(velocity, np.pi / 3), -1 * simple_rotate(velocity, -1 * np.pi / 3)]))
     else:
         fov_deviation_vectors = []
         fov_representative_vectors = []
@@ -209,6 +207,23 @@ class RVOPredictor(NetSubscriber):
         self.cars_constraints = rospy.get_param('~cars_constraints', False)
         self.cars_constraints_minimum_speed = pedestrian_normal_walking_speed
         self.rvo_only = rospy.get_param('~rvo_only', False)
+        self.velocity_zero = rospy.get_param('~velocity_zero', False)
+        self.multi_solution = rospy.get_param('~multi_solution', False)
+        self.num_variations = 4
+        self.ga_addon = rospy.get_param('~ga_addon', False)
+        if self.ga_addon:
+            # initialize network
+            self.args = get_args()
+            self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+            self.model = GATraj(self.args)
+            self.checkpoint = torch.load(rospy.get_param('data_path_prediction') + 'GATraj/GATraj_1000.tar',
+                                         map_location=self.device)
+
+            self.model = self.model.to(self.device)
+            self.model.eval()
+            self.model.load_state_dict(self.checkpoint["state_dict"])
+            self.predictions_amount = rospy.get_param('~ga_addon_predictions_amount')
+            self.pad_past = self.args.min_obs
 
         self.prediction_horizon_time = self.prediction_horizon * self.prediction_interval
 
@@ -222,12 +237,78 @@ class RVOPredictor(NetSubscriber):
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
 
         # Debug
-        self.average_time = 0
-        self.average_time_counter = 0
-        # Publishers
+        # self.average_time = 0
+        # self.average_time_counter = 0
+        # self.mink_time = 0
+        # self.mink_count = 0
 
+    def calculate_deviation_vector(self, polygon_a, polygon_b, polygon_a_speed_vector, rel_speed_vector,
+                                   variable_responsbility_factor=False):
+        # Calculate minkowski sum
+        # t0 = time.time()
+        polygon_min = minkowski_sum(polygon_a, polygon_b, 1 / self.prediction_horizon_time)
+        # t1 = time.time()
+        # self.mink_time += t1 - t0
+        # self.mink_count += 1
+        # Find if relative speed vector intersects reduced minkowski sum
+        rel_speed_vector_line = LineString([(0, 0), rel_speed_vector])
+        if rel_speed_vector_line.intersects(polygon_min):
+            if not variable_responsbility_factor:
+                # Basic responsibility factor
+                responsibility_factor = self.responsibility_factor
+            else:
+                # FOV based responsibility factor
+                p_a = np.array(polygon_a.centroid.coords[0])
+                p_b = np.array(polygon_b.centroid.coords[0])
+                p_ab, p_ba = p_b - p_a, p_a - p_b
+                polygon_b_speed_vector = polygon_a_speed_vector - rel_speed_vector
+                b_in_view_of_a = abs(oriented_angle(polygon_a_speed_vector, p_ab)) <= half_pov_angle
+                a_in_view_of_b = abs(oriented_angle(polygon_b_speed_vector, p_ba)) <= half_pov_angle
+                if b_in_view_of_a and not a_in_view_of_b:
+                    responsibility_factor = 1
+                elif a_in_view_of_b and not b_in_view_of_a:
+                    return None
+                else:
+                    responsibility_factor = self.responsibility_factor
 
-        # Subscribers
+            if polygon_min.contains(Point(0, 0)):
+                if polygon_min.contains(Point(rel_speed_vector[0], rel_speed_vector[1])):
+                    polygon_min_ext = LinearRing(polygon_min.exterior.coords)
+                    d = polygon_min_ext.project(Point(rel_speed_vector[0], rel_speed_vector[1]))
+                    closest_point = polygon_min_ext.interpolate(d)
+                    change_vector = polygon_a_speed_vector + (
+                                np.array(closest_point.coords) - rel_speed_vector) * responsibility_factor
+                    deviation_vector = LineString(
+                        [(polygon_a_speed_vector[0], polygon_a_speed_vector[1]),
+                         (change_vector[0, 0], change_vector[0, 1])])
+
+                    return deviation_vector
+            else:
+                # Find the min and max signed angle between relative speed vector and obstacle
+                angles = [oriented_angle(rel_speed_vector, polygon_min.exterior.coords[i]) for i in
+                          range(len(polygon_min.exterior.coords))]
+                # Calculate deviation vector
+                if angles[np.argmax(angles)] >= abs(angles[np.argmin(angles)]):
+                    min_angle_to_deviate = angles[np.argmin(angles)]
+                    deviation_vector = affine_transform(
+                        rotate(rel_speed_vector_line, min_angle_to_deviate - (np.pi / 2),
+                               Point((0, 0)), use_radians=True),
+                        [responsibility_factor * abs(np.sin(min_angle_to_deviate)), 0, 0,
+                         responsibility_factor * abs(np.sin(min_angle_to_deviate)),
+                         polygon_a_speed_vector[0], polygon_a_speed_vector[1]])
+
+                else:
+                    min_angle_to_deviate = angles[np.argmax(angles)]
+                    deviation_vector = affine_transform(
+                        rotate(rel_speed_vector_line, min_angle_to_deviate + (np.pi / 2),
+                               Point((0, 0)), use_radians=True),
+                        [responsibility_factor * abs(np.sin(min_angle_to_deviate)), 0, 0,
+                         responsibility_factor * abs(np.sin(min_angle_to_deviate)),
+                         polygon_a_speed_vector[0], polygon_a_speed_vector[1]])
+
+                return deviation_vector
+
+        return None
 
     def inference_callback(self, event):
         if len(self.active_keys):
@@ -235,7 +316,7 @@ class RVOPredictor(NetSubscriber):
                 temp_active_keys = set(self.active_keys)
                 temp_active_keys_cars = set(self.active_keys_cars)
                 # Convert tracked objects to numpy array
-                tracked_objects_array = np.empty((len(temp_active_keys) + self.cars_constraints * len(temp_active_keys_cars)), dtype=[
+                tracked_objects_array = np.empty((len(temp_active_keys)), dtype=[
                     ('centroid', np.float32, (2,)),
                     ('velocity', np.float32, (2,)),
                     ('acceleration', np.float32, (2,)),
@@ -254,98 +335,115 @@ class RVOPredictor(NetSubscriber):
                     if self.cache[key].convex_hull is not None:
                         polygon = Polygon([(p.x, p.y) for p in self.cache[key].convex_hull.points])
                         tracked_objects_convex_hull_array.append(orient(polygon))
-                ped_count = len(temp_active_keys)
                 if self.cars_constraints:
+                    cars_objects_array = np.empty(
+                        (len(temp_active_keys_cars)), dtype=[
+                            ('centroid', np.float32, (2,)),
+                            ('velocity', np.float32, (2,)),
+                            ('acceleration', np.float32, (2,)),
+                        ])
+                    cars_objects_convex_hull_array = []
+                    cars_objects_array_ids = np.zeros((len(cars_objects_array)))
+
                     for i, key in enumerate(temp_active_keys_cars):
-                        tracked_objects_array_ids[ped_count + i] = key
-                        tracked_objects_array[ped_count + i]['centroid'] = (
+                        cars_objects_array_ids[i] = key
+                        cars_objects_array[i]['centroid'] = (
                         self.cache_cars[key].raw_trajectories[-1][0], self.cache_cars[key].raw_trajectories[-1][1])
-                        tracked_objects_array[ped_count + i]['velocity'] = (
+                        cars_objects_array[i]['velocity'] = (
                         self.cache_cars[key].raw_velocities[-1][0], self.cache_cars[key].raw_velocities[-1][1])
                         if self.constant_velocity_mode:
-                            tracked_objects_array[ped_count + i]['acceleration'] = 0
+                            cars_objects_array[i]['acceleration'] = 0
                         else:
-                            tracked_objects_array[ped_count + i]['acceleration'] = (
+                            cars_objects_array[i]['acceleration'] = (
                                 self.cache_cars[key].raw_accelerations[-1][0], self.cache_cars[key].raw_accelerations[-1][1])
                         if self.cache_cars[key].convex_hull is not None:
                             polygon = Polygon([(p.x, p.y) for p in self.cache_cars[key].convex_hull.points])
-                            tracked_objects_convex_hull_array.append(orient(polygon))
+                            cars_objects_convex_hull_array.append(orient(polygon))
+                if self.ga_addon:
+                    if self.use_backpropagation:
+                        [self.cache[key].backpropagate_trajectories(pad_past=self.args.min_obs *
+                                                                             (self.skip_points + 1))
+                         for key in temp_active_keys if self.cache[key].endpoints_count == 0]
+
+                    temp_raw_trajectories = [self.cache[key].return_last_interpolated_trajectory(self.pad_past,
+                                                                                                 self.inference_timer_duration,
+                                                                                                 self.hide_past) for key
+                                             in temp_active_keys]
+                    temp_endpoints = [self.cache[key].endpoints_count // (self.skip_points + 1)
+                                      for key in temp_active_keys]
+
 
                 tracked_objects_convex_hull_array = GeometryCollection(tracked_objects_convex_hull_array)
+                if self.cars_constraints:
+                    cars_objects_convex_hull_array = GeometryCollection(cars_objects_convex_hull_array)
                 temp_headers = [self.cache[key].return_last_header() for key in temp_active_keys]
 
             # Predict future positions and velocities
             num_timesteps = self.prediction_horizon + 1
-            predicted_objects_array = np.empty((num_timesteps, ped_count), dtype=[
+            predicted_objects_array = np.empty((num_timesteps, len(tracked_objects_array)), dtype=[
                 ('centroid', np.float32, (2,)),
                 ('velocity', np.float32, (2,)),
             ])
-            predicted_objects_array[0] = tracked_objects_array[:ped_count][['centroid', 'velocity']]
-            rvo_objects_array = np.empty((num_timesteps, ped_count), dtype=[
-                ('centroid', np.float32, (2,)),
-                ('velocity', np.float32, (2,)),
-            ])
-            rvo_objects_array[0] = tracked_objects_array[:ped_count][['centroid', 'velocity']]
+            predicted_objects_array[0] = tracked_objects_array[['centroid', 'velocity']]
+            if not self.multi_solution:
+                rvo_objects_array = np.empty((1, num_timesteps, len(tracked_objects_array)), dtype=[
+                    ('centroid', np.float32, (2,)),
+                    ('velocity', np.float32, (2,)),
+                ])
+                rvo_objects_array[:, 0] = tracked_objects_array[['centroid', 'velocity']]
+            else:
+                rvo_objects_array = np.empty((self.num_variations, num_timesteps, len(tracked_objects_array)), dtype=[
+                    ('centroid', np.float32, (2,)),
+                    ('velocity', np.float32, (2,)),
+                ])
+                rvo_objects_array[:, 0] = tracked_objects_array[['centroid', 'velocity']]
+
+            # self.mink_time = 0
+            # self.mink_count = 0
+            # Running gatraj predictor if necessary
+            if self.ga_addon:
+                inference_dataset = GATrajDatasetInit(temp_raw_trajectories,
+                                                      end_points=temp_endpoints,
+                                                      pad_past=self.args.min_obs - 1,
+                                                      pad_future=0,
+                                                      dist_thresh=50 / 2
+                                                      )
+
+                inference_result = gatraj_iter(inference_dataset, self.model, self.device, self.args,
+                                               n=self.predictions_amount)
             # RVO
-            mink_time = 0
-            mink_count = 0
-            total_time = time.time()
-            for i in range(0, ped_count):
+            for i in range(0, len(tracked_objects_array)):
                 # Change to coordinate system from ego object (and reverse ego polygon for minkowski)
-                # polygon_a = affine_transform(tracked_objects_convex_hull_array.geoms[i], matrix=[
-                #     -1, 0, 0, -1, tracked_objects_array[i]['centroid'][0], tracked_objects_array[i]['centroid'][1]])
                 polygon_a = orient(simple_affine_transform(tracked_objects_convex_hull_array.geoms[i], -1, tracked_objects_array[i]['centroid']))
 
-                collision_flag = False
                 deviation_vectors = []
                 for j in range(0, len(tracked_objects_array)):
-                    if i != j and distance(tracked_objects_array[i]['centroid'], tracked_objects_array[j]['centroid']) < self.range_limit \
-                        and (j<ped_count or distance(tracked_objects_array[j]['velocity'], [0, 0]) >= self.cars_constraints_minimum_speed):
+                    if i != j and distance(tracked_objects_array[i]['centroid'], tracked_objects_array[j]['centroid']) < self.range_limit:
                         polygon_b = simple_affine_transform(tracked_objects_convex_hull_array.geoms[j], 1,
                                                             -1 * tracked_objects_array[i]['centroid'])
-                        # Calculate minkowski sum
-                        t0 = time.time()
-                        polygon_min = minkowski_sum(polygon_a, polygon_b, 1 / self.prediction_horizon_time)
-                        t1 = time.time()
-                        mink_time += t1 - t0
-                        mink_count += 1
-                        # Find if relative speed vector intersects reduced minkowski sum
                         rel_speed_vector = tracked_objects_array[i]['velocity'] - tracked_objects_array[j]['velocity']
-                        rel_speed_vector_line = LineString([(0, 0), rel_speed_vector])
-                        if rel_speed_vector_line.intersects(polygon_min):
-                            # print('RVO intersection ', tracked_objects_array_ids[i], tracked_objects_array_ids[j])
-                            if polygon_min.contains(Point(0, 0)):
-                                collision_flag = True
-                                if polygon_min.contains(Point(rel_speed_vector[0], rel_speed_vector[1])):
-                                    polygon_min_ext = LinearRing(polygon_min.exterior.coords)
-                                    d = polygon_min_ext.project(Point(rel_speed_vector[0], rel_speed_vector[1]))
-                                    closest_point = polygon_min_ext.interpolate(d)
-                                    change_vector = tracked_objects_array[i]['velocity'] + (np.array(closest_point.coords) - rel_speed_vector) * self.responsibility_factor
-                                    deviation_vector = LineString([(tracked_objects_array[i]['velocity'][0], tracked_objects_array[i]['velocity'][1]),
-                                                                   (change_vector[0, 0], change_vector[0, 1])])
-                                    deviation_vectors_direction = 0
+                        deviation_vector = self.calculate_deviation_vector(polygon_a, polygon_b,
+                                                                                 tracked_objects_array[i]['velocity'], rel_speed_vector, variable_responsbility_factor=self.fov_constraint)
+                        if deviation_vector is not None:
+                            deviation_vectors.append(deviation_vector)
 
-                                    deviation_vectors.append(deviation_vector)
-                            else:
-                                # Find the min and max signed angle between relative speed vector and obstacle
-                                angles = [oriented_angle(rel_speed_vector, polygon_min.exterior.coords[i]) for i in range(len(polygon_min.exterior.coords))]
-                                # Calculate deviation vector
-                                if angles[np.argmax(angles)] >= abs(angles[np.argmin(angles)]):
-                                    min_angle_to_deviate = angles[np.argmin(angles)]
-                                    deviation_vector = affine_transform(rotate(rel_speed_vector_line, min_angle_to_deviate - (np.pi / 2),
-                                                              Point((0, 0)), use_radians=True),
-                                                                        [self.responsibility_factor * abs(np.sin(min_angle_to_deviate)), 0, 0,
-                                                                         self.responsibility_factor * abs(np.sin(min_angle_to_deviate)), tracked_objects_array[i]['velocity'][0], tracked_objects_array[i]['velocity'][1]])
-                                    deviation_vectors_direction = -1
+                cars_deviation_vectors = []
+                if self.cars_constraints:
+                    for j in range(0, len(cars_objects_array)):
+                        if distance(tracked_objects_array[i]['centroid'], cars_objects_array[j]['centroid']) < self.range_limit \
+                        and distance(cars_objects_array[j]['velocity'], [0, 0]) >= self.cars_constraints_minimum_speed:
 
-                                else:
-                                    min_angle_to_deviate = angles[np.argmax(angles)]
-                                    deviation_vector = affine_transform(rotate(rel_speed_vector_line, min_angle_to_deviate + (np.pi / 2),
-                                                              Point((0, 0)), use_radians=True),
-                                                                        [self.responsibility_factor * abs(np.sin(min_angle_to_deviate)), 0, 0,
-                                                                         self.responsibility_factor * abs(np.sin(min_angle_to_deviate)), tracked_objects_array[i]['velocity'][0], tracked_objects_array[i]['velocity'][1]])
-                                    deviation_vectors_direction = 1
-                                deviation_vectors.append(deviation_vector)
+                            polygon_b = simple_affine_transform(cars_objects_convex_hull_array.geoms[j], 1,
+                                                                -1 * tracked_objects_array[i]['centroid'])
+                            rel_speed_vector = tracked_objects_array[i]['velocity'] - cars_objects_array[j][
+                                'velocity']
+
+                            deviation_vector = self.calculate_deviation_vector(polygon_a, polygon_b,
+                                                                               tracked_objects_array[i]['velocity'],
+                                                                               rel_speed_vector, variable_responsbility_factor=self.fov_constraint)
+                            if deviation_vector is not None:
+                                cars_deviation_vectors.append(deviation_vector)
+
                 crosswalks = None
                 lanelets = None
                 if self.map_constraints:
@@ -358,63 +456,65 @@ class RVOPredictor(NetSubscriber):
                     lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, object_location,
                                                             max(2 * self.prediction_horizon_time * distance(tracked_objects_array[i]['velocity'], [0, 0]), 2 * self.prediction_horizon_time * pedestrian_normal_walking_speed))
                     for d, lanelet in lanelets_within_distance:
-                        # print(lanelet.attributes["subtype"])
-                        # print(dir(lanelet))
-                        # print(lanelet.polygon2d())
-                        # print(dir(lanelet.polygon2d()))
                         if lanelet.attributes and lanelet.attributes["subtype"] == 'crosswalk':
                             crosswalks.append(Polygon([((p.x - x) / self.prediction_horizon_time, (p.y - y) / self.prediction_horizon_time) for p in lanelet.polygon2d()]))
-                            # print('Crosswalks', crosswalks)
                         else:
                             lanelets.append(Polygon([((p.x - x)  / self.prediction_horizon_time, (p.y - y)  / self.prediction_horizon_time) for p in lanelet.polygon2d()]))
-                            # print('Lanelets', lanelets)
 
                 # Construct free from obstacle zone from deviation vectors
+                if not self.multi_solution:
+                    if len(deviation_vectors + cars_deviation_vectors) >= 0:
+                        result = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors + cars_deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets)
+                        if result is not None:
+                            rvo_objects_array[0, 0, i]['velocity'] = result
+                        else:
+                            if self.velocity_zero:
+                                rvo_objects_array[0, 0, i]['velocity'] = 0
+                else:
+                    result_rvo = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors, fov_constraint=False, crosswalks=[], lanelets=[])
+                    if result_rvo is not None:
+                        rvo_objects_array[0, 0, i]['velocity'] = result_rvo
+                    result_rvofov = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=[], lanelets=[])
+                    if result_rvofov is not None:
+                        rvo_objects_array[1, 0, i]['velocity'] = result_rvofov
+                    result_rvofovmap = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets)
+                    if result_rvofovmap is not None:
+                        rvo_objects_array[2, 0, i]['velocity'] = result_rvofovmap
+                    result_rvofovmapcars = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors + cars_deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets)
+                    if result_rvofovmapcars is not None:
+                        rvo_objects_array[3, 0, i]['velocity'] = result_rvofovmapcars
 
-                if len(deviation_vectors) >= 0:
-                    result = resolve_hard_rvo(rvo_objects_array[0, i]['velocity'], deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets)
-                    if result is not None:
-                        rvo_objects_array[0, i]['velocity'] = result
-                    else:
-                        # print('Hard RVO resolver failed, adjusting speed to zero, id:', tracked_objects_array_ids[i])
-                        # print(len(deviation_vectors), deviation_vectors)
-                        # print('Crosswalks:', crosswalks)
-                        # print('Lanelets:', lanelets)
-                        # rvo_objects_array[0, i]['velocity'] = 0
-                        print('Hard RVO resolver failed, adjusting speed to base velocity, id:', tracked_objects_array_ids[i])
 
-                if collision_flag and len(deviation_vectors) == 0:
-                    print('Collision case without change, id:', tracked_objects_array_ids[i])
-                elif collision_flag and len(deviation_vectors) > 0:
-                    print('Collision flag with change, id:', tracked_objects_array_ids[i])
-
-            callback_time = time.time() - total_time
-            self.average_time = (self.average_time * self.average_time_counter + callback_time) / (self.average_time_counter + 1)
-            self.average_time_counter += 1
-            # print('Total time', callback_time, 'Average time', self.average_time, 'Minkowski sum time', mink_time, 'Minkowski sum counts', mink_count)
+            # callback_time = time.time() - total_time
+            # self.average_time = (self.average_time * self.average_time_counter + callback_time) / (self.average_time_counter + 1)
+            # self.average_time_counter += 1
 
             for i in range(1, num_timesteps):
                 predicted_objects_array[i]['centroid'] = predicted_objects_array[i - 1]['centroid'] + \
                                                          predicted_objects_array[i - 1][
                                                              'velocity'] * self.prediction_interval
                 predicted_objects_array[i]['velocity'] = predicted_objects_array[i - 1]['velocity'] + \
-                                                         tracked_objects_array[:ped_count][
+                                                         tracked_objects_array[
                                                              'acceleration'] * self.prediction_interval
             for i in range(1, num_timesteps):
-                rvo_objects_array[i]['centroid'] = rvo_objects_array[i - 1]['centroid'] + \
-                                                         rvo_objects_array[i - 1][
+                rvo_objects_array[:, i]['centroid'] = rvo_objects_array[:, i - 1]['centroid'] + \
+                                                         rvo_objects_array[:, i - 1][
                                                              'velocity'] * self.prediction_interval
-                rvo_objects_array[i]['velocity'] = rvo_objects_array[i - 1]['velocity'] + \
-                                                         tracked_objects_array[:ped_count][
+                rvo_objects_array[:, i]['velocity'] = rvo_objects_array[:, i - 1]['velocity'] + \
+                                                         tracked_objects_array[
                                                              'acceleration'] * self.prediction_interval
 
             with self.lock:
                 # Create candidate trajectories
                 for i, _id in enumerate(temp_active_keys):
                     if self.rvo_only:
-                        self.cache[_id].extend_prediction_history([rvo_objects_array[:, i]['centroid']])
+                        self.cache[_id].extend_prediction_history([rvo_objects_array[0, :, i]['centroid']])
+                    elif self.ga_addon:
+                        self.cache[_id].extend_prediction_history([np.vstack(([temp_raw_trajectories[i][-1]], inference_result[j][i]))
+                                                                      for j in range(len(inference_result))] +
+                                                                  [rvo_objects_array[j, :, i]['centroid'] for j in range(len(rvo_objects_array))])
                     else:
-                        self.cache[_id].extend_prediction_history([predicted_objects_array[:, i]['centroid'], rvo_objects_array[:, i]['centroid']])
+                        self.cache[_id].extend_prediction_history([predicted_objects_array[:, i]['centroid']] + [rvo_objects_array[j, :, i]['centroid'] for j in range(len(rvo_objects_array))])
                     self.cache[_id].extend_prediction_header_history(temp_headers[i])
             self.move_endpoints()
 

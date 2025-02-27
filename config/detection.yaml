@@ -94,7 +94,7 @@ ema_tracker:
   enable_initial_acceleration_estimate: False
   enable_missed_detection_propagation: True
   detection_counter_threshold: 4
-  missed_counter_threshold: 2
+  missed_counter_threshold: 4
   iou_threshold: 0.0
   velocity_gain: 0.1
   acceleration_gain: 0.0
@@ -122,22 +122,25 @@ pedestrian_predictor:
   inference_timer: 0.4 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
-  results_category_folder: "_contrib_2_metric_change_2"
+  results_category_folder: "_contrib_2_metric_change_tracker_experiment_3_rvo_final"
 
   pecnet_predictor:
-    predictions_amount: 5
+    predictions_amount: 10
 
   sgnet_predictor:
-    predictions_amount: 5
+    predictions_amount: 10
 
   lednet_predictor:
     predictions_amount: 20
 
   gatraj_predictor:
-    predictions_amount: 5
+    predictions_amount: 10
 
   musevae_predictor:
     predictions_amount: 5
+
+  rvo_predictor:
+    ga_addon_predictions_amount: 1
 
 road_area_filter:
   filtering_method: within          # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
