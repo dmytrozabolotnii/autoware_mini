@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import cv2
+import numpy as np
 import rospy
 import tf2_ros
 import message_filters
@@ -20,7 +21,7 @@ class CameraObjectClassifier:
         onnx_path = rospy.get_param("~onnx_path")
 
         confidence_threshold = 0.4
-        box_matcher_iou_threshold = 0.5
+        box_matcher_iou_threshold = 0.1
         self.transform_timeout = 0.06
 
         self.camera_model = None
@@ -58,19 +59,21 @@ class CameraObjectClassifier:
         
         detected_objects = det_objects_msg.objects
 
-        # extract image
+        # Extract image
         image = self.bridge.imgmsg_to_cv2(image_msg,  desired_encoding='rgb8')
 
+        # Detect objects from image
         bboxes_2d, classes, scores = self.yolo_model.predict(image)
         
-        # extract transform
+        # Extract transform
         try:
             transform = self.tf_buffer.lookup_transform(image_msg.header.frame_id, det_objects_msg.header.frame_id, image_msg.header.stamp, rospy.Duration(self.transform_timeout))
-            self.box_matcher.lidar_camera_transform = numpify(transform.transform)
+            transform_matrix = numpify(transform.transform)
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
             return
         
+        # Get 3D bounding boxes
         bboxes_3d = [] 
         for obj in detected_objects:
             bbox_3d = get_3d_bbox((obj.position.x, obj.position.y, obj.position.z), 
@@ -78,19 +81,28 @@ class CameraObjectClassifier:
                                   obj.heading)
             bboxes_3d.append(bbox_3d)
         
-        matches, projected_bboxes_2d = self.box_matcher.match_3d_2d_boxes(bboxes_3d, bboxes_2d)
-        print("Projected boxes", projected_bboxes_2d)
+        # Perform Hungarian matching between 3D boxes and 2D boxes
+        matches, projected_bboxes_2d, kept_3d_boxes = self.box_matcher.match_3d_2d_boxes(np.array(bboxes_3d), bboxes_2d, transform_matrix)
 
-        self.publish_bbox_image(image, projected_bboxes_2d, bboxes_2d, classes, scores, image_msg.header.stamp)
+        # Get matched 3d boxes and change the label of detected objects
+        matched_projected_bboxes_2d = []
+        for box_match in matches:
+            i_3d, i_2d = box_match
+            matched_projected_bboxes_2d.append(projected_bboxes_2d[i_3d])
+            detected_objects[kept_3d_boxes[i_3d]].label = self.yolo_model.class_name_map[classes[i_2d]]
+
+        self.publish_bbox_image(image, matched_projected_bboxes_2d, bboxes_2d, classes, scores, image_msg.header.stamp)
         self.detected_objects_classified_sub.publish(det_objects_msg)
 
     def publish_bbox_image(self, image, projected_boxes, boxes, classes, scores, image_time_stamp):
         # add boxes and labels to image
         if len(boxes) > 0:
             img_size = image.shape
-            for p_box in projected_boxes:
-                pass
+            # Add projected 3d bounding boxes to image
+            for x1, y1, x2, y2 in projected_boxes:
+                cv2.rectangle(image, (x1, y1), (x2, y2), (255,0,0), int(max(img_size) * 0.001))
 
+            # Add 2d bounding boxes, labels and scores to image 
             for cl, score, (x1, y1, x2, y2) in zip(classes, scores, boxes):
                 label = self.yolo_model.class_name_map[cl]
                 cv2.rectangle(image, (x1, y1), (x2, y2), (0,0,255), int(max(img_size) * 0.001))
