@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import time
 import cv2
 import numpy as np
 import rospy
@@ -23,7 +23,7 @@ class CameraObjectClassifier:
 
         yolo_confidence_threshold = 0.4
         box_matcher_iou_threshold = 0.1
-        self.transform_timeout = 0.06
+        self.transform_timeout = 0.03
 
         self.camera_model = None
         self.classified_objects_labels = {}
@@ -44,7 +44,7 @@ class CameraObjectClassifier:
         image_raw_sub = message_filters.Subscriber('image_raw', Image, queue_size=1, buff_size=2**26, tcp_nodelay=True)
         detected_objects_sub = message_filters.Subscriber('detected_objects', DetectedObjectArray, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
-        ts = message_filters.ApproximateTimeSynchronizer([image_raw_sub, detected_objects_sub], queue_size=4, slop=0.15)
+        ts = message_filters.ApproximateTimeSynchronizer([image_raw_sub, detected_objects_sub], queue_size=4, slop=0.05)
         ts.registerCallback(self.detected_objects_callback)
 
     def camera_info_callback(self, camera_info_msg):
@@ -61,12 +61,15 @@ class CameraObjectClassifier:
         
         detected_objects = det_objects_msg.objects
 
+        if len(detected_objects) == 0:
+            return
+
         # Extract image
         image = self.bridge.imgmsg_to_cv2(image_msg,  desired_encoding='rgb8')
 
         # Detect objects from image
         bboxes_2d, classes, scores = self.yolo_model.predict(image)
-        
+
         # Extract transform
         try:
             transform = self.tf_buffer.lookup_transform(image_msg.header.frame_id, det_objects_msg.header.frame_id, image_msg.header.stamp, rospy.Duration(self.transform_timeout))
@@ -74,9 +77,9 @@ class CameraObjectClassifier:
         except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
             rospy.logwarn("%s - %s", rospy.get_name(), e)
             return
-        
+
         # Get 3D bounding boxes
-        bboxes_3d = [] 
+        bboxes_3d = []
         for obj in detected_objects:
             bbox_3d = get_3d_bbox((obj.position.x, obj.position.y, obj.position.z), 
                                   (obj.dimensions.x, obj.dimensions.y, obj.dimensions.z),
@@ -84,7 +87,7 @@ class CameraObjectClassifier:
             bboxes_3d.append(bbox_3d)
             if obj.id in self.classified_objects_labels:
                 obj.label = self.classified_objects_labels[obj.id]
-        
+
         # Perform Hungarian matching between 3D boxes and 2D boxes
         matches, projected_bboxes_2d, kept_3d_boxes = self.box_matcher.match_3d_2d_boxes(np.array(bboxes_3d), bboxes_2d, transform_matrix)
 

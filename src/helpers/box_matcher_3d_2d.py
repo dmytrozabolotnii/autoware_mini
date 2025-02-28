@@ -12,7 +12,7 @@ class BoxMatcher3DTo2D:
         """
         Transforms 3D bounding boxes to camera frame.
         """
-        
+
         # Convert corners to homogeneous coordinates (N, 8, 4)
         ones = np.ones((boxes_3d.shape[0], 8, 1))  # Shape: (N, 8, 1)
         corners_homogeneous = np.concatenate([boxes_3d, ones], axis=-1)  # (N, 8, 4)
@@ -56,8 +56,8 @@ class BoxMatcher3DTo2D:
         """
         Matches 3D bounding boxes to 2D bounding boxes using Hungarian algorithm.
         """
-        if self.camera_intrinsics is None:
-            return [], []
+        if len(boxes_3d) == 0 or len(boxes_2d) == 0 or self.camera_intrinsics is None:
+            return [], [], []
 
         # Transform 3D boxes to camera frame
         boxes_3d_cam = self.transform_to_camera_frame(boxes_3d, transform_matrix)
@@ -67,6 +67,9 @@ class BoxMatcher3DTo2D:
         filtered_3d_boxes_mask = np.any(z_coords >= 0, axis=1)
         kept_3d_indices = np.where(filtered_3d_boxes_mask)[0]
         filtered_boxes_3d_cam = boxes_3d_cam[filtered_3d_boxes_mask]
+
+        if len(filtered_boxes_3d_cam) == 0:
+            return [], [], []
 
         # Project 3D boxes to the image
         projected_3d_boxes = self.project_to_image(filtered_boxes_3d_cam)
@@ -82,6 +85,9 @@ class BoxMatcher3DTo2D:
 
         valid_projected_2d_boxes = projected_2d_boxes[valid_mask]
         valid_projected_2d_indices = np.where(valid_mask)[0]
+
+        if len(valid_projected_2d_boxes) == 0:
+            return [], [], []
 
         # Perform Hungarian matching between projected 2D boxes and detected 2D boxes using IoU as cost
         # Compute IoU for all pairs

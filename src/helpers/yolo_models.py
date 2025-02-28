@@ -289,4 +289,7 @@ class Yolo11Model(object):
         # Use Non-Maximum Supression algorithm to select best fitting bounding boxes for each detected object
         keep_idxs = non_maximum_supression_boxes(valid_bboxes, valid_confidences, self.nms_threshold)
 
+        if len(keep_idxs) == 0:
+            return np.empty((0,)), np.empty((0,)), np.empty((0,))
+
         return valid_bboxes[keep_idxs], valid_classes[keep_idxs], valid_confidences[keep_idxs]
