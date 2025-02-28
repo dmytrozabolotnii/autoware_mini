@@ -103,21 +103,22 @@
         <node if="$(arg use_road_area_filter)" pkg="autoware_mini" type="road_area_filter.py" name="road_area_filter" output="screen" required="true" >
             <param name="road_area_file" value="$(arg road_area_file)" />
         </node>
-        <node if="$(arg use_camera_classifier)" type="camera_object_classifier.py" name="camera_object_classifier" pkg="autoware_mini" output="screen" required="true">
-            <remap from="camera_info" to="/camera_fl/camera_info"/>
-            <remap from="image_raw" to="/camera_fl/image_raw"/>
-            <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="detected_objects_filtered" />
-            <param name="onnx_path" value="$(arg classifier_onnx_path)" />
-        </node>
     </group>
 
     <node if="$(eval tracker=='ema')" type="ema_tracker.py" name="ema_tracker" pkg="autoware_mini" output="screen" required="true">
-        <remap if="$(arg use_camera_classifier)" from="detected_objects" to="detected_objects_classified" />
-        <!-- <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="detected_objects_filtered" />-->
+        <!-- <remap if="$(arg use_camera_classifier)" from="detected_objects" to="classified_objects" /> -->
+        <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="detected_objects_filtered" />
+    </node>
+    <node if="$(arg use_camera_classifier)" type="camera_object_classifier.py" name="camera_object_classifier" pkg="autoware_mini" output="screen" required="true">
+        <remap from="camera_info" to="/camera_fl/camera_info"/>
+        <remap from="image_raw" to="/camera_fl/image_raw"/>
+        <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="tracked_objects" />
+        <param name="onnx_path" value="$(arg classifier_onnx_path)" />
     </node>
     <node if="$(eval tracker=='none')" pkg="topic_tools" type="relay" args="detected_objects tracked_objects" name="detected_objects_relay" output="screen" required="true" />
     <node type="detected_objects_visualizer.py" name="tracked_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
-        <remap from="detected_objects" to="tracked_objects" />
+        <!-- <remap from="detected_objects" to="tracked_objects" /> -->
+        <remap from="detected_objects" to="classified_objects" />
         <remap from="detected_objects_markers" to="tracked_objects_markers" />
     </node>
 

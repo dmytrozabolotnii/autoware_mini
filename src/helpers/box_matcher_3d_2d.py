@@ -12,12 +12,13 @@ class BoxMatcher3DTo2D:
         """
         Transforms 3D bounding boxes to camera frame.
         """
+        
         # Convert corners to homogeneous coordinates (N, 8, 4)
         ones = np.ones((boxes_3d.shape[0], 8, 1))  # Shape: (N, 8, 1)
         corners_homogeneous = np.concatenate([boxes_3d, ones], axis=-1)  # (N, 8, 4)
         
         # Apply the transformation matrix
-        transformed_corners = np.einsum("ij,nkj->nki", T, corners_homogeneous)
+        transformed_corners = np.einsum("ij,nkj->nki", T, corners_homogeneous)  # (N, 8, 4)
         
         # Convert back to 3D by removing the homogeneous coordinate
         return transformed_corners[..., :3]
@@ -26,10 +27,9 @@ class BoxMatcher3DTo2D:
         """
         Projects 3D bounding box corners onto a 2D image plane using camera intrinsics.
         """
-        N = boxes_3d_cam.shape[0]
 
         # Convert to homogeneous coordinates (N, 8, 4)
-        ones = np.ones((N, 8, 1))
+        ones = np.ones((boxes_3d_cam.shape[0], 8, 1))
         corners_3d_homo = np.concatenate([boxes_3d_cam, ones], axis=-1)  # (N, 8, 4)
 
         # Apply intrinsic matrix

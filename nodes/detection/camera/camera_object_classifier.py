@@ -18,23 +18,25 @@ from helpers.detection import get_3d_bbox
 
 class CameraObjectClassifier:
     def __init__(self):
+        # Parameters
         onnx_path = rospy.get_param("~onnx_path")
 
-        confidence_threshold = 0.4
+        yolo_confidence_threshold = 0.4
         box_matcher_iou_threshold = 0.1
         self.transform_timeout = 0.06
 
         self.camera_model = None
+        self.classified_objects_labels = {}
         
         self.bridge = CvBridge()
-        self.yolo_model = Yolo11Model(onnx_path, confidence_threshold=confidence_threshold)
+        self.yolo_model = Yolo11Model(onnx_path, confidence_threshold=yolo_confidence_threshold)
         self.box_matcher = BoxMatcher3DTo2D(box_matcher_iou_threshold)
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # Publishers
-        self.detected_objects_classified_sub = rospy.Publisher('detected_objects_classified', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
+        self.classified_objects_sub = rospy.Publisher('classified_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
         self.yolo_detections_pub = rospy.Publisher('yolo_detections', Image, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
@@ -80,6 +82,8 @@ class CameraObjectClassifier:
                                   (obj.dimensions.x, obj.dimensions.y, obj.dimensions.z),
                                   obj.heading)
             bboxes_3d.append(bbox_3d)
+            if obj.id in self.classified_objects_labels:
+                obj.label = self.classified_objects_labels[obj.id]
         
         # Perform Hungarian matching between 3D boxes and 2D boxes
         matches, projected_bboxes_2d, kept_3d_boxes = self.box_matcher.match_3d_2d_boxes(np.array(bboxes_3d), bboxes_2d, transform_matrix)
@@ -89,10 +93,12 @@ class CameraObjectClassifier:
         for box_match in matches:
             i_3d, i_2d = box_match
             matched_projected_bboxes_2d.append(projected_bboxes_2d[i_3d])
-            detected_objects[kept_3d_boxes[i_3d]].label = self.yolo_model.class_name_map[classes[i_2d]]
+            obj = detected_objects[kept_3d_boxes[i_3d]]
+            obj.label = self.yolo_model.class_name_map[classes[i_2d]]
+            self.classified_objects_labels[obj.id] = obj.label
 
         self.publish_bbox_image(image, matched_projected_bboxes_2d, bboxes_2d, classes, scores, image_msg.header.stamp)
-        self.detected_objects_classified_sub.publish(det_objects_msg)
+        self.classified_objects_sub.publish(det_objects_msg)
 
     def publish_bbox_image(self, image, projected_boxes, boxes, classes, scores, image_time_stamp):
         # add boxes and labels to image
