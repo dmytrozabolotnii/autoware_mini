@@ -4,7 +4,7 @@ This folder contains nodes related to simulation.
 
 ## bicycle_simulation
 
-Implements a simple bicycle model for testing waypoint followers based on the blog post [Simple Understanding of Kinematic Bicycle Model](https://www.shuffleai.blog/blog/Simple_Understanding_of_Kinematic_Bicycle_Model.html). It uses the formulation where the desired point is at the center of the rear axle. Velocity and steering angle changes are instantaneous.
+Implements a simple bicycle model for testing waypoint following controllers based on the blog post [Simple Understanding of Kinematic Bicycle Model](https://www.shuffleai.blog/blog/Simple_Understanding_of_Kinematic_Bicycle_Model.html). It uses the formulation where the desired point is at the center of the rear axle. Velocity and steering angle changes are instantaneous.
 
 #### Parameters
 
