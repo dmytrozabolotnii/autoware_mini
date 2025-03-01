@@ -58,7 +58,7 @@ Here are couple of short videos introducing the Autoware Mini features.
 
 2. Clone the repos
    ```
-   git clone https://github.com/UT-ADL/autoware_mini.git
+   git clone https://github.com/dmytrozabolotnii/autoware_mini.git --single-branch
    # not needed for the simplest planner simulation
    git clone https://github.com/UT-ADL/vehicle_platform.git
    # if using Carla simulation
