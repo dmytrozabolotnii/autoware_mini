@@ -21,7 +21,8 @@ def create_hull(obj):
         (obj.dimensions.x, obj.dimensions.y),
         math.degrees(obj.heading)
     ))
-    convex_hull.points = [Point(x, y, obj.position.z) for x, y in points]
+    z = obj.position.z - obj.dimensions.z / 2
+    convex_hull.points = [Point(x, y, z) for x, y in points]
 
     return convex_hull
 

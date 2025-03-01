@@ -32,7 +32,7 @@ CLASS_ID_TO_LABEL = {
     Object.CLASSIFICATION_SIGN: 'sign'
 }
 
-YELLOW80P = ColorRGBA(1.0, 1.0, 0.0, 0.8)
+YELLOW = ColorRGBA(1.0, 1.0, 0.0, 0.5)
 
 class CarlaDetector:
 
@@ -71,7 +71,7 @@ class CarlaDetector:
             object_msg = DetectedObject()
             object_msg.id = obj.id
             object_msg.label = CLASS_ID_TO_LABEL[obj.classification] 
-            object_msg.color = YELLOW80P
+            object_msg.color = YELLOW
             object_msg.score = 1
             object_msg.valid = True
             
