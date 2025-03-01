@@ -1,15 +1,14 @@
 # Autoware Mini
 
-Autoware Mini is a minimalistic Python-based autonomy software. It is built on Python and ROS 1 to make it easy to get started and tinkering. It uses Autoware messages to define the interfaces between the modules, aiming to be compatible with [Autoware](https://www.autoware.org/). Autoware Mini currently works on ROS Noetic (Ubuntu 20.04). The software is open-source with a friendly MIT license.
+### This is a fork of main autoware_mini repository for publishing the code for the article "FOV-RVO: Velocity Obstacle-based pedestrian motion predictor"
 
-## Goals
+## TODO:
 
-Our goals with the Autoware Mini were:
-* easy to get started with --> minimal amount of dependencies
-* simple and pedagogical --> simple Python nodes and ROS 1
-* easy to implement machine learning based approaches --> Python
+- [x] Upload implementation code with instructions
+- [x] Share evaluation .bag dataset
+- [ ] Include result processing jupyter notebooks
 
-It is not production-level software, but aimed for teaching and research. At the same time we have validated the software with a real car in real traffic in the city center of Tartu, Estonia.
+Autoware Mini is a minimalistic Python-based autonomy software. It is built on Python and ROS 1 to make it easy to get started and tinkering. Autoware Mini currently works on ROS Noetic (Ubuntu 20.04). The software is open-source with a friendly MIT license.
 
 ## Architecture
 
@@ -33,7 +32,7 @@ Here are couple of short videos introducing the Autoware Mini features.
 
 ## Prerequisites
 
-1. You should have ROS Noetic installed, follow the official instructions for [Ubuntu 20.04](http://wiki.ros.org/noetic/Installation/Ubuntu) or [RoboStack](https://robostack.github.io/GettingStarted.html).
+1. You should have ROS Noetic installed, follow the official instructions for [Ubuntu 20.04](http://wiki.ros.org/noetic/Installation/Ubuntu).
 
 2. Some of the nodes need NVIDIA GPU, CUDA and cuDNN. At this point we suggest installing both the latest CUDA _and_ CUDA 11.8, which seems to be needed by the ONNX Runtime. **Notice that the default setup also runs without GPU.**
 
@@ -56,10 +55,8 @@ Here are couple of short videos introducing the Autoware Mini features.
 
 2. Clone the repos
    ```
-   git clone https://github.com/UT-ADL/autoware_mini.git
+   git clone https://github.com/dmytrozabolotnii/autoware_mini.git -b FOVRVO --single-branch
    git clone https://github.com/UT-ADL/vehicle_platform.git
-   # for decoding h264 nvidia camera images
-   git clone https://github.com/UT-ADL/h264_image_transport.git
    # if using Carla simulation
    git clone --recurse-submodules -b async_bridge https://github.com/UT-ADL/ros-bridge carla_ros_bridge
    ```
@@ -74,8 +71,8 @@ Here are couple of short videos introducing the Autoware Mini features.
 4. Install Python dependencies
    ```
    pip install -r autoware_mini/requirements.txt
-   # only when planning to use GPU based clustering
    pip install -r autoware_mini/requirements_cuml.txt
+   pip install -r autoware_mini/requirements_torch.txt
    ```
 
 5. Build the workspace
@@ -93,169 +90,27 @@ Here are couple of short videos introducing the Autoware Mini features.
    source ~/autoware_mini_ws/devel/setup.bash
    ```
 
-## Launching planner simulation
+## Launching FOV-RVO against recorded bag from .bag dataset
 
-Planner simulation is very lightweight and has the least dependencies. It should be possible to run it on any modern laptop without GPU.
+Bags are provided at [S3 Object Store](https://docs.google.com/spreadsheets/d/1vM6_hhufS33LIlhXhyHOQ22uYUgtUbC8DQI6LzaVdaQ/edit?usp=sharing). Place downloaded bag(s) at `data/bags`
 
-```
-roslaunch autoware_mini start_sim.launch
-```
-
-You should see RViz window with the default map. To start driving you need to give the vehicle initial position with **2D Pose Estimate** button and destination using **2D Nav Goal** button. Static obstacles can be placed or removed with **Publish Point** button. Initial position can be changed during movement.
-
-To test planner simulation with real-time traffic light status from Tartu:
+To run the autonomy stack with FOV-RVO against the recorded bag run the following command and change "BAG_FILE_NAME" to one of the .bag files downloaded:
 
 ```
-roslaunch autoware_mini start_sim.launch tfl_detector:=mqtt
+roslaunch autoware_mini start_bag.launch bag_file:="BAG_FILE_NAME" predictor:=pedestrianrvofovmap detector:=lidar_sfa map_name:=tartu_large loop:=false
 ```
 
-## Launching against recorded bag
+There are different predictor parameters to run specific FOVRVO configurations described in the paper:
 
-Running the autonomy stack against recorded sensor readings is a convenient way to test the detection nodes. An example bag file can be downloaded from [here](https://drive.google.com/file/d/1zr9z21a3jZyzWFshZ7WI6zDHx157UJIp/view?usp=share_link) and it should be saved to the `data/bags` directory.
+* `predictor:=pedestrianrvo`: Pure RVO implementation
+* `predictor:=pedestrianrvofov`: RVO implementation with gaze direction constraint and variable responsibility
+* `predictor:=pedestrianrvomap`: RVO implementation with map information integration
+* `predictor:=pedestrianrvofovmap`: Combination of the above and main FOVRVO model
+* `predictor:=pedestrianrvogaaddon`: Combined model of FOVRVO and [GATraj](https://github.com/mengmengliu1998/GATraj) model
 
-```
-roslaunch autoware_mini start_bag.launch
-```
+To run Deep Learning pedestrian motion predictors instead against which the model is evaluated use the following commands. For these models, some parameters you can change including the amount of candidate predictions they output $k$ can be found in `config/detection.yaml` file under the `prediction` category. ($k$ is denoted in the file as `predictions_amount`)
+* `predictor:=pedestrian`: [PECNet](https://github.com/HarshayuGirase/Human-Path-Prediction/tree/master/PECNet) model
+* `predictor:=pedestriansg`: [SGNet](https://github.com/ChuhuaW/SGNet.pytorch) model
+* `predictor:=pedestrianga`: [GATraj](https://github.com/mengmengliu1998/GATraj) model
 
-The example bag file is launched by default. To launch the stack against any other bag file include `bag_file:=<name of the bag file in data/bags directory>` in the command line.
-
-The detection topics in bag are remapped to dummy topic names and new detections are generated by the autonomy stack. By default the `lidar_cluster` detection algorithm is used, which works both on CPU and GPU. To use GPU-only neural network based SFA detector include in the command line `detector:=lidar_sfa`. 
-
-```
-roslaunch autoware_mini start_bag.launch detector:=lidar_sfa
-```
-
-Other possible `detector` argument values worth trying are `radar`, `lidar_cluster_radar_fusion` and `lidar_sfa_radar_fusion`. Notice that blue dots represent lidar detections, red dots represent radar detections and green dots represent fused detections.
-
-Another possible test is to run camera-based traffic light detection against bag:
-
-```
-roslaunch autoware_mini start_bag.launch tfl_detector:=camera
-```
-
-To see the traffic light detections enable **Detections** > **Traffic lights** > **Left ROI image** and **Right ROI image** in RViz. 
-
-## Launching Carla simulation
-
-### Installation (skip if already done)
-
-1. Download [Carla 0.9.13](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.13.tar.gz).
-2. Extract the file with `tar xzvf CARLA_0.9.13.tar.gz`. We will call this extracted folder `<CARLA ROOT>`.
-3. Download [Tartu.tar.gz](https://drive.google.com/file/d/10CHEOjHyiLJgD13g6WwDZ2_AWoLasG2F/view?usp=share_link).
-4. Copy `Tartu.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
-5. Run `./ImportAssets.sh` from the `<CARLA ROOT>` directory. This will install the Tartu map. (You can now delete the `Tartu.tar.gz` file from the `Import` folder.)
-6. Since we will be referring to `<CARLA ROOT>` a lot, let's export it as an environment variable. Make sure to replace the path where Carla is extracted.
-
-   ```
-   export CARLA_ROOT=$HOME/path/to/carla
-   ```
-
-7. Now, enter the following command. (**NOTE:** Here we assume that `CARLA_ROOT`  was set from the previous command.)
-   ```
-   export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla/dist/carla-0.9.13-py3.7-linux-x86_64.egg:${CARLA_ROOT}/PythonAPI/carla/agents:${CARLA_ROOT}/PythonAPI/carla
-   ```
-   **Note:** It will be convenient if the above variables are automatically exported whenever you open a terminal. Putting above exports in `~/.bashrc` will reduce the hassle of exporting everytime.
-
-8. Install system dependencies:
-   ```
-   sudo apt install libomp5
-   ```
-
-### Launch instructions
-
-1. In a new terminal, (assuming enviornment variables are exported) run Carla simulator by entering the following command.
-
-   ```
-   $CARLA_ROOT/CarlaUE4.sh
-   ```
-
-2. In a new terminal, (assuming enviornment variables are exported) run the following command. This runs Tartu environment of Carla with minimal sensors and our autonomy stack. The detected objects and traffic light statuses come from Carla directly.
-
-   ```
-   roslaunch autoware_mini start_carla.launch
-   ```
-
-   In RViz enable **Simulation** > **Carla camera view** or **Carla image view** to see the third person view behind the vehicle. Set destination as usual with **2D Nav Goal** button. 
-
-   You can also run full Carla sensor simulation and use actual detection nodes. For example to launch Carla with cluster-based detector:
-
-   ```
-   roslaunch autoware_mini start_carla.launch detector:=lidar_cluster
-   ```
-
-   Or to launch Carla with camera-based traffic light detection.
-
-   ```
-   roslaunch autoware_mini start_carla.launch tfl_detector:=camera
-   ```
-
-### Launching with Scenario Runner
-
-1. Clone [Scenario Runner](https://github.com/UT-ADL/scenario_runner/tree/route_scenario) to a directory of your choice
-   ```
-   git clone -b route_scenario https://github.com/UT-ADL/scenario_runner.git
-   ```
-2. Install requirements
-   ```
-   pip install -r scenario_runner/requirements.txt
-   ```
-3. We need to make sure that different modules find each other. Following environment variables should be set in `.bashrc`.
-   ```
-   SCENARIO_RUNNER_ROOT=<path_to>/scenario_runner
-   ```
-4. In a new terminal, (assuming enviornment variables are exported) run Carla simulator by entering the following command.
-
-   ```
-   $CARLA_ROOT/CarlaUE4.sh
-   ```
-5. Launch the autonomy stack:
-
-   a) **OpenScenario:** In a new terminal, (assuming enviornment variables are exported) launch route scenario with:
-   ```
-   roslaunch autoware_mini start_carla.launch use_scenario_runner:=true
-   ```
-   You can now execute scenarios by choosing them from RViz Carla plugin dropdown and pressing Execute button. You need to manually set the destination for the ego car when scenario is launched. The predefined scenarios are available under `data/scenarios/MAP_NAME/SCENARIO_NAME.xosc`.
-
-   **OR**
-
-   b) **Route Scenario:**  In a new terminal, (assuming enviornment variables are exported) launch route scenario with:
-   ```
-   roslaunch autoware_mini start_carla.launch use_scenario_runner:=true map_name:=tartu_demo route_id:=0
-   ```
-   This will launch route scenarios using `route_id = 0` which corresponds to `Tartu` map in routes definition file [routes_devtest.xml](data/routes/routes_devtest.xml). Make sure to match the `route_id` with the correct `map_name` to avoid discrepancy. For example for `route_id = 2` the `map_name = Town03`.
-
-## Launching in Lexus
-
-### Ouster driver installation (one time only)
-
-1. Ensure all dependencies are installed:
-
-   ```
-   sudo apt install -y build-essential libeigen3-dev libjsoncpp-dev libspdlog-dev libcurl4-openssl-dev
-   ```
-
-2. Go to the autoware_mini src directory:
-   
-   ```
-   cd ~/autoware_mini_ws/src
-   ```
-3. Clone the latest Ouster driver repository:  
-
-   ```
-   git clone --recurse-submodules https://github.com/ouster-lidar/ouster-ros.git
-   ```
-4. Move to the Autoware mini catkin workspace:
-
-   ```
-   cd ~/autoware_mini_ws
-   ```
-5. Build the Ouster driver:
-   
-   ```
-   catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release 
-   ```
-### Launching Autoware mini
-
-   ```
-   roslaunch autoware_mini start_lexus.launch
-   ```
+The detection topics in the bag file are remapped to dummy topic names and new detections are generated by the autonomy stack. The visualization will show online calculations of minDynADE/minDynFDE/MR/nonDAC metrics, and afterwards the results are saved under `data/results/prediction`, where the last line is the final result for the entire bag file evaluation.
