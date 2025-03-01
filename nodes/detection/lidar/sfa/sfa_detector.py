@@ -19,7 +19,7 @@ from helpers.detection import create_hull
 from helpers.transform import transform_pose
 
 
-LIGHT_BLUE = ColorRGBA(0.5, 0.5, 1.0, 0.8)
+LIGHT_BLUE = ColorRGBA(0.5, 0.5, 1.0, 0.5)
 
 DOWN_RATIO = 4
 NUM_CLASSES = 12  # number of classes to detect

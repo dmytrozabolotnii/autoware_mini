@@ -14,7 +14,7 @@ from hellpers.geometry import get_heading_from_orientation
 from helpers.detection import create_hull
 from helpers.transform import transform_pose, transform_vector3
 
-LIGHT_BLUE = ColorRGBA(0.5, 0.5, 1.0, 0.8)
+LIGHT_BLUE = ColorRGBA(0.5, 0.5, 1.0, 0.5)
 MPH_TO_MS_MULTIPLIER = 0.447 # if we find out that vella speeds are indeed given in mph then multiply our speed with this constant  to get speeds in m/s
 
 class VellaDetector:

@@ -16,7 +16,7 @@ from geometry_msgs.msg import Point32, Quaternion
 
 from helpers.geometry import get_orientation_from_heading
 
-BLUE80P = ColorRGBA(0.0, 0.0, 1.0, 0.8)
+BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 
 class ClusterDetector:
     def __init__(self):
@@ -85,6 +85,7 @@ class ClusterDetector:
                 mins = np.min(points3d, axis=0)
                 center_x, center_y, center_z = np.mean(points3d, axis=0)
                 dim_x, dim_y, dim_z = maxs - mins
+                min_z = mins[2]
 
                 # always pointing forward
                 heading = 0.0
@@ -107,7 +108,7 @@ class ClusterDetector:
             object = DetectedObject()
             object.id = i
             object.label = "unknown"
-            object.color = BLUE80P
+            object.color = BLUE
             object.valid = True
             object.position.x = center_x
             object.position.y = center_y
@@ -121,7 +122,7 @@ class ClusterDetector:
             object.acceleration_reliable = False
 
             hull_points = cv2.convexHull(points2d)[:,0,:]
-            object.convex_hull.points = [Point32(x, y, center_z) for x, y in hull_points]
+            object.convex_hull.points = [Point32(x, y, min_z) for x, y in hull_points]
 
             objects.objects.append(object)
 
