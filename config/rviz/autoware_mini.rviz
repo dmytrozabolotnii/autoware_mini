@@ -684,14 +684,7 @@ Visualization Manager:
           Marker Topic: /planning/lanelet2_map_markers
           Name: Lanelet2 map
           Namespaces:
-            Bus lane: true
-            Centerline: true
-            Crosswalk: true
-            Left boundary: true
-            Right boundary: true
-            Traffic light stop lines: true
-            Traffic lights: true
-            Yield stop line: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -844,7 +837,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   "": true
@@ -921,7 +915,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   "": true
@@ -1002,7 +997,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   "": true
@@ -1088,7 +1084,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   "": true
@@ -1174,7 +1171,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   "": true
@@ -1260,7 +1258,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   "": true
@@ -1346,7 +1345,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   "": true
