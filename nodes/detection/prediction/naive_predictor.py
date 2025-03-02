@@ -63,12 +63,13 @@ class NaivePredictor:
         # Create candidate trajectories
         for i in valid_indices:
             obj = msg.objects[i]
+            obj_footprint_z = obj.position.z - obj.dimensions.z / 2
             path = Path()
 
             for t in range(num_timesteps):
                 wp = Waypoint()
                 wp.position.x, wp.position.y = predicted_positions[t, i]
-                wp.position.z = obj.position.z
+                wp.position.z = obj_footprint_z
                 wp.speed = np.linalg.norm(predicted_velocities[t, i])
                 path.waypoints.append(wp)
             obj.candidate_trajectories.paths.append(path)
