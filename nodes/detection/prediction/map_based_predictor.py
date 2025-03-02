@@ -120,6 +120,7 @@ class MapBasedPredictor:
                 object_front = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
                 object_front = shapely.Point(object_front.x, object_front.y, object_front.z)
                 object_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_front)
+                object_footprint_z = obj.position.z - obj.dimensions.z / 2
 
                 path = Path()
                 for distance, velocity in zip(distances, velocities):
@@ -127,7 +128,7 @@ class MapBasedPredictor:
                     p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + distance)
                     wp.position.x = p.x
                     wp.position.y = p.y
-                    wp.position.z = obj.position.z  # offset removes z coordinate
+                    wp.position.z = object_footprint_z # offset removes z coordinate
                     wp.speed = velocity
                     path.waypoints.append(wp)
                 obj.candidate_trajectories.paths.append(path)
