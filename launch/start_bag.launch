@@ -9,7 +9,7 @@
     <arg name="use_lidar_center"        default="true"          doc="use velodyne lidar"/>
     <arg name="use_lidar_front"         default="false"         doc="use ouster lidar"/>
     <arg name="tfl_detector"            default="camera"        doc="camera, mqtt, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
-    <arg name="tfl_cameras"             default="mako"          doc="mako, nvidia" />
+    <arg name="cameras"                 default="mako"          doc="mako, nvidia" />
     <arg name="global_planner"          default="lanelet2"      doc="waypoints, lanelet2"/>
     <arg name="local_planner"           default="rule"          doc="rule, openpilot"/>
     <arg name="controller"                default="pure_pursuit"  doc="pure_pursuit, stanley"/>
@@ -165,7 +165,7 @@
         <arg name="use_lidar_center"    value="$(arg use_lidar_center)" />
         <arg name="use_lidar_front"     value="$(arg use_lidar_front)" />
         <arg name="tfl_detector"        value="$(arg tfl_detector)" />
-        <arg name="tfl_cameras"         value="$(arg tfl_cameras)" />
+        <arg name="cameras"             value="$(arg cameras)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
@@ -202,7 +202,7 @@
     <include file="$(find autoware_mini)/launch/platform/bag.launch">
         <arg name="use_tf"               value="$(arg use_tf)" />
         <arg name="repub_camera_info"    value="$(arg repub_camera_info)" />
-        <arg name="use_nvidia_cameras"   value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='nvidia')" />
+        <arg name="use_nvidia_cameras"   value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector or use_camera_classifier) and cameras=='nvidia')" />
         <arg name="use_ssc"              value="$(arg use_control)" />
     </include>
 

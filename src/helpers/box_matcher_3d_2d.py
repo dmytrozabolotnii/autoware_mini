@@ -6,7 +6,6 @@ class BoxMatcher3DTo2D:
     def __init__(self, iou_threshold, projected_3d_boxes_bounds=(-1000, -500, 3000, 2000)):
         self.iou_threshold = iou_threshold
         self.projected_3d_boxes_bounds = projected_3d_boxes_bounds
-        self.camera_intrinsics = None
 
     def transform_to_camera_frame(self, boxes_3d, T):
         """
@@ -23,7 +22,7 @@ class BoxMatcher3DTo2D:
         # Convert back to 3D by removing the homogeneous coordinate
         return transformed_corners[..., :3]
 
-    def project_to_image(self, boxes_3d_cam):
+    def project_to_image(self, boxes_3d_cam, camera_intrinsics):
         """
         Projects 3D bounding box corners onto a 2D image plane using camera intrinsics.
         """
@@ -33,7 +32,7 @@ class BoxMatcher3DTo2D:
         corners_3d_homo = np.concatenate([boxes_3d_cam, ones], axis=-1)  # (N, 8, 4)
 
         # Apply intrinsic matrix
-        projected = np.einsum('ij,nkj->nki', self.camera_intrinsics, corners_3d_homo[..., :3])  # (N, 8, 3)
+        projected = np.einsum('ij,nkj->nki', camera_intrinsics, corners_3d_homo[..., :3])  # (N, 8, 3)
 
         # Normalize by depth (z-axis)
         projected_2d = projected[..., :2] / projected[..., 2:3]  # (N, 8, 2)
@@ -52,11 +51,11 @@ class BoxMatcher3DTo2D:
         # Convert to integers
         return np.round(np.stack([x_min, y_min, x_max, y_max], axis=1)).astype(int)  # (N, 4)
 
-    def match_3d_2d_boxes(self, boxes_3d, boxes_2d, transform_matrix):
+    def match_3d_2d_boxes(self, boxes_3d, boxes_2d, transform_matrix, camera_intrinsics):
         """
         Matches 3D bounding boxes to 2D bounding boxes using Hungarian algorithm.
         """
-        if len(boxes_3d) == 0 or len(boxes_2d) == 0 or self.camera_intrinsics is None:
+        if len(boxes_3d) == 0 or len(boxes_2d) == 0:
             return [], [], []
 
         # Transform 3D boxes to camera frame
@@ -72,7 +71,7 @@ class BoxMatcher3DTo2D:
             return [], [], []
 
         # Project 3D boxes to the image
-        projected_3d_boxes = self.project_to_image(filtered_boxes_3d_cam)
+        projected_3d_boxes = self.project_to_image(filtered_boxes_3d_cam, camera_intrinsics)
         projected_2d_boxes = self.compute_2d_bboxes(projected_3d_boxes)
 
         # Filter projected 2D bounding boxes to be within predefined bounds

@@ -130,6 +130,13 @@ road_area_filter:
   use_map_extraction: True         # extract smaller map area around the ego vehicle for visualization
   map_extraction_distance: 150      # m - distance from ego vehicle to extract map data
 
+camera:
+  yolo_confidence_threshold: 0.4
+
+camera_object_classifier:
+  box_matcher_iou_threshold: 0.2
+  transform_timeout: 0.06
+
 mqtt_traffic_light_detector:
   mqtt_host: mqtt.cloud.ut.ee
   mqtt_port: 8883

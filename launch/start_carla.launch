@@ -10,12 +10,13 @@
     <arg name="localizer"               default="carla"                 doc="novatel, carla" />
     <arg name="detector"                default="carla"                 doc="lidar_cluster, lidar_sfa, sim, carla" />
     <arg name="tfl_detector"            default="carla"                 doc="carla, camera, mqtt_camera_fusion" />
-    <arg name="tfl_cameras"             default="mako"                  doc="mako, nvidia" />
+    <arg name="cameras"                 default="mako"                  doc="mako, nvidia" />
     <arg name="tracker"                 default="$(eval 'ema' if detector != 'carla' else 'none')" />
     <arg name="predictor"               default="map_naive"             doc="none, naive, map, map_naive" />
     <arg name="controller"                default="pure_pursuit"          doc="pure_pursuit, stanley" />
     <arg name="detection_range"         default=""                      doc="enter a value in meters to enable it" />
     <arg name="use_road_area_filter"    default="$(eval 'tartu' in map_name)"   doc="use road area filter"/>
+    <arg name="use_camera_classifier"   default="false"                 doc="use camera based object classifier"/>
     <arg name='use_lidar_center'        default='true'/>
     <arg name='use_lidar_front'         default='false'/>
     <arg name='rviz'                    default='true'/>
@@ -46,7 +47,7 @@
     <include file="$(find autoware_mini)/launch/detection.launch">
         <arg name="detector"            value="$(arg detector)" />
         <arg name="tfl_detector"        value="$(arg tfl_detector)" />
-        <arg name="tfl_cameras"         value="$(arg tfl_cameras)" />
+        <arg name="cameras"             value="$(arg cameras)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name='use_lidar_center'    value='$(arg use_lidar_center)'/>
         <arg name='use_lidar_front'     value='$(arg use_lidar_front)'/>
@@ -54,8 +55,9 @@
         <arg name="predictor"           value="$(arg predictor)" />
         <arg name="detection_range"     value="$(arg detection_range)" />
         <arg name="map_name"            value="$(arg map_name)" />
-        <arg name="use_road_area_filter" value="$(arg use_road_area_filter)" />
-        <arg name="ground_removal"      value="$(arg ground_removal)" />
+        <arg name="use_road_area_filter"    value="$(arg use_road_area_filter)" />
+        <arg name="use_camera_classifier"   value="$(arg use_camera_classifier)" />
+        <arg name="ground_removal"          value="$(arg ground_removal)" />
     </include>
 
     <!-- Planning -->
@@ -93,8 +95,8 @@
         <arg name="use_lidar"                           value="$(eval 'lidar' in detector and detector != 'lidar_vella')" />
         <arg name="use_radar"                           value="$(eval 'radar' in detector)" />
         <arg name="use_gnss"                            value="$(eval localizer == 'novatel')" />
-        <arg name="use_mako_cameras"                    value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='mako')" />
-        <arg name="use_nvidia_cameras"                  value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='nvidia')" />
+        <arg name="use_mako_cameras"                    value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector or use_camera_classifier) and cameras=='mako')" />
+        <arg name="use_nvidia_cameras"                  value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector or use_camera_classifier) and cameras=='nvidia')" />
         <arg name="use_manual_control"                  value="$(arg use_manual_control)" />
         <arg name="generate_traffic"                    value="$(arg generate_traffic)" />
         <arg name="use_scenario_runner"                 value="$(arg use_scenario_runner)" />

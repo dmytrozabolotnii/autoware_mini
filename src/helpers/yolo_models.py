@@ -236,7 +236,7 @@ class Yolo11Model(object):
 
         ## Get class name map from metadata
         assert "names" in custom_metadata, f"Error: ONNX model does not contain the key 'names' in metadata. Model path {onnx_path}"
-        self.class_name_map = literal_eval(custom_metadata["names"])
+        self.class_names = custom_metadata["names"]
 
         # Yolo model warm-up
         input_shape = self.yolo_model.get_inputs()[0].shape
@@ -269,7 +269,7 @@ class Yolo11Model(object):
         
     def _postprocess_yolo_output(self, raw_yolo_output):
         raw_out = np.squeeze(raw_yolo_output)
-        assert raw_out.shape[0] == 4 + len(self.class_name_map), f"ONNX output not in valid shape. Model shape {raw_out.shape}. Model path {self.onnx_path}"
+        assert raw_out.shape[0] == 4 + len(literal_eval(self.class_names)), f"ONNX output not in valid shape. Model shape {raw_out.shape}. Model path {self.onnx_path}"
         
         n_det = raw_out.shape[1]
         if n_det <= 0:

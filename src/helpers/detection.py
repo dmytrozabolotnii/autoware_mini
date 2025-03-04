@@ -129,20 +129,20 @@ def get_3d_bbox(center, dimensions, heading):
 
     Args:
         center: tuple (x, y, z) - Center of the box
-        dimensions: tuple (width, height, length) - Size of the box
+        dimensions: tuple (width, length, height) - Size of the box
         heading: float - Yaw angle in radians (rotation around Z-axis)
 
     Returns:
         np.array of shape (8, 3) - 3D coordinates of the bounding box corners
     """
     x, y, z = center
-    w, h, l = dimensions
+    w, l, h = dimensions
     theta = heading
 
     # Define corners before rotation (local coordinates)
     x_corners = np.array([ w/2,  w/2, -w/2, -w/2,  w/2,  w/2, -w/2, -w/2])
     y_corners = np.array([ l/2, -l/2, -l/2,  l/2,  l/2, -l/2, -l/2,  l/2])
-    z_corners = np.array([  h/2,  h/2,  h/2,  h/2, -h/2, -h/2, -h/2, -h/2])
+    z_corners = np.array([ h/2,  h/2,  h/2,  h/2, -h/2, -h/2, -h/2, -h/2])
 
     # Rotation matrix around Z-axis
     R = np.array([
