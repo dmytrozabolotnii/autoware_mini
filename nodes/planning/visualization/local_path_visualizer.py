@@ -43,7 +43,6 @@ class LocalPathVisualizer:
 
         # Parameters
         self.safety_box_width = rospy.get_param("safety_box_width")
-        #self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
         self.stopped_speed_limit = rospy.get_param("stopped_speed_limit")
 
         self.published_waypoints = 0
@@ -87,18 +86,6 @@ class LocalPathVisualizer:
             marker.color = color
             marker.points = points
             marker_array.markers.append(marker)
-
-            # local path with slowdown_lateral_distance
-            #marker = Marker(header=msg.header)
-            #marker.ns = "Slowdown lateral distance"
-            #marker.type = marker.LINE_STRIP
-            #marker.action = marker.ADD
-            #marker.id = 0
-            #marker.pose.orientation.w = 1.0
-            #marker.scale.x = 2 * self.slowdown_lateral_distance
-            #marker.color = color
-            #marker.points = points
-            #marker_array.markers.append(marker)
 
             # velocity labels
             current_waypoints = 0
@@ -174,11 +161,6 @@ class LocalPathVisualizer:
             marker.action = marker.DELETE
             marker_array.markers.append(marker)
 
-            #marker = Marker(header=msg.header)
-            #marker.ns = "Slowdown lateral distance"
-            #marker.id = 0
-            #marker.action = marker.DELETE
-            #marker_array.markers.append(marker)
 
             marker = Marker(header=msg.header)
             marker.ns = "Stopping point"
