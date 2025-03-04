@@ -2104,8 +2104,8 @@ Visualization Manager:
       Displays:
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /control/follower_markers
-          Name: Follower markers
+          Marker Topic: /control/controller_markers
+          Name: Controller markers
           Namespaces:
             {}
           Queue Size: 100
@@ -2151,7 +2151,7 @@ Visualization Manager:
           Visibility:
             Control:
               Current pose: true
-              Follower markers: true
+              Controller markers: true
               Value: true
             Dashboard:
               Accel limit: true

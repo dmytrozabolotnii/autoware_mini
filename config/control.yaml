@@ -4,13 +4,13 @@ blinker_lookahead_time: 3.0           # s
 blinker_min_lookahead_distance: 14.0  # m
 stopping_speed_limit: 1.0             # m/s
 
-pure_pursuit_follower:
+pure_pursuit_controller:
   lookahead_time: 1.2 # s           # seconds of lookahead for pure pursuit
   min_lookahead_distance: 6.0
   simulate_cmd_delay: 0.3           # sec
   publish_debug_info: False
 
-stanley_follower:
+stanley_controller:
   cte_gain: 0.4     # gain for cross track error
   simulate_cmd_delay: 0.3           # sec
   publish_debug_info: False

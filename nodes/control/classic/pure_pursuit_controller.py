@@ -15,7 +15,7 @@ from std_msgs.msg import ColorRGBA, Float32MultiArray
 from autoware_mini.msg import Path, VehicleCmd, Gear
 
 
-class PurePursuitFollower:
+class PurePursuitController:
     def __init__(self):
 
         # Parameters
@@ -44,8 +44,8 @@ class PurePursuitFollower:
         # Publishers
         self.vehicle_command_pub = rospy.Publisher('vehicle_cmd', VehicleCmd, queue_size=1, tcp_nodelay=True)
         if self.publish_debug_info:
-            self.pure_pursuit_markers_pub = rospy.Publisher('follower_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
-            self.follower_debug_pub = rospy.Publisher('follower_debug', Float32MultiArray, queue_size=1, tcp_nodelay=True)
+            self.pure_pursuit_markers_pub = rospy.Publisher('controller_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
+            self.controller_debug_pub = rospy.Publisher('controller_debug', Float32MultiArray, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('/planning/local_path', Path, self.path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
@@ -172,7 +172,7 @@ class PurePursuitFollower:
                 # convert lookahead_point from shpely 2d point to geometry_msg/Point
                 lookahead_point = Point(x=lookahead_point.x, y=lookahead_point.y, z=current_pose_msg.pose.position.z)
                 self.publish_pure_pursuit_markers(current_pose_msg.header, current_pose_msg.pose.position, lookahead_point, heading_angle_difference)
-                self.follower_debug_pub.publish(Float32MultiArray(data=[(rospy.get_time() - start_time), current_heading, lookahead_heading, heading_angle_difference, cross_track_error, target_velocity]))
+                self.controller_debug_pub.publish(Float32MultiArray(data=[(rospy.get_time() - start_time), current_heading, lookahead_heading, heading_angle_difference, cross_track_error, target_velocity]))
 
         except Exception as e:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
@@ -237,6 +237,6 @@ class PurePursuitFollower:
 
 
 if __name__ == '__main__':
-    rospy.init_node('pure_pursuit_follower', log_level=rospy.INFO)
-    node = PurePursuitFollower()
+    rospy.init_node('pure_pursuit_controller', log_level=rospy.INFO)
+    node = PurePursuitController()
     node.run()
