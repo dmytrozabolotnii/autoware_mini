@@ -74,7 +74,7 @@ class LocalPathVisualizer:
             color = ColorRGBA(0.2, 1.0, 0.2, 0.3)
 
             current_duration = (msg.header.stamp - self.planner_status_last_timestamp).to_sec()
-            planner_status_text = "<div style='text-align: center; color: " + COLLISION_POINT_CATEGORY_COLOR[collision_point_category] + ";'>" + str(round(current_duration, 1)) + "s - " + COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category] + "</div>"
+            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{round(current_duration, 1)}s - {COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div>"
 
             # local path with safety_box_width
             marker = Marker(header=msg.header)
@@ -202,7 +202,7 @@ class LocalPathVisualizer:
         if self.planner_status_last_category != collision_point_category:
             if self.planner_status_last_category != None:
                 duration = (msg.header.stamp - self.planner_status_last_timestamp).to_sec()
-                self.planner_log_text = "<div style='text-align: left; color: " + COLLISION_POINT_CATEGORY_COLOR[self.planner_status_last_category] + ";'>" + str(round(duration, 1)) + "s - " + COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[self.planner_status_last_category] + "</div>" + self.planner_log_text
+                self.planner_log_text = f"<div style='text-align: left; color: {COLLISION_POINT_CATEGORY_COLOR[self.planner_status_last_category]};'>{round(duration, 1)}s - {COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[self.planner_status_last_category]}</div>{self.planner_log_text}"
                 # split text string into lines (use </div> as separator) and keep only first 5 lines
                 self.planner_log_text = "</div>".join(self.planner_log_text.split("</div>")[:5]) + "</div>"
 
