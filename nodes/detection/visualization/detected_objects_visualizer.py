@@ -7,6 +7,7 @@ from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point
 from std_msgs.msg import Header, ColorRGBA
+from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray 
 
 from helpers.geometry import get_orientation_from_heading
 
@@ -16,6 +17,7 @@ class DetectedObjectsVisualizer:
         self.published_ids = set()
 
         self.markers_pub = rospy.Publisher('detected_objects_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
+        self.bbox_3d_markers_pub = rospy.Publisher('detected_objects_3d_bbox_markers', BoundingBoxArray, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('detected_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
@@ -27,6 +29,7 @@ class DetectedObjectsVisualizer:
 
         new_published_ids = set()
         markers = MarkerArray()
+        bbox_3d_markers = BoundingBoxArray(header=header)
         for obj in msg.objects:
             # centroid
             marker = Marker(header=header)
@@ -106,6 +109,14 @@ class DetectedObjectsVisualizer:
 
             new_published_ids.add(obj.id)
 
+            # 3D bounding box
+            bbox_3d_marker = BoundingBox(header=header)
+            bbox_3d_marker.pose.position = obj.position
+            bbox_3d_marker.pose.orientation = get_orientation_from_heading(obj.heading)
+            bbox_3d_marker.dimensions = obj.dimensions
+            bbox_3d_marker.label = obj.id
+            bbox_3d_markers.boxes.append(bbox_3d_marker)
+
         # delete ids not published any more
         delete_ids = self.published_ids - new_published_ids
         for id in delete_ids:
@@ -142,6 +153,7 @@ class DetectedObjectsVisualizer:
 
         # publish markers
         self.markers_pub.publish(markers)
+        self.bbox_3d_markers_pub.publish(bbox_3d_markers)
 
     def run(self):
         rospy.spin()

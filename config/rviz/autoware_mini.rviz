@@ -5,9 +5,11 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Detection1/Detected objects1/Namespaces1
+        - /Detection1/Tracked objects1
         - /Detection1/Tracked objects1/Namespaces1
+        - /Detection1/TrackedObjectsBBox1
+        - /Detection1/TrackedObjectsBBox1/Status1
         - /Detection1/Predicted objects1/Namespaces1
-        - /Detection1/Traffic lights1
         - /Planning1/Local path1/Namespaces1
       Splitter Ratio: 0.49338147044181824
     Tree Height: 492
@@ -148,7 +150,6 @@ Visualization Manager:
               Value: true
               auto color change: false
               auto scale: false
-              auto text size in plot: true
               background color: 0; 0; 0
               backround alpha: 0
               border: true
@@ -162,7 +163,6 @@ Visualization Manager:
               min value: 16
               show caption: true
               text size: 10
-              text size in plot: 12
               top: 10
               update interval: 0.03999999910593033
               width: 128
@@ -175,7 +175,6 @@ Visualization Manager:
               Value: true
               auto color change: false
               auto scale: false
-              auto text size in plot: true
               background color: 0; 0; 0
               backround alpha: 0
               border: false
@@ -189,7 +188,6 @@ Visualization Manager:
               min value: 16
               show caption: false
               text size: 12
-              text size in plot: 12
               top: 10
               update interval: 0.03999999910593033
               width: 128
@@ -204,7 +202,6 @@ Visualization Manager:
           Value: true
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -218,7 +215,6 @@ Visualization Manager:
           min value: 25
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -231,7 +227,6 @@ Visualization Manager:
           Value: true
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -245,7 +240,6 @@ Visualization Manager:
           min value: 16
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -258,7 +252,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -272,7 +265,6 @@ Visualization Manager:
           min value: -3
           show caption: false
           text size: 10
-          text size in plot: 12
           top: 168
           update interval: 0.03999999910593033
           width: 128
@@ -285,7 +277,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -299,7 +290,6 @@ Visualization Manager:
           min value: -5
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 168
           update interval: 0.03999999910593033
           width: 128
@@ -312,7 +302,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -326,7 +315,6 @@ Visualization Manager:
           min value: -2
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -339,7 +327,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -353,7 +340,6 @@ Visualization Manager:
           min value: -2
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -366,7 +352,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -380,7 +365,6 @@ Visualization Manager:
           min value: -2
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -893,7 +877,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1017,7 +1002,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1145,7 +1131,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1278,7 +1265,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1411,7 +1399,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1544,7 +1533,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1677,7 +1667,8 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Lanelet2 map: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -2126,19 +2117,32 @@ Visualization Manager:
           Namespaces:
             bounding_box: false
             centroid: true
-            convex_hull: true
+            convex_hull: false
             speed: true
             text: true
           Queue Size: 100
           Value: true
-        - Class: rviz/MarkerArray
+        - Class: jsk_rviz_plugin/BoundingBoxArray
           Enabled: true
+          Name: TrackedObjectsBBox
+          Queue Size: 10
+          Topic: /detection/tracked_objects_3d_bbox_markers
+          Unreliable: false
+          Value: true
+          alpha: 0.800000011920929
+          color: 252; 175; 62
+          coloring: Flat color
+          line width: 0.10000000149011612
+          only edge: true
+          show coords: false
+        - Class: rviz/MarkerArray
+          Enabled: false
           Marker Topic: /detection/predicted_objects_markers
           Name: Predicted objects
           Namespaces:
-            candidate_trajectories: true
+            {}
           Queue Size: 100
-          Value: true
+          Value: false
         - Class: rviz/Group
           Displays:
             - Class: rviz/Image
@@ -2405,9 +2409,7 @@ Visualization Manager:
           Marker Topic: /planning/local_path_markers
           Name: Local path
           Namespaces:
-            Stopping lateral distance: true
-            Stopping point: true
-            Velocity label: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -2603,20 +2605,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
-      Class: rviz/TopDownOrtho
+      Class: rviz/ThirdPersonFollower
+      Distance: 38.602291107177734
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Field of View: 0.7853981852531433
+      Focal Point:
+        X: -11.754560470581055
+        Y: 0.10819080471992493
+        Z: -1.3858698366675526e-06
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.0010000000474974513
-      Scale: 20
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.7547968626022339
       Target Frame: base_link
-      X: 0
-      Y: 0
+      Yaw: 3.1554207801818848
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho
