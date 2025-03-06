@@ -134,6 +134,8 @@ mqtt_traffic_light_detector:
   mqtt_host: mqtt.cloud.ut.ee
   mqtt_port: 8883
   mqtt_topic: Tartu/#
+  enable_automatic_subscribe: True
+  automatic_subscription_range: 200
   timeout: 2.0
   id_string: " mqtt"      # string added to traffic light result and displayed in rviz
 

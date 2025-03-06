@@ -8,8 +8,9 @@ import traceback
 
 import paho.mqtt.client as paho
 
+from geometry_msgs.msg import PoseStamped
 from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
-
+from lanelet2.core import BasicPoint2d, BoundingBox2d
 from helpers.lanelet2 import load_lanelet2_map, get_stoplines_api_id
 
 MQTT_TO_AUTOWARE_TFL_MAP = {
@@ -39,12 +40,14 @@ class MqttTrafficLightDetector:
         self.mqtt_host = rospy.get_param('~mqtt_host')
         self.mqtt_port = rospy.get_param('~mqtt_port')
         self.mqtt_topic = rospy.get_param('~mqtt_topic')
+        self.enable_automatic_subscribe = rospy.get_param('~enable_automatic_subscribe')
+        self.automatic_subscription_range = rospy.get_param('~automatic_subscription_range')
         self.timeout = rospy.get_param('~timeout')
         self.id_string = rospy.get_param('~id_string')
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        self.stop_line_ids = get_stoplines_api_id(lanelet2_map)
+        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        self.rate = rospy.Rate(1) # 1 Hz
 
         # MQTT traffic light status
         self.mqtt_status = {}
@@ -52,23 +55,58 @@ class MqttTrafficLightDetector:
         # Publishers
         self.tfl_status_pub = rospy.Publisher('traffic_light_status', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)
 
-        client = paho.Client()
-        client.on_message = self.on_message
-        client.on_disconnect = self.on_disconnect
-        client.on_connect = self.on_connect
+        if self.enable_automatic_subscribe:
+            self.stop_line_ids = {}
+            rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
+        else:
+            self.stop_line_ids = get_stoplines_api_id(self.lanelet2_map)
+        
+        self.client = paho.Client()
+        self.client.on_message = self.on_message
+        self.client.on_disconnect = self.on_disconnect
+        self.client.on_connect = self.on_connect
 
-        client.tls_set("/etc/ssl/certs/ca-certificates.crt")
-        client.connect(self.mqtt_host, self.mqtt_port, keepalive=10)
-        client.loop_start()
+        self.client.tls_set("/etc/ssl/certs/ca-certificates.crt")
+        self.client.connect(self.mqtt_host, self.mqtt_port, keepalive=10)
+        self.client.loop_start()
 
+    def current_pose_callback(self, msg):
+        x = msg.pose.position.x
+        y = msg.pose.position.y
+        search_box = BoundingBox2d(BasicPoint2d(x - self.automatic_subscription_range, y - self.automatic_subscription_range), 
+                                  BasicPoint2d(x + self.automatic_subscription_range, y + self.automatic_subscription_range))
+        
+        # Find linestrings near current position
+        filtered_linestrings = self.lanelet2_map.lineStringLayer.search(search_box)
 
+        seen_api_ids = set()
+        for line in filtered_linestrings:
+            if line.attributes and line.attributes["type"] == "stop_line" and "api_id" in line.attributes:
+                self.stop_line_ids[line.id] = line.attributes["api_id"]
+                seen_api_ids.add(line.attributes["api_id"])
+                
+                if line.attributes["api_id"] not in self.stop_line_ids:
+                    self.client.subscribe(line.attributes["api_id"])
+
+        # Unsubscribe from api ids that are not within range anymore
+        not_seen_api_ids = set(self.stop_line_ids.values()) - seen_api_ids
+        for api_id in not_seen_api_ids:
+            self.client.unsubscribe(api_id)
+
+            stop_line_ids_to_remove = [k for k, v in self.stop_line_ids.items() if v == api_id]
+            for sl_id in stop_line_ids_to_remove:
+                del self.stop_line_ids[sl_id]
+
+        self.rate.sleep()
+        
     def on_connect(self, client, userdata, flags, rc):
         if rc != 0:
             rospy.logerr('%s - failed to connect to MQTT server %s:%d, return code: %d', rospy.get_name(), self.mqtt_host, self.mqtt_port, rc)
             return
 
         rospy.loginfo('%s - connected to MQTT server %s:%d', rospy.get_name(), self.mqtt_host, self.mqtt_port)
-        client.subscribe(self.mqtt_topic)
+        if not self.enable_automatic_subscribe:
+            client.subscribe(self.mqtt_topic)
 
     def on_disconnect(self, client, userdata, rc):
         rospy.logerr('%s - disconnected from MQTT server %s:%d, return code: %d', rospy.get_name(), self.mqtt_host, self.mqtt_port, rc)
