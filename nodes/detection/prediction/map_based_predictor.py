@@ -111,10 +111,12 @@ class MapBasedPredictor:
                     selected_trajectory = all_trajectories[np.argmax(all_trajectories_evaluated)]
 
                 # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
-                trajectory_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
+                centerline_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in selected_trajectory for p in lanelet.centerline])
                 if self.use_offset_for_prediction:
-                    cross_track_offset = -calculate_cross_track_error(trajectory_linestring, object_centroid)
-                    trajectory_linestring = trajectory_linestring.offset_curve(cross_track_offset, join_style="mitre")
+                    cross_track_offset = -calculate_cross_track_error(centerline_linestring, object_centroid)
+                    trajectory_linestring = centerline_linestring.offset_curve(cross_track_offset, join_style="mitre")
+                else:
+                    trajectory_linestring = centerline_linestring
 
                 # get prediction origin right in front of the object
                 object_front = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
@@ -127,7 +129,10 @@ class MapBasedPredictor:
                     p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + distance)
                     wp.position.x = p.x
                     wp.position.y = p.y
-                    wp.position.z = obj.position.z  # offset removes z coordinate
+                    if self.use_offset_for_prediction:
+                       # for offset curve z is not available, therefore taken from the centerline
+                       p = centerline_linestring.interpolate(object_distance_from_trajectory_linestring_start + distance)
+                    wp.position.z = p.z
                     wp.speed = velocity
                     path.waypoints.append(wp)
                 obj.candidate_trajectories.paths.append(path)
