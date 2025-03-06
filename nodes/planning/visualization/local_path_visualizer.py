@@ -53,7 +53,7 @@ class LocalPathVisualizer:
         # Publishers
         self.local_path_markers_pub = rospy.Publisher('local_path_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
         self.planner_status_pub = rospy.Publisher('/dashboard/planner_status', OverlayText, queue_size=1, tcp_nodelay=True)
-        self.planner_log_pub = rospy.Publisher('/dashboard/planner_log', OverlayText, queue_size=1, tcp_nodelay=True, latch=True)
+        self.planner_log_pub = rospy.Publisher('/dashboard/planner_log', OverlayText, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('local_path', Path, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
