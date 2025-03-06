@@ -2,6 +2,7 @@
 
 import rospy
 import json
+import struct
 import time
 import traceback
 
@@ -28,6 +29,8 @@ MQTT_TO_AUTOWARE_TFL_MAP = {
     "OFF": 2,
     "UNKNOWN": 2
 }
+
+BINARY_MQTT_MSG_FORMAT = "<B Q B i i"  # Version, Timestamp, Status, Since Change, Till Change
 
 class MqttTrafficLightDetector:
     def __init__(self):
@@ -74,7 +77,14 @@ class MqttTrafficLightDetector:
         rospy.logdebug('%s - MQTT message recieved: %s, %s', rospy.get_name(), msg.topic, str(msg.payload))
         # collect all messages
         api_id = msg.topic
-        self.mqtt_status[api_id] = json.loads(msg.payload)
+
+        # if message starts with '{' then it's in json format
+        if chr(msg.payload[0]) == "{":
+            status_msg = (json.loads(msg.payload), "json")
+        else:
+            status_msg = (msg.payload, "binary")
+
+        self.mqtt_status[api_id] = status_msg
 
     def combine_tfl_results_and_publish(self):
         """
@@ -95,10 +105,26 @@ class MqttTrafficLightDetector:
 
                 # extract status from mqtt_status if key exits
                 if api_id in self.mqtt_status:
-                    if self.mqtt_status[api_id]["timestamp"] < int((time.time() - self.timeout) * 1000):
-                        rospy.logwarn('%s - timeout of stopline: %s, by %f seconds', rospy.get_name(), api_id, (self.mqtt_status[api_id]["timestamp"] - time.time() * 1000) / 1000)
+                    message, payload_format = self.mqtt_status[api_id]
+
+                    # extract data from json format
+                    if payload_format == "json":
+                        timestamp = message["timestamp"]
+                        result_str = message["status"]
+                        
+                    # extract data from binary format
+                    elif payload_format == "binary":
+                        if len(message) != struct.calcsize(BINARY_MQTT_MSG_FORMAT):
+                            raise RuntimeError("Incorrect MQTT message size")
+
+                        version, timestamp, result_str, since_change, till_change = struct.unpack(BINARY_MQTT_MSG_FORMAT, message)
                     else:
-                        result_str = self.mqtt_status[api_id]["status"]
+                        raise ValueError(f"Unknown payload format: {payload_format}")
+
+                    # get traffic light status
+                    if timestamp < int((time.time() - self.timeout) * 1000):
+                        rospy.logwarn('%s - timeout of stopline: %s, by %f seconds', rospy.get_name(), api_id, (timestamp - time.time() * 1000) / 1000)
+                    else:
                         if result_str in MQTT_TO_AUTOWARE_TFL_MAP:
                             result = MQTT_TO_AUTOWARE_TFL_MAP[result_str]
                         else:
