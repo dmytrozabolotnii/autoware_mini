@@ -72,8 +72,7 @@ class LocalPathVisualizer:
             points = [waypoint.position for waypoint in msg.waypoints]
             color = ColorRGBA(0.2, 1.0, 0.2, 0.3)
 
-            current_duration = (msg.header.stamp - self.planner_status_last_timestamp).to_sec()
-            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{round(current_duration, 1)}s - {COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div>"
+            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div>"
 
             # local path with safety_box_width
             marker = Marker(header=msg.header)
