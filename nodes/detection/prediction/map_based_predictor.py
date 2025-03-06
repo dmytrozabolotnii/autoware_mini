@@ -89,9 +89,9 @@ class MapBasedPredictor:
                 distances = (object_accel * timesteps**2) / 2 + object_speed * timesteps
 
                 for lanelet, object_distance_from_start, lanelet_length, _ in selected_lanelets:
-                    remaining_length_on_lanelet = lanelet_length - (object_distance_from_start + obj.dimensions.x / 2)
-                    # Use possiblePaths to get all possible trajectories
-                    all_trajectories_from_lanelet = self.graph.possiblePaths(lanelet, distances[-1] - remaining_length_on_lanelet)
+                    # routingCostLimit, elementLimit, routingCostId, includeLaneChanges, includeShorterPaths
+                    params = lanelet2.routing.PossiblePathsParams(lanelet_length + distances[-1], 100, 0, False, True)
+                    all_trajectories_from_lanelet = self.graph.possiblePaths(lanelet, params)
                     all_trajectories.extend(all_trajectories_from_lanelet)
 
             # 3. SCORING IF NEEDED
