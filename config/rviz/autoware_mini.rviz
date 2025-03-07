@@ -2126,7 +2126,7 @@ Visualization Manager:
           Enabled: true
           Name: TrackedObjectsBBox
           Queue Size: 10
-          Topic: /detection/tracked_objects_3d_bbox_markers
+          Topic: /detection/tracked_objects_bboxes
           Unreliable: false
           Value: true
           alpha: 0.800000011920929

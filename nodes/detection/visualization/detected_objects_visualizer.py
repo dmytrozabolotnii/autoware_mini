@@ -6,7 +6,7 @@ import rospy
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point
-from std_msgs.msg import Header, ColorRGBA
+from std_msgs.msg import ColorRGBA
 from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray 
 
 from helpers.geometry import get_orientation_from_heading
@@ -17,22 +17,18 @@ class DetectedObjectsVisualizer:
         self.published_ids = set()
 
         self.markers_pub = rospy.Publisher('detected_objects_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
-        self.bbox_3d_markers_pub = rospy.Publisher('detected_objects_3d_bbox_markers', BoundingBoxArray, queue_size=1, tcp_nodelay=True)
+        self.bboxes_pub = rospy.Publisher('detected_objects_bboxes', BoundingBoxArray, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('detected_objects', DetectedObjectArray, self.objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
     def objects_callback(self, msg):
-        header = Header()
-        header.stamp = msg.header.stamp
-        header.frame_id = msg.header.frame_id
-
         new_published_ids = set()
         markers = MarkerArray()
-        bbox_3d_markers = BoundingBoxArray(header=header)
+        bboxes = BoundingBoxArray(header=msg.header)
         for obj in msg.objects:
             # centroid
-            marker = Marker(header=header)
+            marker = Marker(header=msg.header)
             marker.ns = 'centroid'
             marker.id = obj.id
             marker.type = Marker.SPHERE
@@ -46,7 +42,7 @@ class DetectedObjectsVisualizer:
             markers.markers.append(marker)
             
             # bounding box
-            marker = Marker(header=header)
+            marker = Marker(header=msg.header)
             marker.ns = 'bounding_box'
             marker.id = obj.id
             marker.type = marker.LINE_STRIP
@@ -68,7 +64,7 @@ class DetectedObjectsVisualizer:
 
             # convex hull
             if len(obj.convex_hull.points) > 0:
-                marker = Marker(header=header)
+                marker = Marker(header=msg.header)
                 marker.ns = 'convex_hull'
                 marker.id = obj.id
                 marker.type = marker.LINE_STRIP
@@ -81,7 +77,7 @@ class DetectedObjectsVisualizer:
                 markers.markers.append(marker)
 
             # speed arrow
-            marker = Marker(header=header)
+            marker = Marker(header=msg.header)
             marker.ns = 'speed'
             marker.id = obj.id
             marker.type = Marker.ARROW
@@ -96,7 +92,7 @@ class DetectedObjectsVisualizer:
             markers.markers.append(marker)
 
             # text
-            marker = Marker(header=header)
+            marker = Marker(header=msg.header)
             marker.ns = 'text'
             marker.id = obj.id
             marker.type = Marker.TEXT_VIEW_FACING
@@ -110,41 +106,41 @@ class DetectedObjectsVisualizer:
             new_published_ids.add(obj.id)
 
             # 3D bounding box
-            bbox_3d_marker = BoundingBox(header=header)
-            bbox_3d_marker.pose.position = obj.position
-            bbox_3d_marker.pose.orientation = get_orientation_from_heading(obj.heading)
-            bbox_3d_marker.dimensions = obj.dimensions
-            bbox_3d_marker.label = obj.id
-            bbox_3d_markers.boxes.append(bbox_3d_marker)
+            bbox = BoundingBox(header=msg.header)
+            bbox.pose.position = obj.position
+            bbox.pose.orientation = get_orientation_from_heading(obj.heading)
+            bbox.dimensions = obj.dimensions
+            bbox.label = obj.id
+            bboxes.boxes.append(bbox)
 
         # delete ids not published any more
         delete_ids = self.published_ids - new_published_ids
         for id in delete_ids:
-            marker = Marker(header=header)
+            marker = Marker(header=msg.header)
             marker.ns = 'centroid'
             marker.id = id
             marker.action = marker.DELETE
             markers.markers.append(marker)
 
-            marker = Marker(header=header)
+            marker = Marker(header=msg.header)
             marker.ns = 'bounding_box'
             marker.id = id
             marker.action = marker.DELETE
             markers.markers.append(marker)
 
-            marker = Marker(header=header)
+            marker = Marker(header=msg.header)
             marker.ns = 'convex_hull'
             marker.id = id
             marker.action = marker.DELETE
             markers.markers.append(marker)
 
-            marker = Marker(header=header)
+            marker = Marker(header=msg.header)
             marker.ns = 'speed'
             marker.id = id
             marker.action = marker.DELETE
             markers.markers.append(marker)
 
-            marker = Marker(header=header)
+            marker = Marker(header=msg.header)
             marker.ns = 'text'
             marker.id = id
             marker.action = marker.DELETE
@@ -153,7 +149,7 @@ class DetectedObjectsVisualizer:
 
         # publish markers
         self.markers_pub.publish(markers)
-        self.bbox_3d_markers_pub.publish(bbox_3d_markers)
+        self.bboxes_pub.publish(bboxes)
 
     def run(self):
         rospy.spin()
