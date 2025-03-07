@@ -135,19 +135,32 @@ class MapBasedPredictor:
 
     def create_trajectories(self, lanelets, prediction_length, object_length):
         all_trajectories = []
+        angle_differences = []
         for lanelet, distance_from_lanelet_start, lanelet_length, angle_difference in lanelets:
-            distance_on_following_lanelets = prediction_length - (lanelet_length - distance_from_lanelet_start - object_length / 2)
+            remaining_distance_on_current_lanelet = lanelet_length - distance_from_lanelet_start - object_length / 2
+            distance_on_following_lanelets = prediction_length - remaining_distance_on_current_lanelet
             # if only current lanelet is enough for prediction
             if distance_on_following_lanelets <= 0:
                 all_trajectories.append([lanelet.id])
+                angle_differences.append(angle_difference)
             # explore following lanelets recursively
             else:
                 trajectories = self.follow_lanelets(lanelet, distance_on_following_lanelets)
                 all_trajectories.extend(trajectories)
+                for i in range(len(trajectories)):
+                    angle_differences.append(angle_difference)
 
-        # TODO if there are trajectories that end in the same lanelet then prefer the one with smaller angle_difference
+        # If there are multiple trajectories that end in the same lanelet, keep the one with the smallest angle difference (better match)
+        best_trajectories = {}
+        for angle, trajectory in zip(angle_differences, all_trajectories):
+            end_id = trajectory[-1]  # Get the last lanelet ID
+            # If the end_id is not in the dictionary or the new angle is smaller, update the dictionary
+            if end_id not in best_trajectories or angle < best_trajectories[end_id][0]:
+                best_trajectories[end_id] = (angle, trajectory)
+        # Extract the filtered trajectories
+        filtered_trajectories = [item[1] for item in best_trajectories.values()]
 
-        return all_trajectories
+        return filtered_trajectories
 
     def follow_lanelets(self, current_lanelet, remaining_distance):
         trajectories = []  # Store all possible trajectories
