@@ -24,19 +24,36 @@ COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
     CollisionPoints.STOP_LINE_FORCED_STOP:              "Stopping for stop line"
 }
 
+COLLISION_POINT_CATEGORY_COLOR = {
+    CollisionPoints.NO_OBSTACLES:                       "PaleGreen",
+    CollisionPoints.GOAL_POINT:                         "PaleGreen",
+    CollisionPoints.TRAFFIC_LIGHT_STOPLINE:             "LightCoral",
+    CollisionPoints.STOPPED_OBSTACLE_ON_PATH:           "LightCoral",
+    CollisionPoints.MOVING_OBSTACLE_ON_PATH:            "Khaki",
+    CollisionPoints.COLLIDING_TRAJECTORY:               "LightCoral",
+    CollisionPoints.MERGING_TRAJECTORY:                 "Khaki",
+    CollisionPoints.OBJECT_ON_CROSSWALK:                "LightCoral",
+    CollisionPoints.TRAJECTORY_ON_CROSSWALK:            "Khaki",
+    CollisionPoints.YIELDING_TRAJECTORY:                "Khaki",
+    CollisionPoints.STOP_LINE_FORCED_STOP:              "LightCoral"
+}
+
 class LocalPathVisualizer:
     def __init__(self):
 
         # Parameters
         self.safety_box_width = rospy.get_param("safety_box_width")
-        #self.slowdown_lateral_distance = rospy.get_param("slowdown_lateral_distance")
         self.stopped_speed_limit = rospy.get_param("stopped_speed_limit")
 
         self.published_waypoints = 0
+        self.planner_status_last_timestamp = None
+        self.planner_status_last_category = None
+        self.planner_log_text = ""
 
         # Publishers
         self.local_path_markers_pub = rospy.Publisher('local_path_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
         self.planner_status_pub = rospy.Publisher('/dashboard/planner_status', OverlayText, queue_size=1, tcp_nodelay=True)
+        self.planner_log_pub = rospy.Publisher('/dashboard/planner_log', OverlayText, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('local_path', Path, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
@@ -46,13 +63,16 @@ class LocalPathVisualizer:
         stopping_point_distance = max(msg.stopping_point_distance, 0.0)
         collision_point_category = msg.collision_point_category
 
+        if self.planner_status_last_timestamp is None:
+            self.planner_status_last_timestamp = msg.header.stamp
+
         marker_array = MarkerArray()
 
         if len(msg.waypoints) > 1:
             points = [waypoint.position for waypoint in msg.waypoints]
             color = ColorRGBA(0.2, 1.0, 0.2, 0.3)
 
-            planner_status_text = "<div style='text-align: center; color: white;'>" + COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category] + "</div>"
+            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div>"
 
             # local path with safety_box_width
             marker = Marker(header=msg.header)
@@ -65,18 +85,6 @@ class LocalPathVisualizer:
             marker.color = color
             marker.points = points
             marker_array.markers.append(marker)
-
-            # local path with slowdown_lateral_distance
-            #marker = Marker(header=msg.header)
-            #marker.ns = "Slowdown lateral distance"
-            #marker.type = marker.LINE_STRIP
-            #marker.action = marker.ADD
-            #marker.id = 0
-            #marker.pose.orientation.w = 1.0
-            #marker.scale.x = 2 * self.slowdown_lateral_distance
-            #marker.color = color
-            #marker.points = points
-            #marker_array.markers.append(marker)
 
             # velocity labels
             current_waypoints = 0
@@ -152,11 +160,6 @@ class LocalPathVisualizer:
             marker.action = marker.DELETE
             marker_array.markers.append(marker)
 
-            #marker = Marker(header=msg.header)
-            #marker.ns = "Slowdown lateral distance"
-            #marker.id = 0
-            #marker.action = marker.DELETE
-            #marker_array.markers.append(marker)
 
             marker = Marker(header=msg.header)
             marker.ns = "Stopping point"
@@ -176,6 +179,22 @@ class LocalPathVisualizer:
         planner_status.text = planner_status_text
         self.planner_status_pub.publish(planner_status)
         self.local_path_markers_pub.publish(marker_array)
+
+        if self.planner_status_last_category != collision_point_category:
+            if self.planner_status_last_category != None:
+                duration = (msg.header.stamp - self.planner_status_last_timestamp).to_sec()
+                self.planner_log_text = f"<div style='text-align: left; color: {COLLISION_POINT_CATEGORY_COLOR[self.planner_status_last_category]};'>{round(duration, 1)}s - {COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[self.planner_status_last_category]}</div>{self.planner_log_text}"
+                # split text string into lines (use </div> as separator) and keep only first 5 lines
+                self.planner_log_text = "</div>".join(self.planner_log_text.split("</div>")[:5]) + "</div>"
+
+            # update last timestamp and category
+            self.planner_status_last_timestamp = msg.header.stamp
+            self.planner_status_last_category = collision_point_category
+
+            planner_log = OverlayText()
+            planner_log.text = self.planner_log_text
+            self.planner_log_pub.publish(planner_log)
+
 
     def run(self):
         rospy.spin()
