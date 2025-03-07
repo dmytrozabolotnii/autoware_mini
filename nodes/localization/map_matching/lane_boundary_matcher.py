@@ -32,6 +32,7 @@ class LaneBoundaryMatcher:
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.openpilot_delay_compensation = rospy.get_param("~openpilot_delay_compensation")
         self.alpha = rospy.get_param("~alpha")
+        self.no_correction_weight = rospy.get_param("~no_correction_weight")
 
         # variables
         self.current_pose = None
@@ -42,7 +43,7 @@ class LaneBoundaryMatcher:
         self.z_correction = 0
         self.transform_matrix = np.eye(4)
         
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
@@ -63,7 +64,7 @@ class LaneBoundaryMatcher:
         ts.registerCallback(self.lane_line_callback)
 
     def calculate_updated_correction(self, new_value, old_value, weight=1):
-        alpha = weight*self.alpha
+        alpha = weight * self.alpha
         return alpha * new_value + (1 - alpha) * old_value
     
     def current_pose_callback(self, msg):
@@ -158,7 +159,7 @@ class LaneBoundaryMatcher:
             # if the difference between map and openpilot lane boundaries is too big then don't use the correction
             if abs(x) > self.x_correction_treshold or abs(y) > self.y_correction_treshold or weight < self.probability_treshold:
                 x, y = 0, 0
-                weight = 1
+                weight = self.no_correction_weight
                 no_correction = True
             else:
                 no_correction = False       
@@ -251,11 +252,7 @@ class LaneBoundaryMatcher:
         t.transform.rotation.w = 1
         self.transform_matrix = numpify(t.transform)
 
-        if correction_stamp is None:
-            static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster()
-            static_tf_broadcaster.sendTransform(t)
-        else:
-            self.tf_broadcaster.sendTransform(t)
+        self.tf_broadcaster.sendTransform(t)
 
     def publish_gnss_corrections_detailed(self):
 
