@@ -10,8 +10,9 @@ import paho.mqtt.client as paho
 
 from geometry_msgs.msg import PoseStamped
 from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
-from lanelet2.core import BasicPoint2d, BoundingBox2d
-from helpers.lanelet2 import load_lanelet2_map, get_stoplines_api_id
+
+from helpers.geometry import get_distance_between_two_points_2d
+from helpers.lanelet2 import load_lanelet2_map, get_stoplines_api_id, get_stoplines_range
 
 MQTT_TO_AUTOWARE_TFL_MAP = {
     "RED": 0,
@@ -42,12 +43,12 @@ class MqttTrafficLightDetector:
         self.mqtt_topic = rospy.get_param('~mqtt_topic')
         self.enable_automatic_subscribe = rospy.get_param('~enable_automatic_subscribe')
         self.automatic_subscription_range = rospy.get_param('~automatic_subscription_range')
+        self.local_path_length = rospy.get_param("/planning/local_path_length")
         self.timeout = rospy.get_param('~timeout')
         self.id_string = rospy.get_param('~id_string')
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        self.rate = rospy.Rate(1) # 1 Hz
 
         # MQTT traffic light status
         self.mqtt_status = {}
@@ -57,6 +58,7 @@ class MqttTrafficLightDetector:
 
         if self.enable_automatic_subscribe:
             self.stop_line_ids = {}
+            self.last_fetch_location = None
             rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         else:
             self.stop_line_ids = get_stoplines_api_id(self.lanelet2_map)
@@ -71,13 +73,12 @@ class MqttTrafficLightDetector:
         self.client.loop_start()
 
     def current_pose_callback(self, msg):
-        x = msg.pose.position.x
-        y = msg.pose.position.y
-        search_box = BoundingBox2d(BasicPoint2d(x - self.automatic_subscription_range, y - self.automatic_subscription_range), 
-                                  BasicPoint2d(x + self.automatic_subscription_range, y + self.automatic_subscription_range))
-        
-        # Find linestrings near current position
-        filtered_linestrings = self.lanelet2_map.lineStringLayer.search(search_box)
+        # fetch stopilines after ego vehicle has travelled a little less than the length of the local path
+        if self.last_fetch_location is not None and get_distance_between_two_points_2d(self.last_fetch_location, msg.pose.position) < self.local_path_length - 10:
+            return
+
+        filtered_linestrings = get_stoplines_range(msg.pose.position.x, msg.pose.position.y, 
+                                                   self.automatic_subscription_range + self.local_path_length, self.lanelet2_map)
 
         seen_api_ids = set()
         for line in filtered_linestrings:
@@ -86,9 +87,10 @@ class MqttTrafficLightDetector:
                 seen_api_ids.add(line.attributes["api_id"])
                 
                 if line.attributes["api_id"] not in self.stop_line_ids:
-                    self.client.subscribe(line.attributes["api_id"])
+                    self.client.subscribe(line.attributes["api_id"]) 
 
         # Unsubscribe from api ids that are not within range anymore
+        print(self.stop_line_ids)
         not_seen_api_ids = set(self.stop_line_ids.values()) - seen_api_ids
         for api_id in not_seen_api_ids:
             self.client.unsubscribe(api_id)
@@ -96,8 +98,8 @@ class MqttTrafficLightDetector:
             stop_line_ids_to_remove = [k for k, v in self.stop_line_ids.items() if v == api_id]
             for sl_id in stop_line_ids_to_remove:
                 del self.stop_line_ids[sl_id]
-
-        self.rate.sleep()
+        
+        self.last_fetch_location = msg.pose.position
         
     def on_connect(self, client, userdata, flags, rc):
         if rc != 0:
@@ -118,11 +120,20 @@ class MqttTrafficLightDetector:
 
         # if message starts with '{' then it's in json format
         if chr(msg.payload[0]) == "{":
-            status_msg = (json.loads(msg.payload), "json")
+            mqtt_data = json.loads(msg.payload)
         else:
-            status_msg = (msg.payload, "binary")
+            if len(msg.payload) != struct.calcsize(BINARY_MQTT_MSG_FORMAT):
+                rospy.logerr('%s - binary mqtt message size %d does not match expected size %d', rospy.get_name(), len(msg.payload), struct.calcsize(BINARY_MQTT_MSG_FORMAT))
+                return
 
-        self.mqtt_status[api_id] = status_msg
+            version, timestamp, status, since_change, till_change = struct.unpack(BINARY_MQTT_MSG_FORMAT, msg.payload)
+            mqtt_data = {"version": version,
+                         "timestamp": timestamp,
+                         "status": status,
+                         "since_change": since_change,
+                         "till_change": till_change}
+
+        self.mqtt_status[api_id] = mqtt_data
 
     def combine_tfl_results_and_publish(self):
         """
@@ -143,25 +154,14 @@ class MqttTrafficLightDetector:
 
                 # extract status from mqtt_status if key exits
                 if api_id in self.mqtt_status:
-                    message, payload_format = self.mqtt_status[api_id]
+                    timestamp = self.mqtt_status[api_id]["timestamp"]
+                    result_str = self.mqtt_status[api_id]["status"]
 
-                    # extract data from json format
-                    if payload_format == "json":
-                        timestamp = message["timestamp"]
-                        result_str = message["status"]
-                        
-                    # extract data from binary format
-                    elif payload_format == "binary":
-                        if len(message) != struct.calcsize(BINARY_MQTT_MSG_FORMAT):
-                            raise RuntimeError("Incorrect MQTT message size")
-
-                        version, timestamp, result_str, since_change, till_change = struct.unpack(BINARY_MQTT_MSG_FORMAT, message)
-                    else:
-                        raise ValueError(f"Unknown payload format: {payload_format}")
+                    time_diff = (time.time() * 1000 - timestamp) / 1000
 
                     # get traffic light status
-                    if timestamp < int((time.time() - self.timeout) * 1000):
-                        rospy.logwarn('%s - timeout of stopline: %s, by %f seconds', rospy.get_name(), api_id, (timestamp - time.time() * 1000) / 1000)
+                    if time_diff > self.timeout:
+                        rospy.logwarn('%s - timeout of stopline: %s, by %f seconds', rospy.get_name(), api_id, time_diff)
                     else:
                         if result_str in MQTT_TO_AUTOWARE_TFL_MAP:
                             result = MQTT_TO_AUTOWARE_TFL_MAP[result_str]

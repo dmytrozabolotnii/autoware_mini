@@ -1,6 +1,6 @@
 from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
-from lanelet2.core import GPSPoint
+from lanelet2.core import GPSPoint, BasicPoint2d, BoundingBox2d
 import shapely
 import numpy as np
 import rospy
@@ -114,6 +114,24 @@ def get_stoplines_api_id(lanelet2_map):
                     stopline_ids[line.id] = line.attributes["api_id"]
 
     return stopline_ids
+
+def get_stoplines_range(x, y, range, lanelet2_map):
+    """
+    Retrieve stop lines within a specified range from a given point on a Lanelet2 map.
+
+    :param x: x-coordinate of the given point
+    :param y: y-coordinate of the given point
+    :param range: the half-length of the bounding box in both x and y directions
+    :param lanelet2_map: the Lanelet2 map
+
+    :return: A list of line strings from the Lanelet2 map that fall within the search area
+    """
+    search_box = BoundingBox2d(BasicPoint2d(x - range, y - range), 
+                               BasicPoint2d(x + range, y + range))
+        
+    filtered_linestrings = lanelet2_map.lineStringLayer.search(search_box)
+
+    return filtered_linestrings
 
 def get_stoplines_trafficlights(lanelet2_map):
     """
