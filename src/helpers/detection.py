@@ -73,7 +73,7 @@ def get_axis_oriented_bounding_box(obj):
 
     return minx, miny, maxx, maxy
 
-def update_object_position_dimensions(obj):
+def update_object_heading_bbox(obj):
     """
     Update width, length and position of the object, based on object's velocity vector aligned bounding box
     :param obj: DetectedObject
