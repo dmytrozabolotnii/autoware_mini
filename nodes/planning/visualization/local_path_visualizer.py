@@ -2,10 +2,16 @@
 
 import rospy
 import math
+import shapely
+import numpy as np
+import mapbox_earcut as earcut
+
 from autoware_mini.msg import Path
+from geometry_msgs.msg import Point
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from jsk_rviz_plugins.msg import OverlayText
+
 from helpers.path import PathWrapper
 from helpers.collision import CollisionPoints
 from helpers.geometry import get_orientation_from_heading
@@ -69,21 +75,39 @@ class LocalPathVisualizer:
         marker_array = MarkerArray()
 
         if len(msg.waypoints) > 1:
-            points = [waypoint.position for waypoint in msg.waypoints]
-            color = ColorRGBA(0.2, 1.0, 0.2, 0.3)
+
+            # Create a buffer (polygon) around the path and triangulate
+            linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in msg.waypoints])
+            linestring = linestring.simplify(0.01)
+            buffer = linestring.buffer(self.safety_box_width/2, cap_style="flat")
+            coords = np.array(buffer.exterior.coords, dtype=np.float32).reshape(-1, 2)
+            triangles = earcut.triangulate_float32(coords, [len(coords)])
+
+            # Extract z coordinates from linestring for each triangle point
+            points = shapely.points(buffer.exterior.coords)
+            distances = linestring.line_locate_point(points)
+            points_on_linestring = linestring.interpolate(distances)
 
             planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div>"
 
-            # local path with safety_box_width
+            # define green color for local path
+            color = ColorRGBA(0.1, 1.0, 0.1, 0.4)
+
             marker = Marker(header=msg.header)
             marker.ns = "Stopping lateral distance"
-            marker.type = marker.LINE_STRIP
+            marker.type = marker.TRIANGLE_LIST
             marker.action = marker.ADD
             marker.id = 0
-            marker.pose.orientation.w = 1.0
-            marker.scale.x = self.safety_box_width
+            marker.scale.x = 1.0
+            marker.scale.y = 1.0
+            marker.scale.z = 1.0
             marker.color = color
-            marker.points = points
+            for i in triangles:
+                x, y = coords[i]
+                z = points_on_linestring[i].z
+                marker.points.append(Point(x=x, y=y, z=z))
+            # Ensure colors match the number of points
+            marker.colors = [color] * len(marker.points)
             marker_array.markers.append(marker)
 
             # velocity labels
