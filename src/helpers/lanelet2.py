@@ -115,23 +115,28 @@ def get_stoplines_api_id(lanelet2_map):
 
     return stopline_ids
 
-def get_stoplines_range(x, y, range, lanelet2_map):
+def get_stoplines_api_id_range(x, y, range, lanelet2_map):
     """
-    Retrieve stop lines within a specified range from a given point on a Lanelet2 map.
+    Retrieve stop line ids within a specified range from a given point on a Lanelet2 map.
 
     :param x: x-coordinate of the given point
     :param y: y-coordinate of the given point
     :param range: the half-length of the bounding box in both x and y directions
     :param lanelet2_map: the Lanelet2 map
 
-    :return: A list of line strings from the Lanelet2 map that fall within the search area
+    :return: A dictionary of stopline ids and api keys that fall within the search area
     """
     search_box = BoundingBox2d(BasicPoint2d(x - range, y - range), 
                                BasicPoint2d(x + range, y + range))
         
     filtered_linestrings = lanelet2_map.lineStringLayer.search(search_box)
 
-    return filtered_linestrings
+    stop_line_ids = {}
+    for line in filtered_linestrings:
+        if line.attributes and line.attributes["type"] == "stop_line" and "api_id" in line.attributes:
+            stop_line_ids[line.id] = line.attributes["api_id"]
+
+    return stop_line_ids
 
 def get_stoplines_trafficlights(lanelet2_map):
     """

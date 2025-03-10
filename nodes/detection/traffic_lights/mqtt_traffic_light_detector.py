@@ -12,7 +12,7 @@ from geometry_msgs.msg import PoseStamped
 from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
 from helpers.geometry import get_distance_between_two_points_2d
-from helpers.lanelet2 import load_lanelet2_map, get_stoplines_api_id, get_stoplines_range
+from helpers.lanelet2 import load_lanelet2_map, get_stoplines_api_id, get_stoplines_api_id_range
 
 MQTT_TO_AUTOWARE_TFL_MAP = {
     "RED": 0,
@@ -77,21 +77,15 @@ class MqttTrafficLightDetector:
         if self.last_fetch_location is not None and get_distance_between_two_points_2d(self.last_fetch_location, msg.pose.position) < self.local_path_length - 10:
             return
 
-        filtered_linestrings = get_stoplines_range(msg.pose.position.x, msg.pose.position.y, 
+        stop_line_ids_in_range = get_stoplines_api_id_range(msg.pose.position.x, msg.pose.position.y, 
                                                    self.automatic_subscription_range + self.local_path_length, self.lanelet2_map)
 
-        seen_api_ids = set()
-        for line in filtered_linestrings:
-            if line.attributes and line.attributes["type"] == "stop_line" and "api_id" in line.attributes:
-                self.stop_line_ids[line.id] = line.attributes["api_id"]
-                seen_api_ids.add(line.attributes["api_id"])
-                
-                if line.attributes["api_id"] not in self.stop_line_ids:
-                    self.client.subscribe(line.attributes["api_id"]) 
+        for sl_id, api_id in stop_line_ids_in_range.items():
+            self.stop_line_ids[sl_id] = api_id
+            self.client.subscribe(api_id)
 
         # Unsubscribe from api ids that are not within range anymore
-        print(self.stop_line_ids)
-        not_seen_api_ids = set(self.stop_line_ids.values()) - seen_api_ids
+        not_seen_api_ids = set(self.stop_line_ids.values()) - set(stop_line_ids_in_range.values())
         for api_id in not_seen_api_ids:
             self.client.unsubscribe(api_id)
 
