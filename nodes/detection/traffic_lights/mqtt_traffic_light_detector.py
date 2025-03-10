@@ -80,19 +80,16 @@ class MqttTrafficLightDetector:
         stop_line_ids_in_range = get_stoplines_api_id_range(msg.pose.position.x, msg.pose.position.y, 
                                                    self.automatic_subscription_range + self.local_path_length, self.lanelet2_map)
 
-        for sl_id, api_id in stop_line_ids_in_range.items():
-            self.stop_line_ids[sl_id] = api_id
+        seen_api_ids = set(stop_line_ids_in_range.values())
+        for api_id in seen_api_ids:
             self.client.subscribe(api_id)
 
         # Unsubscribe from api ids that are not within range anymore
-        not_seen_api_ids = set(self.stop_line_ids.values()) - set(stop_line_ids_in_range.values())
+        not_seen_api_ids = set(self.stop_line_ids.values()) - seen_api_ids
         for api_id in not_seen_api_ids:
             self.client.unsubscribe(api_id)
 
-            stop_line_ids_to_remove = [k for k, v in self.stop_line_ids.items() if v == api_id]
-            for sl_id in stop_line_ids_to_remove:
-                del self.stop_line_ids[sl_id]
-        
+        self.stop_line_ids = stop_line_ids_in_range
         self.last_fetch_location = msg.pose.position
         
     def on_connect(self, client, userdata, flags, rc):
