@@ -74,11 +74,11 @@ class MqttTrafficLightDetector:
 
     def current_pose_callback(self, msg):
         # fetch stopilines after ego vehicle has travelled a little less than the length of the local path
-        if self.last_fetch_location is not None and get_distance_between_two_points_2d(self.last_fetch_location, msg.pose.position) < self.local_path_length - 10:
+        if self.last_fetch_location is not None and get_distance_between_two_points_2d(self.last_fetch_location, msg.pose.position) < self.local_path_length:
             return
 
-        stop_line_ids_in_range = get_stoplines_api_id_range(msg.pose.position.x, msg.pose.position.y, 
-                                                   self.automatic_subscription_range + self.local_path_length, self.lanelet2_map)
+        stop_line_ids_in_range = get_stoplines_api_id_range(self.lanelet2_map, msg.pose.position.x, msg.pose.position.y, 
+                                                   self.automatic_subscription_range + self.local_path_length)
 
         seen_api_ids = set(stop_line_ids_in_range.values())
         for api_id in seen_api_ids:

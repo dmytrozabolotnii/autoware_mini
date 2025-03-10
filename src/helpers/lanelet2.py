@@ -108,21 +108,19 @@ def get_stoplines_api_id(lanelet2_map):
     # extract all stop lines that have api_id and add to dict
     stopline_ids = {}
     for line in lanelet2_map.lineStringLayer:
-        if line.attributes:
-            if line.attributes["type"] == "stop_line":
-                if "api_id" in line.attributes:
-                    stopline_ids[line.id] = line.attributes["api_id"]
+        if line.attributes and line.attributes["type"] == "stop_line" and "api_id" in line.attributes:
+            stopline_ids[line.id] = line.attributes["api_id"]
 
     return stopline_ids
 
-def get_stoplines_api_id_range(x, y, range, lanelet2_map):
+def get_stoplines_api_id_range(lanelet2_map, x, y, range):
     """
     Retrieve stop line ids within a specified range from a given point on a Lanelet2 map.
 
+    :param lanelet2_map: the Lanelet2 map
     :param x: x-coordinate of the given point
     :param y: y-coordinate of the given point
     :param range: the half-length of the bounding box in both x and y directions
-    :param lanelet2_map: the Lanelet2 map
 
     :return: A dictionary of stopline ids and api keys that fall within the search area
     """
