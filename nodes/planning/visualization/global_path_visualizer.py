@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 
 import rospy
+import shapely
+import numpy as np
+import mapbox_earcut as earcut
+
 from autoware_mini.msg import Path, Waypoint
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
+from geometry_msgs.msg import Point
+
 from helpers.geometry import get_orientation_from_heading
 
 class GlobalPathVisualizer:
@@ -68,19 +74,36 @@ class GlobalPathVisualizer:
                 marker.text = str(round(waypoint.speed * 3.6, 1))
                 marker_array.markers.append(marker)
 
-            # line strips
+            # Create a buffer (polygon) around the path and triangulate
+            linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in path.waypoints])
+            linestring = linestring.simplify(0.05)
+            buffer = linestring.buffer(0.75, cap_style="flat")
+            coords = np.array(buffer.exterior.coords, dtype=np.float32).reshape(-1, 2)
+            triangles = earcut.triangulate_float32(coords, [len(coords)])
+            # Extract z coordinates from linestring for each triangle point
+            points = shapely.points(buffer.exterior.coords)
+            distances = linestring.line_locate_point(points)
+            points_on_linestring = linestring.interpolate(distances)
+
             marker = Marker()
             marker.header.frame_id = path.header.frame_id
             marker.header.stamp = rospy.Time.now()
             marker.ns = "Path"
-            marker.type = marker.LINE_STRIP
+            marker.type = marker.TRIANGLE_LIST
             marker.action = marker.ADD
             marker.id = 0
-            marker.pose.orientation.w = 1.0
-            marker.scale.x = 1.5
+            marker.scale.x = 1.0
+            marker.scale.y = 1.0
+            marker.scale.z = 1.0
             marker.color = ColorRGBA(0.9, 0.6, 1.0, 0.6)
-            for waypoint in path.waypoints:
-                marker.points.append(waypoint.position)
+            #marker.pose.orientation.w = 1.0
+            for i in triangles:
+                x, y = coords[i]
+                z = points_on_linestring[i].z + 0.1
+                marker.points.append(Point(x=x, y=y, z=z))
+            # Ensure colors match the number of points
+            marker.colors = [ColorRGBA(0.9, 0.6, 1.0, 0.6)] * len(marker.points)
+
             marker_array.markers.append(marker)
 
         self.global_path_markers_pub.publish(marker_array)
