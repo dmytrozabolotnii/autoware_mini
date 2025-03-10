@@ -90,7 +90,7 @@ class SpeedPlanner:
 
             # calculate target velocity for every collision point
             # 'abs' is used to turn negative speed of approaching cars into positive, so that target distance would be smaller and thus target_speed will be decreased
-            target_distances = object_distances - self.distance_to_car_front - object_braking_distances - self.braking_reaction_time * np.abs(object_velocities)
+            target_distances = object_distances - self.distance_to_car_front - np.maximum(object_braking_distances, self.braking_reaction_time * np.abs(object_velocities))
             target_velocities = np.sqrt(np.maximum(0.0, np.maximum(0.0, object_velocities)**2 + 2 * self.default_deceleration * target_distances))
 
             # find the collision point causing smallest target_velocity and being closest to ego vehicle
