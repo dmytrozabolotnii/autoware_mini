@@ -34,6 +34,7 @@ class PedestrianCrosswalkChecker:
         self.current_speed = None
         self.detected_objects = None
         self.crosswalks_on_global_path = None
+        self.object_crosswalk_counter = {}
 
         # load lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
@@ -71,6 +72,7 @@ class PedestrianCrosswalkChecker:
         detected_objects = self.detected_objects
         crosswalks_on_global_path = self.crosswalks_on_global_path
         current_speed = self.current_speed
+        object_crosswalk_counter = {}
 
         if crosswalks_on_global_path is None:
             rospy.logwarn_throttle(3, "%s - global path not received!", rospy.get_name())
@@ -114,6 +116,10 @@ class PedestrianCrosswalkChecker:
 
                     for crosswalk in crosswalks_on_local_path[:]:
 
+                        # TODO replace with better key
+                        if crosswalk['polygon'] not in object_crosswalk_counter:
+                            object_crosswalk_counter[crosswalk['polygon']] = {}
+
                         # INTERSECTING OBJECTS
                         if crosswalk['polygon'].intersects(object_polygon):
                             # objects on crosswalk approaching local path or have crossed it and departing, but still within the local path buffer
@@ -150,6 +156,16 @@ class PedestrianCrosswalkChecker:
 
                                     if closest_intersection_path_approach_angle < self.crossing_angle_max_limit or \
                                         (180 - closest_intersection_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(trajectory_to_check)):
+
+                                        # Add object id to the counter
+                                        if obj.id not in self.object_crosswalk_counter[crosswalk['polygon']]:
+                                            object_crosswalk_counter[crosswalk['polygon']][obj.id] = 1
+                                        else:
+                                            object_crosswalk_counter[crosswalk['polygon']][obj.id] = self.object_crosswalk_counter[crosswalk['polygon']][obj.id] + 1
+                                        # ignore if not enough consecutive detections
+                                        if object_crosswalk_counter[crosswalk['polygon']][obj.id] <= 2:
+                                            continue
+
                                         # check with maximum allowed deceleration
                                         crosswalk_distance_from_path_start = min(local_path.linestring.project(shapely.points(crosswalk['intersection_points'])))
                                         ego_distance_to_crosswalk = crosswalk_distance_from_path_start - car_front_distance_from_path_start
@@ -159,12 +175,9 @@ class PedestrianCrosswalkChecker:
                                             continue
                                         # add intersection points as collision points
                                         collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
-                                        crosswalks_on_local_path.remove(crosswalk)
-                                        break
 
-                    # Exit early if all crosswalks are processed
-                    if len(crosswalks_on_local_path) == 0:
-                        break
+            # update object_crosswalk_counter with current state
+            self.object_crosswalk_counter = object_crosswalk_counter
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header
