@@ -171,7 +171,7 @@ class MapBasedPredictor:
 
         for next_lanelet in next_lanelets:
             next_lanelet_length = length2d(next_lanelet)
-            if remaining_distance - next_lanelet_length > 0:
+            if remaining_distance > next_lanelet_length:
                 # Recursively follow the lanelets
                 following_trajectories = self.follow_lanelets(next_lanelet, remaining_distance - next_lanelet_length)
                 for traj in following_trajectories:
