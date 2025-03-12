@@ -27,7 +27,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: Points clustered
+    SyncSource: ""
   - Class: rviz_carla_plugin/CarlaControl
     Name: CarlaControl
   - Class: jsk_rviz_plugin/EmptyServiceCallInterfaceAction
@@ -869,11 +869,41 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Labelet2 bus lanes: true
+                  Lanelet2 map: true
+                  Lanelet2 roads: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -970,11 +1000,41 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Labelet2 bus lanes: true
+                  Lanelet2 map: true
+                  Lanelet2 roads: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1075,11 +1135,41 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Labelet2 bus lanes: true
+                  Lanelet2 map: true
+                  Lanelet2 roads: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1185,11 +1275,41 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Labelet2 bus lanes: true
+                  Lanelet2 map: true
+                  Lanelet2 roads: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1295,11 +1415,41 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Labelet2 bus lanes: true
+                  Lanelet2 map: true
+                  Lanelet2 roads: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1405,11 +1555,41 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Labelet2 bus lanes: true
+                  Lanelet2 map: true
+                  Lanelet2 roads: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -1515,11 +1695,41 @@ Visualization Manager:
                     Value: true
                     Wheel: true
                 Detection:
-                  "": true
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
-                  "": true
+                  Labelet2 bus lanes: true
+                  Lanelet2 map: true
+                  Lanelet2 roads: true
+                  Road area: true
                   Value: true
                 Planning:
                   Collision points:
@@ -2012,8 +2222,7 @@ Visualization Manager:
               Marker Topic: /planning/tfl_stop_line_markers
               Name: Stop line status
               Namespaces:
-                Status text: true
-                Stop line: true
+                {}
               Queue Size: 100
               Value: true
           Enabled: true
@@ -2253,8 +2462,7 @@ Visualization Manager:
               Marker Topic: /planning/global_path_markers
               Name: Global path
               Namespaces:
-                Velocity label: true
-                Waypoint pose: true
+                {}
               Queue Size: 100
               Value: true
           Enabled: true
@@ -2280,8 +2488,7 @@ Visualization Manager:
               Marker Topic: /planning/local_path_markers
               Name: Local path
               Namespaces:
-                Stopping point: true
-                Velocity label: true
+                {}
               Queue Size: 100
               Value: true
           Enabled: true
@@ -2339,7 +2546,7 @@ Visualization Manager:
           Marker Topic: /vehicle/bicycle_markers
           Name: Bicycle markers
           Namespaces:
-            {}
+            "": true
           Queue Size: 100
           Value: true
         - Class: rviz/Camera
@@ -2392,7 +2599,10 @@ Visualization Manager:
               Value: true
             Grid: true
             Map:
-              "": true
+              Labelet2 bus lanes: true
+              Lanelet2 map: true
+              Lanelet2 roads: true
+              Road area: true
               Value: true
             Planning:
               Collision points:
@@ -2496,26 +2706,20 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/ThirdPersonFollower
-      Distance: 98.41519927978516
+      Angle: 0
+      Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Field of View: 0.7853981852531433
-      Focal Point:
-        X: -1.63872230052948
-        Y: -4.598111629486084
-        Z: -1.806592919706418e-08
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.009999999776482582
-      Pitch: 0.569796085357666
+      Near Clip Distance: 0.0010000000474974513
+      Scale: 10
       Target Frame: base_link
-      Yaw: 3.385420083999634
+      X: 0
+      Y: 0
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho

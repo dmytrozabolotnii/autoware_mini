@@ -3,11 +3,9 @@
 import rospy
 import math
 import shapely
-import numpy as np
-import mapbox_earcut as earcut
 
 from autoware_mini.msg import Path
-from geometry_msgs.msg import Point, Point32, Polygon, PolygonStamped
+from geometry_msgs.msg import Point32, Polygon, PolygonStamped
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from jsk_rviz_plugins.msg import OverlayText
@@ -204,7 +202,6 @@ class LocalPathVisualizer:
             planner_log = OverlayText()
             planner_log.text = self.planner_log_text
             self.planner_log_pub.publish(planner_log)
-
 
     def run(self):
         rospy.spin()
