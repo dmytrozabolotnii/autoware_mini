@@ -2,27 +2,31 @@
 
 import rospy
 import shapely
-import numpy as np
-import mapbox_earcut as earcut
 
 from autoware_mini.msg import Path, Waypoint
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point32, Polygon, PolygonStamped
+from jsk_recognition_msgs.msg import PolygonArray
 
-from helpers.geometry import get_orientation_from_heading
+from helpers.geometry import get_orientation_from_heading, split_line_fixed_length
 
 class GlobalPathVisualizer:
     def __init__(self):
 
         # Publishers
         self.global_path_markers_pub = rospy.Publisher('global_path_markers', MarkerArray, queue_size=10, latch=True, tcp_nodelay=True)
+        self.global_path_polygons = rospy.Publisher('global_path_polygons', PolygonArray, queue_size=10, latch=True, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
 
     def global_path_callback(self, path):
         marker_array = MarkerArray()
+
+        poly_array = PolygonArray()
+        poly_array.header.frame_id = path.header.frame_id
+        poly_array.header.stamp = rospy.Time.now()
 
         if len(path.waypoints) == 0:
             # create marker_array to delete all visualization markers
@@ -74,39 +78,30 @@ class GlobalPathVisualizer:
                 marker.text = str(round(waypoint.speed * 3.6, 1))
                 marker_array.markers.append(marker)
 
-            # Create a buffer (polygon) around the path and triangulate
+            # Split the path into segments, create a buffer (polygon) around the segments and convert them to polygons
             linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in path.waypoints])
             linestring = linestring.simplify(0.05)
-            buffer = linestring.buffer(0.75, cap_style="flat")
-            coords = np.array(buffer.exterior.coords, dtype=np.float32).reshape(-1, 2)
-            triangles = earcut.triangulate_float32(coords, [len(coords)])
-            # Extract z coordinates from linestring for each triangle point
-            points = shapely.points(buffer.exterior.coords)
-            distances = linestring.line_locate_point(points)
-            points_on_linestring = linestring.interpolate(distances)
+            
+            segments = split_line_fixed_length(linestring, 100)
 
-            marker = Marker()
-            marker.header.frame_id = path.header.frame_id
-            marker.header.stamp = rospy.Time.now()
-            marker.ns = "Path"
-            marker.type = marker.TRIANGLE_LIST
-            marker.action = marker.ADD
-            marker.id = 0
-            marker.scale.x = 1.0
-            marker.scale.y = 1.0
-            marker.scale.z = 1.0
-            marker.color = ColorRGBA(0.9, 0.6, 1.0, 0.6)
-            #marker.pose.orientation.w = 1.0
-            for i in triangles:
-                x, y = coords[i]
-                z = points_on_linestring[i].z + 0.1
-                marker.points.append(Point(x=x, y=y, z=z))
-            # Ensure colors match the number of points
-            marker.colors = [ColorRGBA(0.9, 0.6, 1.0, 0.6)] * len(marker.points)
+            for segment in segments:
+                seg_buffer = segment.buffer(0.75, cap_style="flat")
 
-            marker_array.markers.append(marker)
+                # Extract z coordinates from linestring for each triangle point
+                seg_points = shapely.points(seg_buffer.exterior.coords)
+                seg_distances = linestring.line_locate_point(seg_points)
+                seg_points_on_linestring = linestring.interpolate(seg_distances)
+
+                poly_stamped = PolygonStamped()
+                poly_stamped.header.frame_id = path.header.frame_id
+                poly_stamped.header.stamp = rospy.Time.now()
+
+                polygon_points = [Point32(p[0], p[1], seg_points_on_linestring[i].z + 0.1) for i, p in enumerate(seg_buffer.exterior.coords[:-1])]
+                poly_stamped.polygon = Polygon(points = polygon_points)
+                poly_array.polygons.append(poly_stamped)
 
         self.global_path_markers_pub.publish(marker_array)
+        self.global_path_polygons.publish(poly_array)
 
     def run(self):
         rospy.spin()

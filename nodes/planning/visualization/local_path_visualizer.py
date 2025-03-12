@@ -7,10 +7,11 @@ import numpy as np
 import mapbox_earcut as earcut
 
 from autoware_mini.msg import Path
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Point32, Polygon, PolygonStamped
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from jsk_rviz_plugins.msg import OverlayText
+from jsk_recognition_msgs.msg import PolygonArray
 
 from helpers.path import PathWrapper
 from helpers.collision import CollisionPoints
@@ -58,6 +59,7 @@ class LocalPathVisualizer:
 
         # Publishers
         self.local_path_markers_pub = rospy.Publisher('local_path_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
+        self.local_path_polygons_pub = rospy.Publisher('local_path_polygons', PolygonArray, queue_size=1, tcp_nodelay=True)
         self.planner_status_pub = rospy.Publisher('/dashboard/planner_status', OverlayText, queue_size=1, tcp_nodelay=True)
         self.planner_log_pub = rospy.Publisher('/dashboard/planner_log', OverlayText, queue_size=1, tcp_nodelay=True)
 
@@ -74,41 +76,31 @@ class LocalPathVisualizer:
 
         marker_array = MarkerArray()
 
+        poly_array = PolygonArray()
+        poly_array.header.frame_id = msg.header.frame_id
+        poly_array.header.stamp = rospy.Time.now()
+
         if len(msg.waypoints) > 1:
 
             # Create a buffer (polygon) around the path and triangulate
             linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in msg.waypoints])
             linestring = linestring.simplify(0.01)
             buffer = linestring.buffer(self.safety_box_width/2, cap_style="flat")
-            coords = np.array(buffer.exterior.coords, dtype=np.float32).reshape(-1, 2)
-            triangles = earcut.triangulate_float32(coords, [len(coords)])
 
             # Extract z coordinates from linestring for each triangle point
             points = shapely.points(buffer.exterior.coords)
             distances = linestring.line_locate_point(points)
             points_on_linestring = linestring.interpolate(distances)
 
-            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div>"
+            poly_stamped = PolygonStamped()
+            poly_stamped.header.frame_id = msg.header.frame_id
+            poly_stamped.header.stamp = rospy.Time.now()
 
-            # define green color for local path
-            color = ColorRGBA(0.1, 1.0, 0.1, 0.4)
+            polygon_points = [Point32(p[0], p[1], points_on_linestring[i].z) for i, p in enumerate(buffer.exterior.coords[:-1])]
+            poly_stamped.polygon = Polygon(points = polygon_points)
+            poly_array.polygons.append(poly_stamped)
 
-            marker = Marker(header=msg.header)
-            marker.ns = "Stopping lateral distance"
-            marker.type = marker.TRIANGLE_LIST
-            marker.action = marker.ADD
-            marker.id = 0
-            marker.scale.x = 1.0
-            marker.scale.y = 1.0
-            marker.scale.z = 1.0
-            marker.color = color
-            for i in triangles:
-                x, y = coords[i]
-                z = points_on_linestring[i].z
-                marker.points.append(Point(x=x, y=y, z=z))
-            # Ensure colors match the number of points
-            marker.colors = [color] * len(marker.points)
-            marker_array.markers.append(marker)
+            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div"
 
             # velocity labels
             current_waypoints = 0
@@ -179,13 +171,6 @@ class LocalPathVisualizer:
             planner_status_text = "<div style='text-align: center; color: gray;'>Waiting for path</div>"
 
             marker = Marker(header=msg.header)
-            marker.ns = "Stopping lateral distance"
-            marker.id = 0
-            marker.action = marker.DELETE
-            marker_array.markers.append(marker)
-
-
-            marker = Marker(header=msg.header)
             marker.ns = "Stopping point"
             marker.id = 0
             marker.action = marker.DELETE
@@ -203,6 +188,7 @@ class LocalPathVisualizer:
         planner_status.text = planner_status_text
         self.planner_status_pub.publish(planner_status)
         self.local_path_markers_pub.publish(marker_array)
+        self.local_path_polygons_pub.publish(poly_array)
 
         if self.planner_status_last_category != collision_point_category:
             if self.planner_status_last_category != None:

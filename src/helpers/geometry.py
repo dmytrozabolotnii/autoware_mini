@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import shapely
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from geometry_msgs.msg import Point, Quaternion
 
@@ -195,3 +196,48 @@ def convert_geometry_to_line_list(geometry, delta_z=0):
         line_list_points.append(points[i + 1])
     
     return line_list_points
+
+def split_line_fixed_length(line, segment_length):
+    """
+    Splits a LineString into fixed-length segments while ensuring original points remain.
+
+    Parameters:
+    - line: Shapely LineString
+    - segment_length: Desired length of each segment
+
+    Returns:
+    - List of LineString segments
+    """
+    coords = list(line.coords)  # Extract original points
+    split_lines = []
+    current_points = [shapely.Point(coords[0])]  # Start with first point
+    accumulated_length = 0  # Track segment length
+
+    for i in range(1, len(coords)):
+        start = current_points[-1]
+        end = shapely.Point(coords[i])
+        segment = shapely.LineString([start, end])
+        current_seg_len = segment.length
+
+        while accumulated_length + current_seg_len >= segment_length:
+            # Compute the exact interpolation point for the fixed length
+            remaining_length = segment_length - accumulated_length
+            new_point = segment.interpolate(remaining_length)
+            current_points.append(new_point)
+
+            # Store completed segment
+            split_lines.append(shapely.LineString(current_points))
+            current_points = [new_point]  # Start next segment from this point
+            segment = shapely.LineString([new_point, end])  # Update remaining segment
+            current_seg_len = segment.length
+            accumulated_length = 0  # Reset for new segment
+
+        # Add the last segment part to current points
+        current_points.append(end)
+        accumulated_length += current_seg_len
+
+    # Add the last segment if there are remaining points
+    if len(current_points) > 1:
+        split_lines.append(shapely.LineString(current_points))
+
+    return split_lines

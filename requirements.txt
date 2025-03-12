@@ -5,3 +5,4 @@ scikit-learn-intelex
 onnxruntime-gpu
 lapsolver
 shapely >= 2.0
+mapbox-earcut

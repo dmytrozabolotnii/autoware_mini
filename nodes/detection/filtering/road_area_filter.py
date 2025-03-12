@@ -67,10 +67,10 @@ class RoadAreaFilter:
         marker.type = Marker.LINE_LIST
         marker.action = Marker.ADD
         marker.pose.orientation.w = 1.0
-        marker.scale.x = 0.1
-        marker.scale.y = 0.1
-        marker.scale.z = 0.1
-        marker.color.a = 1.0
+        marker.scale.x = 0.05
+        marker.scale.y = 0.05
+        marker.scale.z = 0.05
+        marker.color.a = 0.8
         marker.color.r = 0.9
         marker.color.g = 0.1
         marker.color.b = 0.1

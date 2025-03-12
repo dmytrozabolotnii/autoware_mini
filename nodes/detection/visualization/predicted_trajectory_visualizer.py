@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 
-import math
 import rospy
 import shapely
+import numpy as np
+import mapbox_earcut as earcut
 
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Point
 from std_msgs.msg import Header, ColorRGBA
+
+COLOR = ColorRGBA(1.0, 1.0, 0.0, 0.5) # Yellow
 
 class PredictedTrajectoryVisualizer:
     def __init__(self):
@@ -26,38 +29,56 @@ class PredictedTrajectoryVisualizer:
         header.frame_id = msg.header.frame_id
 
         new_published_ids = set()
+
+        # Visualize future trajectories of all predicted objects
         markers = MarkerArray()
         for obj in msg.objects:
-
-            # candidate trajectories
-            # if len(obj.candidate_trajectories.paths) > 0:
-            # extract and visualize object width - used in object detection
             marker = Marker(header=header)
             marker.ns = 'candidate_trajectories'
             marker.id = obj.id
-            marker.type = marker.LINE_LIST
+            
             if len(obj.candidate_trajectories.paths) == 0:
                 marker.action = marker.DELETE
             else:
-                marker.action = marker.ADD
-                marker.pose.orientation.w = 1.0
-                marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
-                if self.use_object_width:
-                    marker.scale.x = obj.dimensions.y
-                else:
-                    marker.scale.x = 0.2
                 # visualize possible multiple trajectories
                 for lane in obj.candidate_trajectories.paths:
-                    for i in range(len(lane.waypoints) - 1):
-                        p1 = lane.waypoints[i].position
-                        p2 = lane.waypoints[i + 1].position
-                        marker.points.append(Point(p1.x, p1.y, p1.z))
-                        marker.points.append(Point(p2.x, p2.y, p2.z))
+                    linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in lane.waypoints])
+
+                    if self.use_object_width:
+                        buffer_size = obj.dimensions.y / 2
+                    else:
+                        buffer_size = 0.1
+
+                    # Create a buffer around the trajectory and triangulate
+                    buffer = linestring.buffer(buffer_size, cap_style="flat")
+                    coords = np.array(buffer.exterior.coords, dtype=np.float32).reshape(-1, 2)
+                    triangles = earcut.triangulate_float32(coords, [len(coords)])
+
+                    # Extract z coordinates from linestring for each triangle point
+                    points = shapely.points(buffer.exterior.coords)
+                    distances = linestring.line_locate_point(points)
+                    points_on_linestring = linestring.interpolate(distances)
+
+                    # Create triangle list marker
+                    marker.type = marker.TRIANGLE_LIST
+                    marker.action = marker.ADD
+                    marker.color = COLOR
+                    marker.scale.x = 1.0
+                    marker.scale.y = 1.0
+                    marker.scale.z = 1.0
+                    marker.pose.orientation.w = 1.0
+                    marker.colors = [COLOR] * len(triangles)
+
+                    for i in triangles:
+                        x, y = coords[i]
+                        z = points_on_linestring[i].z
+                        marker.points.append(Point(x=x, y=y, z=z))
+
             markers.markers.append(marker)
 
             new_published_ids.add(obj.id)
 
-        # delete ids not published any more
+        # Delete ids not published any more
         delete_ids = self.published_ids - new_published_ids
         for id in delete_ids:
             marker = Marker(header=header)
@@ -68,7 +89,7 @@ class PredictedTrajectoryVisualizer:
 
         self.published_ids = new_published_ids
 
-        # publish markers
+        # Publish markers
         self.markers_pub.publish(markers)
 
     def run(self):
