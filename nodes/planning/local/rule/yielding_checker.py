@@ -4,12 +4,14 @@ import rospy
 import math
 import shapely
 import numpy as np
+from tf2_ros import TransformListener, Buffer
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.path import PathWrapper
+from helpers.transform import get_car_front_point
 
 class YieldingChecker:
 
@@ -24,6 +26,8 @@ class YieldingChecker:
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer)
         self.detected_objects = None
         self.yield_lines_on_global_path = []
 
@@ -66,6 +70,9 @@ class YieldingChecker:
             local_path = PathWrapper(msg.waypoints)
             local_path_buffer = local_path.linestring.buffer(self.safety_box_width / 2, cap_style="flat")
             shapely.prepare(local_path_buffer)
+            # get ego car front distance
+            car_front = get_car_front_point(self.tf_buffer, msg.header.frame_id)
+            car_front_distance_from_path_start = local_path.linestring.project(car_front)
 
             # find if there are any yiled_lines on local_path and select the closest one
             yield_line_distance = np.inf
@@ -75,7 +82,8 @@ class YieldingChecker:
                     yield_line_intersection_result = yield_line.intersection(local_path.linestring)
                     assert isinstance(yield_line_intersection_result, shapely.geometry.Point), "local_path and yield_line intersection is not shapely Point!"
                     distance = local_path.linestring.project(yield_line_intersection_result)
-                    if distance < yield_line_distance:
+                    # find the closest yield line that is further than ego car front
+                    if distance < yield_line_distance and distance > car_front_distance_from_path_start:
                         yield_line_distance = distance
                         yield_line_point = yield_line_intersection_result
 
@@ -106,7 +114,7 @@ class YieldingChecker:
 
                             # CHECK YIELDING
                             #    - trajectory_intersection after yiled line within 40m
-                            #    - ignore objects that align with the local_path (for example car in front)
+                            #    - ignore objects that align with the local_path (for example car in front) at the object projection point
                             if yield_line_distance < trajectory_intersection_distance and trajectory_intersection_distance - yield_line_distance < self.yielding_distance_limit \
                                 and heading_difference > self.heading_alignment_limit:
 

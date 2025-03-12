@@ -61,7 +61,7 @@ pedestrian_crosswalk_checker:
 yielding_checker:
   braking_safety_distance_yield: 0.1      # m
   yielding_distance_limit: 40.0           # m
-  heading_alignment_limit: 20.0           # degrees
+  heading_alignment_limit: 30.0           # degrees
 trajectory_collision_checker:
   braking_safety_distance_trajectory: 4   # m
   heading_alignment_limit: 30.0           # degrees
