@@ -59,20 +59,20 @@ class PredictedTrajectoryVisualizer:
                     distances = linestring.line_locate_point(points)
                     points_on_linestring = linestring.interpolate(distances)
 
-                    # Create triangle list marker
-                    marker.type = marker.TRIANGLE_LIST
-                    marker.action = marker.ADD
-                    marker.color = COLOR
-                    marker.scale.x = 1.0
-                    marker.scale.y = 1.0
-                    marker.scale.z = 1.0
-                    marker.pose.orientation.w = 1.0
-                    marker.colors = [COLOR] * len(triangles)
-
                     for i in triangles:
                         x, y = coords[i]
                         z = points_on_linestring[i].z
                         marker.points.append(Point(x=x, y=y, z=z))
+
+                # Create triangle list marker
+                marker.type = marker.TRIANGLE_LIST
+                marker.action = marker.ADD
+                marker.color = COLOR
+                marker.scale.x = 1.0
+                marker.scale.y = 1.0
+                marker.scale.z = 1.0
+                marker.pose.orientation.w = 1.0
+                marker.colors = [COLOR] * len(marker.points)
 
             markers.markers.append(marker)
 
