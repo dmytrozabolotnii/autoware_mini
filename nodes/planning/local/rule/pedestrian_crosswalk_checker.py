@@ -26,6 +26,7 @@ class PedestrianCrosswalkChecker:
         self.use_object_width = rospy.get_param("use_object_width")
         self.ignore_static_obstacles = rospy.get_param("~ignore_static_obstacles")
         self.crosswalk_maximum_deceleration = rospy.get_param("~crosswalk_maximum_deceleration")
+        self.prediction_counter_min_limit = rospy.get_param("~prediction_counter_min_limit")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
@@ -116,7 +117,7 @@ class PedestrianCrosswalkChecker:
 
                     for crosswalk in crosswalks_on_local_path[:]:
 
-                        # TODO replace with better key
+                        # Add crosswalk to the counter
                         if crosswalk['polygon'] not in object_crosswalk_counter:
                             object_crosswalk_counter[crosswalk['polygon']] = {}
 
@@ -157,13 +158,13 @@ class PedestrianCrosswalkChecker:
                                     if closest_intersection_path_approach_angle < self.crossing_angle_max_limit or \
                                         (180 - closest_intersection_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(trajectory_to_check)):
 
-                                        # Add object id to the counter
+                                        # Add object id to the counter if present else increment the counter
                                         if obj.id not in self.object_crosswalk_counter[crosswalk['polygon']]:
                                             object_crosswalk_counter[crosswalk['polygon']][obj.id] = 1
                                         else:
                                             object_crosswalk_counter[crosswalk['polygon']][obj.id] = self.object_crosswalk_counter[crosswalk['polygon']][obj.id] + 1
-                                        # ignore if not enough consecutive detections
-                                        if object_crosswalk_counter[crosswalk['polygon']][obj.id] <= 2:
+                                        # ignore if consecutive detection counter is less than the threshold
+                                        if object_crosswalk_counter[crosswalk['polygon']][obj.id] <= self.prediction_counter_min_limit:
                                             continue
 
                                         # check with maximum allowed deceleration

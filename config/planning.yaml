@@ -57,6 +57,7 @@ pedestrian_crosswalk_checker:
   crossing_angle_max_limit: 60            # degrees
   ignore_static_obstacles: True
   crosswalk_maximum_deceleration: 2.8     # m/s2
+  prediction_counter_min_limit: 3         # int
 yielding_checker:
   braking_safety_distance_yield: 0.1      # m
   yielding_distance_limit: 40.0           # m
