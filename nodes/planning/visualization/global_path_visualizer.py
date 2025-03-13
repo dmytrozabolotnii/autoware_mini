@@ -74,10 +74,10 @@ class GlobalPathVisualizer:
                 marker.text = str(round(waypoint.speed * 3.6, 1))
                 marker_array.markers.append(marker)
 
-            # Traingulate global path
+            # Triangulate global path
             linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in path.waypoints])
             linestring = linestring.simplify(0.05)
-            trangle_points = triangulate_linestring(linestring, 1.5, z_offset=0.1)
+            triangle_points = triangulate_linestring(linestring, 1.5, z_offset=0.1)
 
             # Create a Marker
             marker = Marker()
@@ -92,8 +92,8 @@ class GlobalPathVisualizer:
             marker.scale.z = 1.0
             marker.pose.orientation.w = 1.0
             marker.color = GLOBAL_PATH_COLOR
-            marker.colors = [GLOBAL_PATH_COLOR] * len(trangle_points)
-            marker.points = trangle_points
+            marker.colors = [GLOBAL_PATH_COLOR] * len(triangle_points)
+            marker.points = triangle_points
             marker_array.markers.append(marker)
     
         self.global_path_markers_pub.publish(marker_array)
