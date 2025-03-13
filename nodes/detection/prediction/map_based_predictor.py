@@ -166,13 +166,10 @@ class MapBasedPredictor:
 
         for next_lanelet in next_lanelets:
             next_lanelet_length = length2d(next_lanelet)
-            if remaining_distance > next_lanelet_length:
-                # Recursively follow the lanelets
-                following_trajectories = self.follow_lanelets(next_lanelet, remaining_distance - next_lanelet_length)
-                for traj in following_trajectories:
-                    trajectories.append([current_lanelet.id] + traj)  # Add current lanelet to each path
-            else:
-                trajectories.append([current_lanelet.id, next_lanelet.id])  # If distance exceeds, just add the next lanelet
+            # Recursively follow the lanelets
+            following_trajectories = self.follow_lanelets(next_lanelet, remaining_distance - next_lanelet_length)
+            for traj in following_trajectories:
+                trajectories.append([current_lanelet.id] + traj)  # Add current lanelet to each path
 
         return trajectories
 
