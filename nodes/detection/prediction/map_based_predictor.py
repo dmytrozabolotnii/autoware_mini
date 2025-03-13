@@ -133,22 +133,17 @@ class MapBasedPredictor:
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)
 
-    def create_trajectories(self, lanelets, prediction_length, object_length):
+    def create_trajectories(self, start_lanelets, prediction_length, object_length):
         all_trajectories = []
         angle_differences = []
-        for lanelet, distance_from_lanelet_start, lanelet_length, angle_difference in lanelets:
+        for start_lanelet, distance_from_lanelet_start, lanelet_length, angle_difference in start_lanelets:
             remaining_distance_on_current_lanelet = lanelet_length - distance_from_lanelet_start - object_length / 2
             distance_on_following_lanelets = prediction_length - remaining_distance_on_current_lanelet
-            # if only current lanelet is enough for prediction
-            if distance_on_following_lanelets <= 0:
-                all_trajectories.append([lanelet.id])
-                angle_differences.append(angle_difference)
             # explore following lanelets recursively
-            else:
-                trajectories = self.follow_lanelets(lanelet, distance_on_following_lanelets)
-                all_trajectories.extend(trajectories)
-                for i in range(len(trajectories)):
-                    angle_differences.append(angle_difference)
+            trajectories = self.follow_lanelets(start_lanelet, distance_on_following_lanelets)
+            all_trajectories.extend(trajectories)
+            for i in range(len(trajectories)):
+                angle_differences.append(angle_difference)
 
         # If there are multiple trajectories that end in the same lanelet, keep the one with the smallest angle difference (better match)
         best_trajectories = {}
@@ -166,7 +161,7 @@ class MapBasedPredictor:
         trajectories = []  # Store all possible trajectories
         next_lanelets = self.graph.following(current_lanelet)
 
-        if not next_lanelets or remaining_distance <= 0:
+        if remaining_distance <= 0 or not next_lanelets:
             return [[current_lanelet.id]]  # Base case: return a single-lanelet trajectory
 
         for next_lanelet in next_lanelets:
