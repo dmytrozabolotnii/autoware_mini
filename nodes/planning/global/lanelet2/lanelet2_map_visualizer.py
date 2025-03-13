@@ -174,7 +174,6 @@ class Lanelet2MapVisualizer:
         rospy.spin()
 
     def visualize_laneletLayer(self, lanelets):
-        s = time.perf_counter()
         stamp = rospy.Time.now()
 
         # Create a MarkerArray
@@ -219,8 +218,6 @@ class Lanelet2MapVisualizer:
         marker_array.markers.append(centerline_marker)
         marker_array.markers.append(bus_lane_marker)
         marker_array.markers.append(crosswalk_marker)
-
-        print(time.perf_counter() - s)
 
         return marker_array
 
