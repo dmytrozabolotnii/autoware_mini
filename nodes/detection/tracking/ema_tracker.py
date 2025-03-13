@@ -6,7 +6,7 @@ from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from autoware_mini.msg import DetectedObjectArray
 from helpers.geometry import get_vector_norm_3d
-from helpers.detection import calculate_iou, get_axis_oriented_bounding_box, update_object_heading_bbox
+from helpers.detection import calculate_iou, get_axis_oriented_bounding_box, update_object_position_dimensions
 
 class EMATracker:
     def __init__(self):
@@ -202,7 +202,7 @@ class EMATracker:
         if self.update_heading_bboxes:
             for i, obj in enumerate(tracked_objects):
                 if get_vector_norm_3d(obj.velocity) >= self.stopped_speed_limit:
-                    update_object_heading_bbox(obj)
+                    update_object_position_dimensions(obj)
 
         # publish tracked objects
         tracked_objects_msg = DetectedObjectArray()
