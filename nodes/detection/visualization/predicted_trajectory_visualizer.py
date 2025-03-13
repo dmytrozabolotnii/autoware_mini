@@ -2,13 +2,12 @@
 
 import rospy
 import shapely
-import numpy as np
-import mapbox_earcut as earcut
 
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Point
 from std_msgs.msg import Header, ColorRGBA
+
+from helpers.visualization import triangulate_linestring
 
 COLOR = ColorRGBA(1.0, 1.0, 0.0, 0.5) # Yellow
 
@@ -44,25 +43,8 @@ class PredictedTrajectoryVisualizer:
                 for lane in obj.candidate_trajectories.paths:
                     linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in lane.waypoints])
 
-                    if self.use_object_width:
-                        buffer_size = obj.dimensions.y / 2
-                    else:
-                        buffer_size = 0.1
-
-                    # Create a buffer around the trajectory and triangulate
-                    buffer = linestring.buffer(buffer_size, cap_style="flat")
-                    coords = np.array(buffer.exterior.coords, dtype=np.float32).reshape(-1, 2)
-                    triangles = earcut.triangulate_float32(coords, [len(coords)])
-
-                    # Extract z coordinates from linestring for each triangle point
-                    points = shapely.points(buffer.exterior.coords)
-                    distances = linestring.line_locate_point(points)
-                    points_on_linestring = linestring.interpolate(distances)
-
-                    for i in triangles:
-                        x, y = coords[i]
-                        z = points_on_linestring[i].z
-                        marker.points.append(Point(x=x, y=y, z=z))
+                    triangle_points = triangulate_linestring(linestring, obj.dimensions.y if self.use_object_width else 0.2)
+                    marker.points.extend(triangle_points)
 
                 # Create triangle list marker
                 marker.type = marker.TRIANGLE_LIST
@@ -75,7 +57,6 @@ class PredictedTrajectoryVisualizer:
                 marker.colors = [COLOR] * len(marker.points)
 
             markers.markers.append(marker)
-
             new_published_ids.add(obj.id)
 
         # Delete ids not published any more

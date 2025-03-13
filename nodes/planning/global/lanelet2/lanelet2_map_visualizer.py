@@ -3,17 +3,15 @@
 import rospy
 import time
 import shapely
-import numpy as np
-import mapbox_earcut as earcut
 
 from autoware_mini.msg import TrafficLightResultArray
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Point, PoseStamped, Point32, Polygon, PolygonStamped
+from geometry_msgs.msg import Point, PoseStamped
 from std_msgs.msg import ColorRGBA, Int32
-from jsk_recognition_msgs.msg import PolygonArray
 from lanelet2.core import BasicPoint2d, BoundingBox2d
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
-from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list, split_line_fixed_length
+from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
+from helpers.visualization import triangulate_linestring, triangulate_polygon
 
 
 # used for traffic lights
@@ -25,6 +23,8 @@ GREEN = ColorRGBA(0.0, 1.0, 0.0, 0.8)
 GREY = ColorRGBA(0.4, 0.4, 0.4, 0.6)
 ORANGE = ColorRGBA(1.0, 0.5, 0.0, 0.4)
 WHITE = ColorRGBA(1.0, 1.0, 1.0, 0.6)
+CYAN = ColorRGBA(0.0, 1.0, 1.0, 0.6)
+BLUE = ColorRGBA(0.3, 0.3, 1.0, 0.6)
 WHITE100 = ColorRGBA(1.0, 1.0, 1.0, 1.0)
 
 TRAFFIC_LIGHT_STATE_TO_MARKER_COLOR = {
@@ -64,8 +64,6 @@ class Lanelet2MapVisualizer:
         self.tfl_stop_line_markers_pub = rospy.Publisher('tfl_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
         self.yield_stop_line_markers_pub = rospy.Publisher('yield_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
         self.lanelet2_map_markers_pub = rospy.Publisher('lanelet2_map_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)
-        self.lanelet2_map_roads_pub = rospy.Publisher('lanelet2_map_roads', PolygonArray, queue_size=1, latch=True, tcp_nodelay=True)
-        self.lanelet2_map_bus_lanes_pub = rospy.Publisher('lanelet2_map_bus_lanes', PolygonArray, queue_size=1, latch=True, tcp_nodelay=True)
 
         rospy.Subscriber("/detection/traffic_light_status", TrafficLightResultArray, self.traffic_light_status_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/planning/lets_go', Int32, self.lets_go_callback, queue_size=1, tcp_nodelay=True)
@@ -176,22 +174,16 @@ class Lanelet2MapVisualizer:
         rospy.spin()
 
     def visualize_laneletLayer(self, lanelets):
+        s = time.perf_counter()
         stamp = rospy.Time.now()
 
         # Create a MarkerArray
         marker_array = MarkerArray()
 
-        # Create a polygon arrays for roads and bus lanes
-        road_polygon_array = PolygonArray()
-        road_polygon_array.header.frame_id = "map"
-        road_polygon_array.header.stamp = stamp
-
-        bus_lane_polygon_array = PolygonArray()
-        bus_lane_polygon_array.header.frame_id = "map"
-        bus_lane_polygon_array.header.stamp = stamp
-
         left_boundary_points = []
         right_boundary_points = []
+        centerline_points = []
+        bus_lane_points = []
         crosswalk_points = []
 
         for lanelet in lanelets:
@@ -200,36 +192,35 @@ class Lanelet2MapVisualizer:
                 left_boundary_points.extend(convert_geometry_to_line_list(lanelet.leftBound))
                 right_boundary_points.extend(convert_geometry_to_line_list(lanelet.rightBound))
 
-                # Visualize centerline
-                if lanelet.attributes["subtype"] == "road":
-                    polygons = self.get_polygons_from_lanelet(lanelet, 0.75, "map")
-                    road_polygon_array.polygons.extend(polygons)
+                centerline = shapely.linestrings([[p.x, p.y, p.z] for p in lanelet.centerline])
 
-                elif lanelet.attributes["subtype"] == "bus_lane":
-                    polygons = self.get_polygons_from_lanelet(lanelet, 0.15, "map")
-                    bus_lane_polygon_array.polygons.extend(polygons)
+                # triangulate centerline
+                if lanelet.attributes["subtype"] == "road":
+                    centerline_points.extend(triangulate_linestring(centerline, 1.5))
+                if lanelet.attributes["subtype"] == "bus_lane":
+                    bus_lane_points.extend(triangulate_linestring(centerline, 0.3))
 
             elif lanelet.attributes["subtype"] == "crosswalk":
                 # create "polygon points" from crosswalk lanelet and then create line list from them
-                crosswalk_border = [[point.x, point.y, point.z] for point in lanelet.leftBound]
-                crosswalk_border.extend([[point.x, point.y, point.z] for point in lanelet.rightBound.invert()])
-                crosswalk_border.append([lanelet.leftBound[0].x, lanelet.leftBound[0].y, lanelet.leftBound[0].z])
+                crosswalk_border = [(point.x, point.y, point.z) for point in lanelet.leftBound]
+                crosswalk_border.extend([(point.x, point.y, point.z) for point in lanelet.rightBound.invert()])
+                crosswalk_border.append((lanelet.leftBound[0].x, lanelet.leftBound[0].y, lanelet.leftBound[0].z))
 
-                coords = np.array(crosswalk_border, dtype=np.float32)
-                triangles = earcut.triangulate_float32(coords[:, :2], [len(coords)])
-
-                crosswalk_points.extend(Point(x=p[0], y=p[1], z=p[2]) for p in coords[triangles])
+                crosswalk_points.extend(triangulate_polygon(crosswalk_border))
 
         left_boundary_marker = linelist_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
         right_boundary_marker = linelist_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
+        centerline_marker = triangles_to_marker(centerline_points, "Centerline", 0, CYAN, 1.0, stamp)
+        bus_lane_marker = triangles_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 1.0, stamp)
         crosswalk_marker = triangles_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 1.0, stamp)
 
         marker_array.markers.append(left_boundary_marker)
         marker_array.markers.append(right_boundary_marker)
+        marker_array.markers.append(centerline_marker)
+        marker_array.markers.append(bus_lane_marker)
         marker_array.markers.append(crosswalk_marker)
 
-        self.lanelet2_map_roads_pub.publish(road_polygon_array)
-        self.lanelet2_map_bus_lanes_pub.publish(bus_lane_polygon_array)
+        print(time.perf_counter() - s)
 
         return marker_array
 
@@ -306,32 +297,6 @@ class Lanelet2MapVisualizer:
         marker_array.markers.append(linelist_to_marker(points_yield, "Yield line", 0, YELLOW, 0.3, rospy.Time.now()))
 
         return marker_array
-
-    def get_polygons_from_lanelet(self, lanelet, buffer_size, frame_id):
-        """
-        Splits linestring into shorter polygons
-        """
-        linestring = shapely.linestrings([[p.x, p.y, p.z] for p in lanelet.centerline])
-        segments = split_line_fixed_length(linestring, self.local_path_length)
-
-        polygons = []
-        for segment in segments:
-            seg_buffer = segment.buffer(buffer_size, cap_style="flat")
-
-            # Extract z coordinates from linestring for each triangle point
-            seg_points = shapely.points(seg_buffer.exterior.coords)
-            seg_distances = linestring.line_locate_point(seg_points)
-            seg_points_on_linestring = linestring.interpolate(seg_distances)
-
-            poly_stamped = PolygonStamped()
-            poly_stamped.header.frame_id = frame_id
-            poly_stamped.header.stamp = rospy.Time.now()
-
-            polygon_points = [Point32(p[0], p[1], seg_points_on_linestring[i].z) for i, p in enumerate(seg_buffer.exterior.coords[:-1])]
-            poly_stamped.polygon = Polygon(points = polygon_points)
-            polygons.append(poly_stamped)
-
-        return polygons
 
 def linelist_to_marker(points, namespace, id, color, scale, stamp):
     """

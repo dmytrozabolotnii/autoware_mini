@@ -27,7 +27,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: All collision points
   - Class: rviz_carla_plugin/CarlaControl
     Name: CarlaControl
   - Class: jsk_rviz_plugin/EmptyServiceCallInterfaceAction
@@ -680,39 +680,13 @@ Visualization Manager:
       Name: Dashboard
     - Class: rviz/Group
       Displays:
-        - Alpha: 0.30000001192092896
-          Class: jsk_rviz_plugin/PolygonArray
-          Color: 0; 255; 255
-          Enabled: true
-          Name: Lanelet2 roads
-          Queue Size: 10
-          Topic: /planning/lanelet2_map_roads
-          Unreliable: false
-          Value: true
-          coloring: Flat color
-          enable lighting: false
-          normal length: 0.10000000149011612
-          only border: false
-          show normal: false
-        - Alpha: 0.30000001192092896
-          Class: jsk_rviz_plugin/PolygonArray
-          Color: 77; 77; 255
-          Enabled: true
-          Name: Labelet2 bus lanes
-          Queue Size: 10
-          Topic: /planning/lanelet2_map_bus_lanes
-          Unreliable: false
-          Value: true
-          coloring: Flat color
-          enable lighting: false
-          normal length: 0.10000000149011612
-          only border: false
-          show normal: false
         - Class: rviz/MarkerArray
           Enabled: true
           Marker Topic: /planning/lanelet2_map_markers
           Name: Lanelet2 map
           Namespaces:
+            Bus lane: true
+            Centerline: true
             Crosswalk: true
             Left boundary: true
             Right boundary: true
@@ -900,10 +874,7 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  Labelet2 bus lanes: true
-                  Lanelet2 map: true
-                  Lanelet2 roads: true
-                  Road area: true
+                  "": true
                   Value: true
                 Planning:
                   Collision points:
@@ -915,12 +886,8 @@ Visualization Manager:
                     Traffic light stopline: true
                     Trajectory: true
                     Value: true
-                  Global path:
-                    Global path: true
-                    Value: true
-                  Local path:
-                    Local path: true
-                    Value: true
+                  Global path: true
+                  Local path: true
                   Start and Goal lanelet markers: true
                   Stop point: true
                   Value: true
@@ -941,10 +908,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1031,10 +995,7 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  Labelet2 bus lanes: true
-                  Lanelet2 map: true
-                  Lanelet2 roads: true
-                  Road area: true
+                  "": true
                   Value: true
                 Planning:
                   Collision points:
@@ -1046,12 +1007,8 @@ Visualization Manager:
                     Traffic light stopline: true
                     Trajectory: true
                     Value: true
-                  Global path:
-                    Global path: true
-                    Value: true
-                  Local path:
-                    Local path: true
-                    Value: true
+                  Global path: true
+                  Local path: true
                   Start and Goal lanelet markers: true
                   Stop point: true
                   Value: true
@@ -1072,10 +1029,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1166,10 +1120,7 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  Labelet2 bus lanes: true
-                  Lanelet2 map: true
-                  Lanelet2 roads: true
-                  Road area: true
+                  "": true
                   Value: true
                 Planning:
                   Collision points:
@@ -1181,12 +1132,8 @@ Visualization Manager:
                     Traffic light stopline: true
                     Trajectory: true
                     Value: true
-                  Global path:
-                    Global path: true
-                    Value: true
-                  Local path:
-                    Local path: true
-                    Value: true
+                  Global path: true
+                  Local path: true
                   Start and Goal lanelet markers: true
                   Stop point: true
                   Value: true
@@ -1216,10 +1163,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1306,10 +1250,7 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  Labelet2 bus lanes: true
-                  Lanelet2 map: true
-                  Lanelet2 roads: true
-                  Road area: true
+                  "": true
                   Value: true
                 Planning:
                   Collision points:
@@ -1321,12 +1262,8 @@ Visualization Manager:
                     Traffic light stopline: true
                     Trajectory: true
                     Value: true
-                  Global path:
-                    Global path: true
-                    Value: true
-                  Local path:
-                    Local path: true
-                    Value: true
+                  Global path: true
+                  Local path: true
                   Start and Goal lanelet markers: true
                   Stop point: true
                   Value: true
@@ -1356,10 +1293,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1446,10 +1380,7 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  Labelet2 bus lanes: true
-                  Lanelet2 map: true
-                  Lanelet2 roads: true
-                  Road area: true
+                  "": true
                   Value: true
                 Planning:
                   Collision points:
@@ -1461,12 +1392,8 @@ Visualization Manager:
                     Traffic light stopline: true
                     Trajectory: true
                     Value: true
-                  Global path:
-                    Global path: true
-                    Value: true
-                  Local path:
-                    Local path: true
-                    Value: true
+                  Global path: true
+                  Local path: true
                   Start and Goal lanelet markers: true
                   Stop point: true
                   Value: true
@@ -1496,10 +1423,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1586,10 +1510,7 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  Labelet2 bus lanes: true
-                  Lanelet2 map: true
-                  Lanelet2 roads: true
-                  Road area: true
+                  "": true
                   Value: true
                 Planning:
                   Collision points:
@@ -1601,12 +1522,8 @@ Visualization Manager:
                     Traffic light stopline: true
                     Trajectory: true
                     Value: true
-                  Global path:
-                    Global path: true
-                    Value: true
-                  Local path:
-                    Local path: true
-                    Value: true
+                  Global path: true
+                  Local path: true
                   Start and Goal lanelet markers: true
                   Stop point: true
                   Value: true
@@ -1636,10 +1553,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1726,10 +1640,7 @@ Visualization Manager:
                   Value: true
                 Grid: true
                 Map:
-                  Labelet2 bus lanes: true
-                  Lanelet2 map: true
-                  Lanelet2 roads: true
-                  Road area: true
+                  "": true
                   Value: true
                 Planning:
                   Collision points:
@@ -1741,12 +1652,8 @@ Visualization Manager:
                     Traffic light stopline: true
                     Trajectory: true
                     Value: true
-                  Global path:
-                    Global path: true
-                    Value: true
-                  Local path:
-                    Local path: true
-                    Value: true
+                  Global path: true
+                  Local path: true
                   Start and Goal lanelet markers: true
                   Stop point: true
                   Value: true
@@ -1776,10 +1683,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -2441,58 +2345,24 @@ Visualization Manager:
               Value: false
           Enabled: true
           Name: Collision points
-        - Class: rviz/Group
-          Displays:
-            - Alpha: 0.6000000238418579
-              Class: jsk_rviz_plugin/PolygonArray
-              Color: 230; 153; 255
-              Enabled: true
-              Name: Global path
-              Queue Size: 10
-              Topic: /planning/global_path_polygons
-              Unreliable: false
-              Value: true
-              coloring: Flat color
-              enable lighting: false
-              normal length: 1
-              only border: false
-              show normal: false
-            - Class: rviz/MarkerArray
-              Enabled: true
-              Marker Topic: /planning/global_path_markers
-              Name: Global path
-              Namespaces:
-                {}
-              Queue Size: 100
-              Value: true
+        - Class: rviz/MarkerArray
           Enabled: true
+          Marker Topic: /planning/global_path_markers
           Name: Global path
-        - Class: rviz/Group
-          Displays:
-            - Alpha: 0.4000000059604645
-              Class: jsk_rviz_plugin/PolygonArray
-              Color: 26; 255; 26
-              Enabled: true
-              Name: Local path
-              Queue Size: 10
-              Topic: /planning/local_path_polygons
-              Unreliable: false
-              Value: true
-              coloring: Flat color
-              enable lighting: false
-              normal length: 0.10000000149011612
-              only border: false
-              show normal: false
-            - Class: rviz/MarkerArray
-              Enabled: true
-              Marker Topic: /planning/local_path_markers
-              Name: Local path
-              Namespaces:
-                {}
-              Queue Size: 100
-              Value: true
+          Namespaces:
+            Path: true
+            Velocity label: true
+            Waypoint pose: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
           Enabled: true
+          Marker Topic: /planning/local_path_markers
           Name: Local path
+          Namespaces:
+            Velocity label: true
+          Queue Size: 100
+          Value: true
         - Class: rviz/Marker
           Enabled: true
           Marker Topic: /planning/stop_point_visualization
@@ -2595,14 +2465,38 @@ Visualization Manager:
                 Value: true
                 Wheel: true
             Detection:
-              "": true
+              Detected objects: true
+              Let's go yield line: true
+              Lidar:
+                Center:
+                  Points center ground: true
+                  Points center no ground: true
+                  Value: true
+                Front:
+                  Points front filtered: true
+                  Points front ground: true
+                  Points front no ground: true
+                  Value: true
+                Lidar detections: true
+                Points clustered: true
+                Points filtered: true
+                Points ground: true
+                Points no ground: true
+                Value: true
+              Predicted objects: true
+              Radar:
+                Radar detections: true
+                Value: true
+              Tracked objects: true
+              Traffic lights:
+                Forward camera ROI image: true
+                Right camera ROI image: true
+                Stop line status: true
+                Value: true
               Value: true
             Grid: true
             Map:
-              Labelet2 bus lanes: true
-              Lanelet2 map: true
-              Lanelet2 roads: true
-              Road area: true
+              "": true
               Value: true
             Planning:
               Collision points:
@@ -2614,19 +2508,38 @@ Visualization Manager:
                 Traffic light stopline: true
                 Trajectory: true
                 Value: true
-              Global path:
-                Global path: true
-                Value: true
-              Local path:
-                Local path: true
-                Value: true
+              Global path: true
+              Local path: true
               Start and Goal lanelet markers: true
               Stop point: true
               Value: true
             Sensing:
-              "":
-                "": true
+              Mako:
+                Camera left: true
+                Camera right: true
+                Image left: true
+                Image right: true
                 Value: true
+              Nvidia:
+                Camera Interface link1 Right: true
+                Camera Interface link2 Forward: true
+                Camera Interface link3 Backward: true
+                Camera InterfaceB link 0 Base: true
+                Camera Interfacea link 0 Left: true
+                Image Interface link1 Right: true
+                Image Interface link2 Forward: true
+                Image Interface link3 Backward: true
+                Image InterfaceB link0 Base: true
+                Image Interfacea link0 Left: true
+                Value: true
+              Openpilot:
+                Lane boundary matcher: true
+                Openpilot lane lines: true
+                Openpilot plan: true
+                Value: true
+              Points raw center: true
+              Points raw front: true
+              Radar raw: true
               Value: true
             Simulation:
               Bicycle markers: true
@@ -2716,10 +2629,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.0010000000474974513
-      Scale: 10
+      Scale: 12.456822395324707
       Target Frame: base_link
-      X: 0
-      Y: 0
+      X: 0.5167635083198547
+      Y: 32.22723388671875
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho
