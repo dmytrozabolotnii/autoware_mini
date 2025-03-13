@@ -20,37 +20,36 @@ def triangulate_polygon(polygon_points):
     triangle_points = [Point(x=x, y=y, z=z) for x, y, z in coords[triangles]]
     return triangle_points
 
-
 def triangulate_linestring(linestring, width, split_length=100, z_offset=0):
-        """
-        Triangulates a polygon defined by centerline and width using earcut algorithm
+    """
+    Triangulates a polygon defined by centerline and width using earcut algorithm
 
-        Parameters:
-        - linestring: Shapely LineString centerline
-        - split_length: Maximum line segment length
-        - z_offset: Offset for z-coordinates
+    Parameters:
+    - linestring: Shapely LineString centerline
+    - split_length: Maximum line segment length
+    - z_offset: Offset for z-coordinates
 
-        Returns:
-        - List of triangle points. Every set of 3 points is treated as a triangle
-        """
+    Returns:
+    - List of triangle points. Every set of 3 points is treated as a triangle
+    """
 
-        segments = split_line_fixed_length(linestring, split_length)
+    segments = split_line_fixed_length(linestring, split_length)
 
-        triangle_points = []
-        for segment in segments:
-            seg_buffer = segment.buffer(width / 2, cap_style="flat")
-            coords = np.array(seg_buffer.exterior.coords, dtype=np.float32)
-            triangles = earcut.triangulate_float32(coords, [len(coords)])
+    triangle_points = []
+    for segment in segments:
+        seg_buffer = segment.buffer(width / 2, cap_style="flat")
+        coords = np.array(seg_buffer.exterior.coords, dtype=np.float32)
+        triangles = earcut.triangulate_float32(coords, [len(coords)])
 
-            # Extract z coordinates from linestring for each triangle point
-            seg_points = shapely.points(seg_buffer.exterior.coords)
-            seg_distances = linestring.project(seg_points)
-            seg_points_on_linestring = linestring.interpolate(seg_distances)
+        # Extract z coordinates from linestring for each triangle point
+        seg_points = shapely.points(seg_buffer.exterior.coords)
+        seg_distances = linestring.project(seg_points)
+        seg_points_on_linestring = linestring.interpolate(seg_distances)
 
-            for i in triangles:
-                x, y = coords[i]
-                z = seg_points_on_linestring[i].z + z_offset
-                triangle_points.append(Point(x=x, y=y, z=z))
+        for i in triangles:
+            x, y = coords[i]
+            z = seg_points_on_linestring[i].z + z_offset
+            triangle_points.append(Point(x=x, y=y, z=z))
 
         return triangle_points
 
