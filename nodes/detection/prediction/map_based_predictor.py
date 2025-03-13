@@ -94,7 +94,7 @@ class MapBasedPredictor:
                 trajectory_turn_directions = [[self.lanelet2_map.laneletLayer[id].attributes["turn_direction"] if "turn_direction" in lanelet.attributes else "straight" for id in trajectory] for trajectory in all_trajectories]
                 # Score each trajectory 
                 # TODO use first lanelet's turn direction as object indicator, in future should be replaced by object's real indicator information
-                scores = [self.evaluate_paths(trajectory_turn_directions[i], trajectory_turn_directions[i][0]) for i in range(len(all_trajectories))]
+                scores = [self.score_paths(trajectory_turn_directions[i], trajectory_turn_directions[i][0]) for i in range(len(all_trajectories))]
 
                 # Pair trajectories with their scores, sort and limit the number of trajectories to match `trajectories_to_predict`
                 scored_trajectories = list(zip(all_trajectories, scores))
@@ -176,7 +176,7 @@ class MapBasedPredictor:
 
         return trajectories
 
-    def evaluate_paths(self, path, object_indicator):
+    def score_paths(self, path, object_indicator):
         path_score = 0
         for i, turn in enumerate(path):
             # score the lanelet according to how well it matches the object indicator
