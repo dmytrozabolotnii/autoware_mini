@@ -6,6 +6,7 @@ import shapely
 import shapely.ops
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
+from geometry_msgs.msg import TwistStamped
 from tf2_ros import TransformListener, Buffer
 from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
@@ -24,11 +25,13 @@ class PedestrianCrosswalkChecker:
         self.crossing_angle_max_limit = rospy.get_param("~crossing_angle_max_limit")
         self.use_object_width = rospy.get_param("use_object_width")
         self.ignore_static_obstacles = rospy.get_param("~ignore_static_obstacles")
+        self.crosswalk_maximum_deceleration = rospy.get_param("~crosswalk_maximum_deceleration")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
+        self.current_speed = None
         self.detected_objects = None
         self.crosswalks_on_global_path = None
 
@@ -43,6 +46,10 @@ class PedestrianCrosswalkChecker:
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/detection/predicted_objects', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
+
+    def current_velocity_callback(self, msg):
+        self.current_speed = msg.twist.linear.x
 
     def predicted_objects_callback(self, msg):
         self.detected_objects = msg.objects
@@ -63,6 +70,7 @@ class PedestrianCrosswalkChecker:
     def local_path_callback(self, msg):
         detected_objects = self.detected_objects
         crosswalks_on_global_path = self.crosswalks_on_global_path
+        current_speed = self.current_speed
 
         if crosswalks_on_global_path is None:
             rospy.logwarn_throttle(3, "%s - global path not received!", rospy.get_name())
@@ -142,6 +150,14 @@ class PedestrianCrosswalkChecker:
 
                                     if closest_intersection_path_approach_angle < self.crossing_angle_max_limit or \
                                         (180 - closest_intersection_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(trajectory_to_check)):
+                                        # check with maximum allowed deceleration
+                                        crosswalk_distance_from_path_start = min(local_path.linestring.project(shapely.points(crosswalk['intersection_points'])))
+                                        ego_distance_to_crosswalk = crosswalk_distance_from_path_start - car_front_distance_from_path_start
+                                        deceleration = (current_speed ** 2) / (2 * ego_distance_to_crosswalk)
+                                        if deceleration > self.crosswalk_maximum_deceleration:
+                                            rospy.logwarn_throttle(3, f"{rospy.get_name()} - ignore crosswalk prediction for object id: {obj.id}, deceleration: {deceleration:.2f}, distance: {ego_distance_to_crosswalk:.2f}")
+                                            continue
+                                        # add intersection points as collision points
                                         collision_points.add_intersection_points(crosswalk['intersection_points'], z=obj.position.z, vx=0, vy=0, vz=0, distance_to_stop=self.braking_safety_distance_crosswalk, category=CollisionPoints.TRAJECTORY_ON_CROSSWALK)
                                         crosswalks_on_local_path.remove(crosswalk)
                                         break
