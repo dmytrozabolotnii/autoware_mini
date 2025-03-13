@@ -158,12 +158,15 @@ class MapBasedPredictor:
         return filtered_trajectories
 
     def follow_lanelets(self, current_lanelet, remaining_distance):
-        trajectories = []  # Store all possible trajectories
-        next_lanelets = self.graph.following(current_lanelet)
 
-        if remaining_distance <= 0 or not next_lanelets:
+        if remaining_distance <= 0:
             return [[current_lanelet.id]]  # Base case: return a single-lanelet trajectory
 
+        next_lanelets = self.graph.following(current_lanelet)
+        if not next_lanelets:
+            return [[current_lanelet.id]]
+
+        trajectories = []  # Store all possible trajectories
         for next_lanelet in next_lanelets:
             next_lanelet_length = length2d(next_lanelet)
             # Recursively follow the lanelets
