@@ -74,7 +74,7 @@ class YieldingChecker:
             car_front = get_car_front_point(self.tf_buffer, msg.header.frame_id)
             car_front_distance_from_path_start = local_path.linestring.project(car_front)
 
-            # find if there are any yiled_lines on local_path and select the closest one
+            # find if there are any yield_lines on local_path and select the closest one
             yield_line_distance = np.inf
             yield_line_point = None
             for yield_line in yield_lines_on_global_path:
@@ -113,7 +113,7 @@ class YieldingChecker:
                             heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
 
                             # CHECK YIELDING
-                            #    - trajectory_intersection after yiled line within 40m
+                            #    - trajectory_intersection after yield line within 40m
                             #    - ignore objects that align with the local_path (for example car in front) at the object projection point
                             if yield_line_distance < trajectory_intersection_distance and trajectory_intersection_distance - yield_line_distance < self.yielding_distance_limit \
                                 and heading_difference > self.heading_alignment_limit:
