@@ -247,11 +247,11 @@ def follow_lanelets(routing_grpah, current_lanelet, remaining_distance):
     current_lanelet_length = length2d(current_lanelet)
 
     if remaining_distance <= current_lanelet_length:
-        return [[current_lanelet.id]]  # Base case: return a single-lanelet trajectory
+        return [[current_lanelet]]  # Base case: return a single-lanelet trajectory
 
     next_lanelets = routing_grpah.following(current_lanelet)
     if not next_lanelets:
-        return [[current_lanelet.id]]
+        return [[current_lanelet]]
 
     remaining_distance -= current_lanelet_length
 
@@ -260,6 +260,6 @@ def follow_lanelets(routing_grpah, current_lanelet, remaining_distance):
         # Recursively follow the lanelets
         following_trajectories = follow_lanelets(routing_grpah, next_lanelet, remaining_distance)
         for traj in following_trajectories:
-            trajectories.append([current_lanelet.id] + traj)  # Add current lanelet to each path
+            trajectories.append([current_lanelet] + traj)  # Add current lanelet to each path
 
     return trajectories

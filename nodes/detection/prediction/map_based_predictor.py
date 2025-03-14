@@ -90,7 +90,7 @@ class MapBasedPredictor:
 
             # 3. SCORING IF NEEDED
             if len(all_trajectories) > self.trajectories_to_predict:
-                trajectory_turn_directions = [[self.lanelet2_map.laneletLayer[id].attributes["turn_direction"] if "turn_direction" in lanelet.attributes else "straight" for id in trajectory] for trajectory in all_trajectories]
+                trajectory_turn_directions = [[lanelet.attributes["turn_direction"] if "turn_direction" in lanelet.attributes else "straight" for lanelet in trajectory] for trajectory in all_trajectories]
                 # Score each trajectory 
                 # TODO use first lanelet's turn direction as object indicator, in future should be replaced by object's real indicator information
                 scores = [self.score_paths(trajectory_turn_directions[i], trajectory_turn_directions[i][0]) for i in range(len(all_trajectories))]
@@ -103,7 +103,7 @@ class MapBasedPredictor:
             # 4. CREATE PREDICTIONS AND PUBLISH
             # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
             for trajectory in all_trajectories:
-                centerline_linestring = shapely.LineString([(p.x, p.y, p.z) for id in trajectory for p in self.lanelet2_map.laneletLayer[id].centerline])
+                centerline_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline])
                 if self.use_offset_for_prediction:
                     cross_track_offset = -calculate_cross_track_error(centerline_linestring, object_centroid)
                     trajectory_linestring = centerline_linestring.offset_curve(cross_track_offset, join_style="mitre")
@@ -146,10 +146,10 @@ class MapBasedPredictor:
         # If there are multiple trajectories that end in the same lanelet, keep the one with the smallest angle difference (better match)
         best_trajectories = {}
         for angle, trajectory in zip(angle_differences, all_trajectories):
-            end_id = trajectory[-1]  # Get the last lanelet ID
+            end_lanelet = trajectory[-1]  # Get the last lanelet ID
             # If the end_id is not in the dictionary or the new angle is smaller, update the dictionary
-            if end_id not in best_trajectories or angle < best_trajectories[end_id][0]:
-                best_trajectories[end_id] = (angle, trajectory)
+            if end_lanelet not in best_trajectories or angle < best_trajectories[end_lanelet][0]:
+                best_trajectories[end_lanelet] = (angle, trajectory)
         # Extract the filtered trajectories
         filtered_trajectories = [item[1] for item in best_trajectories.values()]
 
