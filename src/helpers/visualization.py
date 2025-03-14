@@ -51,7 +51,7 @@ def triangulate_linestring(linestring, width, split_length=100, z_offset=0):
             z = seg_points_on_linestring[i].z + z_offset
             triangle_points.append(Point(x=x, y=y, z=z))
 
-        return triangle_points
+    return triangle_points
 
 def split_line_fixed_length(line, segment_length):
     """
