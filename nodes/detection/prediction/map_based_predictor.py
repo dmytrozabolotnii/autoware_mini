@@ -115,16 +115,20 @@ class MapBasedPredictor:
                 object_front = shapely.Point(object_front.x, object_front.y, object_front.z)
                 object_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_front)
 
+                points_z = centerline_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
+                if self.use_offset_for_prediction:
+                    points_xy = trajectory_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
+
                 path = Path()
-                for distance, velocity in zip(distances, velocities):
+                for i, velocity in enumerate(velocities):
                     wp = Waypoint()
-                    p = trajectory_linestring.interpolate(object_distance_from_trajectory_linestring_start + distance)
-                    wp.position.x = p.x
-                    wp.position.y = p.y
                     if self.use_offset_for_prediction:
-                       # for offset curve z is not available, therefore taken from the centerline
-                       p = centerline_linestring.interpolate(object_distance_from_trajectory_linestring_start + distance)
-                    wp.position.z = p.z
+                        wp.position.x = points_xy[i].x
+                        wp.position.y = points_xy[i].y
+                    else:
+                        wp.position.x = points_z[i].x
+                        wp.position.y = points_z[i].y
+                    wp.position.z = points_z[i].z
                     wp.speed = velocity
                     path.waypoints.append(wp)
                 obj.candidate_trajectories.paths.append(path)
