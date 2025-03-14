@@ -110,40 +110,33 @@ class YieldingChecker:
                             trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 
-                            # Ignore trajectories from behind
-                            if math.isclose(trajectory_intersection_distance, 0.0, abs_tol=0.001):
+                            # Intersection not in the right range - after yield line and within 40m limits
+                            if trajectory_intersection_distance < yield_line_distance or trajectory_intersection_distance - yield_line_distance > self.yielding_distance_limit:
                                 continue
 
-                            object_current_heading = get_heading_from_vector(obj.velocity)
-                            object_current_location = shapely.Point(obj.position.x, obj.position.y)
-                            object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
-                            object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
-                            heading_difference = math.degrees(get_angle_between_two_headings(object_current_heading, object_local_path_heading))
+                            # Do not yield if object itself is on the local path
+                            object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                            if local_path_buffer.intersects(object_polygon):
+                                continue
 
-                            # CHECK YIELDING
-                            #    - trajectory_intersection after yield line within 40m
-                            #    - ignore objects that align with the local_path (for example car in front) at the object projection point
-                            if yield_line_distance < trajectory_intersection_distance and trajectory_intersection_distance - yield_line_distance < self.yielding_distance_limit \
-                                and heading_difference > self.heading_alignment_limit:
+                            ego_distance_to_yield_line = yield_line_distance - car_front_distance_from_path_start
+                            deceleration = (current_speed ** 2) / (2 * ego_distance_to_yield_line)
+                            if deceleration > self.yielding_maximum_deceleration:
+                                rospy.logwarn_throttle(3, f"{rospy.get_name()} - ignore yield line deceleration: {deceleration:.2f}, distance: {ego_distance_to_yield_line:.2f}")
+                                continue
 
-                                # check with maximum allowed deceleration
-                                ego_distance_to_yield_line = yield_line_distance - car_front_distance_from_path_start
-                                deceleration = (current_speed ** 2) / (2 * ego_distance_to_yield_line)
-                                if deceleration > self.yielding_maximum_deceleration:
-                                    rospy.logwarn_throttle(3, f"{rospy.get_name()} - ignore yield line deceleration: {deceleration:.2f}, distance: {ego_distance_to_yield_line:.2f}")
-                                    continue
-
-                                collision_points.add_point(x = yield_line_point.x,
-                                                        y = yield_line_point.y,
-                                                        z = yield_line_point.z,
-                                                        vx = 0.0,
-                                                        vy = 0.0, 
-                                                        vz = 0.0,
-                                                        distance_to_stop = self.braking_safety_distance_yield,
-                                                        category = CollisionPoints.YIELDING_TRAJECTORY)
-                                # if one found then break the path and object loops
-                                yielding_found = True
-                                break
+                            # Yielding to all that are left
+                            collision_points.add_point(x = yield_line_point.x,
+                                                    y = yield_line_point.y,
+                                                    z = yield_line_point.z,
+                                                    vx = 0.0,
+                                                    vy = 0.0, 
+                                                    vz = 0.0,
+                                                    distance_to_stop = self.braking_safety_distance_yield,
+                                                    category = CollisionPoints.YIELDING_TRAJECTORY)
+                            # if one found then break the path and object loops
+                            yielding_found = True
+                            break
                     if yielding_found:
                         break
 
