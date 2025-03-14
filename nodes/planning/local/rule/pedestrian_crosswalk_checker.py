@@ -118,8 +118,8 @@ class PedestrianCrosswalkChecker:
                     for crosswalk in crosswalks_on_local_path[:]:
 
                         # Add crosswalk to the counter
-                        if crosswalk['polygon'] not in object_crosswalk_counter:
-                            object_crosswalk_counter[crosswalk['polygon']] = {}
+                        if crosswalk['id'] not in object_crosswalk_counter:
+                            object_crosswalk_counter[crosswalk['id']] = {}
 
                         # INTERSECTING OBJECTS
                         if crosswalk['polygon'].intersects(object_polygon):
@@ -158,12 +158,12 @@ class PedestrianCrosswalkChecker:
                                         (180 - closest_intersection_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(trajectory_to_check)):
 
                                         # Add object id to the counter if present else increment the counter
-                                        if obj.id not in self.object_crosswalk_counter[crosswalk['polygon']]:
-                                            object_crosswalk_counter[crosswalk['polygon']][obj.id] = 1
+                                        if obj.id not in self.object_crosswalk_counter[crosswalk['id']]:
+                                            object_crosswalk_counter[crosswalk['id']][obj.id] = 1
                                         else:
-                                            object_crosswalk_counter[crosswalk['polygon']][obj.id] = self.object_crosswalk_counter[crosswalk['polygon']][obj.id] + 1
+                                            object_crosswalk_counter[crosswalk['id']][obj.id] = self.object_crosswalk_counter[crosswalk['id']][obj.id] + 1
                                         # ignore if consecutive detection counter is less than the threshold
-                                        if object_crosswalk_counter[crosswalk['polygon']][obj.id] <= self.prediction_counter_min_limit:
+                                        if object_crosswalk_counter[crosswalk['id']][obj.id] <= self.prediction_counter_min_limit:
                                             continue
 
                                         # check with maximum allowed deceleration
@@ -186,11 +186,12 @@ class PedestrianCrosswalkChecker:
     def prepare_crosswalks(self, crosswalks_in):
         crosswalks_out = []
         for crosswalk in crosswalks_in:
-            
+
             polygon = shapely.Polygon([(p.x, p.y) for p in crosswalk.polygon2d()])
             shapely.prepare(polygon)
 
             crosswalks_out.append({
+                'id': crosswalk.id,
                 'polygon': polygon
             })
         return crosswalks_out
