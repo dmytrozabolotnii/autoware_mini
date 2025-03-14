@@ -59,9 +59,10 @@ pedestrian_crosswalk_checker:
   crosswalk_maximum_deceleration: 2.8     # m/s2
   prediction_counter_min_limit: 3         # int
 yielding_checker:
-  braking_safety_distance_yield: 0.1      # m
+  braking_safety_distance_yield: 1.0      # m
   yielding_distance_limit: 40.0           # m
   heading_alignment_limit: 30.0           # degrees
+  yielding_maximum_deceleration: 2.8      # m/s2
 trajectory_collision_checker:
   braking_safety_distance_trajectory: 4   # m
   heading_alignment_limit: 30.0           # degrees
