@@ -65,7 +65,6 @@ class MapBasedPredictor:
 
                 # Calculate angle difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
-                lanelet_length = linestring.length
                 object_distance_from_start = linestring.project(object_centroid)
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
                 forward_point = linestring.interpolate(object_distance_from_start + 0.1)
@@ -74,11 +73,11 @@ class MapBasedPredictor:
 
                 # Add lanelet if angle difference is within threshold
                 if heading_difference_degrees < self.angle_threshold:
-                    selected_lanelets.append((lanelet, object_distance_from_start, lanelet_length, heading_difference_degrees))
+                    selected_lanelets.append((lanelet, object_distance_from_start, heading_difference_degrees))
 
             # Sort by heading angle difference and limit selection to match `trajectories_to_predict`
             if len(selected_lanelets) > self.trajectories_to_predict:
-                selected_lanelets.sort(key=lambda l: l[3])
+                selected_lanelets.sort(key=lambda l: l[2])
                 selected_lanelets = selected_lanelets[:self.trajectories_to_predict]
 
             # 2. CREATE ALL TRAJECTORIES
@@ -136,11 +135,10 @@ class MapBasedPredictor:
     def create_trajectories(self, start_lanelets, prediction_length, object_length):
         all_trajectories = []
         angle_differences = []
-        for start_lanelet, distance_from_lanelet_start, lanelet_length, angle_difference in start_lanelets:
-            remaining_distance_on_current_lanelet = lanelet_length - distance_from_lanelet_start - object_length / 2
-            distance_on_following_lanelets = prediction_length - remaining_distance_on_current_lanelet
+        for start_lanelet, distance_from_lanelet_start, angle_difference in start_lanelets:
+            distance_from_start_lanelet = prediction_length + distance_from_lanelet_start + object_length / 2
             # explore following lanelets recursively
-            trajectories = follow_lanelets(self.graph, start_lanelet, distance_on_following_lanelets)
+            trajectories = follow_lanelets(self.graph, start_lanelet, distance_from_start_lanelet)
             all_trajectories.extend(trajectories)
             for i in range(len(trajectories)):
                 angle_differences.append(angle_difference)

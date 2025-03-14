@@ -244,17 +244,21 @@ def follow_lanelets(routing_grpah, current_lanelet, remaining_distance):
     :return: list of possible trajectories
     """
 
-    if remaining_distance <= 0:
+    current_lanelet_length = length2d(current_lanelet)
+
+    if remaining_distance <= current_lanelet_length:
         return [[current_lanelet.id]]  # Base case: return a single-lanelet trajectory
 
     next_lanelets = routing_grpah.following(current_lanelet)
     if not next_lanelets:
         return [[current_lanelet.id]]
 
+    remaining_distance -= current_lanelet_length
+
     trajectories = []  # Store all possible trajectories
     for next_lanelet in next_lanelets:
         # Recursively follow the lanelets
-        following_trajectories = follow_lanelets(routing_grpah, next_lanelet, remaining_distance - length2d(next_lanelet))
+        following_trajectories = follow_lanelets(routing_grpah, next_lanelet, remaining_distance)
         for traj in following_trajectories:
             trajectories.append([current_lanelet.id] + traj)  # Add current lanelet to each path
 
