@@ -4,6 +4,7 @@ import math
 import rospy
 import shapely
 import shapely.ops
+from collections import defaultdict
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import TwistStamped
@@ -35,7 +36,7 @@ class PedestrianCrosswalkChecker:
         self.current_speed = None
         self.detected_objects = None
         self.crosswalks_on_global_path = None
-        self.object_crosswalk_counter = {}
+        self.object_crosswalk_counter = defaultdict(dict)
 
         # load lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
@@ -73,7 +74,7 @@ class PedestrianCrosswalkChecker:
         detected_objects = self.detected_objects
         crosswalks_on_global_path = self.crosswalks_on_global_path
         current_speed = self.current_speed
-        object_crosswalk_counter = {}
+        object_crosswalk_counter = defaultdict(dict)
 
         if crosswalks_on_global_path is None:
             rospy.logwarn_throttle(3, "%s - global path not received!", rospy.get_name())
@@ -116,10 +117,6 @@ class PedestrianCrosswalkChecker:
                     object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_to_path_heading))
 
                     for crosswalk in crosswalks_on_local_path[:]:
-
-                        # Add crosswalk to the counter
-                        if crosswalk['id'] not in object_crosswalk_counter:
-                            object_crosswalk_counter[crosswalk['id']] = {}
 
                         # INTERSECTING OBJECTS
                         if crosswalk['polygon'].intersects(object_polygon):
