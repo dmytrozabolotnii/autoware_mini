@@ -6,13 +6,13 @@ import numpy as np
 import shapely
 import lanelet2
 from lanelet2.core import BasicPoint2d
-from lanelet2.geometry import findWithin2d, length2d
+from lanelet2.geometry import findWithin2d
 
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
 from helpers.path import calculate_cross_track_error
 from helpers.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings, get_point_using_heading_and_distance
-from helpers.lanelet2 import load_lanelet2_map
+from helpers.lanelet2 import load_lanelet2_map, follow_lanelets
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
     'straight': {'straight': 1, 'left': 0.5, 'right': 0.5},
@@ -140,7 +140,7 @@ class MapBasedPredictor:
             remaining_distance_on_current_lanelet = lanelet_length - distance_from_lanelet_start - object_length / 2
             distance_on_following_lanelets = prediction_length - remaining_distance_on_current_lanelet
             # explore following lanelets recursively
-            trajectories = self.follow_lanelets(start_lanelet, distance_on_following_lanelets)
+            trajectories = follow_lanelets(self.graph, start_lanelet, distance_on_following_lanelets)
             all_trajectories.extend(trajectories)
             for i in range(len(trajectories)):
                 angle_differences.append(angle_difference)
@@ -156,25 +156,6 @@ class MapBasedPredictor:
         filtered_trajectories = [item[1] for item in best_trajectories.values()]
 
         return filtered_trajectories
-
-    def follow_lanelets(self, current_lanelet, remaining_distance):
-
-        if remaining_distance <= 0:
-            return [[current_lanelet.id]]  # Base case: return a single-lanelet trajectory
-
-        next_lanelets = self.graph.following(current_lanelet)
-        if not next_lanelets:
-            return [[current_lanelet.id]]
-
-        trajectories = []  # Store all possible trajectories
-        for next_lanelet in next_lanelets:
-            next_lanelet_length = length2d(next_lanelet)
-            # Recursively follow the lanelets
-            following_trajectories = self.follow_lanelets(next_lanelet, remaining_distance - next_lanelet_length)
-            for traj in following_trajectories:
-                trajectories.append([current_lanelet.id] + traj)  # Add current lanelet to each path
-
-        return trajectories
 
     def score_paths(self, path, object_indicator):
         path_score = 0
