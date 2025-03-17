@@ -30,12 +30,14 @@ class MapBasedPredictor:
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
         self.angle_threshold = rospy.get_param('~angle_threshold')
         self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
-
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
+        # Variables
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.Vehicle)
         self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
+        num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
+        self.timesteps = np.arange(num_timesteps) * self.prediction_interval
 
         # Publishers
         self.predicted_objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -44,8 +46,6 @@ class MapBasedPredictor:
         rospy.Subscriber('tracked_objects', DetectedObjectArray, self.tracked_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
 
     def tracked_objects_callback(self, msg):
-        num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
-        timesteps = np.arange(num_timesteps) * self.prediction_interval
 
         for obj in msg.objects:
             object_speed = get_vector_norm_3d(obj.velocity)
@@ -84,8 +84,8 @@ class MapBasedPredictor:
             all_trajectories = []
             if len(selected_lanelets) > 0:
                 object_accel = get_vector_norm_3d(obj.acceleration)
-                velocities = object_speed + object_accel * timesteps
-                distances = (object_accel * timesteps**2) / 2 + object_speed * timesteps
+                velocities = object_speed + object_accel * self.timesteps
+                distances = (object_accel * self.timesteps**2) / 2 + object_speed * self.timesteps
                 all_trajectories = self.create_trajectories(selected_lanelets, distances[-1], obj.dimensions.x)
 
             # 3. SCORING IF NEEDED
