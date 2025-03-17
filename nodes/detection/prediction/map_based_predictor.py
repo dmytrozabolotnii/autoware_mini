@@ -151,10 +151,10 @@ class MapBasedPredictor:
         # If there are multiple trajectories that end in the same lanelet, keep the one with the smallest angle difference (better match)
         best_trajectories = {}
         for angle, trajectory in zip(heading_differences, all_trajectories):
-            end_lanelet = trajectory[-1]  # Get the last lanelet ID
+            end_lanelet = trajectory[-1]  # Get the last lanelet
             # If the end_id is not in the dictionary or the new angle is smaller, update the dictionary
-            if end_lanelet not in best_trajectories or angle < best_trajectories[end_lanelet][0]:
-                best_trajectories[end_lanelet] = (angle, trajectory)
+            if end_lanelet.id not in best_trajectories or angle < best_trajectories[end_lanelet.id][0]:
+                best_trajectories[end_lanelet.id] = (angle, trajectory)
         # Extract the filtered trajectories
         filtered_trajectories = [item[1] for item in best_trajectories.values()]
 
