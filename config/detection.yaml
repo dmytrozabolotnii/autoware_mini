@@ -114,8 +114,8 @@ ema_tracker:
   update_heading_bboxes: True
 
 naive_predictor:
-  prediction_horizon: 2.0           # s
-  prediction_interval: 2.0          # s
+  prediction_horizon: 3.0           # s
+  prediction_interval: 3.0          # s
   prediction_min_speed: 1.0         # m/s
 
 map_based_predictor:
