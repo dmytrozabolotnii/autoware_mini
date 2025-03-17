@@ -53,7 +53,7 @@ class MapBasedPredictor:
                 continue
 
             # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
-            object_centroid = shapely.Point(obj.position.x, obj.position.y)
+            object_position = shapely.Point(obj.position.x, obj.position.y)
             # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
             lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(obj.position.x, obj.position.y), self.distance_from_lanelet)
 
@@ -65,7 +65,7 @@ class MapBasedPredictor:
 
                 # Calculate angle difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
-                object_distance_from_start = linestring.project(object_centroid)
+                object_distance_from_start = linestring.project(object_position)
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
                 forward_point = linestring.interpolate(object_distance_from_start + 0.1)
                 lanelet_heading = get_heading_between_two_points(object_location_on_lanelet, forward_point)
@@ -105,7 +105,7 @@ class MapBasedPredictor:
             for trajectory in all_trajectories:
                 centerline_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline])
                 if self.use_offset_for_prediction:
-                    cross_track_offset = -calculate_cross_track_error(centerline_linestring, object_centroid)
+                    cross_track_offset = -calculate_cross_track_error(centerline_linestring, object_position)
                     trajectory_linestring = centerline_linestring.offset_curve(cross_track_offset, join_style="mitre")
                 else:
                     trajectory_linestring = centerline_linestring
@@ -115,20 +115,20 @@ class MapBasedPredictor:
                 object_front = shapely.Point(object_front.x, object_front.y, object_front.z)
                 object_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_front)
 
-                points_z = centerline_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
+                points_centerline = centerline_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
                 if self.use_offset_for_prediction:
-                    points_xy = trajectory_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
+                    points_offset = trajectory_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
 
                 path = Path()
                 for i, velocity in enumerate(velocities):
                     wp = Waypoint()
                     if self.use_offset_for_prediction:
-                        wp.position.x = points_xy[i].x
-                        wp.position.y = points_xy[i].y
+                        wp.position.x = points_offset[i].x
+                        wp.position.y = points_offset[i].y
                     else:
-                        wp.position.x = points_z[i].x
-                        wp.position.y = points_z[i].y
-                    wp.position.z = points_z[i].z
+                        wp.position.x = points_centerline[i].x
+                        wp.position.y = points_centerline[i].y
+                    wp.position.z = points_centerline[i].z
                     wp.speed = velocity
                     path.waypoints.append(wp)
                 obj.candidate_trajectories.paths.append(path)
