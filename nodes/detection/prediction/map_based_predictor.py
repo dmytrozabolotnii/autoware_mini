@@ -139,18 +139,18 @@ class MapBasedPredictor:
 
     def create_trajectories(self, start_lanelets, prediction_length, object_length):
         all_trajectories = []
-        angle_differences = []
-        for start_lanelet, distance_from_lanelet_start, angle_difference in start_lanelets:
+        heading_differences = []
+        for start_lanelet, distance_from_lanelet_start, heading_difference in start_lanelets:
             distance_from_start_lanelet = prediction_length + distance_from_lanelet_start + object_length / 2
             # explore following lanelets recursively
             trajectories = follow_lanelets(self.graph, start_lanelet, distance_from_start_lanelet)
             all_trajectories.extend(trajectories)
             for i in range(len(trajectories)):
-                angle_differences.append(angle_difference)
+                heading_differences.append(heading_difference)
 
         # If there are multiple trajectories that end in the same lanelet, keep the one with the smallest angle difference (better match)
         best_trajectories = {}
-        for angle, trajectory in zip(angle_differences, all_trajectories):
+        for angle, trajectory in zip(heading_differences, all_trajectories):
             end_lanelet = trajectory[-1]  # Get the last lanelet ID
             # If the end_id is not in the dictionary or the new angle is smaller, update the dictionary
             if end_lanelet not in best_trajectories or angle < best_trajectories[end_lanelet][0]:
