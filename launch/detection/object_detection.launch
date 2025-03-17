@@ -110,6 +110,7 @@
     <node type="detected_objects_visualizer.py" name="tracked_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
         <remap from="detected_objects" to="tracked_objects" />
         <remap from="detected_objects_markers" to="tracked_objects_markers" />
+        <remap from="detected_objects_bboxes" to="tracked_objects_bboxes" />
     </node>
 
     <group unless="$(eval predictor=='none')">

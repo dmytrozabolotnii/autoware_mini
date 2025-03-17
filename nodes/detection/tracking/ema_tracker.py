@@ -5,6 +5,7 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
 from autoware_mini.msg import DetectedObjectArray
+from helpers.geometry import get_vector_norm_3d
 from helpers.detection import calculate_iou, get_axis_oriented_bounding_box, update_object_position_dimensions
 
 class EMATracker:
@@ -21,6 +22,8 @@ class EMATracker:
         self.acceleration_gain = rospy.get_param('~acceleration_gain')
         self.association_method = rospy.get_param('~association_method')
         self.max_euclidean_distance = rospy.get_param('~max_euclidean_distance')
+        self.update_heading_bboxes = rospy.get_param('~update_heading_bboxes')
+        self.stopped_speed_limit = rospy.get_param('/planning/stopped_speed_limit')
 
         self.tracked_objects = []
         self.tracked_objects_array = np.empty((0,), dtype=[
@@ -196,8 +199,10 @@ class EMATracker:
         assert len(tracked_objects) == len(tracked_objects_indices)
 
         ### 8. update tracked objects dimensions, position, heading based on velocity vector ###
-        for i, obj in enumerate(tracked_objects):
-            update_object_position_dimensions(obj)
+        if self.update_heading_bboxes:
+            for i, obj in enumerate(tracked_objects):
+                if get_vector_norm_3d(obj.velocity) >= self.stopped_speed_limit:
+                    update_object_position_dimensions(obj)
 
         # publish tracked objects
         tracked_objects_msg = DetectedObjectArray()

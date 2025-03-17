@@ -71,7 +71,7 @@ lidar:
     cluster_in_2d: True
   cluster_detector:
     min_cluster_size: 4
-    bounding_box_type: axis_aligned # axis_aligned, min_area
+    bounding_box_type: min_area     # axis_aligned, min_area
     transform_timeout: 0.06         # needed for Carla
 
   sfa_detector:
@@ -111,6 +111,7 @@ ema_tracker:
   acceleration_gain: 0.0
   association_method: iou   # iou, euclidean
   max_euclidean_distance: 2.0
+  update_heading_bboxes: True
 
 naive_predictor:
   prediction_horizon: 2.0           # s
