@@ -62,19 +62,8 @@ def triangulate_path(linestring, width, split_length=100, z_offset=0):
 
     triangle_points = []
     for segment in segments:
-        seg_buffer = segment.buffer(width / 2, cap_style="flat")
-        coords = np.array(seg_buffer.exterior.coords, dtype=np.float32)
-        triangles = earcut.triangulate_float32(coords, [len(coords)])
-
-        # Extract z coordinates from linestring for each triangle point
-        seg_points = shapely.points(seg_buffer.exterior.coords)
-        seg_distances = linestring.project(seg_points)
-        seg_points_on_linestring = linestring.interpolate(seg_distances)
-
-        for i in triangles:
-            x, y = coords[i]
-            z = seg_points_on_linestring[i].z + z_offset
-            triangle_points.append(Point(x=x, y=y, z=z))
+        points = triangulate_linestring(segment, width, z_offset)
+        triangle_points.extend(points)
 
     return triangle_points
 
