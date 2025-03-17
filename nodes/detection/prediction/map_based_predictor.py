@@ -28,7 +28,7 @@ class MapBasedPredictor:
         self.trajectories_to_predict = rospy.get_param('~trajectories_to_predict')
         self.prediction_min_speed = rospy.get_param('~prediction_min_speed')
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
-        self.angle_threshold = rospy.get_param('~angle_threshold')
+        self.heading_difference_threshold = rospy.get_param('~heading_difference_threshold')
         self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
@@ -63,7 +63,7 @@ class MapBasedPredictor:
                 if lanelet.attributes["subtype"] == "crosswalk" or lanelet.attributes["subtype"] == "bus_lane":
                     continue
 
-                # Calculate angle difference
+                # Calculate heading difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
                 object_distance_from_start = linestring.project(object_position)
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
@@ -71,11 +71,11 @@ class MapBasedPredictor:
                 lanelet_heading = get_heading_between_two_points(object_location_on_lanelet, forward_point)
                 heading_difference_degrees = math.degrees(get_angle_between_two_headings(obj.heading, lanelet_heading))
 
-                # Add lanelet if angle difference is within threshold
-                if heading_difference_degrees < self.angle_threshold:
+                # Add lanelet if heading difference is within threshold
+                if heading_difference_degrees < self.heading_difference_threshold:
                     selected_lanelets.append((lanelet, object_distance_from_start, heading_difference_degrees))
 
-            # Sort by heading angle difference and limit selection to match `trajectories_to_predict`
+            # Sort by heading difference and limit selection to match `trajectories_to_predict`
             if len(selected_lanelets) > self.trajectories_to_predict:
                 selected_lanelets.sort(key=lambda l: l[2])
                 selected_lanelets = selected_lanelets[:self.trajectories_to_predict]
@@ -148,13 +148,13 @@ class MapBasedPredictor:
             for i in range(len(trajectories)):
                 heading_differences.append(heading_difference)
 
-        # If there are multiple trajectories that end in the same lanelet, keep the one with the smallest angle difference (better match)
+        # If there are multiple trajectories that end in the same lanelet, keep the one with the smallest heading difference (better match)
         best_trajectories = {}
-        for angle, trajectory in zip(heading_differences, all_trajectories):
+        for heading_difference, trajectory in zip(heading_differences, all_trajectories):
             end_lanelet = trajectory[-1]  # Get the last lanelet
-            # If the end_id is not in the dictionary or the new angle is smaller, update the dictionary
-            if end_lanelet.id not in best_trajectories or angle < best_trajectories[end_lanelet.id][0]:
-                best_trajectories[end_lanelet.id] = (angle, trajectory)
+            # If the end_id is not in the dictionary or the new heading difference is smaller, update the dictionary
+            if end_lanelet.id not in best_trajectories or heading_difference < best_trajectories[end_lanelet.id][0]:
+                best_trajectories[end_lanelet.id] = (heading_difference, trajectory)
         # Extract the filtered trajectories
         filtered_trajectories = [item[1] for item in best_trajectories.values()]
 

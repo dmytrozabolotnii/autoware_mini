@@ -235,7 +235,7 @@ def find_following_lane_change_lanelet(lanelet, route, is_left_side):
 
     return None
 
-def follow_lanelets(route_graph, current_lanelet, remaining_distance):
+def follow_lanelets(routing_graph, current_lanelet, remaining_distance):
     """
     Recursively find following lanelets for a given distance and return all possible trajectories
     :param routing_grpah: lanelet2 routing graph
@@ -249,7 +249,7 @@ def follow_lanelets(route_graph, current_lanelet, remaining_distance):
     if remaining_distance <= current_lanelet_length:
         return [[current_lanelet]]  # Base case: return a single-lanelet trajectory
 
-    next_lanelets = route_graph.following(current_lanelet)
+    next_lanelets = routing_graph.following(current_lanelet)
     if not next_lanelets:
         return [[current_lanelet]]
 
@@ -258,7 +258,7 @@ def follow_lanelets(route_graph, current_lanelet, remaining_distance):
     trajectories = []  # Store all possible trajectories
     for next_lanelet in next_lanelets:
         # Recursively follow the lanelets
-        following_trajectories = follow_lanelets(route_graph, next_lanelet, remaining_distance)
+        following_trajectories = follow_lanelets(routing_graph, next_lanelet, remaining_distance)
         for traj in following_trajectories:
             trajectories.append([current_lanelet] + traj)  # Add current lanelet to each path
 
