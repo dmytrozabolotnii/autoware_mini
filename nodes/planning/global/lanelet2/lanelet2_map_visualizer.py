@@ -2,6 +2,7 @@
 
 import rospy
 import time
+import shapely
 
 from autoware_mini.msg import TrafficLightResultArray
 from visualization_msgs.msg import MarkerArray, Marker
@@ -10,6 +11,7 @@ from std_msgs.msg import ColorRGBA, Int32
 from lanelet2.core import BasicPoint2d, BoundingBox2d
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
+from helpers.visualization import triangulate_path, triangulate_polygon
 
 
 # used for traffic lights
@@ -19,10 +21,10 @@ GREEN = ColorRGBA(0.0, 1.0, 0.0, 0.8)
 
 # colors for other map features
 GREY = ColorRGBA(0.4, 0.4, 0.4, 0.6)
-ORANGE = ColorRGBA(1.0, 0.5, 0.0, 0.6)
+ORANGE = ColorRGBA(1.0, 0.5, 0.0, 0.4)
 WHITE = ColorRGBA(1.0, 1.0, 1.0, 0.6)
-CYAN = ColorRGBA(0.0, 1.0, 1.0, 0.3)
-BLUE = ColorRGBA(0.3, 0.3, 1.0, 0.3)
+CYAN = ColorRGBA(0.0, 1.0, 1.0, 0.6)
+BLUE = ColorRGBA(0.3, 0.3, 1.0, 0.6)
 WHITE100 = ColorRGBA(1.0, 1.0, 1.0, 1.0)
 
 TRAFFIC_LIGHT_STATE_TO_MARKER_COLOR = {
@@ -172,6 +174,7 @@ class Lanelet2MapVisualizer:
         rospy.spin()
 
     def visualize_laneletLayer(self, lanelets):
+        stamp = rospy.Time.now()
 
         # Create a MarkerArray
         marker_array = MarkerArray()
@@ -179,39 +182,42 @@ class Lanelet2MapVisualizer:
         left_boundary_points = []
         right_boundary_points = []
         centerline_points = []
-        crosswalk_points = []
         bus_lane_points = []
+        crosswalk_points = []
 
         for lanelet in lanelets:
-
-            stamp = rospy.Time.now()
-
             if lanelet.attributes["subtype"] == "road" or lanelet.attributes["subtype"] == "bus_lane":
+                # Visualize left and right boundaries
                 left_boundary_points.extend(convert_geometry_to_line_list(lanelet.leftBound))
                 right_boundary_points.extend(convert_geometry_to_line_list(lanelet.rightBound))
 
-            if lanelet.attributes["subtype"] == "road":
-                centerline_points.extend(convert_geometry_to_line_list(lanelet.centerline))
+                centerline = shapely.linestrings([[p.x, p.y, p.z] for p in lanelet.centerline])
+
+                # triangulate centerline
+                if lanelet.attributes["subtype"] == "road":
+                    centerline_points.extend(triangulate_path(centerline, 1.5))
+                if lanelet.attributes["subtype"] == "bus_lane":
+                    bus_lane_points.extend(triangulate_path(centerline, 0.3))
+
             elif lanelet.attributes["subtype"] == "crosswalk":
                 # create "polygon points" from crosswalk lanelet and then create line list from them
-                crosswalk_border = [point for point in lanelet.leftBound]
-                crosswalk_border.extend([point for point in lanelet.rightBound.invert()])
-                crosswalk_border.append(lanelet.leftBound[0])
-                crosswalk_points.extend(convert_geometry_to_line_list(crosswalk_border))
-            elif lanelet.attributes["subtype"] == "bus_lane":
-                bus_lane_points.extend(convert_geometry_to_line_list(lanelet.centerline))
+                crosswalk_border = [(point.x, point.y, point.z) for point in lanelet.leftBound]
+                crosswalk_border.extend([(point.x, point.y, point.z) for point in lanelet.rightBound.invert()])
+                crosswalk_border.append((lanelet.leftBound[0].x, lanelet.leftBound[0].y, lanelet.leftBound[0].z))
+
+                crosswalk_points.extend(triangulate_polygon(crosswalk_border))
 
         left_boundary_marker = linelist_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
         right_boundary_marker = linelist_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
-        centerline_marker = linelist_to_marker(centerline_points, "Centerline", 0, CYAN, 1.5, stamp)
-        crosswalk_marker = linelist_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 0.3, stamp)
-        bus_lane_marker = linelist_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 0.3, stamp)
+        centerline_marker = triangles_to_marker(centerline_points, "Centerline", 0, CYAN, 1.0, stamp)
+        bus_lane_marker = triangles_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 1.0, stamp)
+        crosswalk_marker = triangles_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 1.0, stamp)
 
         marker_array.markers.append(left_boundary_marker)
         marker_array.markers.append(right_boundary_marker)
         marker_array.markers.append(centerline_marker)
-        marker_array.markers.append(crosswalk_marker)
         marker_array.markers.append(bus_lane_marker)
+        marker_array.markers.append(crosswalk_marker)
 
         return marker_array
 
@@ -289,7 +295,6 @@ class Lanelet2MapVisualizer:
 
         return marker_array
 
-
 def linelist_to_marker(points, namespace, id, color, scale, stamp):
     """
     Creates a Marker from a LineString
@@ -312,6 +317,35 @@ def linelist_to_marker(points, namespace, id, color, scale, stamp):
     marker.color = color
     marker.pose.orientation.w = 1.0
     marker.points = points
+    
+    return marker
+
+def triangles_to_marker(points, namespace, id, color, scale, stamp):
+    """
+    Creates a Marker from a list of triangle points
+    :param points: 1D list,every set of 3 points is treated as a triangle
+    :param namespace: Marker namespace
+    :param id: Marker id
+    :param color: Marker color
+    :param stamp: Marker timestamp
+    :return: Marker
+    """
+    # Create a Marker
+    marker = Marker()
+    marker.header.frame_id = "map"
+    marker.header.stamp = stamp
+    marker.ns = namespace
+    marker.id = id
+    marker.type = marker.TRIANGLE_LIST
+    marker.action = marker.ADD
+    marker.scale.x = scale
+    marker.scale.y = scale
+    marker.scale.z = scale
+    marker.pose.orientation.w = 1.0
+    marker.color = color
+    marker.colors = [color] * len(points)
+    marker.points = points
+    
     return marker
 
 def text_to_marker(text, linestring, namespace, id, color, scale, stamp):
@@ -341,7 +375,6 @@ def text_to_marker(text, linestring, namespace, id, color, scale, stamp):
     marker.text = text
 
     return marker
-
 
 if __name__ == '__main__':
     rospy.init_node('lanelet2_map_visualizer')

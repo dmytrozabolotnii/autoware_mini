@@ -2,13 +2,17 @@
 
 import rospy
 import math
+import shapely
+
 from autoware_mini.msg import Path
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from jsk_rviz_plugins.msg import OverlayText
+
 from helpers.path import PathWrapper
 from helpers.collision import CollisionPoints
 from helpers.geometry import get_orientation_from_heading
+from helpers.visualization import triangulate_linestring
 
 COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
     CollisionPoints.NO_OBSTACLES:                       "Following path",
@@ -37,6 +41,8 @@ COLLISION_POINT_CATEGORY_COLOR = {
     CollisionPoints.YIELDING_TRAJECTORY:                "Khaki",
     CollisionPoints.STOP_LINE_FORCED_STOP:              "LightCoral"
 }
+
+LOCAL_PATH_COLOR = ColorRGBA(0.1, 1.0, 0.1, 0.7)
 
 class LocalPathVisualizer:
     def __init__(self):
@@ -69,21 +75,26 @@ class LocalPathVisualizer:
         marker_array = MarkerArray()
 
         if len(msg.waypoints) > 1:
-            points = [waypoint.position for waypoint in msg.waypoints]
-            color = ColorRGBA(0.2, 1.0, 0.2, 0.3)
 
-            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div>"
+            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div"
 
-            # local path with safety_box_width
+            # Triangulate loal path
+            linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in msg.waypoints])
+            linestring = linestring.simplify(0.01)
+            trangle_points = triangulate_linestring(linestring, 1.5, z_offset=0.1)
+
             marker = Marker(header=msg.header)
             marker.ns = "Stopping lateral distance"
-            marker.type = marker.LINE_STRIP
+            marker.type = marker.TRIANGLE_LIST
             marker.action = marker.ADD
             marker.id = 0
+            marker.scale.x = 1.0
+            marker.scale.y = 1.0
+            marker.scale.z = 1.0
             marker.pose.orientation.w = 1.0
-            marker.scale.x = self.safety_box_width
-            marker.color = color
-            marker.points = points
+            marker.color = LOCAL_PATH_COLOR
+            marker.colors = [LOCAL_PATH_COLOR] * len(trangle_points)
+            marker.points = trangle_points
             marker_array.markers.append(marker)
 
             # velocity labels
@@ -160,7 +171,6 @@ class LocalPathVisualizer:
             marker.action = marker.DELETE
             marker_array.markers.append(marker)
 
-
             marker = Marker(header=msg.header)
             marker.ns = "Stopping point"
             marker.id = 0
@@ -194,7 +204,6 @@ class LocalPathVisualizer:
             planner_log = OverlayText()
             planner_log.text = self.planner_log_text
             self.planner_log_pub.publish(planner_log)
-
 
     def run(self):
         rospy.spin()
