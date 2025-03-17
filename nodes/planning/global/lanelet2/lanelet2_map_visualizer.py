@@ -11,7 +11,7 @@ from std_msgs.msg import ColorRGBA, Int32
 from lanelet2.core import BasicPoint2d, BoundingBox2d
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.geometry import get_distance_between_two_points_2d, convert_geometry_to_line_list
-from helpers.visualization import triangulate_linestring, triangulate_polygon
+from helpers.visualization import triangulate_path, triangulate_polygon
 
 
 # used for traffic lights
@@ -195,9 +195,9 @@ class Lanelet2MapVisualizer:
 
                 # triangulate centerline
                 if lanelet.attributes["subtype"] == "road":
-                    centerline_points.extend(triangulate_linestring(centerline, 1.5))
+                    centerline_points.extend(triangulate_path(centerline, 1.5))
                 if lanelet.attributes["subtype"] == "bus_lane":
-                    bus_lane_points.extend(triangulate_linestring(centerline, 0.3))
+                    bus_lane_points.extend(triangulate_path(centerline, 0.3))
 
             elif lanelet.attributes["subtype"] == "crosswalk":
                 # create "polygon points" from crosswalk lanelet and then create line list from them

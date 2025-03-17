@@ -20,9 +20,34 @@ def triangulate_polygon(polygon_points):
     triangle_points = [Point(x=x, y=y, z=z) for x, y, z in coords[triangles]]
     return triangle_points
 
-def triangulate_linestring(linestring, width, split_length=100, z_offset=0):
+def triangulate_linestring(linestring, width, z_offset=0):
     """
     Triangulates a polygon defined by centerline and width using earcut algorithm
+
+    Parameters:
+    - linestring: Shapely LineString centerline
+    - z_offset: Offset for z-coordinates
+
+    Returns:
+    - List of triangle points. Every set of 3 points is treated as a triangle
+    """
+
+    buffer = linestring.buffer(width / 2, cap_style="flat")
+    coords = np.array(buffer.exterior.coords, dtype=np.float32)
+    triangles = earcut.triangulate_float32(coords, [len(coords)])
+
+    # Extract z coordinates from linestring for each triangle point
+    points = shapely.points(buffer.exterior.coords)
+    distances = linestring.project(points)
+    points_on_linestring = linestring.interpolate(distances)
+
+    triangle_points = [Point(x=coords[i][0], y=coords[i][1], z=points_on_linestring[i].z + z_offset) for i in triangles]
+
+    return triangle_points
+
+def triangulate_path(linestring, width, split_length=100, z_offset=0):
+    """
+    Triangulates a polygon defined by centerline and width using earcut algorithm. Splits the linestring into shorter segments.
 
     Parameters:
     - linestring: Shapely LineString centerline

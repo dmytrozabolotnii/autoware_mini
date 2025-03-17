@@ -8,7 +8,7 @@ from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 
 from helpers.geometry import get_orientation_from_heading
-from helpers.visualization import triangulate_linestring
+from helpers.visualization import triangulate_path
 
 GLOBAL_PATH_COLOR = ColorRGBA(0.9, 0.6, 1.0, 0.6)
 
@@ -77,7 +77,7 @@ class GlobalPathVisualizer:
             # Triangulate global path
             linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in path.waypoints])
             linestring = linestring.simplify(0.05)
-            triangle_points = triangulate_linestring(linestring, 1.5, z_offset=0.1)
+            triangle_points = triangulate_path(linestring, 1.5, z_offset=0.1)
 
             # Create a Marker
             marker = Marker()
