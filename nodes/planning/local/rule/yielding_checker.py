@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
 import rospy
-import math
 import shapely
 import numpy as np
 from tf2_ros import TransformListener, Buffer
 from autoware_mini.msg import Path, DetectedObjectArray
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import PointCloud2
-from helpers.geometry import get_heading_from_vector, get_angle_between_two_headings
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.path import PathWrapper
