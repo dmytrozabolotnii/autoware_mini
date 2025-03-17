@@ -115,6 +115,7 @@ class MapBasedPredictor:
                 object_front = shapely.Point(object_front.x, object_front.y, object_front.z)
                 object_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_front)
 
+                # for offset curve z is not available, therefore taken from the centerline
                 points_centerline = centerline_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
                 if self.use_offset_for_prediction:
                     points_offset = trajectory_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
