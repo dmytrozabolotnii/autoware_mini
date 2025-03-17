@@ -30,7 +30,7 @@ class YieldingChecker:
         # variables
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
-        self.detected_objects = None
+        self.objects = None
         self.yield_lines_on_global_path = []
         self.current_speed = None
 
@@ -50,7 +50,7 @@ class YieldingChecker:
         self.current_speed = msg.twist.linear.x
 
     def predicted_objects_callback(self, msg):
-        self.detected_objects = msg.objects
+        self.objects = msg.objects
 
     def global_path_callback(self, msg):
         global_path = PathWrapper(msg.waypoints)
@@ -64,17 +64,17 @@ class YieldingChecker:
 
     def local_path_callback(self, msg):
 
-        detected_objects = self.detected_objects
+        objects = self.objects
         yield_lines_on_global_path = self.yield_lines_on_global_path
         current_speed = self.current_speed
 
-        if detected_objects is None:
+        if objects is None:
             rospy.logwarn_throttle(3, "%s - detected objects not received!", rospy.get_name())
             return
 
         collision_points = CollisionPoints()
 
-        if len(msg.waypoints) > 0 and len(detected_objects) > 0 and len(yield_lines_on_global_path) > 0:
+        if len(msg.waypoints) > 0 and len(objects) > 0 and len(yield_lines_on_global_path) > 0:
             local_path = PathWrapper(msg.waypoints)
             local_path_buffer = local_path.linestring.buffer(self.safety_box_width / 2, cap_style="flat")
             shapely.prepare(local_path_buffer)
@@ -97,7 +97,7 @@ class YieldingChecker:
 
             if yield_line_point is not None:
                 yielding_found = False
-                for obj in detected_objects:
+                for obj in objects:
                     for path in obj.candidate_trajectories.paths:
 
                         trajectory_to_check = PathWrapper(path.waypoints).linestring
