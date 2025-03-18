@@ -76,7 +76,7 @@ class LocalPathVisualizer:
 
         if len(msg.waypoints) > 1:
 
-            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div"
+            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div>"
 
             # Triangulate loal path
             linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in msg.waypoints])
