@@ -21,7 +21,7 @@ GREEN = ColorRGBA(0.0, 1.0, 0.0, 0.8)
 
 # colors for other map features
 GREY = ColorRGBA(0.4, 0.4, 0.4, 0.6)
-ORANGE = ColorRGBA(1.0, 0.5, 0.0, 0.4)
+ORANGE = ColorRGBA(1.0, 0.5, 0.0, 0.6)
 WHITE = ColorRGBA(1.0, 1.0, 1.0, 0.6)
 CYAN = ColorRGBA(0.0, 1.0, 1.0, 0.6)
 BLUE = ColorRGBA(0.3, 0.3, 1.0, 0.6)

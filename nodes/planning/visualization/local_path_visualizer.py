@@ -42,7 +42,7 @@ COLLISION_POINT_CATEGORY_COLOR = {
     CollisionPoints.STOP_LINE_FORCED_STOP:              "LightCoral"
 }
 
-LOCAL_PATH_COLOR = ColorRGBA(0.1, 1.0, 0.1, 0.7)
+LOCAL_PATH_COLOR = ColorRGBA(0.1, 1.0, 0.1, 0.6)
 
 class LocalPathVisualizer:
     def __init__(self):
@@ -81,7 +81,7 @@ class LocalPathVisualizer:
             # Triangulate loal path
             linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in msg.waypoints])
             linestring = linestring.simplify(0.01)
-            trangle_points = triangulate_linestring(linestring, 1.5, z_offset=0.1)
+            trangle_points = triangulate_linestring(linestring, self.safety_box_width, z_offset=0.1)
 
             marker = Marker(header=msg.header)
             marker.ns = "Stopping lateral distance"
