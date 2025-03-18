@@ -115,7 +115,8 @@ class Lanelet2MapVisualizer:
         marker_array.markers.append(marker)
 
         if msg.data != -1:
-            points = [Point(x=x, y=y, z=z + 0.01) for x, y, z in self.yield_stop_lines[msg.data].coords]
+            line = self.yield_stop_lines[msg.data].coords
+            points = convert_geometry_to_line_list(line, delta_z=0.1)
             marker = linelist_to_marker(points, "Yield line", msg.data, GREEN, 0.5, rospy.Time.now())
             marker_array.markers.append(marker)
 
