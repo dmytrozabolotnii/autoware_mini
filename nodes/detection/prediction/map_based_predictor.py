@@ -116,15 +116,23 @@ class MapBasedPredictor:
                 # get prediction origin right in front of the object
                 object_front = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
                 object_front = shapely.Point(object_front.x, object_front.y, object_front.z)
-                object_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_front)
+                object_front_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_front)
+
+                interpolate_distances = distances + object_front_distance_from_trajectory_linestring_start
+                # interpolate_distances extend further than trajectory_linestring (case of dangling lanelets and sometimes also offset curve might reduce
+                # its length), so clip the exessive distances otherwise duplicate points cause problems later with triangulation
+                if interpolate_distances[-1] > trajectory_linestring.length:
+                    index = np.argmax(interpolate_distances > trajectory_linestring.length)
+                    # adding 1 to include first point past the trajectory length - will be interpolated to the very end of it
+                    interpolate_distances = interpolate_distances[:index + 1]
 
                 # for offset curve z is not available, therefore taken from the centerline
-                points_centerline = centerline_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
+                points_centerline = centerline_linestring.interpolate(interpolate_distances)
                 if self.use_offset_for_prediction:
-                    points_offset = trajectory_linestring.interpolate(distances + object_distance_from_trajectory_linestring_start)
+                    points_offset = trajectory_linestring.interpolate(interpolate_distances)
 
                 path = Path()
-                for i, velocity in enumerate(velocities):
+                for i, d in enumerate(interpolate_distances):
                     wp = Waypoint()
                     if self.use_offset_for_prediction:
                         wp.position.x = points_offset[i].x
@@ -133,7 +141,7 @@ class MapBasedPredictor:
                         wp.position.x = points_centerline[i].x
                         wp.position.y = points_centerline[i].y
                     wp.position.z = points_centerline[i].z
-                    wp.speed = velocity
+                    wp.speed = velocities[i]
                     path.waypoints.append(wp)
                 obj.candidate_trajectories.paths.append(path)
 
@@ -143,10 +151,10 @@ class MapBasedPredictor:
     def create_trajectories(self, start_lanelets, prediction_length, object_length):
         all_trajectories = []
         heading_differences = []
-        for start_lanelet, distance_from_lanelet_start, heading_difference in start_lanelets:
-            distance_from_start_lanelet = prediction_length + distance_from_lanelet_start + object_length / 2
+        for start_lanelet, object_distance_from_start, heading_difference in start_lanelets:
+            prediction_length_from_start_lanelet = prediction_length + object_distance_from_start + object_length / 2
             # explore following lanelets recursively
-            trajectories = follow_lanelets(self.graph, start_lanelet, distance_from_start_lanelet)
+            trajectories = follow_lanelets(self.graph, start_lanelet, prediction_length_from_start_lanelet)
             all_trajectories.extend(trajectories)
             for i in range(len(trajectories)):
                 heading_differences.append(heading_difference)
