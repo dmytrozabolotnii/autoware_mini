@@ -6,7 +6,7 @@ import numpy as np
 import shapely
 import lanelet2
 from lanelet2.core import BasicPoint2d
-from lanelet2.geometry import findWithin2d
+from lanelet2.geometry import findWithin2d, length2d
 
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
@@ -49,6 +49,7 @@ class MapBasedPredictor:
 
         for obj in msg.objects:
             object_speed = get_vector_norm_3d(obj.velocity)
+            distance_to_object_front = obj.dimensions.x / 2
             if object_speed < self.prediction_min_speed:
                 continue
 
@@ -66,9 +67,6 @@ class MapBasedPredictor:
                 # Calculate heading difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
                 object_distance_from_start = linestring.project(object_position)
-                # skip lanelet if object front is over it and there are no following lanelets
-                if (object_distance_from_start + obj.dimensions.x / 2) > linestring.length and self.graph.following(lanelet) == []:
-                    continue
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
                 forward_point = linestring.interpolate(object_distance_from_start + 0.1)
                 lanelet_heading = get_heading_between_two_points(object_location_on_lanelet, forward_point)
@@ -89,7 +87,7 @@ class MapBasedPredictor:
                 object_accel = get_vector_norm_3d(obj.acceleration)
                 velocities = object_speed + object_accel * self.timesteps
                 distances = (object_accel * self.timesteps**2) / 2 + object_speed * self.timesteps
-                all_trajectories = self.create_trajectories(selected_lanelets, distances[-1], obj.dimensions.x)
+                all_trajectories = self.create_trajectories(selected_lanelets, distances[-1], distance_to_object_front)
 
             # 3. SCORING IF NEEDED
             if len(all_trajectories) > self.trajectories_to_predict:
@@ -114,7 +112,7 @@ class MapBasedPredictor:
                     trajectory_linestring = centerline_linestring
 
                 # get prediction origin right in front of the object
-                object_front = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
+                object_front = get_point_using_heading_and_distance(obj.position, obj.heading, distance_to_object_front)
                 object_front = shapely.Point(object_front.x, object_front.y, object_front.z)
                 object_front_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_front)
 
@@ -148,16 +146,22 @@ class MapBasedPredictor:
         # Publish predicted objects
         self.predicted_objects_pub.publish(msg)
 
-    def create_trajectories(self, start_lanelets, prediction_length, object_length):
+    def create_trajectories(self, start_lanelets, prediction_length, distance_to_object_front):
         all_trajectories = []
         heading_differences = []
         for start_lanelet, object_distance_from_start, heading_difference in start_lanelets:
-            prediction_length_from_start_lanelet = prediction_length + object_distance_from_start + object_length / 2
+            prediction_length_from_start_lanelet = prediction_length + object_distance_from_start + distance_to_object_front
             # explore following lanelets recursively
             trajectories = follow_lanelets(self.graph, start_lanelet, prediction_length_from_start_lanelet)
-            all_trajectories.extend(trajectories)
-            for i in range(len(trajectories)):
-                heading_differences.append(heading_difference)
+            # append trajectory if start point is not further than returned trajectory length
+            for trajectory in trajectories:
+                d = 0
+                for lanelet in trajectory:
+                    d += length2d(lanelet)
+                    if d > object_distance_from_start + distance_to_object_front:
+                        all_trajectories.append(trajectory)
+                        heading_differences.append(heading_difference)
+                        break
 
         # If there are multiple trajectories that end in the same lanelet, keep the one with the smallest heading difference (better match)
         best_trajectories = {}
