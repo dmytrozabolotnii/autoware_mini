@@ -108,6 +108,8 @@ class PurePursuitController:
                 current_position.y += math.sin(current_heading) * current_velocity * self.simulate_cmd_delay
 
             current_position_shapely = shapely.Point(current_position.x, current_position.y)
+
+            # TODO: shapely project() can return unreasonably large distance if the local path overlaps itself
             ego_distance_from_path_start = path.linestring.project(current_position_shapely)
 
             # if "waypoint planner" is used and no global and local planner involved

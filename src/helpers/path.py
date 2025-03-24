@@ -336,4 +336,3 @@ def calculate_cross_track_error(linestring, position):
     denominator = math.sqrt((pos2.x - pos1.x) ** 2 + (pos2.y - pos1.y) ** 2)
 
     return numerator / denominator
-
