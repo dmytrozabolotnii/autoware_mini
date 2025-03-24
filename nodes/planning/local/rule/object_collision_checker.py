@@ -2,7 +2,6 @@
 
 import rospy
 import shapely
-import numpy as np
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
 from helpers.geometry import get_vector_norm_3d
@@ -61,7 +60,6 @@ class ObjectCollisionChecker:
                                                             vy = obj.velocity.y,
                                                             vz = obj.velocity.z,
                                                             distance_to_stop = self.braking_safety_distance_obstacle,
-                                                            deceleration_limit= np.inf,
                                                             category = CollisionPoints.STOPPED_OBSTACLE_ON_PATH if object_speed < self.stopped_speed_limit else CollisionPoints.MOVING_OBSTACLE_ON_PATH)
 
         collision_points_msg = collision_points.create_message()
