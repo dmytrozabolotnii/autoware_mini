@@ -2,6 +2,7 @@
 
 import rospy
 import math
+import numpy as np
 from autoware_mini.msg import Path
 from sensor_msgs.msg import PointCloud2
 from helpers.collision import CollisionPoints
@@ -41,7 +42,7 @@ class GoalStopChecker:
             # check if goal point is at the end of the local path
             if math.isclose(get_distance_between_two_points_2d(goal_point, msg.waypoints[-1].position), 0.0):
                 # add goal point as collision point
-                collision_points.add_point(goal_point.x, goal_point.y, goal_point.z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, CollisionPoints.GOAL_POINT)
+                collision_points.add_point(goal_point.x, goal_point.y, goal_point.z, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, np.inf, CollisionPoints.GOAL_POINT)
 
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header

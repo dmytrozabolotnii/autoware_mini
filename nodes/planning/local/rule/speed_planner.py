@@ -6,6 +6,7 @@ import message_filters
 import traceback
 import shapely
 import numpy as np
+from numpy.lib.recfunctions import structured_to_unstructured
 from ros_numpy import numpify
 from autoware_mini.msg import Path
 from sensor_msgs.msg import PointCloud2
@@ -79,29 +80,42 @@ class SpeedPlanner:
             local_path = PathWrapper(local_path_msg.waypoints)
             ego_distance_from_local_path_start = local_path.linestring.project(current_position)
 
-            # extract object distances, velocities and braking distances
-            collision_points_shapely = [shapely.Point(x, y, z) for x, y, z, vx, vy, vz, distance_to_stop, category in collision_points]
-            object_distances = np.array([local_path.linestring.project(point) for point in collision_points_shapely])
-            collision_points_path_headings = [local_path.get_heading_at_distance(distance) for distance in object_distances]
-            object_velocities = np.array([project_vector_to_heading(heading, Vector3(vx, vy, vz)) 
-                                        for heading, (x, y, z, vx, vy, vz, distance_to_stop, category)
-                                        in zip(collision_points_path_headings, collision_points)])
-            object_braking_distances = collision_points['distance_to_stop']
+            # extract collision_point distances
+            collision_points_shapely = shapely.points(structured_to_unstructured(collision_points[['x', 'y', 'z']]))
+            collision_point_distances_from_local_path_start = local_path.linestring.project(collision_points_shapely)
+
+            # calculate deceleration for every collision point
+            deceleration_distances = collision_point_distances_from_local_path_start - self.distance_to_car_front
+            decelerations = (current_speed**2) / np.maximum(2.0 * deceleration_distances - ego_distance_from_local_path_start, 0.001)
+            deceleration_exceeded_mask = decelerations > collision_points['deceleration_limit']
+            for i in np.where(deceleration_exceeded_mask)[0]:
+                rospy.logwarn_throttle(3, f"{rospy.get_name()} - Deceleration limit exceeded: {decelerations[i]:.2f}, object category: {collision_points[i]['category']}, distance: {deceleration_distances[i]:.2f}!")
+
+            # if all collision points exceed deceleration - publish the original path and return
+            if np.all(deceleration_exceeded_mask):
+                self.local_path_pub.publish(local_path_msg)
+                return
+
+            # calculate target velocity for every collision point
+            collision_point_path_headings = [local_path.get_heading_at_distance(distance) for distance in collision_point_distances_from_local_path_start]
+            collision_point_velocities = np.array([project_vector_to_heading(heading, Vector3(vx, vy, vz))
+                                        for heading, (vx, vy, vz) in zip(collision_point_path_headings, collision_points[['vx', 'vy', 'vz']])])
+            collision_point_braking_distances = collision_points['distance_to_stop']
 
             # calculate target velocity for every collision point
             # 'abs' is used to turn negative speed of approaching cars into positive, so that target distance would be smaller and thus target_speed will be decreased
-            target_distances = object_distances - self.distance_to_car_front - np.maximum(object_braking_distances, self.braking_reaction_time * np.abs(object_velocities))
-            target_velocities = np.sqrt(np.maximum(0.0, np.maximum(0.0, object_velocities)**2 + 2 * self.default_deceleration * target_distances))
+            target_distances = deceleration_distances - np.maximum(collision_point_braking_distances, self.braking_reaction_time * np.abs(collision_point_velocities))
+            target_velocities = np.sqrt(np.maximum(0.0, np.maximum(0.0, collision_point_velocities)**2 + 2 * self.default_deceleration * target_distances))
 
-            # find the collision point causing smallest target_velocity and being closest to ego vehicle
-            min_target_velocity = np.min(target_velocities)
+            # select min target velocity among the ones that do not exceed deceleration limit and is closest to the ego vehicle
+            min_target_velocity = np.min(target_velocities[~deceleration_exceeded_mask])
             mask = np.isclose(target_velocities, min_target_velocity)
-            adjusted_distances = np.where(mask, object_distances, np.inf)
+            adjusted_distances = np.where(mask, collision_point_distances_from_local_path_start, np.inf)
             min_value_index = np.argmin(adjusted_distances)
 
-            closest_object_distance = object_distances[min_value_index] - ego_distance_from_local_path_start - self.distance_to_car_front
-            closest_object_velocity = object_velocities[min_value_index]
-            stopping_point_distance = object_distances[min_value_index] - object_braking_distances[min_value_index]
+            closest_object_distance = collision_point_distances_from_local_path_start[min_value_index] - ego_distance_from_local_path_start - self.distance_to_car_front
+            closest_object_velocity = collision_point_velocities[min_value_index]
+            stopping_point_distance = collision_point_distances_from_local_path_start[min_value_index] - collision_point_braking_distances[min_value_index]
             collision_point_category = collision_points[min_value_index]["category"]
 
             # Recalculate target_velocity for all the waypoints using the closest object
