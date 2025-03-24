@@ -3,14 +3,11 @@
 import rospy
 import shapely
 import numpy as np
-from tf2_ros import TransformListener, Buffer
 from autoware_mini.msg import Path, DetectedObjectArray
-from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import PointCloud2
 from helpers.collision import CollisionPoints
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.path import PathWrapper
-from helpers.transform import get_car_front_point
 
 class YieldingChecker:
 
@@ -26,11 +23,8 @@ class YieldingChecker:
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer)
         self.objects = None
         self.yield_lines_on_global_path = []
-        self.current_speed = None
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.yield_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["yield", "yield_stop"])
@@ -42,10 +36,6 @@ class YieldingChecker:
         rospy.Subscriber('/detection/predicted_objects_map', DetectedObjectArray, self.predicted_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('extracted_local_path', Path, self.local_path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
-
-    def current_velocity_callback(self, msg):
-        self.current_speed = msg.twist.linear.x
 
     def predicted_objects_callback(self, msg):
         self.objects = msg.objects
@@ -58,13 +48,12 @@ class YieldingChecker:
             if yield_line.intersects(global_path.linestring):
                 yield_lines_on_global_path.append(yield_line)
 
-        self.yield_lines_on_global_path = yield_lines_on_global_path
+        self.yield_lines_on_global_path = np.array(yield_lines_on_global_path)
 
     def local_path_callback(self, msg):
 
         objects = self.objects
         yield_lines_on_global_path = self.yield_lines_on_global_path
-        current_speed = self.current_speed
 
         if objects is None:
             rospy.logwarn_throttle(3, "%s - detected objects not received!", rospy.get_name())
@@ -76,24 +65,16 @@ class YieldingChecker:
             local_path = PathWrapper(msg.waypoints)
             local_path_buffer = local_path.linestring.buffer(self.safety_box_width / 2, cap_style="flat")
             shapely.prepare(local_path_buffer)
-            # get ego car front distance
-            car_front = get_car_front_point(self.tf_buffer, msg.header.frame_id)
-            car_front_distance_from_path_start = local_path.linestring.project(car_front)
 
-            # find if there are any yield_lines on local_path and select the closest one
-            yield_line_distance = np.inf
-            yield_line_point = None
-            for yield_line in yield_lines_on_global_path:
-                if yield_line.intersects(local_path.linestring):
-                    yield_line_intersection_result = yield_line.intersection(local_path.linestring)
-                    assert isinstance(yield_line_intersection_result, shapely.geometry.Point), "local_path and yield_line intersection is not shapely Point!"
-                    distance = local_path.linestring.project(yield_line_intersection_result)
-                    # find the closest yield line that is further than ego car front
-                    if distance < yield_line_distance and distance > car_front_distance_from_path_start:
-                        yield_line_distance = distance
-                        yield_line_point = yield_line_intersection_result
+            local_path_intersects_yield_line_mask = local_path.linestring.intersects(yield_lines_on_global_path)
+            if np.any(local_path_intersects_yield_line_mask):
+                intersection_points = local_path.linestring.intersection(yield_lines_on_global_path[local_path_intersects_yield_line_mask])
+                intersection_distances = local_path.linestring.project(intersection_points)
+                # get the closest yield line
+                min_distance_index = np.argmin(intersection_distances)
+                yield_line_distance = intersection_distances[min_distance_index]
+                yield_line_point = intersection_points[min_distance_index]
 
-            if yield_line_point is not None:
                 yielding_found = False
                 for obj in objects:
                     for path in obj.candidate_trajectories.paths:
@@ -108,19 +89,13 @@ class YieldingChecker:
                             trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
                             trajectory_intersection_distance = min([local_path.linestring.project(shapely.Point(x, y)) for x, y in trajectory_intersection_points])
 
-                            # Intersection not in the right range - after yield line and within 40m limits
+                            # Intersection not in the reasonable range - after yield line and within 40m limits
                             if trajectory_intersection_distance < yield_line_distance or trajectory_intersection_distance - yield_line_distance > self.yielding_distance_limit:
                                 continue
 
                             # Do not yield if object itself is on the local path
                             object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
                             if local_path_buffer.intersects(object_polygon):
-                                continue
-
-                            ego_distance_to_yield_line = yield_line_distance - car_front_distance_from_path_start
-                            deceleration = (current_speed ** 2) / (2 * ego_distance_to_yield_line)
-                            if deceleration > self.yielding_maximum_deceleration:
-                                rospy.logwarn_throttle(3, f"{rospy.get_name()} - ignore yield line deceleration: {deceleration:.2f}, distance: {ego_distance_to_yield_line:.2f}")
                                 continue
 
                             # Yielding to all that are left
@@ -131,6 +106,7 @@ class YieldingChecker:
                                                     vy = 0.0, 
                                                     vz = 0.0,
                                                     distance_to_stop = self.braking_safety_distance_yield,
+                                                    deceleration_limit=self.yielding_maximum_deceleration,
                                                     category = CollisionPoints.YIELDING_TRAJECTORY)
                             # if one found then break the path and object loops
                             yielding_found = True

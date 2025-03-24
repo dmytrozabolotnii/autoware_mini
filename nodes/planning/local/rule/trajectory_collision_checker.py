@@ -142,6 +142,7 @@ class TrajectoryCollisionChecker:
                                 vy = obj.velocity.y,
                                 vz = obj.velocity.z,
                                 distance_to_stop = self.braking_safety_distance_trajectory,
+                                deceleration_limit = np.inf,
                                 category = CollisionPoints.MERGING_TRAJECTORY)
                         else:
                             # objects intersecting at angle, add with 0 velocity
@@ -150,6 +151,7 @@ class TrajectoryCollisionChecker:
                                 vy = 0.0,
                                 vz = 0.0,
                                 distance_to_stop = self.braking_safety_distance_trajectory,
+                                deceleration_limit = np.inf,
                                 category = CollisionPoints.COLLIDING_TRAJECTORY)
 
         collision_points_msg = collision_points.create_message()
