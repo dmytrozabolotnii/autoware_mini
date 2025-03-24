@@ -67,7 +67,7 @@ class MapBasedPredictor:
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
                 object_distance_from_start = linestring.project(object_position)
                 # skip lanelet if object front is over it and there are no following lanelets
-                if (object_distance_from_start + obj.dimensions.x / 2) > linestring.length and self.graph.following(lanelet) == []:
+                if (object_distance_from_start + obj.dimensions.x / 2) > linestring.length and not self.graph.following(lanelet):
                     continue
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
                 forward_point = linestring.interpolate(object_distance_from_start + 0.1)
