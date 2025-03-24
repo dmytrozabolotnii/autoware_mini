@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import rospy
 import threading
 import traceback
@@ -15,10 +14,15 @@ class LocalPathExtractor:
         # parameters
         self.publish_rate = rospy.get_param("~publish_rate")
         self.local_path_length = rospy.get_param("local_path_length")
+        self.lookahead_distance = rospy.get_param("~lookahead_distance")
+        self.distance_to_lookahead_path_limit = rospy.get_param("~distance_to_lookahead_path_limit")
 
         # variables
         self.current_pose = None
         self.global_path = None
+        self.last_ego_distance = 0
+
+        self.lock = threading.Lock()
 
         # publishers
         self.local_path_pub = rospy.Publisher('extracted_local_path', Path, queue_size=1, tcp_nodelay=True)
@@ -32,16 +36,23 @@ class LocalPathExtractor:
 
     def global_path_callback(self, msg):
         if len(msg.waypoints) == 0:
-            self.global_path = None
+            with self.lock:
+                self.global_path = None
+                self.last_ego_distance = 0
             rospy.loginfo("%s - Empty global path received", rospy.get_name())
         else:
-            self.global_path = PathWrapper(msg.waypoints, distances=True)
+            with self.lock:
+                self.global_path = PathWrapper(msg.waypoints, distances=True)
+                self.last_ego_distance = 0
             rospy.loginfo("%s - Global path received with %i waypoints", rospy.get_name(), len(self.global_path.waypoints))
 
     def extract_local_path(self):
         try:
             current_pose = self.current_pose
-            global_path = self.global_path
+
+            with self.lock:
+                global_path = self.global_path
+                last_ego_distance = self.last_ego_distance
 
             if current_pose is None:
                 return
@@ -53,13 +64,22 @@ class LocalPathExtractor:
                 self.local_path_pub.publish(local_path)
                 return
 
-            # TODO avoid jumping from one place to another on path - just finding the closest point is dangerous!
-            # Example of global path overlapping with itself.
             current_position = shapely.Point(current_pose.pose.position.x, current_pose.pose.position.y, current_pose.pose.position.z)
-            ego_distance_from_global_path_start = global_path.linestring.project(current_position)
+            lookahead_waypoints = global_path.extract_waypoints(last_ego_distance, last_ego_distance + self.lookahead_distance)
+            lookahead_path = PathWrapper(lookahead_waypoints)
 
-            # extract local path using dstances
+            # if ego is still close to the lookahead path then use that to calculate the new ego distance
+            # this avoids choosing an incorrect local path in places where the global path overlaps itself
+            if lookahead_path.linestring.distance(current_position) <= self.distance_to_lookahead_path_limit:
+                ego_distance_from_global_path_start = lookahead_path.linestring.project(current_position) + last_ego_distance
+            else:
+                # if ego is far from its lookahead path then just find the closest point on the global path
+                ego_distance_from_global_path_start = global_path.linestring.project(current_position)
+
+            # extract local path using distances
             local_path.waypoints = global_path.extract_waypoints(ego_distance_from_global_path_start, ego_distance_from_global_path_start + self.local_path_length)
+            self.last_ego_distance = ego_distance_from_global_path_start
+            
             self.local_path_pub.publish(local_path)
         except Exception as e:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
