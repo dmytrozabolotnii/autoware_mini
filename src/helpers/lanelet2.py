@@ -1,6 +1,7 @@
 from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
 from lanelet2.core import GPSPoint, BasicPoint2d, BoundingBox2d
+from lanelet2.geometry import length2d
 import shapely
 import numpy as np
 import rospy
@@ -233,3 +234,32 @@ def find_following_lane_change_lanelet(lanelet, route, is_left_side):
                 return following_relation.lanelet
 
     return None
+
+def follow_lanelets(routing_graph, current_lanelet, remaining_distance):
+    """
+    Recursively find following lanelets for a given distance and return all possible trajectories
+    :param routing_grpah: lanelet2 routing graph
+    :param current_lanelet: current lanelet
+    :param remaining_distance: remaining distance to follow
+    :return: list of possible trajectories
+    """
+
+    current_lanelet_length = length2d(current_lanelet)
+
+    if remaining_distance <= current_lanelet_length:
+        return [[current_lanelet]]  # Base case: return a single-lanelet trajectory
+
+    next_lanelets = routing_graph.following(current_lanelet)
+    if not next_lanelets:
+        return [[current_lanelet]]
+
+    remaining_distance -= current_lanelet_length
+
+    trajectories = []  # Store all possible trajectories
+    for next_lanelet in next_lanelets:
+        # Recursively follow the lanelets
+        following_trajectories = follow_lanelets(routing_graph, next_lanelet, remaining_distance)
+        for traj in following_trajectories:
+            trajectories.append([current_lanelet] + traj)  # Add current lanelet to each path
+
+    return trajectories
