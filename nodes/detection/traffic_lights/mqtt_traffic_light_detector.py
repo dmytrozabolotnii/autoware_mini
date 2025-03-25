@@ -32,7 +32,17 @@ MQTT_TO_AUTOWARE_TFL_MAP = {
     "UNKNOWN": 2
 }
 
-BINARY_MQTT_MSG_FORMAT = "<B Q B i i"  # Version, Timestamp, Status, Since Change, Till Change
+BINARY_MQTT_TO_STR = {
+    0: "GREEN",
+    1: "RED",
+    2: "AMBER",
+    3: "GREEN FLASH",
+    4: "RED/AMB",
+    5: "AMBER FLASH",
+    6: "DARK"
+}
+
+BINARY_MQTT_MSG_FORMAT = "<B Q B i"  # Version, Timestamp, Status, Since Change
 
 class MqttTrafficLightDetector:
     def __init__(self):
@@ -117,12 +127,12 @@ class MqttTrafficLightDetector:
                 rospy.logerr('%s - binary mqtt message size %d does not match expected size %d', rospy.get_name(), len(msg.payload), struct.calcsize(BINARY_MQTT_MSG_FORMAT))
                 return
 
-            version, timestamp, status, since_change, till_change = struct.unpack(BINARY_MQTT_MSG_FORMAT, msg.payload)
+            version, timestamp, status, since_change = struct.unpack(BINARY_MQTT_MSG_FORMAT, msg.payload)
             mqtt_data = {"version": version,
                          "timestamp": timestamp,
-                         "status": status,
+                         "status": BINARY_MQTT_TO_STR[status],
                          "since_change": since_change,
-                         "till_change": till_change}
+                         "till_change": ""}
 
         self.mqtt_status[api_id] = mqtt_data
 
