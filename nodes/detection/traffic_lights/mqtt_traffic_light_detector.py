@@ -131,8 +131,7 @@ class MqttTrafficLightDetector:
             mqtt_data = {"version": version,
                          "timestamp": timestamp,
                          "status": BINARY_MQTT_TO_STR[status],
-                         "since_change": since_change,
-                         "till_change": ""}
+                         "since_change": since_change}
 
         self.mqtt_status[api_id] = mqtt_data
 
