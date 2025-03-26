@@ -22,6 +22,7 @@
     <arg name="enable_crosswalk_checker"     default="true" />
     <arg name="enable_yielding_checker"      default="true" />
     <arg name="enable_trajectory_checker"    default="true" />
+    <arg name="use_webapp"              default="false"         doc="Set to false to disable web app MQTT bridge node." />
 
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -62,6 +63,12 @@
     <include file="$(find autoware_mini)/launch/control.launch">
         <arg name="controller"            value="$(arg controller)" />
     </include>
+
+    <!-- Webapp bridge -->
+    <group if="$(arg use_webapp)" ns="webapp">
+        <node pkg="autoware_mini" type="webapp_bridge.py" name="webapp_bridge" output="screen" required="true" />
+        <rosparam command="load" file="$(find autoware_mini)/config/webapp.yaml" />
+    </group>
 
     <!-- Bicycle_model simulator -->
     <include file="$(find autoware_mini)/launch/platform/simulation.launch" />

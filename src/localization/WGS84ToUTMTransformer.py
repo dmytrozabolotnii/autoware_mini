@@ -2,7 +2,7 @@
 
 import math
 from lanelet2.io import Origin
-from lanelet2.core import GPSPoint
+from lanelet2.core import GPSPoint, BasicPoint3d
 from lanelet2.projection import UtmProjector
 
 
@@ -21,6 +21,11 @@ class WGS84ToUTMTransformer:
         utm_point = self.transformer.forward(gps_point)
         # no need to return z, since it is not used in UTMProjector
         return utm_point.x, utm_point.y
+    
+    def transform_utm(self, utm_x, utm_y, height):
+        utm_vector = BasicPoint3d(utm_x, utm_y, height)
+        utm_point = self.transformer.reverse(utm_vector)
+        return utm_point.lat, utm_point.lon
 
     def correct_azimuth(self, lat, lon, azimuth):
 
