@@ -1,0 +1,4 @@
+webapp_bridge:
+  host: "mqtt.cloud.ut.ee"
+  port: 8883
+  tls_enabled: True
