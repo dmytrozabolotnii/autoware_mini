@@ -46,6 +46,10 @@ BINARY_MQTT_MSG_FORMAT_1 = "<B Q B"  # Version, Timestamp, Status
 BINARY_MQTT_MSG_FORMAT_2 = "<B Q B i"  # Version, Timestamp, Status, Since Change
 BINARY_MQTT_MSG_FORMAT_3 = "<B Q B i i"  # Version, Timestamp, Status, Since Change, Till Change
 
+BINARY_MSG_1_SIZE = struct.calcsize(BINARY_MQTT_MSG_FORMAT_1)
+BINARY_MSG_2_SIZE = struct.calcsize(BINARY_MQTT_MSG_FORMAT_2)
+BINARY_MSG_3_SIZE = struct.calcsize(BINARY_MQTT_MSG_FORMAT_3)
+
 class MqttTrafficLightDetector:
     def __init__(self):
 
@@ -126,21 +130,21 @@ class MqttTrafficLightDetector:
             mqtt_data = json.loads(msg.payload)
             
         else:
-            if len(msg.payload) == struct.calcsize(BINARY_MQTT_MSG_FORMAT_1):
+            if len(msg.payload) == BINARY_MSG_1_SIZE:
                 version, timestamp, status = struct.unpack(BINARY_MQTT_MSG_FORMAT_1, msg.payload)
                 since_change = -1
                 till_change = -1
 
-            elif len(msg.payload) == struct.calcsize(BINARY_MQTT_MSG_FORMAT_2):
+            elif len(msg.payload) == BINARY_MSG_2_SIZE:
                 version, timestamp, status, since_change = struct.unpack(BINARY_MQTT_MSG_FORMAT_2, msg.payload)
                 till_change = -1
 
-            elif len(msg.payload) == struct.calcsize(BINARY_MQTT_MSG_FORMAT_3):
+            elif len(msg.payload) == BINARY_MSG_3_SIZE:
                 version, timestamp, status, since_change, till_change = struct.unpack(BINARY_MQTT_MSG_FORMAT_3, msg.payload)
                 
             else:
                 rospy.logerr('%s - binary mqtt message size %d does not match any expected sizes %d, %d or %d', rospy.get_name(), len(msg.payload), 
-                             struct.calcsize(BINARY_MQTT_MSG_FORMAT_1), struct.calcsize(BINARY_MQTT_MSG_FORMAT_2), struct.calcsize(BINARY_MQTT_MSG_FORMAT_3))
+                             BINARY_MSG_1_SIZE, BINARY_MSG_2_SIZE, BINARY_MSG_3_SIZE)
                 return
 
             mqtt_data = {"version": version,
