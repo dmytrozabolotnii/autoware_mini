@@ -18,11 +18,12 @@ def process_rosbags(args):
         bag_start_time = in_bag.get_start_time()
         start_time = rospy.Time(bag_start_time + args.start_time) if args.start_time is not None else None
         end_time = rospy.Time(bag_start_time + args.end_time) if args.end_time is not None else None
+        goal_pose_time = rospy.Time(bag_start_time + args.end_time + args.end_to_goal_time) if args.end_time and args.end_to_goal_time is not None else None
 
         for topic, msg, t in in_bag.read_messages(topics=['/localization/current_pose', '/localization/current_velocity']):
             if start_time and t < start_time:
                 continue
-            if end_time and t > end_time:
+            if goal_pose_time and t > goal_pose_time:
                 break
 
             if topic == '/localization/current_pose':
@@ -60,7 +61,7 @@ def process_rosbags(args):
                 if last_pose and t >= goal_time:
                     out_bag.write('/move_base_simple/goal', last_pose, t)
                     last_pose = None
-
+                    
                 if topic == args.detected_objects_topic:
                     topic = '/detection/detected_objects'
                 elif topic == args.traffic_light_status_topic:
@@ -68,7 +69,7 @@ def process_rosbags(args):
                 elif topic == '/tf':
                     for transform in msg.transforms:
                         if transform.child_frame_id == 'base_link':
-                            transform.child_frame_id = 'lexus_model'
+                            transform.child_frame_id = 'lexus_shadow'
 
                 out_bag.write(topic, msg, t)
 
@@ -78,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument("output_bag", type=str, help="Output bag file path")
     parser.add_argument("--start_time", type=float, help="Start time in seconds (optional)")
     parser.add_argument("--end_time", type=float, help="End time in seconds (optional)")
+    parser.add_argument("--end_to_goal_time", type=float, help="Time from end to the goal point in seconds")
     parser.add_argument("--goal_delay", type=float, default=0.1, help="Delay goal from start time (default: 0.1)")
     parser.add_argument("--detected_objects_topic", default="/detection/detected_objects")
     parser.add_argument("--traffic_light_status_topic", default="/detection/traffic_light_status")

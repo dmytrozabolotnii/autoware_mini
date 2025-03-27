@@ -18,3 +18,7 @@ button_panel:
 
 bicycle_simulation:
   publish_rate: 50
+
+scenario_metrics_calculator:
+  metrics_frequency: 10
+  transform_timeout: 0.06

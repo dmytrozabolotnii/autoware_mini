@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="controller"                default="pure_pursuit"  doc="pure_pursuit, stanley" />
+    <arg name="controller"              default="pure_pursuit"  doc="pure_pursuit, stanley" />
     <arg name="global_planner"          default="lanelet2"      doc="waypoints, lanelet2" />
     <arg name="local_planner"           default="rule"          doc="rule, none" />
     <arg name="use_path_smoothing"      default="true" />
@@ -15,6 +15,8 @@
     <arg name="tracker"                 default="$(eval 'ema' if scenario_name != '' else 'none')"  doc="none, ema"/>
     <arg name="predictor"               default="$(eval 'map_naive' if scenario_name != '' else 'none')"  doc="none, naive, map, map_naive"/>
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
+    <arg name="launch_rviz"             default="true"          doc="Determines if rviz is launched or not. Rviz will be launched by default." />
+    <arg name="rate"                    default="1"             doc="Scenario bag playback speed" />
     <arg name="enable_goal_checker"          default="true" />
     <arg name="enable_object_checker"        default="true" />
     <arg name="enable_auto_stop_checker"     default="false" />
@@ -22,8 +24,12 @@
     <arg name="enable_crosswalk_checker"     default="true" />
     <arg name="enable_yielding_checker"      default="true" />
     <arg name="enable_trajectory_checker"    default="true" />
-    <arg name="use_webapp"              default="false"         doc="Set to false to disable web app MQTT bridge node." />
-
+    <arg name="use_webapp"                   default="false"         doc="Set to false to disable web app MQTT bridge node." />
+    <arg name="ade_csv_file"                 default="data/bag_scenarios/$(arg map_name)/results/$(arg scenario_name).csv" />
+    <arg name="ade_threshold"                default="10" />
+    <arg name="ade_plot_file"                default="data/bag_scenarios/$(arg map_name)/results/$(arg scenario_name).png" />
+    <arg name="speed_smoothness_threshold"   default="1" />
+    
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
         <arg name="localizer"           value="simulation" />
@@ -71,21 +77,34 @@
     </group>
 
     <!-- Bicycle_model simulator -->
-    <include file="$(find autoware_mini)/launch/platform/simulation.launch" />
+    <include file="$(find autoware_mini)/launch/platform/simulation.launch">
+        <arg name="use_lexus_shadow"      value="$(eval scenario_name != '')" />
+    </include>
 
     <!-- Rviz -->
-    <include file="$(find autoware_mini)/launch/dashboard.launch" />
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find autoware_mini)/config/rviz/autoware_mini.rviz" required="true">
-        <rosparam command="load" file="$(find autoware_mini)/config/rviz/actions.yaml"/>
-    </node>
+    <group if="$(arg launch_rviz)">
+        <include file="$(find autoware_mini)/launch/dashboard.launch" />
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find autoware_mini)/config/rviz/autoware_mini.rviz" required="true">
+            <rosparam command="load" file="$(find autoware_mini)/config/rviz/actions.yaml"/>
+        </node>
+    </group>
 
     <group if="$(eval scenario_name != '')">
         <!-- Play scenario bag -->
         <node pkg="rosbag" type="play" name="player" required="true" output="screen"
-                args="$(find autoware_mini)/data/bag_scenarios/$(arg map_name)/$(arg scenario_name).bag --clock --queue=1 --delay 2.5 --wait-for-subscribers" />
+                args="$(find autoware_mini)/data/bag_scenarios/$(arg map_name)/$(arg scenario_name).bag --clock --queue=1 --rate=$(arg rate) --delay 2.5 --wait-for-subscribers" />
 
         <!-- Bag pausing button -->
         <node pkg="autoware_mini" type="pause_bag.py" name="pause_bag" output="screen" required="true"/>
+
+        <!-- ADE calculation -->
+        <node pkg="autoware_mini" type="scenario_metrics_calculator.py" name="scenario_metrics_calculator" output="screen" required="true" ns="vehicle">
+            <param name="scenario_name" value="$(arg scenario_name)" />
+            <param name="ade_threshold" value="$(arg ade_threshold)" />
+            <param name="ade_csv_file" value="$(find autoware_mini)/$(arg ade_csv_file)" />
+            <param name="ade_plot_file" value="$(find autoware_mini)/$(arg ade_plot_file)" />
+            <param name="speed_smoothness_threshold" value="$(arg speed_smoothness_threshold)" />
+        </node>
 
         <!-- Use simulation time from bag -->
         <param name="/use_sim_time" value="true" />
