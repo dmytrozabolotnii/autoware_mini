@@ -132,7 +132,7 @@ road_area_filter:
   map_extraction_distance: 150      # m - distance from ego vehicle to extract map data
 
 mqtt_traffic_light_detector:
-  mqtt_host: mqtt.cloud.ut.ee
+  mqtt_host: traffic.traffest.com
   mqtt_port: 8883
   mqtt_topic: Tartu/#
   enable_automatic_subscribe: True
