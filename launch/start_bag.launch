@@ -2,6 +2,7 @@
 <launch>
     
     <arg name="bag_file"                default="2023-05-25-14-21-10_sensors_Raekoda.bag" doc="bag file to play" />
+    <arg name="bag_folder"              default="$(find autoware_mini)/data/bags"              doc="Folder, where the bag_file is located. By default, it tries to search from the autoware_mini bags folder" />
     <arg name='map_name'                default='tartu_demo' />
     <arg name="lanelet2_map_name"       default="$(arg map_name).osm" />
     <arg name="localizer"               default="novatel"       doc="novatel, carla"/>
@@ -30,6 +31,7 @@
     <arg name="record_topics_option"    default="$(eval '--all' if record_topics == 'all' else '--regex ' + record_topics if record_topics != '' else '')" doc="rosbag record parameter" />
     <arg name="benchmark_topic"         default=""              doc="Name of the topic to benchmark" />
     <arg name="benchmark_type"          default="delay"         doc="Type of benchmark, e.g. delay or hz" />
+    <arg name="launch_rviz"             default="true"          doc="Determines if rviz is launched or not. Rviz will be launched by default." />
     <arg name="loop"                    default="$(eval benchmark_topic == '' '' and record_bag == '')" />
     <arg name="loop_option"             default="$(eval '--loop' if loop else '')" doc="rosbag play parameter" />
     <arg name="start"                   default=""              doc="Seconds from the start of the bag" />
@@ -54,7 +56,7 @@
 
     <!-- Play back bag -->
     <node pkg="rosbag" type="play" name="player" required="true" output="screen"
-            args="$(find autoware_mini)/data/bags/$(arg bag_file) --clock --quiet --queue=1 --delay $(arg bag_delay) $(arg loop_option) $(arg start_option) $(arg duration_option) $(arg rate_option)">
+            args="$(arg bag_folder)/$(arg bag_file) --clock --quiet --queue=1 --delay $(arg bag_delay) $(arg loop_option) $(arg start_option) $(arg duration_option) $(arg rate_option)">
         <!-- Rename saved topics that are replaced by current ones -->
         <remap from="/tf" to="/bag/tf" if="$(arg use_tf)"/>
         <remap from="/tf_static" to="/bag/tf_static" if="$(arg use_tf)"/>
@@ -204,12 +206,15 @@
         <arg name="use_ssc"              value="$(arg use_control)" />
     </include>
 
-    <!-- Rviz -->
-    <include file="$(find autoware_mini)/launch/dashboard.launch">
-        <arg name="driver_status"       value="true" />
-    </include>
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find autoware_mini)/config/rviz/autoware_mini.rviz" required="true">
-        <rosparam command="load" file="$(find autoware_mini)/config/rviz/actions.yaml"/>
-    </node>
+    <!-- Conditionally include dashboard.launch and RViz -->
+    <group if="$(arg launch_rviz)">
+        <!-- Rviz -->
+        <include file="$(find autoware_mini)/launch/dashboard.launch">
+            <arg name="driver_status"       value="true" />
+        </include>
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find autoware_mini)/config/rviz/autoware_mini.rviz" required="true">
+            <rosparam command="load" file="$(find autoware_mini)/config/rviz/actions.yaml"/>
+        </node>
+    </group>
 
 </launch>
