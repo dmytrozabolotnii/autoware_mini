@@ -8,9 +8,6 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from autoware_mini.msg import Path
 
 
-# Minimum interval between MQTT publishes
-MIN_MQTT_PUBLISH_INTERVAL = 1.0 # in seconds
-
 # Constants for MQTT topics
 class WebappMqttTopics:
     class Published:
