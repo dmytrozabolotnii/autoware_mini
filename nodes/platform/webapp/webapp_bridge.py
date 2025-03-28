@@ -14,7 +14,7 @@ class WebappMqttTopics:
         STATUS = "lexus/status"
         ROUTE = "lexus/route"
     class Received:
-        GOAL_POINT = "lexus/goal_point"
+        GOAL_POINT = "lexus/goal"
 
 class WebappBridge:
     def __init__(self):

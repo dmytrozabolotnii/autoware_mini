@@ -79,10 +79,7 @@
     </include>
 
     <!-- Webapp bridge -->
-    <group if="$(arg use_webapp)" ns="webapp">
-        <node pkg="autoware_mini" type="webapp_bridge.py" name="webapp_bridge" output="screen" required="true" />
-        <rosparam command="load" file="$(find autoware_mini)/config/webapp.yaml" />
-    </group>
+    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/platform/webapp.launch" />
 
     <!-- Vehicle -->
     <include file="$(find autoware_mini)/launch/platform/lexus.launch" >
