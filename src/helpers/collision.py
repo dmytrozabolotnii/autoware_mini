@@ -12,6 +12,7 @@ DTYPE = np.dtype([
     ('vy', np.float32),
     ('vz', np.float32),
     ('distance_to_stop', np.float32),
+    ('deceleration_limit', np.float32),
     ('category', np.int32)
 ])
 
@@ -29,21 +30,35 @@ class CollisionPoints:
     YIELDING_TRAJECTORY = 9
     STOP_LINE_FORCED_STOP = 10
 
+    COLLISION_POINT_CATEGORY_CAPTION = {
+        NO_OBSTACLES:                       "Following path",
+        GOAL_POINT:                         "Arriving to destination",
+        TRAFFIC_LIGHT_STOPLINE:             "Stopping for traffic light",
+        STOPPED_OBSTACLE_ON_PATH:           "Stopping for object",
+        MOVING_OBSTACLE_ON_PATH:            "Following an object",
+        COLLIDING_TRAJECTORY:               "Stopping for prediction",
+        MERGING_TRAJECTORY:                 "Following a prediction",
+        OBJECT_ON_CROSSWALK:                "Stopping for crosswalk",
+        TRAJECTORY_ON_CROSSWALK:            "Stopping for crosswalk (P)",
+        YIELDING_TRAJECTORY:                "Yielding for object",
+        STOP_LINE_FORCED_STOP:              "Stopping for stop line"
+    }
+
     def __init__(self):
 
         self._array = np.array([], dtype=DTYPE)
 
 
-    def add_point(self, x, y, z, vx, vy, vz, distance_to_stop, category):
-        self._array = np.append(self._array, np.array([(x, y, z, vx, vy, vz, distance_to_stop, category)], dtype=DTYPE))
+    def add_point(self, x, y, z, vx, vy, vz, distance_to_stop, deceleration_limit, category):
+        self._array = np.append(self._array, np.array([(x, y, z, vx, vy, vz, distance_to_stop, deceleration_limit, category)], dtype=DTYPE))
 
-    def add_points(self, points, vx, vy, vz, distance_to_stop, category):
+    def add_points(self, points, vx, vy, vz, distance_to_stop, deceleration_limit, category):
         for point in points:
-            self.add_point(point.x, point.y, point.z, vx, vy, vz, distance_to_stop, category)
+            self.add_point(point.x, point.y, point.z, vx, vy, vz, distance_to_stop, deceleration_limit, category)
 
-    def add_intersection_points(self, intersection_points, z, vx, vy, vz, distance_to_stop, category):
+    def add_intersection_points(self, intersection_points, z, vx, vy, vz, distance_to_stop, deceleration_limit, category):
         for x, y in intersection_points:
-            self.add_point(x, y, z, vx, vy, vz, distance_to_stop, category)
+            self.add_point(x, y, z, vx, vy, vz, distance_to_stop, deceleration_limit, category)
 
     def create_message(self):
         return msgify(PointCloud2, self._array)

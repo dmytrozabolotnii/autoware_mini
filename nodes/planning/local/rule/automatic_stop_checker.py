@@ -82,6 +82,7 @@ class AutomaticStopChecker:
                                                 vy = 0.0, 
                                                 vz = 0.0,
                                                 distance_to_stop = self.braking_safety_distance_stop_line,
+                                                deceleration_limit = np.inf,
                                                 category = CollisionPoints.STOP_LINE_FORCED_STOP)
 
                 # find closest stop line

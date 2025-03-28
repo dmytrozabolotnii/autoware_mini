@@ -47,6 +47,10 @@ done
 average_ade=$(LC_NUMERIC="C" awk -F',' 'NR>1 {sum+=$2; count++} END {if (count > 0) printf "%.2f\n", sum/count}' "$results_scv_file")
 average_smoothness=$(LC_NUMERIC="C" awk -F',' 'NR>1 {sum+=$4; count++} END {if (count > 0) printf "%.2f\n", sum/count}' "$results_scv_file")
 
-# append the results csv with the averge ade score
-echo "AVERAGE,${average_ade},,${average_smoothness},," >> "$results_scv_file"
-echo -e "\e[36mAverage ADE: $average_ade\nAverage speed smoothness: $average_smoothness\e[0m\n"
+# calculate success rates
+ade_success_rate=$(LC_NUMERIC="C" awk -F',' 'NR>1 {total++; if ($3=="SUCCESS") success++} END {if (total > 0) printf "%.2f\n", success/total}' "$results_scv_file")
+smoothness_success_rate=$(LC_NUMERIC="C" awk -F',' 'NR>1 {total++; if ($5~/^SUCCESS/) success++} END {if (total > 0) printf "%.2f\n", success/total}' "$results_scv_file")
+
+# append the results csv with the average scores and success rates
+echo "AVERAGE,${average_ade},${ade_success_rate},${average_smoothness},${smoothness_success_rate}" >> "$results_scv_file"
+echo -e "\e[36mAverage ADE: $average_ade\nADE success rate: $ade_success_rate\nAverage speed smoothness: $average_smoothness\nSpeed smoothness success rate: $smoothness_success_rate\e[0m\n"

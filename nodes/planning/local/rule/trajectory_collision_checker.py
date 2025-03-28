@@ -85,10 +85,11 @@ class TrajectoryCollisionChecker:
 
                     if local_path_buffer.intersects(trajectory_to_check):
                         trajectory_intersection_result = trajectory_to_check.intersection(local_path_buffer)
-                        trajectory_intersection_points = shapely.get_coordinates(trajectory_intersection_result)
+                        trajectory_intersection_coords = shapely.get_coordinates(trajectory_intersection_result)
+                        trajectory_intersection_points = shapely.points(trajectory_intersection_coords)
 
                         # Calculate trajectory intersection distances for ego vehicle and object
-                        distances = list(map(local_path.linestring.project, shapely.points(trajectory_intersection_points)))
+                        distances = local_path.linestring.project(trajectory_intersection_points)
                         intersection_distance_from_local_path_start_min = min(distances)
                         intersection_distance_from_local_path_start_max = max(distances)
                         last_point_of_trajectory = shapely.Point(trajectory.linestring.coords[-1])
@@ -142,6 +143,7 @@ class TrajectoryCollisionChecker:
                                 vy = obj.velocity.y,
                                 vz = obj.velocity.z,
                                 distance_to_stop = self.braking_safety_distance_trajectory,
+                                deceleration_limit = np.inf,
                                 category = CollisionPoints.MERGING_TRAJECTORY)
                         else:
                             # objects intersecting at angle, add with 0 velocity
@@ -150,6 +152,7 @@ class TrajectoryCollisionChecker:
                                 vy = 0.0,
                                 vz = 0.0,
                                 distance_to_stop = self.braking_safety_distance_trajectory,
+                                deceleration_limit = np.inf,
                                 category = CollisionPoints.COLLIDING_TRAJECTORY)
 
         collision_points_msg = collision_points.create_message()
