@@ -14,20 +14,6 @@ from helpers.collision import CollisionPoints
 from helpers.geometry import get_orientation_from_heading
 from helpers.visualization import triangulate_linestring
 
-COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS = {
-    CollisionPoints.NO_OBSTACLES:                       "Following path",
-    CollisionPoints.GOAL_POINT:                         "Arriving to destination",
-    CollisionPoints.TRAFFIC_LIGHT_STOPLINE:             "Stopping for traffic light",
-    CollisionPoints.STOPPED_OBSTACLE_ON_PATH:           "Stopping for object",
-    CollisionPoints.MOVING_OBSTACLE_ON_PATH:            "Following an object",
-    CollisionPoints.COLLIDING_TRAJECTORY:               "Stopping for prediction",
-    CollisionPoints.MERGING_TRAJECTORY:                 "Following a prediction",
-    CollisionPoints.OBJECT_ON_CROSSWALK:                "Stopping for crosswalk",
-    CollisionPoints.TRAJECTORY_ON_CROSSWALK:            "Stopping for crosswalk (P)",
-    CollisionPoints.YIELDING_TRAJECTORY:                "Yielding for object",
-    CollisionPoints.STOP_LINE_FORCED_STOP:              "Stopping for stop line"
-}
-
 COLLISION_POINT_CATEGORY_COLOR = {
     CollisionPoints.NO_OBSTACLES:                       "PaleGreen",
     CollisionPoints.GOAL_POINT:                         "PaleGreen",
@@ -76,7 +62,7 @@ class LocalPathVisualizer:
 
         if len(msg.waypoints) > 1:
 
-            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[collision_point_category]}</div>"
+            planner_status_text = f"<div style='text-align: center; color: {COLLISION_POINT_CATEGORY_COLOR[collision_point_category]};'>{CollisionPoints.COLLISION_POINT_CATEGORY_CAPTION[collision_point_category]}</div>"
 
             # Triangulate loal path
             linestring = shapely.linestrings([[p.position.x, p.position.y, p.position.z] for p in msg.waypoints])
@@ -193,7 +179,7 @@ class LocalPathVisualizer:
         if self.planner_status_last_category != collision_point_category:
             if self.planner_status_last_category != None:
                 duration = (msg.header.stamp - self.planner_status_last_timestamp).to_sec()
-                self.planner_log_text = f"<div style='text-align: left; color: {COLLISION_POINT_CATEGORY_COLOR[self.planner_status_last_category]};'>{round(duration, 1)}s - {COLLISION_POINT_CATEGORY_TO_LOCAL_PLANNER_STATUS[self.planner_status_last_category]}</div>{self.planner_log_text}"
+                self.planner_log_text = f"<div style='text-align: left; color: {COLLISION_POINT_CATEGORY_COLOR[self.planner_status_last_category]};'>{round(duration, 1)}s - {CollisionPoints.COLLISION_POINT_CATEGORY_CAPTION[self.planner_status_last_category]}</div>{self.planner_log_text}"
                 # split text string into lines (use </div> as separator) and keep only first 5 lines
                 self.planner_log_text = "</div>".join(self.planner_log_text.split("</div>")[:5]) + "</div>"
 

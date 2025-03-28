@@ -25,11 +25,11 @@
     <arg name="enable_yielding_checker"      default="true" />
     <arg name="enable_trajectory_checker"    default="true" />
     <arg name="use_webapp"                   default="false"         doc="Set to false to disable web app MQTT bridge node." />
-    <arg name="ade_csv_file"                 default="data/bag_scenarios/$(arg map_name)/results/$(arg scenario_name).csv" />
+    <arg name="ade_csv_file"                 default="" />
     <arg name="ade_threshold"                default="10" />
-    <arg name="ade_plot_file"                default="data/bag_scenarios/$(arg map_name)/results/$(arg scenario_name).png" />
+    <arg name="ade_plot_file"                default="" />
     <arg name="speed_smoothness_threshold"   default="1" />
-    
+
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
         <arg name="localizer"           value="simulation" />

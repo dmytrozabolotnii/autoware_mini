@@ -79,7 +79,8 @@ class ScenarioMetricsCalculator:
 
                 writer.writerow(new_csv_row)
         else:
-            rospy.loginfo(f"ADE score: {ade_score}")
+            print(f"ADE score: {ade_score}")
+            print(f"Speed smoothness: {speed_smoothness}")
 
         # Plot the ADE metric over time
         if self.ade_plot_file.endswith(".png"):

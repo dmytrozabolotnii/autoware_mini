@@ -99,6 +99,7 @@
         <remap from="/planning/target_lane_markers" to="/bag/planning/target_lane_markers" if="$(arg use_planning)"/>
         <remap from="/planning/goal_collision_points" to="/bag/planning/goal_collision_points" if="$(arg use_planning)"/>
         <remap from="/planning/object_collision_points" to="/bag/planning/object_collision_points" if="$(arg use_planning)"/>
+        <remap from="/planning/yielding_collision_points" to="/bag/planning/yielding_collision_points" if="$(arg use_planning)"/>
         <remap from="/planning/crosswalk_collision_points" to="/bag/planning/crosswalk_collision_points" if="$(arg use_planning)"/>
         <remap from="/planning/tfl_stopline_collision_points" to="/bag/planning/tfl_stopline_collision_points" if="$(arg use_planning)"/>
         <remap from="/planning/stop_line_collision_points" to="/bag/planning/stop_line_collision_points" if="$(arg use_planning)"/>
