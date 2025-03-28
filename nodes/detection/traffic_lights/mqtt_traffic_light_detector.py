@@ -182,6 +182,8 @@ class MqttTrafficLightDetector:
                     # get traffic light status
                     if time_diff > self.timeout:
                         rospy.logwarn('%s - timeout of stopline: %s, by %f seconds', rospy.get_name(), api_id, time_diff)
+                    elif time_diff < 0:
+                        rospy.logwarn('%s - stopline timestamp in the future: %s, by %f seconds', rospy.get_name(), api_id, abs(time_diff))
                     else:
                         if result_str in MQTT_TO_AUTOWARE_TFL_MAP:
                             result = MQTT_TO_AUTOWARE_TFL_MAP[result_str]
