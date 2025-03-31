@@ -10,7 +10,7 @@ Panels:
         - /Planning1/Global path1/Namespaces1
         - /Planning1/Local path1/Namespaces1
       Splitter Ratio: 0.49338147044181824
-    Tree Height: 447
+    Tree Height: 143
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -28,13 +28,13 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Points clustered
   - Class: rviz_carla_plugin/CarlaControl
     Name: CarlaControl
   - Class: jsk_rviz_plugin/EmptyServiceCallInterfaceAction
     Name: Actions
   - Class: jsk_rviz_plugin/RecordAction
-    Name: Record Bag
+    Name: Record Bags
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -831,37 +831,38 @@ Visualization Manager:
                   "": true
                   Value: true
                 Dashboard:
-                  Accel limit: true
-                  Acceleration: true
-                  Autonomous Manual: true
-                  Decel limit: true
-                  GNSS corrections detailed: true
-                  GNSS detailed: true
-                  GNSS general: true
-                  Pacmod dtailed: true
-                  Pacmod general: true
-                  Planner log: true
-                  Planner status: true
-                  SSC detailed: true
-                  SSC general: true
-                  Speed:
-                    Current speed: true
-                    Target speed: true
-                    Value: true
-                  Steering cmd: true
-                  Steering status: true
-                  Target obj dist: true
-                  Target obj spd: true
-                  Value: true
-                  Wheel and blinkers:
-                    Left blinker arrow: true
-                    Left blinker cmd: true
-                    Right blinker arrow: true
-                    Right blinker cmd: true
-                    Value: true
-                    Wheel: true
-                Detection:
                   "": true
+                  Value: true
+                Detection:
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Tracked objects bboxes: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -909,37 +910,38 @@ Visualization Manager:
                   "": true
                   Value: true
                 Dashboard:
-                  Accel limit: true
-                  Acceleration: true
-                  Autonomous Manual: true
-                  Decel limit: true
-                  GNSS corrections detailed: true
-                  GNSS detailed: true
-                  GNSS general: true
-                  Pacmod dtailed: true
-                  Pacmod general: true
-                  Planner log: true
-                  Planner status: true
-                  SSC detailed: true
-                  SSC general: true
-                  Speed:
-                    Current speed: true
-                    Target speed: true
-                    Value: true
-                  Steering cmd: true
-                  Steering status: true
-                  Target obj dist: true
-                  Target obj spd: true
-                  Value: true
-                  Wheel and blinkers:
-                    Left blinker arrow: true
-                    Left blinker cmd: true
-                    Right blinker arrow: true
-                    Right blinker cmd: true
-                    Value: true
-                    Wheel: true
-                Detection:
                   "": true
+                  Value: true
+                Detection:
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Tracked objects bboxes: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -991,37 +993,38 @@ Visualization Manager:
                   "": true
                   Value: true
                 Dashboard:
-                  Accel limit: true
-                  Acceleration: true
-                  Autonomous Manual: true
-                  Decel limit: true
-                  GNSS corrections detailed: true
-                  GNSS detailed: true
-                  GNSS general: true
-                  Pacmod dtailed: true
-                  Pacmod general: true
-                  Planner log: true
-                  Planner status: true
-                  SSC detailed: true
-                  SSC general: true
-                  Speed:
-                    Current speed: true
-                    Target speed: true
-                    Value: true
-                  Steering cmd: true
-                  Steering status: true
-                  Target obj dist: true
-                  Target obj spd: true
-                  Value: true
-                  Wheel and blinkers:
-                    Left blinker arrow: true
-                    Left blinker cmd: true
-                    Right blinker arrow: true
-                    Right blinker cmd: true
-                    Value: true
-                    Wheel: true
-                Detection:
                   "": true
+                  Value: true
+                Detection:
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Tracked objects bboxes: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1078,37 +1081,38 @@ Visualization Manager:
                   "": true
                   Value: true
                 Dashboard:
-                  Accel limit: true
-                  Acceleration: true
-                  Autonomous Manual: true
-                  Decel limit: true
-                  GNSS corrections detailed: true
-                  GNSS detailed: true
-                  GNSS general: true
-                  Pacmod dtailed: true
-                  Pacmod general: true
-                  Planner log: true
-                  Planner status: true
-                  SSC detailed: true
-                  SSC general: true
-                  Speed:
-                    Current speed: true
-                    Target speed: true
-                    Value: true
-                  Steering cmd: true
-                  Steering status: true
-                  Target obj dist: true
-                  Target obj spd: true
-                  Value: true
-                  Wheel and blinkers:
-                    Left blinker arrow: true
-                    Left blinker cmd: true
-                    Right blinker arrow: true
-                    Right blinker cmd: true
-                    Value: true
-                    Wheel: true
-                Detection:
                   "": true
+                  Value: true
+                Detection:
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Tracked objects bboxes: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1165,37 +1169,38 @@ Visualization Manager:
                   "": true
                   Value: true
                 Dashboard:
-                  Accel limit: true
-                  Acceleration: true
-                  Autonomous Manual: true
-                  Decel limit: true
-                  GNSS corrections detailed: true
-                  GNSS detailed: true
-                  GNSS general: true
-                  Pacmod dtailed: true
-                  Pacmod general: true
-                  Planner log: true
-                  Planner status: true
-                  SSC detailed: true
-                  SSC general: true
-                  Speed:
-                    Current speed: true
-                    Target speed: true
-                    Value: true
-                  Steering cmd: true
-                  Steering status: true
-                  Target obj dist: true
-                  Target obj spd: true
-                  Value: true
-                  Wheel and blinkers:
-                    Left blinker arrow: true
-                    Left blinker cmd: true
-                    Right blinker arrow: true
-                    Right blinker cmd: true
-                    Value: true
-                    Wheel: true
-                Detection:
                   "": true
+                  Value: true
+                Detection:
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Tracked objects bboxes: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1252,37 +1257,38 @@ Visualization Manager:
                   "": true
                   Value: true
                 Dashboard:
-                  Accel limit: true
-                  Acceleration: true
-                  Autonomous Manual: true
-                  Decel limit: true
-                  GNSS corrections detailed: true
-                  GNSS detailed: true
-                  GNSS general: true
-                  Pacmod dtailed: true
-                  Pacmod general: true
-                  Planner log: true
-                  Planner status: true
-                  SSC detailed: true
-                  SSC general: true
-                  Speed:
-                    Current speed: true
-                    Target speed: true
-                    Value: true
-                  Steering cmd: true
-                  Steering status: true
-                  Target obj dist: true
-                  Target obj spd: true
-                  Value: true
-                  Wheel and blinkers:
-                    Left blinker arrow: true
-                    Left blinker cmd: true
-                    Right blinker arrow: true
-                    Right blinker cmd: true
-                    Value: true
-                    Wheel: true
-                Detection:
                   "": true
+                  Value: true
+                Detection:
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Tracked objects bboxes: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1339,37 +1345,38 @@ Visualization Manager:
                   "": true
                   Value: true
                 Dashboard:
-                  Accel limit: true
-                  Acceleration: true
-                  Autonomous Manual: true
-                  Decel limit: true
-                  GNSS corrections detailed: true
-                  GNSS detailed: true
-                  GNSS general: true
-                  Pacmod dtailed: true
-                  Pacmod general: true
-                  Planner log: true
-                  Planner status: true
-                  SSC detailed: true
-                  SSC general: true
-                  Speed:
-                    Current speed: true
-                    Target speed: true
-                    Value: true
-                  Steering cmd: true
-                  Steering status: true
-                  Target obj dist: true
-                  Target obj spd: true
-                  Value: true
-                  Wheel and blinkers:
-                    Left blinker arrow: true
-                    Left blinker cmd: true
-                    Right blinker arrow: true
-                    Right blinker cmd: true
-                    Value: true
-                    Wheel: true
-                Detection:
                   "": true
+                  Value: true
+                Detection:
+                  Detected objects: true
+                  Let's go yield line: true
+                  Lidar:
+                    Center:
+                      Points center ground: true
+                      Points center no ground: true
+                      Value: true
+                    Front:
+                      Points front filtered: true
+                      Points front ground: true
+                      Points front no ground: true
+                      Value: true
+                    Lidar detections: true
+                    Points clustered: true
+                    Points filtered: true
+                    Points ground: true
+                    Points no ground: true
+                    Value: true
+                  Predicted objects: true
+                  Radar:
+                    Radar detections: true
+                    Value: true
+                  Tracked objects: true
+                  Tracked objects bboxes: true
+                  Traffic lights:
+                    Forward camera ROI image: true
+                    Right camera ROI image: true
+                    Stop line status: true
+                    Value: true
                   Value: true
                 Grid: true
                 Map:
@@ -1802,7 +1809,11 @@ Visualization Manager:
           Marker Topic: /detection/tracked_objects_markers
           Name: Tracked objects
           Namespaces:
-            {}
+            bounding_box: false
+            centroid: true
+            convex_hull: true
+            speed: true
+            text: true
           Queue Size: 100
           Value: true
         - Class: jsk_rviz_plugin/BoundingBoxArray
@@ -2160,8 +2171,7 @@ Visualization Manager:
           Value: false
           Visibility:
             Control:
-              Controller markers: true
-              Current pose: true
+              "": true
               Value: true
             Dashboard:
               Accel limit: true
@@ -2226,22 +2236,11 @@ Visualization Manager:
               Value: true
             Grid: true
             Map:
-              "": true
+              Lanelet2 map: true
+              Road area: true
               Value: true
             Planning:
-              Collision points:
-                All collision points: true
-                Goal: true
-                Local path: true
-                Pedestrian crosswalk: true
-                Stop line: true
-                Traffic light stopline: true
-                Trajectory: true
-                Value: true
-              Global path: true
-              Local path: true
-              Start and Goal lanelet markers: true
-              Stop point: true
+              "": true
               Value: true
             Sensing:
               Mako:
@@ -2360,10 +2359,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.0010000000474974513
-      Scale: 9.262953758239746
+      Scale: 20
       Target Frame: base_link
-      X: -0.7757615447044373
-      Y: -32.83497619628906
+      X: 0
+      Y: 0
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho
@@ -2454,7 +2453,7 @@ Window Geometry:
     collapsed: false
   Forward camera ROI image:
     collapsed: false
-  Height: 1370
+  Height: 736
   Hide Left Dock: false
   Hide Right Dock: false
   Image Interface link1 Right:
@@ -2471,8 +2470,8 @@ Window Geometry:
     collapsed: false
   Image right:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000026e000004f4fc020000001afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006a00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000004500000205000000e800fffffffa000000020100000003fb0000000a0049006d0061006700650000000000ffffffff0000000000000000fb0000000c00430061006d0065007200610000000000ffffffff0000000000000000fb000000100044006900730070006c0061007900730100000000000001360000016100fffffffb0000000a005600690065007700730100000251000000f9000000be00fffffffb0000000e0041006300740069006f006e00730100000351000000790000004900fffffffb0000000a0049006d006100670065010000028e000000d20000000000000000fb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000120049006d006100670065005f0072006100770000000000ffffffff0000000000000000fb0000000c00430061006d006500720061000000024e000001710000000000000000fb000000120049006d00610067006500200052006100770100000421000000160000000000000000fb0000000a0049006d00610067006501000002f4000000cb0000000000000000fb0000000a0049006d006100670065010000056c0000026c0000000000000000fb00000024004400650063006900730069006f006e004d0061006b0065007200500061006e0065006c00000002110000018f0000000000000000fb0000000c00430061006d006500720061010000040a000000d60000000000000000fb0000000a0049006d006100670065010000040a000000d60000000000000000fb0000000c00430061006d0065007200610100000117000001f10000000000000000fb0000000c00430061006d006500720061010000030e000002350000000000000000fb0000000c00430061006d006500720061010000046b000000d80000000000000000fb0000000e0042007500740074006f006e007300000003cf000000670000000000000000fb0000001800430061006e00630065006c00200072006f00750074006500000003ce000000840000000000000000fb00000018004300610072006c00610043006f006e00740072006f006c01000003d1000000fb000000d800fffffffb00000014005200650063006f00720064002000420061006701000004d3000000660000004b00ffffff000000010000032700000521fc0200000013fb0000003800430061006d00650072006100200049006e00740065007200660061006300650020006c0069006e006b0031002000520069006700680074000000003d0000039e0000001900fffffffb000000360049006d00610067006500200049006e00740065007200660061006300650020006c0069006e006b00310020005200690067006800740000000215000001c60000001900fffffffb0000003a00430061006d00650072006100200049006e007400650072006600610063006500420020006c0069006e006b0020003000200042006100730065000000003d0000039e0000001900fffffffb000000360049006d00610067006500200049006e007400650072006600610063006500420020006c0069006e006b003000200042006100730065000000003d0000039e0000001900fffffffb0000003e00430061006d00650072006100200049006e00740065007200660061006300650020006c0069006e006b00330020004200610063006b0077006100720064000000003d0000039e0000001900fffffffb0000003a00430061006d00650072006100200049006e007400650072006600610063006500610020006c0069006e006b002000300020004c006500660074000000003d0000039e0000001900fffffffb0000003c0049006d00610067006500200049006e00740065007200660061006300650020006c0069006e006b00330020004200610063006b00770061007200640000000212000001c90000001900fffffffb000000360049006d00610067006500200049006e007400650072006600610063006500610020006c0069006e006b00300020004c006500660074000000020f000001cc0000001900fffffffb000000160049006d006100670065002000720069006700680074000000003d000003b90000001900fffffffb000000140049006d0061006700650020006c006500660074000000021d000001d90000001900fffffffb0000001800430061006d006500720061002000720069006700680074000000003d000001f00000001900fffffffb0000001600430061006d0065007200610020006c006500660074000000003d000003b90000001900fffffffb000000300046006f00720077006100720064002000630061006d00650072006100200052004f004900200069006d006100670065000000003d0000029a0000001900fffffffc0000003d000005210000000000fffffffaffffffff0100000003fb0000003c00430061006d00650072006100200049006e00740065007200660061006300650020006c0069006e006b003200200046006f007200770061007200640000000000ffffffff0000015000fffffffb0000003a0049006d00610067006500200049006e00740065007200660061006300650020006c0069006e006b003200200046006f007200770061007200640000000000ffffffff0000014400fffffffb0000002c00520069006700680074002000630061006d00650072006100200052004f004900200069006d0061006700650000000687000003310000011300fffffffc00000047000004f10000000000fffffffaffffffff0100000002fb00000022004300610072006c0061002000630061006d0065007200610020007600690065007700000006cf00000331000000e300fffffffb00000020004300610072006c006100200069006d006100670065002000760069006500770000000000ffffffff000000d900fffffffb0000000c00430061006d00650072006100000002360000030d0000000000000000fb0000000c00430061006d0065007200610100000268000002db0000000000000000fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000001200530065006c0065006300740069006f006e010000025a000000b20000000000000000000000020000073f000000a8fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000052700000167fc0100000005fb00000012005200610077005f0069006d0061006700650000000000000005270000000000000000fb000000140072006f0069005f007300690067006e0061006c0000000241000002e60000000000000000fb0000002400560065006800690063006c00650045006e006700610067006500500061006e0065006c0000000000000005740000000000000000fb0000000800540069006d006500000000c4000004b0000004be00fffffffb0000000800540069006d0065010000000000000450000000000000000000000743000004f400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
-  Record Bag:
+  QMainWindow State: 000000ff00000000fd00000004000000000000020700000286fc020000001afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000003d000000cc000000c900fffffffa000000020100000003fb0000000a0049006d0061006700650000000000ffffffff0000000000000000fb0000000c00430061006d0065007200610000000000ffffffff0000000000000000fb000000100044006900730070006c0061007900730100000000000001360000015600fffffffb0000000a00560069006500770073010000010f000000a8000000a400fffffffb0000000e0041006300740069006f006e007301000001bd000000400000004000fffffffb0000000a0049006d006100670065010000028e000000d20000000000000000fb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000120049006d006100670065005f0072006100770000000000ffffffff0000000000000000fb0000000c00430061006d006500720061000000024e000001710000000000000000fb000000120049006d00610067006500200052006100770100000421000000160000000000000000fb0000000a0049006d00610067006501000002f4000000cb0000000000000000fb0000000a0049006d006100670065010000056c0000026c0000000000000000fb00000024004400650063006900730069006f006e004d0061006b0065007200500061006e0065006c00000002110000018f0000000000000000fb0000000c00430061006d006500720061010000040a000000d60000000000000000fb0000000a0049006d006100670065010000040a000000d60000000000000000fb0000000c00430061006d0065007200610100000117000001f10000000000000000fb0000000c00430061006d006500720061010000030e000002350000000000000000fb0000000c00430061006d006500720061010000046b000000d80000000000000000fb0000000e0042007500740074006f006e007300000003cf000000670000000000000000fb0000001800430061006e00630065006c00200072006f00750074006500000003ce000000840000000000000000fb00000018004300610072006c00610043006f006e00740072006f006c0100000203000000c0000000bc00fffffffb00000016005200650063006f007200640020004200610067007303000000490000025c0000020700000043000000010000032700000521fc0200000013fb0000003800430061006d00650072006100200049006e00740065007200660061006300650020006c0069006e006b0031002000520069006700680074000000003d0000039e0000001600fffffffb000000360049006d00610067006500200049006e00740065007200660061006300650020006c0069006e006b00310020005200690067006800740000000215000001c60000001600fffffffb0000003a00430061006d00650072006100200049006e007400650072006600610063006500420020006c0069006e006b0020003000200042006100730065000000003d0000039e0000001600fffffffb000000360049006d00610067006500200049006e007400650072006600610063006500420020006c0069006e006b003000200042006100730065000000003d0000039e0000001600fffffffb0000003e00430061006d00650072006100200049006e00740065007200660061006300650020006c0069006e006b00330020004200610063006b0077006100720064000000003d0000039e0000001600fffffffb0000003a00430061006d00650072006100200049006e007400650072006600610063006500610020006c0069006e006b002000300020004c006500660074000000003d0000039e0000001600fffffffb0000003c0049006d00610067006500200049006e00740065007200660061006300650020006c0069006e006b00330020004200610063006b00770061007200640000000212000001c90000001600fffffffb000000360049006d00610067006500200049006e007400650072006600610063006500610020006c0069006e006b00300020004c006500660074000000020f000001cc0000001600fffffffb000000160049006d006100670065002000720069006700680074000000003d000003b90000001600fffffffb000000140049006d0061006700650020006c006500660074000000021d000001d90000001600fffffffb0000001800430061006d006500720061002000720069006700680074000000003d000001f00000001600fffffffb0000001600430061006d0065007200610020006c006500660074000000003d000003b90000001600fffffffb000000300046006f00720077006100720064002000630061006d00650072006100200052004f004900200069006d006100670065000000003d0000029a0000001600fffffffc0000003d000005210000000000fffffffaffffffff0100000003fb0000003c00430061006d00650072006100200049006e00740065007200660061006300650020006c0069006e006b003200200046006f007200770061007200640000000000ffffffff0000010a00fffffffb0000003a0049006d00610067006500200049006e00740065007200660061006300650020006c0069006e006b003200200046006f007200770061007200640000000000ffffffff0000010000fffffffb0000002c00520069006700680074002000630061006d00650072006100200052004f004900200069006d006100670065000000068700000331000000d700fffffffc00000047000004f10000000000fffffffaffffffff0100000002fb00000022004300610072006c0061002000630061006d0065007200610020007600690065007700000006cf00000331000000af00fffffffb00000020004300610072006c006100200069006d006100670065002000760069006500770000000000ffffffff000000a700fffffffb0000000c00430061006d00650072006100000002360000030d0000000000000000fb0000000c00430061006d0065007200610100000268000002db0000000000000000fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000001200530065006c0065006300740069006f006e010000025a000000b20000000000000000000000020000073f000000a8fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000052700000167fc0100000005fb00000012005200610077005f0069006d0061006700650000000000000005270000000000000000fb000000140072006f0069005f007300690067006e0061006c0000000241000002e60000000000000000fb0000002400560065006800690063006c00650045006e006700610067006500500061006e0065006c0000000000000005740000000000000000fb0000000800540069006d006500000000c4000004b00000041800fffffffb0000000800540069006d00650100000000000004500000000000000000000002ab0000028600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Record Bags:
     collapsed: false
   Right camera ROI image:
     collapsed: false
@@ -2484,6 +2483,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 2488
+  Width: 1208
   X: 72
-  Y: 33
+  Y: 27
