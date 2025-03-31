@@ -58,7 +58,7 @@ class ScenarioMetricsCalculator:
         ade_score = round(ade_score, 2)
 
         # speed_smoothness = sqrt(1/N * sum(dv/dt)), where dv - difference between consecutive speed values, dt - sampling period, N - number of samples
-        speed_smoothness = np.sqrt(np.sum(np.diff(self.target_speeds) * self.metrics_frequency) / len(self.target_speeds))
+        speed_smoothness = np.sqrt(max(np.sum(np.diff(self.target_speeds) * self.metrics_frequency) / len(self.target_speeds), 0))
         speed_smoothness = round(speed_smoothness, 2)
 
         if self.ade_csv_file.endswith(".csv"):
