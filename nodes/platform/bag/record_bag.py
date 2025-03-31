@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 
+import os
 import rospy
 import subprocess
 from datetime import datetime
 
 from jsk_rviz_plugins.msg import RecordCommand
 
-
 class RecordBag:
     def __init__(self):
 
+        # Parameters
         self.blacklist_file = rospy.get_param("~blacklist_file")
         self.recorded_bags_dir = rospy.get_param("~recorded_bags_dir")
 
+        os.makedirs(self.recorded_bags_dir, exist_ok=True)
         self.recording_process = None
 
         # Subsrcibers

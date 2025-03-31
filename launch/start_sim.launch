@@ -17,7 +17,7 @@
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
     <arg name="launch_rviz"             default="true"          doc="Determines if rviz is launched or not. Rviz will be launched by default." />
     <arg name="rate"                    default="1"             doc="Scenario bag playback speed" />
-    <arg name="blacklist_file"          default="$(find autoware_mini)/scripts/bags/blacklist.txt" />
+    <arg name="blacklist_file"          default="$(find autoware_mini)/config/record_bag/blacklist.txt" />
     <arg name="recorded_bags_dir"       default="$(find autoware_mini)/data/bags" />
     <arg name="enable_goal_checker"          default="true" />
     <arg name="enable_object_checker"        default="true" />

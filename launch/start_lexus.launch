@@ -22,7 +22,7 @@
     <arg name="more_visualizations"     default="false"             doc="By default visualize only the final detections" />
     <arg name="use_lane_matching"       default="false" />
     <arg name="use_openpilot"           default="$(eval 'openpilot' in local_planner or use_lane_matching)" />
-    <arg name="blacklist_file"          default="$(find autoware_mini)/scripts/bags/blacklist.txt" />
+    <arg name="blacklist_file"          default="$(find autoware_mini)/config/record_bag/blacklist.txt" />
     <arg name="recorded_bags_dir"       default="/media/$(env USER)/ExtremePro/$(env USER)" />
     <arg name="enable_goal_checker"          default="true" />
     <arg name="enable_object_checker"        default="true" />
