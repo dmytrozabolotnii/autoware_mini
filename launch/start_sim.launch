@@ -17,6 +17,8 @@
     <arg name="detection_range"         default=""              doc="enter a value in meters to enable it" />
     <arg name="launch_rviz"             default="true"          doc="Determines if rviz is launched or not. Rviz will be launched by default." />
     <arg name="rate"                    default="1"             doc="Scenario bag playback speed" />
+    <arg name="blacklist_file"          default="$(find autoware_mini)/scripts/bags/blacklist.txt" />
+    <arg name="recorded_bags_dir"       default="$(find autoware_mini)/data/bags" />
     <arg name="enable_goal_checker"          default="true" />
     <arg name="enable_object_checker"        default="true" />
     <arg name="enable_auto_stop_checker"     default="false" />
@@ -82,6 +84,12 @@
             <rosparam command="load" file="$(find autoware_mini)/config/rviz/actions.yaml"/>
         </node>
     </group>
+
+    <!-- Rosbag recording -->
+    <node pkg="autoware_mini" type="record_bag.py" name="record_bag" output="screen" required="true" >
+        <param name="blacklist_file"            value="$(arg blacklist_file)" />
+        <param name="recorded_bags_dir"         value="$(arg recorded_bags_dir)" />
+    </node>
 
     <!-- Webapp bridge -->
     <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/platform/webapp.launch" />
