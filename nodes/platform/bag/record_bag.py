@@ -12,8 +12,6 @@ class RecordBag:
 
         self.blacklist_file = rospy.get_param("~blacklist_file")
         self.recorded_bags_dir = rospy.get_param("~recorded_bags_dir")
-        print(self.recorded_bags_dir)
-        self.bag_dir = "/home/pilve/test_bag"
 
         self.recording_process = None
 
@@ -32,7 +30,7 @@ class RecordBag:
             # Full command
             cmd = f"rosbag record -a -O {output_file} -x \"$({blacklist_cmd})\""
 
-            self.recording_process = subprocess.Popen(cmd, shell=True, executable="/bin/bash", cwd=self.bag_dir)
+            self.recording_process = subprocess.Popen(cmd, shell=True, executable="/bin/bash", cwd=self.recorded_bags_dir)
 
         elif msg.command == 1 and self.recording_process is not None:
             self.recording_process.terminate()
