@@ -10,6 +10,7 @@
     <arg name="detector"                default="lidar_cluster"     doc="lidar_cluster, sim, carla"/>
     <arg name="tfl_detector"            default="mqtt_camera_fusion" doc="mqtt, camera, mqtt_camera_fusion" />
     <arg name="tfl_cameras"             default="mako"              doc="mako, nvidia" />
+    <arg name="nvidia_encoder"          default="$(eval 'jpeg' if 'camera' in tfl_detector and tfl_cameras=='nvidia' else 'h264')" doc="h264, jpeg"/> 
     <arg name="tracker"                 default="ema"               doc="none, ema" />
     <arg name="predictor"               default="map_naive"         doc="none, naive, map, map_naive" />
     <arg name="controller"              default="pure_pursuit"      doc="pure_pursuit, stanley" />
@@ -91,7 +92,7 @@
         <arg name="use_camera_fl"       value="$(eval 'camera' in tfl_detector and tfl_cameras=='mako')" />
         <arg name="use_camera_fr"       value="$(eval 'camera' in tfl_detector and tfl_cameras=='mako')" />
         <arg name="use_nvidia_cameras"  value="true" />
-        <arg name="nvidia_encoder"      value="$(eval 'jpeg' if 'camera' in tfl_detector and tfl_cameras=='nvidia' else 'h264')" />
+        <arg name="nvidia_encoder"      value="$(arg nvidia_encoder)" />
         <arg name="use_radar_fc"        value="$(eval 'radar' in detector)" />
         <arg name="use_openpilot"       value="$(arg use_openpilot)" />
     </include>
