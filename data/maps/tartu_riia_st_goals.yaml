@@ -162,12 +162,6 @@ positions:
   y: -2070.314035968855
   z: 69.34312438964844
 ---
-name: Raeplats (Kroonuaia tn. suunas)
-positions:
-- x: -87.79977534577483
-  y: -467.80956843309104
-  z: 34.48374938964844
----
 name: Raeplats (linna)
 positions:
 - x: -29.067102130618878
