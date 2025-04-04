@@ -38,8 +38,11 @@ class TrajectoryCollisionChecker:
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["stop", "traffic_light", "yield", "yield_stop"])
-        self.stop_lines = shapely.multilinestrings(list(stop_lines.values()))
-        shapely.prepare(self.stop_lines)
+        if stop_lines:
+            self.stop_lines = shapely.multilinestrings(list(stop_lines.values()))
+            shapely.prepare(self.stop_lines)
+        else:
+            self.stop_lines = None
 
         # publishers
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -112,7 +115,7 @@ class TrajectoryCollisionChecker:
                             continue
 
                         # if predicted trajectory intersects with any of the stop lines, ignore it - we have right of way
-                        if self.stop_lines.intersects(trajectory_to_check):
+                        if self.stop_lines and self.stop_lines.intersects(trajectory_to_check):
                             continue
 
                         # Extract INTERSECTION AREA: distances on local_path and extract points
