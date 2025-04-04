@@ -6,7 +6,7 @@
   </ParameterDeclarations>
   <CatalogLocations/>
   <RoadNetwork>
-    <LogicFile filepath="Tartu"/>
+    <LogicFile filepath="tartu_demo"/>
     <SceneGraphFile filepath=""/>
   </RoadNetwork>
   <Entities>

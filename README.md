@@ -61,7 +61,7 @@ Here are couple of short videos introducing the Autoware Mini features.
    # for decoding h264 nvidia camera images
    git clone https://github.com/UT-ADL/h264_image_transport.git
    # if using Carla simulation
-   git clone --recurse-submodules -b async_bridge https://github.com/UT-ADL/ros-bridge carla_ros_bridge
+   git clone --recurse-submodules -b route_scenario_v0.9.15 https://github.com/UT-ADL/ros-bridge carla_ros_bridge
    ```
 
 3. Install system dependencies
@@ -139,12 +139,17 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
 
 ### Installation (skip if already done)
 
-1. Download [Carla 0.9.13](https://tiny.carla.org/carla-0-9-13-linux).
-2. Extract the file with `tar xzvf CARLA_0.9.13.tar.gz`. We will call this extracted folder `<CARLA ROOT>`.
-3. Download [Tartu.tar.gz](https://drive.google.com/file/d/10CHEOjHyiLJgD13g6WwDZ2_AWoLasG2F/view?usp=share_link).
-4. Copy `Tartu.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
-5. Run `./ImportAssets.sh` from the `<CARLA ROOT>` directory. This will install the Tartu map. (You can now delete the `Tartu.tar.gz` file from the `Import` folder.)
-6. Since we will be referring to `<CARLA ROOT>` a lot, let's export it as an environment variable. Make sure to replace the path where Carla is extracted.
+1. Download [Carla 0.9.15](https://tiny.carla.org/carla-0-9-15-linux).
+2. Extract the file with `tar xzvf CARLA_0.9.15.tar.gz`. We will call this extracted folder `<CARLA ROOT>`.
+3. Download [tartu_demo.tar.gz](https://github.com/UT-ADL/carla_tartu_demo/releases/download/v0.9.15/tartu_demo.tar.gz).
+4. Copy `tartu_demo.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
+5. Run `./ImportAssets.sh` from the `<CARLA ROOT>` directory. This will install the `tartu_demo` map.
+6. Delete the `tartu_demo.tar.gz` file from the `Import` folder.
+7. Download [utlexus.tar.gz](https://github.com/UT-ADL/carla_lexus/releases/download/v0.9.15/utlexus.tar.gz).
+8. Copy `utlexus.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
+9. Run `./ImportAssets.sh` from the `<CARLA ROOT>` directory. This will install the UT Lexus vehicle model.
+10. Delete the `utlexus.tar.gz` file from the `Import` folder.
+11. Since we will be referring to `<CARLA ROOT>` a lot, let's export it as an environment variable. Make sure to replace the path where Carla is extracted.
 
    ```
    export CARLA_ROOT=$HOME/path/to/carla
@@ -152,7 +157,7 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
 
 7. Now, enter the following command. (**NOTE:** Here we assume that `CARLA_ROOT`  was set from the previous command.)
    ```
-   export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla/dist/carla-0.9.13-py3.7-linux-x86_64.egg:${CARLA_ROOT}/PythonAPI/carla/agents:${CARLA_ROOT}/PythonAPI/carla
+   export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla/dist/carla-0.9.15-py3.7-linux-x86_64.egg:${CARLA_ROOT}/PythonAPI/carla/agents:${CARLA_ROOT}/PythonAPI/carla
    ```
    **Note:** It will be convenient if the above variables are automatically exported whenever you open a terminal. Putting above exports in `~/.bashrc` will reduce the hassle of exporting everytime.
 
@@ -191,9 +196,9 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
 
 ### Launching with Scenario Runner
 
-1. Clone [Scenario Runner](https://github.com/UT-ADL/scenario_runner/tree/route_scenario) to a directory of your choice
+1. Clone [Scenario Runner](https://github.com/UT-ADL/scenario_runner/tree/route_scenario_v0.9.15) to a directory of your choice
    ```
-   git clone -b route_scenario https://github.com/UT-ADL/scenario_runner.git
+   git clone -b route_scenario_v0.9.15 https://github.com/UT-ADL/scenario_runner.git
    ```
 2. Install requirements
    ```
@@ -222,7 +227,7 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
    ```
    roslaunch autoware_mini start_carla.launch use_scenario_runner:=true map_name:=tartu_demo route_id:=0
    ```
-   This will launch route scenarios using `route_id = 0` which corresponds to `Tartu` map in routes definition file [routes_devtest.xml](data/routes/routes_devtest.xml). Make sure to match the `route_id` with the correct `map_name` to avoid discrepancy. For example for `route_id = 2` the `map_name = Town03`.
+   This will launch route scenarios using `route_id = 0` which corresponds to `tartu_demo` map in routes definition file [routes_devtest.xml](data/routes/routes_devtest.xml). Make sure to match the `route_id` with the correct `map_name` to avoid discrepancy. For example for `route_id = 1` the `map_name = Town10HD`.
 
 ## Launching in Lexus
 
