@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import rospy, os, dotenv, json, threading
+import rospy, os, dotenv, json, threading, secrets
 import paho.mqtt.client as mqtt
 
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
@@ -8,13 +8,19 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from autoware_mini.msg import Path
 
 
-# Constants for MQTT topics
 class WebappMqttTopics:
     class Published:
-        STATUS = "lexus/status"
-        ROUTE = "lexus/route"
+        def __init__(self, session_id: str):
+            self.STATUS = f"session/{session_id}/status"
+            self.ROUTE = f"session/{session_id}/route"
+
     class Received:
-        GOAL_POINT = "lexus/goal"
+        def __init__(self, session_id: str):
+            self.GOAL = f"session/{session_id}/goal"
+
+    def __init__(self, session_id: str):
+        self.Published = self.Published(session_id)
+        self.Received = self.Received(session_id)
 
 class WebappBridge:
     def __init__(self):
@@ -52,9 +58,12 @@ class WebappBridge:
         
         # Other initializations
         self.converter = WGS84ToUTMTransformer(use_custom_origin, utm_origin_lat, utm_origin_lon)
-        
+        self.mqtt_topics = None
         self.current_pose = None
         self.current_velocity = None
+        
+        # Event to block until the initial webapp mqtt connection is established
+        self.connection_event = threading.Event()
                     
         # Publishers (publish to ROS, subscribe to MQTT)
         self.goal_pub = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=1, tcp_nodelay=True)
@@ -63,20 +72,29 @@ class WebappBridge:
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber('/planning/global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
-    
+        
     def on_mqtt_connect(self, client, userdata, flags, rc):
         if rc == 0:
             rospy.loginfo(f"Connected to MQTT!")
             
+            # Generate a random 6-digit session id, if connecting first time
+            # Duplicate session id check is currently not implemented
+            if not self.mqtt_topics:
+                session_id = f"{secrets.randbelow(1_000_000):06d}"
+            self.mqtt_topics = WebappMqttTopics(session_id)
+            rospy.loginfo(f"WebApp Session ID: {session_id}")
+            
             # Subscribe to desired MQTT topics after successful connection
-            self.client.subscribe(WebappMqttTopics.Received.GOAL_POINT)
+            self.client.subscribe(self.mqtt_topics.Received.GOAL)
+            
+            self.connection_event.set()  # Notify that the connection is established
         else:
             rospy.logerr(f"Failed to connect to MQTT! Reason: {mqtt.connack_string(rc)}")
         
     def on_mqtt_message(self, client, userdata, msg):
         # General handler for receiving mqtt messages
         data = json.loads(msg.payload.decode())
-        if msg.topic == WebappMqttTopics.Received.GOAL_POINT:
+        if msg.topic == self.mqtt_topics.Received.GOAL:
             self.on_goal_point_receive(data)
     
     def on_goal_point_receive(self, data):
@@ -109,8 +127,7 @@ class WebappBridge:
             if self.current_velocity is not None and self.current_pose is not None:
                 
                 lat, lon = self.converter.transform_utm(self.current_pose.pose.position.x, self.current_pose.pose.position.y, self.current_pose.pose.position.z)
-                speed = round(self.current_velocity.twist.linear.x * 3.6, 2)
-                
+                speed = round(self.current_velocity.twist.linear.x * 3.6, 2)  # Convert m/s to km/h and round to 2 decimal places
                 data = {
                     "pose": {
                         "lat": lat,
@@ -118,7 +135,7 @@ class WebappBridge:
                     },
                     "speed": speed
                 }
-                self.client.publish(WebappMqttTopics.Published.STATUS, json.dumps(data))
+                self.client.publish(self.mqtt_topics.Published.STATUS, json.dumps(data))
             rate.sleep()
     
     def current_pose_callback(self, msg):
@@ -137,7 +154,7 @@ class WebappBridge:
         data = {
             "waypoints": wp_latlons
         }
-        self.client.publish(WebappMqttTopics.Published.ROUTE, json.dumps(data))
+        self.client.publish(self.mqtt_topics.Published.ROUTE, json.dumps(data))
     
     def run(self):
         # Connect to the MQTT host
@@ -145,6 +162,11 @@ class WebappBridge:
         
         # Start the MQTT client loop in a separate thread
         self.client.loop_start()
+        
+        # Block until the first connection is established
+        rospy.loginfo("Waiting for MQTT connection...")
+        self.connection_event.wait()  # Blocks until `self.connection_event.set()` is called
+        rospy.loginfo("MQTT connection established. Proceeding with the node.")
         
         # Spin the ROS node in a separate thread
         threading.Thread(target=rospy.spin, daemon=True).start()
