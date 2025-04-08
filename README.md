@@ -198,7 +198,7 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
 
 1. Clone [Scenario Runner](https://github.com/UT-ADL/scenario_runner/tree/route_scenario_v0.9.15) to a directory of your choice
    ```
-   git clone -b route_scenario_v0.9.15 https://github.com/UT-ADL/scenario_runner.git
+   git clone -b route_scenario_v0.9.15_updated https://github.com/UT-ADL/scenario_runner.git
    ```
 2. Install requirements
    ```
