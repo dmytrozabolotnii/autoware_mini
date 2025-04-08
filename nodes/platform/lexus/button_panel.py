@@ -6,6 +6,7 @@ from sensor_msgs.msg import Joy
 from geometry_msgs.msg import PoseStamped
 from visualization_msgs.msg import Marker
 from std_srvs.srv import Empty
+from jsk_rviz_plugins.msg import RecordCommand
 
 class ButtonPanelNode:
     def __init__(self):
@@ -14,12 +15,16 @@ class ButtonPanelNode:
         self.time_engage = 0
 
         self.cooldown = rospy.get_param("~cooldown")
+        self.bag_name = rospy.get_param("~bag_name")
         self.enabled = False
 
         self.engage_pub = rospy.Publisher("engage", Bool, queue_size=10, tcp_nodelay=True)
         self.marker_pub = rospy.Publisher("/log/markers", Marker, queue_size=10, tcp_nodelay=True)
+        self.record_command_pub = rospy.Publisher('/record_command', RecordCommand, queue_size=1)
 
         self.service_lets_go = rospy.ServiceProxy('/planning/service_lets_go', Empty)
+        self.service_cancel_route = rospy.ServiceProxy('/planning/cancel_route', Empty)
+        self.service_cancel_pose = rospy.ServiceProxy('/localization/cancel_pose', Empty)
 
         rospy.Subscriber("/localization/current_pose", PoseStamped, self.pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber("/pacmod/enabled", Bool, self.enabled_callback, queue_size=1, tcp_nodelay=True)
@@ -50,7 +55,8 @@ class ButtonPanelNode:
                     response = self.service_lets_go()
                 except rospy.ServiceException as e:
                     rospy.logerr("%s - service_lets_go call failed: %s", rospy.get_name(), e)
-        if msg.buttons[1] == 1 or msg.buttons[2] == 0 or msg.buttons[3] == 1 or msg.buttons[4] == 1 or msg.buttons[5] == 1:
+
+        elif msg.buttons[1] == 1:
             if self.pose_msg is not None:
                 marker = Marker()
                 marker.header.frame_id = self.pose_msg.header.frame_id
@@ -61,32 +67,39 @@ class ButtonPanelNode:
                 marker.scale.x = 1
                 marker.scale.y = 1
                 marker.scale.z = 2
-                if msg.buttons[1] == 1:
-                    marker.color.r = 1
-                    marker.color.g = 1
-                    marker.color.b = 1
-                elif msg.buttons[2] == 0:
-                    marker.color.r = 1
-                    marker.color.g = 0
-                    marker.color.b = 0
-                elif msg.buttons[3] == 1:
-                    marker.color.r = 0
-                    marker.color.g = 1
-                    marker.color.b = 0
-                elif msg.buttons[4] == 1:
-                    marker.color.r = 0
-                    marker.color.g = 0
-                    marker.color.b = 1
-                elif msg.buttons[5] == 1:
-                    marker.color.r = 1
-                    marker.color.g = 1
-                    marker.color.b = 0
+                marker.color.r = 1
+                marker.color.g = 1
+                marker.color.b = 1
                 marker.color.a = 1
                 self.marker_id += 1
                 self.marker_pub.publish(marker)
                 rospy.logdebug("%s - published marker (%d, %d)", rospy.get_name(), marker.pose.position.x, marker.pose.position.y)
             else:
                 rospy.logwarn("%s - did not publish marker, no current pose yet", rospy.get_name())
+        
+        elif msg.buttons[2] == 1:
+            try:
+                response = self.service_cancel_route()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_cancel_route call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[3] == 1:
+            try:
+                response = self.service_cancel_pose()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_cancel_pose call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[4] == 1:
+            record_cmd = RecordCommand()
+            record_cmd.command = RecordCommand.RECORD
+            record_cmd.target = self.bag_name
+            self.record_command_pub.publish(record_cmd)
+
+        elif msg.buttons[5] == 1:
+            record_cmd = RecordCommand()
+            record_cmd.command = RecordCommand.RECORD_STOP
+            record_cmd.target = self.bag_name
+            self.record_command_pub.publish(record_cmd)
 
     def run(self):
         rospy.spin()

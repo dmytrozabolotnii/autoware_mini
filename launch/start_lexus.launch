@@ -34,6 +34,7 @@
     <arg name="enable_trajectory_checker"    default="true" />
     <arg name="ground_removal"          default="naive"         doc="naive, jcp" />
     <arg name="use_webapp"                default="true"          doc="Set to false to disable web app MQTT bridge node." />
+    <arg name="bag_name"                default="recording"       doc="Name of recorded bag files when car buttons are used" />
     
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -95,6 +96,7 @@
         <arg name="nvidia_encoder"      value="$(arg nvidia_encoder)" />
         <arg name="use_radar_fc"        value="$(eval 'radar' in detector)" />
         <arg name="use_openpilot"       value="$(arg use_openpilot)" />
+        <arg name="bag_name"            value="$(arg bag_name)"/>
     </include>
 
     <!-- Rviz -->
