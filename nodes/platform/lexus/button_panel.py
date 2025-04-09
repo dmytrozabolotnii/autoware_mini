@@ -6,7 +6,6 @@ from sensor_msgs.msg import Joy
 from geometry_msgs.msg import PoseStamped
 from visualization_msgs.msg import Marker
 from std_srvs.srv import Empty
-from jsk_rviz_plugins.msg import RecordCommand
 
 class ButtonPanelNode:
     def __init__(self):
@@ -15,16 +14,16 @@ class ButtonPanelNode:
         self.time_engage = 0
 
         self.cooldown = rospy.get_param("~cooldown")
-        self.bag_name = rospy.get_param("~bag_name")
         self.enabled = False
 
         self.engage_pub = rospy.Publisher("engage", Bool, queue_size=10, tcp_nodelay=True)
         self.marker_pub = rospy.Publisher("/log/markers", Marker, queue_size=10, tcp_nodelay=True)
-        self.record_command_pub = rospy.Publisher('/record_command', RecordCommand, queue_size=1)
 
         self.service_lets_go = rospy.ServiceProxy('/planning/service_lets_go', Empty)
         self.service_cancel_route = rospy.ServiceProxy('/planning/cancel_route', Empty)
         self.service_cancel_pose = rospy.ServiceProxy('/localization/cancel_pose', Empty)
+        self.service_start_record = rospy.ServiceProxy('/dashboard/start_record', Empty)
+        self.service_stop_record = rospy.ServiceProxy('/dashboard/stop_record', Empty)
 
         rospy.Subscriber("/localization/current_pose", PoseStamped, self.pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber("/pacmod/enabled", Bool, self.enabled_callback, queue_size=1, tcp_nodelay=True)
@@ -90,16 +89,16 @@ class ButtonPanelNode:
                 rospy.logerr("%s - service_cancel_pose call failed: %s", rospy.get_name(), e)
 
         elif msg.buttons[4] == 1:
-            record_cmd = RecordCommand()
-            record_cmd.command = RecordCommand.RECORD
-            record_cmd.target = self.bag_name
-            self.record_command_pub.publish(record_cmd)
+            try:
+                response = self.service_start_record()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_start_record call failed: %s", rospy.get_name(), e)
 
         elif msg.buttons[5] == 1:
-            record_cmd = RecordCommand()
-            record_cmd.command = RecordCommand.RECORD_STOP
-            record_cmd.target = self.bag_name
-            self.record_command_pub.publish(record_cmd)
+            try:
+                response = self.service_stop_record()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_stop_record call failed: %s", rospy.get_name(), e)
 
     def run(self):
         rospy.spin()

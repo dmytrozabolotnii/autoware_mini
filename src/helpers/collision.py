@@ -44,6 +44,12 @@ class CollisionPoints:
         STOP_LINE_FORCED_STOP:              "Stopping for stop line"
     }
 
+    COLLISION_POINT_CATEGORY_IGNORE_CAPTION = {
+        TRAFFIC_LIGHT_STOPLINE:             "Ignoring traffic light",
+        TRAJECTORY_ON_CROSSWALK:            "Ignoring crosswalk prediction",
+        YIELDING_TRAJECTORY:                "Ignoring yielding",
+    }
+
     def __init__(self):
 
         self._array = np.array([], dtype=DTYPE)

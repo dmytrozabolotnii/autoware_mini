@@ -6,7 +6,7 @@ import numpy as np
 from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 from helpers.collision import CollisionPoints
 from std_msgs.msg import Int32
-from autoware_mini.msg import Path
+from autoware_mini.msg import Path, Log
 from sensor_msgs.msg import PointCloud2
 from std_srvs.srv import Empty, EmptyResponse
 
@@ -31,6 +31,7 @@ class AutomaticStopChecker:
         # publishers
         self.lets_go_pub = rospy.Publisher('lets_go', Int32, queue_size=1, tcp_nodelay=True)
         self.stop_line_collision_pub = rospy.Publisher('stop_line_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
+        self.log_message_pub = rospy.Publisher('/dashboard/log_message', Log, queue_size=5, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=1, tcp_nodelay=True)
@@ -39,7 +40,6 @@ class AutomaticStopChecker:
 
         # Services
         rospy.Service('service_lets_go', Empty, self.lets_go_handler)
-
 
     def global_path_callback(self, msg):
         global_path_linestring = shapely.LineString([(waypoint.position.x, waypoint.position.y) for waypoint in msg.waypoints])
@@ -97,7 +97,6 @@ class AutomaticStopChecker:
         if self.ignore_stop_line_id != -1 and (self.current_closest_stop_line_id != self.ignore_stop_line_id or self.timer + rospy.Duration(self.keep_stop_line_for) < rospy.Time.now()):
             self.ignore_stop_line_id = -1
             self.lets_go_pub.publish(Int32(self.ignore_stop_line_id))
-
         collision_points_msg = collision_points.create_message()
         collision_points_msg.header = msg.header
         self.stop_line_collision_pub.publish(collision_points_msg)
@@ -109,6 +108,7 @@ class AutomaticStopChecker:
         # reset timer and set current closest stop line id as the one to be removed
         self.timer = rospy.Time.now()
         self.ignore_stop_line_id = self.current_closest_stop_line_id
+        self.log_message_pub.publish(Log(message = "Allow crossing the yield line", color = "white"))
         rospy.loginfo("Removed forced stop for stopline id %d for %d seconds", self.ignore_stop_line_id, self.keep_stop_line_for)
 
     # service call to simulate Go button press from rviz

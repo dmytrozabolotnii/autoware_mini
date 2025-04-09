@@ -31,6 +31,7 @@
     <arg name="ade_threshold"                default="10" />
     <arg name="ade_plot_file"                default="" />
     <arg name="speed_smoothness_threshold"   default="1" />
+    <arg name="bag_name"                default="recording"       doc="Name of recorded bag files when car buttons are used" />
 
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -89,6 +90,7 @@
     <node pkg="autoware_mini" type="record_bag.py" name="record_bag" output="screen" required="true" >
         <param name="blacklist_file"            value="$(arg blacklist_file)" />
         <param name="recorded_bags_dir"         value="$(arg recorded_bags_dir)" />
+        <param name="bag_name"                  value="$(arg bag_name)" />
     </node>
 
     <!-- Webapp bridge -->
