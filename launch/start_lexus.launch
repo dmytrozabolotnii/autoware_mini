@@ -96,7 +96,6 @@
         <arg name="nvidia_encoder"      value="$(arg nvidia_encoder)" />
         <arg name="use_radar_fc"        value="$(eval 'radar' in detector)" />
         <arg name="use_openpilot"       value="$(arg use_openpilot)" />
-        <arg name="bag_name"            value="$(arg bag_name)"/>
     </include>
 
     <!-- Rviz -->
@@ -111,6 +110,7 @@
     <node pkg="autoware_mini" type="record_bag.py" name="record_bag" output="screen" required="true" >
         <param name="blacklist_file"            value="$(arg blacklist_file)" />
         <param name="recorded_bags_dir"         value="$(arg recorded_bags_dir)" />
+        <param name="bag_name"                  value="$(arg bag_name)"/>
     </node>
 
 </launch>

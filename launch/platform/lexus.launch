@@ -9,7 +9,6 @@
     <arg name="use_nvidia_cameras"  default="false" />
     <arg name="nvidia_encoder"      default="h264" />
     <arg name="use_openpilot"       default="false" />
-    <arg name="bag_name"            default="recording" />
 
     <!-- Vehicle platform -->
     <include file="$(find vehicle_platform)/launch/platform.launch">
@@ -40,9 +39,7 @@
         </node>
 
         <!-- Button panel -->
-        <node pkg="autoware_mini" type="button_panel.py" name="button_panel" output="screen" required="true" >
-            <param name="bag_name" value="$(arg bag_name)"/>
-        </node>
+        <node pkg="autoware_mini" type="button_panel.py" name="button_panel" output="screen" required="true" />
 
         <node pkg="joy" type="joy_node" name="joy" />
 

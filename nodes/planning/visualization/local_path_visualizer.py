@@ -4,7 +4,7 @@ import rospy
 import math
 import shapely
 
-from autoware_mini.msg import Path
+from autoware_mini.msg import Path, Log
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from jsk_rviz_plugins.msg import OverlayText
@@ -13,6 +13,7 @@ from helpers.path import PathWrapper
 from helpers.collision import CollisionPoints
 from helpers.geometry import get_orientation_from_heading
 from helpers.visualization import triangulate_linestring
+
 
 COLLISION_POINT_CATEGORY_COLOR = {
     CollisionPoints.NO_OBSTACLES:                       "PaleGreen",
@@ -40,12 +41,12 @@ class LocalPathVisualizer:
         self.published_waypoints = 0
         self.planner_status_last_timestamp = None
         self.planner_status_last_category = None
-        self.planner_log_text = ""
 
         # Publishers
         self.local_path_markers_pub = rospy.Publisher('local_path_markers', MarkerArray, queue_size=1, tcp_nodelay=True)
-        self.planner_status_pub = rospy.Publisher('/dashboard/planner_status', OverlayText, queue_size=1, tcp_nodelay=True)
-        self.planner_log_pub = rospy.Publisher('/dashboard/planner_log', OverlayText, queue_size=1, tcp_nodelay=True)
+        self.planner_status_pub = rospy.Publisher('/dashboard/planner_status', OverlayText, queue_size=1, tcp_nodelay=True, latch=True)
+        self.planner_status_pub.publish(OverlayText(text=""))  # Initialize with empty text
+        self.log_message_pub = rospy.Publisher('/dashboard/log_message', Log, queue_size=1, tcp_nodelay=True, latch=True)
 
         # Subscribers
         rospy.Subscriber('local_path', Path, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
@@ -178,18 +179,15 @@ class LocalPathVisualizer:
 
         if self.planner_status_last_category != collision_point_category:
             if self.planner_status_last_category != None:
-                duration = (msg.header.stamp - self.planner_status_last_timestamp).to_sec()
-                self.planner_log_text = f"<div style='text-align: left; color: {COLLISION_POINT_CATEGORY_COLOR[self.planner_status_last_category]};'>{round(duration, 1)}s - {CollisionPoints.COLLISION_POINT_CATEGORY_CAPTION[self.planner_status_last_category]}</div>{self.planner_log_text}"
-                # split text string into lines (use </div> as separator) and keep only first 5 lines
-                self.planner_log_text = "</div>".join(self.planner_log_text.split("</div>")[:5]) + "</div>"
+                log = Log()
+                log.message = CollisionPoints.COLLISION_POINT_CATEGORY_CAPTION[self.planner_status_last_category]
+                log.color = COLLISION_POINT_CATEGORY_COLOR[self.planner_status_last_category]
+                log.duration = (msg.header.stamp - self.planner_status_last_timestamp).to_sec()
+                self.log_message_pub.publish(log)
 
             # update last timestamp and category
             self.planner_status_last_timestamp = msg.header.stamp
             self.planner_status_last_category = collision_point_category
-
-            planner_log = OverlayText()
-            planner_log.text = self.planner_log_text
-            self.planner_log_pub.publish(planner_log)
 
     def run(self):
         rospy.spin()

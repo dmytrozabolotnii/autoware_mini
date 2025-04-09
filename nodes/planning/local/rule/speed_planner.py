@@ -8,7 +8,7 @@ import shapely
 import numpy as np
 from numpy.lib.recfunctions import structured_to_unstructured
 from ros_numpy import numpify
-from autoware_mini.msg import Path
+from autoware_mini.msg import Path, Log
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from helpers.path import PathWrapper
@@ -36,6 +36,7 @@ class SpeedPlanner:
 
         # publishers
         self.local_path_pub = rospy.Publisher('local_path', Path, queue_size=1, tcp_nodelay=True)
+        self.log_message_pub = rospy.Publisher('/dashboard/log_message', Log, queue_size=1, tcp_nodelay=True)
 
         # subscribers
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
@@ -91,7 +92,8 @@ class SpeedPlanner:
             decelerations = (current_speed**2) / np.maximum(2.0 * deceleration_distances - ego_distance_from_local_path_start, 0.001)
             deceleration_exceeded_mask = (decelerations > collision_points['deceleration_limit'])
             for i in np.where(deceleration_exceeded_mask)[0]:
-                rospy.logwarn_throttle(3, f"{rospy.get_name()} - {CollisionPoints.COLLISION_POINT_CATEGORY_CAPTION[collision_points[i]['category']]} ({deceleration_distances[i]:.1f} m) - deceleration of {decelerations[i]:.2f} m/s2 exceeds limit ({collision_points[i]['deceleration_limit']:.2f} m/s2), ignore!")
+                self.log_message_pub.publish(Log(message = CollisionPoints.COLLISION_POINT_CATEGORY_IGNORE_CAPTION[collision_points[i]['category']], color = "white"))
+                rospy.logwarn_throttle(3, f"{rospy.get_name()} - {CollisionPoints.COLLISION_POINT_CATEGORY_IGNORE_CAPTION[collision_points[i]['category']]} ({deceleration_distances[i]:.1f} m) - deceleration of {decelerations[i]:.2f} m/s2 exceeds limit ({collision_points[i]['deceleration_limit']:.2f} m/s2), ignore!")
 
             # if all collision points exceed deceleration - publish the original path and return
             if np.all(deceleration_exceeded_mask):

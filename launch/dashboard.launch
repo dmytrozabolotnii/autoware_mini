@@ -21,6 +21,7 @@
         <node pkg="autoware_mini" type="vehicle_state_visualizer.py" name="vehicle_state_visualizer" output="screen" required="true" >
             <param name="image_path"  value="$(find autoware_mini)/images/dashboard/"/>
         </node>
+        <node pkg="autoware_mini" type="logger.py" name="logger" output="screen" required="true" ></node>
         <group if="$(arg driver_status)">
             <!-- Novatel visualizer -->
             <node pkg="autoware_mini" type="novatel_oem7_visualizer.py" name="novatel_oem7_visualizer" output="screen" required="true"/>

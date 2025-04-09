@@ -125,6 +125,8 @@
         <remap from="/ssc/turn_signal_command" to="/bag/ssc/turn_signal_command" if="$(arg use_control)"/>
         <remap from="/ssc/gear_select" to="/bag/ssc/gear_select" if="$(arg use_control)"/>
         <remap from="/dashboard/planner_status" to="/bag/dashboard/planner_status" if="$(eval use_detection or use_planning)" />
+        <remap from="/dashboard/log_message" to="/bag/dashboard/log_message" if="$(eval use_detection or use_planning)" />
+        <remap from="/dashboard/log_text" to="/bag/dashboard/log_text" if="$(eval use_detection or use_planning)" />
         <remap from="/dashboard/current_speed" to="/bag/dashboard/current_speed" />
         <remap from="/dashboard/target_speed" to="/bag/dashboard/target_speed" />
         <remap from="/dashboard/closest_object_distance" to="/bag/dashboard/closest_object_distance" />
