@@ -56,6 +56,30 @@ class ButtonPanelNode:
                     rospy.logerr("%s - service_lets_go call failed: %s", rospy.get_name(), e)
 
         elif msg.buttons[1] == 1:
+            try:
+                response = self.service_cancel_route()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_cancel_route call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[2] == 0:
+            try:
+                response = self.service_cancel_pose()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_cancel_pose call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[3] == 1:
+            try:
+                response = self.service_start_record()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_start_record call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[4] == 1:
+            try:
+                response = self.service_stop_record()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_stop_record call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[5] == 1:
             if self.pose_msg is not None:
                 marker = Marker()
                 marker.header.frame_id = self.pose_msg.header.frame_id
@@ -75,30 +99,6 @@ class ButtonPanelNode:
                 rospy.logdebug("%s - published marker (%d, %d)", rospy.get_name(), marker.pose.position.x, marker.pose.position.y)
             else:
                 rospy.logwarn("%s - did not publish marker, no current pose yet", rospy.get_name())
-        
-        elif msg.buttons[2] == 1:
-            try:
-                response = self.service_cancel_route()
-            except rospy.ServiceException as e:
-                rospy.logerr("%s - service_cancel_route call failed: %s", rospy.get_name(), e)
-
-        elif msg.buttons[3] == 1:
-            try:
-                response = self.service_cancel_pose()
-            except rospy.ServiceException as e:
-                rospy.logerr("%s - service_cancel_pose call failed: %s", rospy.get_name(), e)
-
-        elif msg.buttons[4] == 1:
-            try:
-                response = self.service_start_record()
-            except rospy.ServiceException as e:
-                rospy.logerr("%s - service_start_record call failed: %s", rospy.get_name(), e)
-
-        elif msg.buttons[5] == 1:
-            try:
-                response = self.service_stop_record()
-            except rospy.ServiceException as e:
-                rospy.logerr("%s - service_stop_record call failed: %s", rospy.get_name(), e)
 
     def run(self):
         rospy.spin()
