@@ -31,7 +31,6 @@
     <arg name="ade_threshold"                default="10" />
     <arg name="ade_plot_file"                default="" />
     <arg name="speed_smoothness_threshold"   default="1" />
-    <arg name="bag_name"                default="recording"       doc="Name of recorded bag files when car buttons are used" />
 
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -70,36 +69,27 @@
 
     <!-- Control -->
     <include file="$(find autoware_mini)/launch/control.launch">
-        <arg name="controller"            value="$(arg controller)" />
+        <arg name="controller"      value="$(arg controller)" />
     </include>
 
     <!-- Bicycle_model simulator -->
-    <include file="$(find autoware_mini)/launch/platform/simulation.launch">
-        <arg name="use_lexus_shadow"      value="$(eval scenario_name != '')" />
-    </include>
+    <include file="$(find autoware_mini)/launch/platform/simulation.launch" />
 
     <!-- Rviz -->
-    <group if="$(arg launch_rviz)">
-        <include file="$(find autoware_mini)/launch/dashboard.launch" />
-        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find autoware_mini)/config/rviz/autoware_mini.rviz" required="true">
-            <rosparam command="load" file="$(find autoware_mini)/config/rviz/actions.yaml"/>
-        </node>
-    </group>
-
-    <!-- Rosbag recording -->
-    <node pkg="autoware_mini" type="record_bag.py" name="record_bag" output="screen" required="true" >
-        <param name="blacklist_file"            value="$(arg blacklist_file)" />
-        <param name="recorded_bags_dir"         value="$(arg recorded_bags_dir)" />
-        <param name="bag_name"                  value="$(arg bag_name)" />
-    </node>
+    <include if="$(arg launch_rviz)" file="$(find autoware_mini)/launch/rviz.launch">
+        <arg name="lexus_shadow"    value="$(eval scenario_name != '')" />
+    </include>
 
     <!-- Webapp bridge -->
-    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/platform/webapp.launch" />
+    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/tools/webapp.launch" />
 
     <group if="$(eval scenario_name != '')">
         <!-- Play scenario bag -->
         <node pkg="rosbag" type="play" name="player" required="true" output="screen"
                 args="$(find autoware_mini)/data/bag_scenarios/$(arg map_name)/$(arg scenario_name).bag --clock --queue=1 --rate=$(arg rate) --delay 2.5 --wait-for-subscribers" />
+
+        <!-- Use simulation time from bag -->
+        <param name="/use_sim_time" value="true" />
 
         <!-- Bag pausing button -->
         <node pkg="autoware_mini" type="pause_bag.py" name="pause_bag" output="screen" required="true"/>
@@ -112,9 +102,6 @@
             <param name="ade_plot_file" value="$(find autoware_mini)/$(arg ade_plot_file)" />
             <param name="speed_smoothness_threshold" value="$(arg speed_smoothness_threshold)" />
         </node>
-
-        <!-- Use simulation time from bag -->
-        <param name="/use_sim_time" value="true" />
     </group>
 
 </launch>

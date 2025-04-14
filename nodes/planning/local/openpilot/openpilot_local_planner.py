@@ -8,7 +8,7 @@ import threading
 import message_filters
 from ros_numpy import numpify
 from autoware_mini.msg import Path, Waypoint
-from vehicle_platform.msg import Float32MultiArrayStamped
+from lexus_platform.msg import Float32MultiArrayStamped
 from geometry_msgs.msg import PoseStamped
 from helpers.path import PathWrapper
 from helpers.geometry import get_heading_between_two_points

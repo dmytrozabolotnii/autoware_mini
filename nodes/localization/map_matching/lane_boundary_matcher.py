@@ -11,7 +11,7 @@ from ros_numpy import numpify, msgify
 
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import Path
-from vehicle_platform.msg import Float32MultiArrayStamped
+from lexus_platform.msg import Float32MultiArrayStamped
 from geometry_msgs.msg import Point, Pose, PoseStamped, TransformStamped
 from visualization_msgs.msg import MarkerArray, Marker
 from jsk_rviz_plugins.msg import OverlayText

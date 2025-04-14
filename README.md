@@ -57,7 +57,8 @@ Here are couple of short videos introducing the Autoware Mini features.
 2. Clone the repos
    ```
    git clone https://github.com/UT-ADL/autoware_mini.git
-   git clone https://github.com/UT-ADL/vehicle_platform.git
+   # for replaying bags with nvidia images
+   git clone https://github.com/UT-ADL/lexus_platform.git
    # for decoding h264 nvidia camera images
    git clone https://github.com/UT-ADL/h264_image_transport.git
    # if using Carla simulation

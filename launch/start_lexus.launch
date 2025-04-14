@@ -33,8 +33,9 @@
     <arg name="enable_yielding_checker"      default="true" />
     <arg name="enable_trajectory_checker"    default="true" />
     <arg name="ground_removal"          default="naive"         doc="naive, jcp" />
-    <arg name="use_webapp"                default="true"          doc="Set to false to disable web app MQTT bridge node." />
-    <arg name="bag_name"                default="recording"       doc="Name of recorded bag files when car buttons are used" />
+    <arg name="use_webapp"              default="true"          doc="Set to false to disable web app MQTT bridge node." />
+    <arg name="bag_name"                default="recording"     doc="Name of recorded bag files when car buttons are used" />
+    <arg name="launch_rviz"             default="true" />
     
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -82,9 +83,6 @@
         <arg name="controller"            value="$(arg controller)" />
     </include>
 
-    <!-- Webapp bridge -->
-    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/platform/webapp.launch" />
-
     <!-- Vehicle -->
     <include file="$(find autoware_mini)/launch/platform/lexus.launch" >
         <arg name="max_speed"           value="$(arg max_speed)" />
@@ -99,12 +97,12 @@
     </include>
 
     <!-- Rviz -->
-    <include file="$(find autoware_mini)/launch/dashboard.launch">
+    <include if="$(arg launch_rviz)" file="$(find autoware_mini)/launch/rviz.launch">
         <arg name="driver_status"       value="true" />
     </include>
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find autoware_mini)/config/rviz/autoware_mini.rviz">
-        <rosparam command="load" file="$(find autoware_mini)/config/rviz/actions.yaml"/>
-    </node>
+
+    <!-- Webapp bridge -->
+    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/platform/webapp.launch" />
 
     <!-- Rosbag recording -->
     <node pkg="autoware_mini" type="record_bag.py" name="record_bag" output="screen" required="true" >

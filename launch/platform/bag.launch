@@ -7,10 +7,11 @@
     <arg name="max_speed"           default="30" />
     <arg name="use_ssc"             default="false" />
 
-    <!-- Vehicle platform -->
-    <include file="$(find vehicle_platform)/launch/platform.launch">
-        <arg name="use_lexus_model"             value="true" />
-        <arg name="use_tf"                      value="$(arg use_tf)" />
+    <!-- Transforms -->
+    <include if="$(arg use_tf)" file="$(find autoware_mini)/launch/platform/tf.launch" />
+
+    <!-- Launch lexus platform to publish nvidia camera images -->
+    <include if="$(arg use_nvidia_cameras)" file="$(find lexus_platform)/launch/platform.launch">
         <arg name="use_nvidia_cameras"          value="$(arg use_nvidia_cameras)" />
         <arg name="nvidia_encoder"              value="$(arg nvidia_encoder)" />
         <!-- Don't run remote nvidia driver in Bag mode -->

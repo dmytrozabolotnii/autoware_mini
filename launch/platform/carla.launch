@@ -26,32 +26,18 @@
   <arg name="synchronous_mode"        default="$(eval not (use_scenario_runner and type(route_id) == int))"/>
   
   <!--
-    ###################
-    ## Carla Commons ##
-    ###################
+    ################
+    ## Static TFs ##
+    ################
     -->
-  <include file="$(find autoware_mini)/launch/platform/carla/carla_common.launch">
-    <arg name="map_name"              value="$(arg map_name)" />
-    <arg name="use_manual_control"    value="$(arg use_manual_control)" />
-  </include>
-
- <!--
-    ###########################
-    ## Carla Scenario Runner ##
-    ###########################
-    -->
-  <include if="$(arg use_scenario_runner)" file="$(find autoware_mini)/launch/platform/carla/carla_scenario_runner.launch">
-    <arg name='map_name'                            value='$(arg map_name)'/>
-    <arg name="scenario_name"                       value="$(arg scenario_name)" />
-    <arg name="route_id"                            value="$(arg route_id)" />
-  </include>
+  <include file="$(find autoware_mini)/launch/platform/tf.launch" />
 
   <!--
-    ################################
-    ## Carla RosBridge Essentials ##
-    ################################
+    ###################
+    ## Carla Sensors ##
+    ###################
     -->
-  <include file="$(find autoware_mini)/launch/platform/carla/carla_rosbridge.launch">
+  <include file="$(find autoware_mini)/launch/platform/carla/carla_sensors.launch">
     <arg name="map_name"                                          value="$(arg map_name)" />
     <arg name="spawn_point"                                       value="$(arg spawn_point)" />
     <arg name="use_lidar"                                         value="$(arg use_lidar)" />
@@ -67,6 +53,16 @@
   </include>
 
   <!--
+    ###################
+    ## Carla Control ##
+    ###################
+    -->
+  <include file="$(find autoware_mini)/launch/platform/carla/carla_control.launch">
+    <arg name="map_name"              value="$(arg map_name)" />
+    <arg name="use_manual_control"    value="$(arg use_manual_control)" />
+  </include>
+
+  <!--
     #####################
     ## Traffic Manager ##
     #####################
@@ -74,5 +70,16 @@
 
   <!-- If traffic is enabled then run traffic generator -->
   <node if="$(arg generate_traffic)" pkg="autoware_mini" type="carla_traffic_generator.sh" name="carla_traffic_generator" output="screen" required="true" />  
+
+ <!--
+    ###########################
+    ## Carla Scenario Runner ##
+    ###########################
+    -->
+  <include if="$(arg use_scenario_runner)" file="$(find autoware_mini)/launch/platform/carla/carla_scenario_runner.launch">
+    <arg name='map_name'                            value='$(arg map_name)'/>
+    <arg name="scenario_name"                       value="$(arg scenario_name)" />
+    <arg name="route_id"                            value="$(arg route_id)" />
+  </include>
 
 </launch>

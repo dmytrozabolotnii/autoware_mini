@@ -1,14 +1,9 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="max_speed"           default="30" />
-    <arg name="use_lexus_shadow"    default="false" />
 
-    <!-- Vehicle platform -->
-    <include file="$(find vehicle_platform)/launch/platform.launch">
-        <arg name="use_lexus_model" value="true" />
-        <arg name="use_lexus_shadow" value="$(arg use_lexus_shadow)" />
-        <arg name="use_tf" value="true" />
-    </include>
+    <!-- Transforms -->
+    <include file="$(find autoware_mini)/launch/platform/tf.launch" />
 
     <group ns="vehicle">
 
