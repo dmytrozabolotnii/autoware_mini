@@ -198,7 +198,7 @@ class Lanelet2MapVisualizer:
                 if lanelet.attributes["subtype"] == "road":
                     centerline_points.extend(triangulate_path(centerline, 1.5))
                 if lanelet.attributes["subtype"] == "bus_lane":
-                    bus_lane_points.extend(triangulate_path(centerline, 0.3))
+                    bus_lane_points.extend(triangulate_path(centerline, 1.5))
 
             elif lanelet.attributes["subtype"] == "crosswalk":
                 # create "polygon points" from crosswalk lanelet and then create line list from them

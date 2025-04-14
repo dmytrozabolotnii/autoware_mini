@@ -41,7 +41,7 @@
     <arg name="duration_option"         default="$(eval '--duration ' + str(duration) if duration != '' else '')" doc="rosbag play parameter" />
     <arg name="rate"                    default=""              doc="Bag speed parameteer, defaults to 1.0 i.e. the normal speed" />
     <arg name="rate_option"             default="$(eval '--rate ' + str(rate) if rate != '' else '')" doc="rosbag play parameter" />
-    <arg name="repub_camera_info"       default="true"          doc="Republish camera_info topics using camera intrinsics files" />
+    <arg name="repub_camera_info"       default="false"          doc="Republish camera_info topics using camera intrinsics files" />
     <arg name="use_lane_matching"       default="false" />
     <arg name="enable_goal_checker"          default="true" />
     <arg name="enable_object_checker"        default="true" />
@@ -125,6 +125,8 @@
         <remap from="/ssc/turn_signal_command" to="/bag/ssc/turn_signal_command" if="$(arg use_control)"/>
         <remap from="/ssc/gear_select" to="/bag/ssc/gear_select" if="$(arg use_control)"/>
         <remap from="/dashboard/planner_status" to="/bag/dashboard/planner_status" if="$(eval use_detection or use_planning)" />
+        <remap from="/dashboard/log_message" to="/bag/dashboard/log_message" if="$(eval use_detection or use_planning)" />
+        <remap from="/dashboard/log_text" to="/bag/dashboard/log_text" if="$(eval use_detection or use_planning)" />
         <remap from="/dashboard/current_speed" to="/bag/dashboard/current_speed" />
         <remap from="/dashboard/target_speed" to="/bag/dashboard/target_speed" />
         <remap from="/dashboard/closest_object_distance" to="/bag/dashboard/closest_object_distance" />
@@ -209,15 +211,9 @@
         <arg name="use_ssc"              value="$(arg use_control)" />
     </include>
 
-    <!-- Conditionally include dashboard.launch and RViz -->
-    <group if="$(arg launch_rviz)">
-        <!-- Rviz -->
-        <include file="$(find autoware_mini)/launch/dashboard.launch">
-            <arg name="driver_status"       value="true" />
-        </include>
-        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find autoware_mini)/config/rviz/autoware_mini.rviz" required="true">
-            <rosparam command="load" file="$(find autoware_mini)/config/rviz/actions.yaml"/>
-        </node>
-    </group>
+    <!-- Rviz -->
+    <include if="$(arg launch_rviz)" file="$(find autoware_mini)/launch/rviz.launch">
+        <arg name="driver_status"   value="true" />
+    </include>
 
 </launch>

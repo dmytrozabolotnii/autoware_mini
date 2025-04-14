@@ -57,7 +57,8 @@ Here are couple of short videos introducing the Autoware Mini features.
 2. Clone the repos
    ```
    git clone https://github.com/UT-ADL/autoware_mini.git
-   git clone https://github.com/UT-ADL/vehicle_platform.git
+   # for replaying bags with nvidia images
+   git clone https://github.com/UT-ADL/lexus_platform.git
    # for decoding h264 nvidia camera images
    git clone https://github.com/UT-ADL/h264_image_transport.git
    # if using Carla simulation
@@ -198,7 +199,7 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
 
 1. Clone [Scenario Runner](https://github.com/UT-ADL/scenario_runner/tree/route_scenario_v0.9.15) to a directory of your choice
    ```
-   git clone -b route_scenario_v0.9.15 https://github.com/UT-ADL/scenario_runner.git
+   git clone -b route_scenario_v0.9.15_updated https://github.com/UT-ADL/scenario_runner.git
    ```
 2. Install requirements
    ```

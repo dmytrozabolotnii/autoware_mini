@@ -17,6 +17,7 @@ add_message_files(
   DetectedObjectArray.msg
   Gear.msg
   LampCmd.msg
+  Log.msg
   Path.msg
   PathArray.msg
   TrafficLightResult.msg

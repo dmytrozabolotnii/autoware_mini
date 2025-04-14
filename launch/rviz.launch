@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="driver_status" default="false"/>   
+    <arg name="lexus_shadow" default="false"/>   
+
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find autoware_mini)/config/rviz/autoware_mini.rviz" required="true">
+        <rosparam command="load" file="$(find autoware_mini)/config/rviz/actions.yaml"/>
+    </node>
+
+    <group ns="lexus_model">
+    	<param name="robot_description" textfile="$(find autoware_mini)/config/urdf/lexus_model.urdf" />
+	    <node pkg="robot_state_publisher" type="robot_state_publisher" name="lexus_model_state_publisher" output="screen" required="true" />
+    </group>
+
+    <group if="$(arg lexus_shadow)" ns="lexus_shadow">
+    	<param name="robot_description" textfile="$(find autoware_mini)/config/urdf/lexus_shadow.urdf" />
+    	<node pkg="robot_state_publisher" type="robot_state_publisher" name="lexus_shadow_state_publisher" output="screen" required="true" />
+    </group>
+
+    <include file="$(find autoware_mini)/launch/dashboard.launch">
+        <arg name="driver_status"   value="$(arg driver_status)" />
+    </include>
+</launch>
