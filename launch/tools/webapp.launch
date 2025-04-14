@@ -6,7 +6,6 @@
         <node pkg="autoware_mini" type="webapp_bridge.py" name="webapp_bridge" output="screen" required="true" />
         <node pkg="autoware_app" type="app.py" cwd="node" name="autoware_app" output="screen" required="true" />
         <rosparam command="load" file="$(find autoware_mini)/config/webapp.yaml" />
-        <param name="command" value="xdg-open https://localhost:5000" />
     </group>
 
 </launch>

@@ -102,7 +102,7 @@
     </include>
 
     <!-- Webapp bridge -->
-    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/platform/webapp.launch" />
+    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/tools/webapp.launch" />
 
     <!-- Rosbag recording -->
     <node pkg="autoware_mini" type="record_bag.py" name="record_bag" output="screen" required="true" >

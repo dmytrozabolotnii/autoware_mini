@@ -33,6 +33,7 @@ class WebappBridge:
         self.mqtt_host = rospy.get_param("~host")
         self.mqtt_port = rospy.get_param("~port")
         self.mqtt_tls_enabled = rospy.get_param("~tls_enabled")
+        self.public_url = rospy.get_param("~website_public_url")
         
         # Load MQTT secrets
         # Load .env from the root directory of the repo
@@ -82,7 +83,8 @@ class WebappBridge:
             if not self.mqtt_topics:
                 session_id = f"{secrets.randbelow(1_000_000):06d}"
             self.mqtt_topics = WebappMqttTopics(session_id)
-            rospy.loginfo(f"WebApp Session ID: {session_id}")
+            
+            rospy.loginfo(f"WebApp Public URL: {self.public_url}?session_id={session_id}")
             
             # Subscribe to desired MQTT topics after successful connection
             self.client.subscribe(self.mqtt_topics.Received.GOAL)
