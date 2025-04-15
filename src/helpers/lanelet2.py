@@ -1,7 +1,7 @@
 from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
-from lanelet2.core import GPSPoint, BasicPoint2d, BoundingBox2d
-from lanelet2.geometry import length2d
+from lanelet2.core import GPSPoint, BasicPoint2d, BoundingBox2d, BasicPoint3d
+from lanelet2.geometry import length2d, findNearest, project
 import shapely
 import numpy as np
 import rospy
@@ -263,3 +263,23 @@ def follow_lanelets(routing_graph, current_lanelet, remaining_distance):
             trajectories.append([current_lanelet] + traj)  # Add current lanelet to each path
 
     return trajectories
+
+def get_height_at_position(lanelet2_map, x, y, z):
+    """
+    Get the height at a given position on the lanelet2 map
+    :param lanelet2_map: lanelet2 map
+    :param x: x-coordinate of the point
+    :param y: y-coordinate of the point
+    :param z: z-coordinate of the point
+    :return: height at the given position
+    """
+
+    point2d = BasicPoint2d(x, y)
+    nearest = findNearest(lanelet2_map.laneletLayer, point2d, 1)
+    if nearest:
+        _, lanelet = nearest[0]
+        point3d = BasicPoint3d(x, y, z)
+        projected_point = project(lanelet.centerline, point3d)
+        return projected_point.z
+
+    return z
