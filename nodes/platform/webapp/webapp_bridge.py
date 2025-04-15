@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import rospy, os, dotenv, json, threading, secrets
+import rospy, os, dotenv, json, csv, threading, secrets
 import paho.mqtt.client as mqtt
 
 from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
@@ -17,6 +17,7 @@ class WebappMqttTopics:
     class Received:
         def __init__(self, session_id: str):
             self.GOAL = f"session/{session_id}/goal"
+            self.RATING = f"session/{session_id}/rating"
 
     def __init__(self, session_id: str):
         self.Published = self.Published(session_id)
@@ -88,6 +89,7 @@ class WebappBridge:
             
             # Subscribe to desired MQTT topics after successful connection
             self.client.subscribe(self.mqtt_topics.Received.GOAL)
+            self.client.subscribe(self.mqtt_topics.Received.RATING)
             
             self.connection_event.set()  # Notify that the connection is established
         else:
@@ -98,6 +100,8 @@ class WebappBridge:
         data = json.loads(msg.payload.decode())
         if msg.topic == self.mqtt_topics.Received.GOAL:
             self.on_goal_point_receive(data)
+        elif msg.topic == self.mqtt_topics.Received.RATING:
+            self.on_rating_receive(data)
     
     def on_goal_point_receive(self, data):
         # Extract pose attributes
@@ -122,6 +126,14 @@ class WebappBridge:
 
         # Publish the goal
         self.goal_pub.publish(goal_msg)
+        
+    def on_rating_receive(self, data):
+        datetime = data["datetime"]
+        rating = data["rating"]
+        csv_path = os.path.join(os.path.dirname(__file__), "../../../ratings.csv")
+        with open(csv_path, 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow([datetime, rating])
     
     def publish_throttled_mqtt_topics(self):
         rate = rospy.Rate(1)
