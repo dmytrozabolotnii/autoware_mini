@@ -34,6 +34,10 @@ def triangulate_linestring(linestring, width, z_offset=0):
 
     buffer = linestring.buffer(width / 2, cap_style="flat")
     coords = np.array(buffer.exterior.coords, dtype=np.float32)
+
+    if len(coords) == 0:
+        return []
+    
     triangles = earcut.triangulate_float32(coords, [len(coords)])
 
     # Extract z coordinates from linestring for each triangle point
