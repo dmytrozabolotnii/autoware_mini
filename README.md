@@ -16,12 +16,12 @@ It is not production-level software, but aimed for teaching and research. At the
 ![Autoware Mini diagram](images/diagram.png)
 
 The key modules of Autoware Mini are:
-* **Localization** - determines vehicle position and speed. Can be implemented using GNSS, lidar positioning, visual positioning, etc.
-* **Global planner** - given current position and destination determines the global path to the destination. Makes use of Lanelet2 map.
-* **Obstacle detection** - produces detected objects based on lidar, radar or camera readings. Includes tracking and prediction.
-* **Traffic light detection** - produces status for stoplines, if they are green or red. Red stopline is like an obstacle for the local planner.
-* **Local planner** - given the global path and obstacles, plans a local path that avoids obstacles and respects traffic lights.
-* **Controller** - follows the local path given by the local planner, matching target speeds at different points of trajectory.
+* **[Localization](nodes/localization)** - determines vehicle position and speed. Can be implemented using GNSS, lidar positioning, visual positioning, etc.
+* **[Obstacle detection](nodes/detection)** - produces detected objects based on lidar, radar or camera readings. Includes tracking and prediction.
+* **[Traffic light detection](nodes/detection)** - produces status for stoplines, if they are green or red. Red stopline is like an obstacle for the local planner.
+* **[Global planner](nodes/planning/global)** - given current position and destination determines the global path to the destination. Makes use of Lanelet2 map.
+* **[Local planner](nodes/planning/local)** - given the global path and obstacles, plans a local path that avoids obstacles and respects traffic lights.
+* **[Controller](nodes/control)** - follows the local path given by the local planner, matching target speeds at different points of trajectory.
 
 Here are couple of short videos introducing the Autoware Mini features.
 
