@@ -49,7 +49,8 @@ class WebappBridge:
             rospy.signal_shutdown("Webapp MQTT username or password is not set!")
                 
         # Initialize MQTT client
-        self.client = mqtt.Client()
+        self.client = mqtt.Client(transport="websockets")
+        self.client.ws_set_options(path="")
         self.client.username_pw_set(self.mqtt_username, self.mqtt_password)
         self.client.on_connect = self.on_mqtt_connect
         self.client.on_message = self.on_mqtt_message

@@ -1,5 +1,5 @@
 webapp_bridge:
   host: "mqtt.cloud.ut.ee"
-  port: 8883
+  port: 80
   tls_enabled: True
   website_public_url: "https://localhost:5000/"
