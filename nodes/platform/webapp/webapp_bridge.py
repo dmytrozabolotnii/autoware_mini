@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+# Some weird issue (doesn't seem to be this node's fault): 
+# Route is not published by autoware_mini's /planning/global_path, when car is at the Raeplats stop, and we want to choose Raeplats as origin.
+# How to reproduce:
+# 1. Place car at raeplats stop
+# 2. From the app, choose origin Raeplats
+# 3. From the app, choose destination Delta
+# 4. Order the car (with the default chosen stops)
+# 5. Because no global path is received, the app cannot proceed (it should be that way, because app needs to know the route to proceed)
+
 import rospy, os, dotenv, json, csv, threading, secrets
 import paho.mqtt.client as mqtt
 
@@ -89,8 +98,8 @@ class WebappBridge:
             rospy.loginfo(f"WebApp Public URL: {self.public_url}?session_id={session_id}")
             
             # Subscribe to desired MQTT topics after successful connection
-            self.client.subscribe(self.mqtt_topics.Received.GOAL)
-            self.client.subscribe(self.mqtt_topics.Received.RATING)
+            self.client.subscribe(self.mqtt_topics.Received.GOAL, qos=1)
+            self.client.subscribe(self.mqtt_topics.Received.RATING, qos=1)
             
             self.connection_event.set()  # Notify that the connection is established
         else:
@@ -169,7 +178,8 @@ class WebappBridge:
         data = {
             "waypoints": wp_latlons
         }
-        self.client.publish(self.mqtt_topics.Published.ROUTE, json.dumps(data))
+        print(f"Publishing waypoints to MQTT: {data}")
+        self.client.publish(self.mqtt_topics.Published.ROUTE, json.dumps(data),  qos=1)
     
     def run(self):
         # Connect to the MQTT host
@@ -181,7 +191,7 @@ class WebappBridge:
         # Block until the first connection is established
         rospy.loginfo("Waiting for MQTT connection...")
         self.connection_event.wait()  # Blocks until `self.connection_event.set()` is called
-        rospy.loginfo("MQTT connection established. Proceeding with the node.")
+        rospy.loginfo("Proceeding with the webapp node.")
         
         # Spin the ROS node in a separate thread
         threading.Thread(target=rospy.spin, daemon=True).start()
