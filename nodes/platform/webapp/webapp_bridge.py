@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 
-# Some weird issue (doesn't seem to be this node's fault): 
-# Route is not published by autoware_mini's /planning/global_path, when car is at the Raeplats stop, and we want to choose Raeplats as origin.
-# How to reproduce:
-# 1. Place car at raeplats stop
-# 2. From the app, choose origin Raeplats
-# 3. From the app, choose destination Delta
-# 4. Order the car (with the default chosen stops)
-# 5. Because no global path is received, the app cannot proceed (it should be that way, because app needs to know the route to proceed)
+# The messages are not sometimes received by this node for some unknown reason. 
+# Steps to reproduce:
+# 1. Choose some random far away origin and dest locations
+# 2. Order the car
 
 import rospy, os, dotenv, json, csv, threading, secrets
 import paho.mqtt.client as mqtt
@@ -56,12 +52,13 @@ class WebappBridge:
         if self.mqtt_username is None or self.mqtt_password is None:
             rospy.logerr("Webapp MQTT username or password is not set! Either .env file is missing or faulty.")
             rospy.signal_shutdown("Webapp MQTT username or password is not set!")
-                
+        
         # Initialize MQTT client
         self.client = mqtt.Client(transport="websockets")
         self.client.ws_set_options(path="")
         self.client.username_pw_set(self.mqtt_username, self.mqtt_password)
         self.client.on_connect = self.on_mqtt_connect
+        self.client.on_disconnect = lambda client, userdata, rc: rospy.loginfo(f"Disconnected from MQTT! Reason: {mqtt.connack_string(rc)}")
         self.client.on_message = self.on_mqtt_message
         
         if self.mqtt_tls_enabled:
@@ -108,6 +105,7 @@ class WebappBridge:
     def on_mqtt_message(self, client, userdata, msg):
         # General handler for receiving mqtt messages
         data = json.loads(msg.payload.decode())
+        print("Received mqtt message on topic:", msg.topic)
         if msg.topic == self.mqtt_topics.Received.GOAL:
             self.on_goal_point_receive(data)
         elif msg.topic == self.mqtt_topics.Received.RATING:
@@ -135,6 +133,7 @@ class WebappBridge:
         goal_msg.pose.orientation.w = 1.0
 
         # Publish the goal
+        print(f"Publishing goal to ROS: {goal_msg}")
         self.goal_pub.publish(goal_msg)
         
     def on_rating_receive(self, data):
@@ -178,7 +177,6 @@ class WebappBridge:
         data = {
             "waypoints": wp_latlons
         }
-        print(f"Publishing waypoints to MQTT: {data}")
         self.client.publish(self.mqtt_topics.Published.ROUTE, json.dumps(data),  qos=1)
     
     def run(self):
