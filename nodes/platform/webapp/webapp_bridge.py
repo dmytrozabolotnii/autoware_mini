@@ -105,7 +105,6 @@ class WebappBridge:
     def on_mqtt_message(self, client, userdata, msg):
         # General handler for receiving mqtt messages
         data = json.loads(msg.payload.decode())
-        print("Received mqtt message on topic:", msg.topic)
         if msg.topic == self.mqtt_topics.Received.GOAL:
             self.on_goal_point_receive(data)
         elif msg.topic == self.mqtt_topics.Received.RATING:
@@ -133,7 +132,6 @@ class WebappBridge:
         goal_msg.pose.orientation.w = 1.0
 
         # Publish the goal
-        print(f"Publishing goal to ROS: {goal_msg}")
         self.goal_pub.publish(goal_msg)
         
     def on_rating_receive(self, data):
