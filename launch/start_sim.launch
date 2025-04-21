@@ -1,13 +1,14 @@
 <?xml version="1.0"?>
 <launch>
 
+    <arg name="localizer"               default="sim"           doc="novatel, carla, sim" />
     <arg name="controller"              default="pure_pursuit"  doc="pure_pursuit, stanley" />
     <arg name="global_planner"          default="lanelet2"      doc="waypoints, lanelet2" />
     <arg name="local_planner"           default="rule"          doc="rule, none" />
     <arg name="use_path_smoothing"      default="true" />
     <arg name="waypoints_file"          default="waypoints_erm_utm_1m.csv" />
     <arg name="scenario_name"           default=""              doc="scenario name" />
-    <arg name='map_name'                default="$(eval 'tartu_demo_noheight' if scenario_name == '' else 'tartu_demo')" />
+    <arg name='map_name'                default="tartu_demo" />
     <arg name="lanelet2_map_name"       default="$(arg map_name).osm" />
     <arg name="detector"                default="$(eval 'sim' if scenario_name == '' else 'none')" />
     <arg name="use_road_area_filter"    default="$(eval 'tartu' in map_name)"   doc="use road area filter"/>
@@ -34,7 +35,7 @@
 
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
-        <arg name="localizer"           value="simulation" />
+        <arg name="localizer"           value="$(arg localizer)" />
         <arg name="map_name"            value="$(arg map_name)" />
     </include>
 
@@ -73,7 +74,9 @@
     </include>
 
     <!-- Bicycle_model simulator -->
-    <include file="$(find autoware_mini)/launch/platform/simulation.launch" />
+    <include file="$(find autoware_mini)/launch/platform/simulation.launch">
+        <arg name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
+    </include>
 
     <!-- Rviz -->
     <include if="$(arg launch_rviz)" file="$(find autoware_mini)/launch/rviz.launch">

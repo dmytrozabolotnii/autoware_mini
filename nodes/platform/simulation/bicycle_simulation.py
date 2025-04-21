@@ -13,6 +13,7 @@ from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 
 from helpers.geometry import get_orientation_from_heading, get_heading_from_orientation
+from helpers.lanelet2 import load_lanelet2_map, get_height_at_position
 
 class BicycleSimulation:
 
@@ -24,6 +25,7 @@ class BicycleSimulation:
         self.deceleration_limit = rospy.get_param("deceleration_limit")
         self.default_acceleration = rospy.get_param("/planning/default_acceleration")
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
+        self.lanelet2_map = load_lanelet2_map(rospy.get_param("~lanelet2_map_name"))
 
         # internal state of bicycle model
         self.x = 0.0
@@ -58,6 +60,9 @@ class BicycleSimulation:
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y
         self.z = msg.pose.pose.position.z
+
+        # set z coordinate from nearest lanelet
+        self.z = get_height_at_position(self.lanelet2_map, self.x, self.y, self.z)
 
         # extract heading angle from orientation
         self.heading_angle = get_heading_from_orientation(msg.pose.pose.orientation)
@@ -120,6 +125,9 @@ class BicycleSimulation:
         self.x += x_dot * delta_t
         self.y += y_dot * delta_t
         self.heading_angle += heading_angle_dot * delta_t
+
+        # set z coordinate from nearest lanelet
+        self.z = get_height_at_position(self.lanelet2_map, self.x, self.y, self.z)
 
         # create quaternion from heading angle to be used later in tf and pose and marker messages
         self.orientation = get_orientation_from_heading(self.heading_angle)

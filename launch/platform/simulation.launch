@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+    <arg name="lanelet2_map_name" />
     <arg name="max_speed"           default="30" />
 
     <!-- Transforms -->
@@ -8,7 +9,9 @@
     <group ns="vehicle">
 
         <!-- Bicycle_model simulator -->
-        <node pkg="autoware_mini" type="bicycle_simulation.py" name="bicycle_simulation" output="screen" required="true" />
+        <node pkg="autoware_mini" type="bicycle_simulation.py" name="bicycle_simulation" output="screen" required="true">
+            <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)"/>
+        </node>
 
         <!-- SSC interface for the sake of visualization of acceleration limits -->
         <!--node pkg="autoware_mini" type="ssc_interface.py" name="ssc_interface" output="screen" required="true" >
