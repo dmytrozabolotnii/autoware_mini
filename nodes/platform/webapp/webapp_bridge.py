@@ -41,6 +41,8 @@ class WebappBridge:
         self.mqtt_tls_enabled = rospy.get_param("~tls_enabled")
         self.public_url = rospy.get_param("~website_public_url")
         
+        self.session_id = rospy.get_param("~session_id", None)
+        
         # Load MQTT secrets
         # Load .env from the root directory of the repo
         dotenv_path = os.path.join(os.path.dirname(__file__), "../../../.env")
@@ -87,11 +89,11 @@ class WebappBridge:
             
             # Generate a random 6-digit session id, if connecting first time
             # Duplicate session id check is currently not implemented
-            if not self.mqtt_topics:
-                session_id = f"{secrets.randbelow(1_000_000):06d}"
-            self.mqtt_topics = WebappMqttTopics(session_id)
+            if not self.session_id:
+                self.session_id = f"{secrets.randbelow(1_000_000):06d}"
+            self.mqtt_topics = WebappMqttTopics(self.session_id)
             
-            rospy.loginfo(f"WebApp Public URL: {self.public_url}?session_id={session_id}")
+            rospy.loginfo(f"WebApp Public URL: {self.public_url}?session_id={self.session_id}")
             
             # Subscribe to desired MQTT topics after successful connection
             self.client.subscribe(self.mqtt_topics.Received.GOAL, qos=1)

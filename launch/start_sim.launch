@@ -32,6 +32,7 @@
     <arg name="ade_threshold"                default="10" />
     <arg name="ade_plot_file"                default="" />
     <arg name="speed_smoothness_threshold"   default="1" />
+    <arg name="session_id"              default=""               doc="Session ID for the webapp bridge" />
 
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -84,7 +85,9 @@
     </include>
 
     <!-- Webapp bridge -->
-    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/tools/webapp.launch" />
+    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/tools/webapp.launch">
+        <arg name="session_id" value="$(arg session_id)" />
+    </include>
 
     <group if="$(eval scenario_name != '')">
         <!-- Play scenario bag -->
