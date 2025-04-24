@@ -13,21 +13,6 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from autoware_mini.msg import Path
 
 
-class WebappMqttTopics:
-    class Published:
-        def __init__(self, session_id: str):
-            self.STATUS = f"session/{session_id}/status"
-            self.ROUTE = f"session/{session_id}/route"
-
-    class Received:
-        def __init__(self, session_id: str):
-            self.GOAL = f"session/{session_id}/goal"
-            self.RATING = f"session/{session_id}/rating"
-
-    def __init__(self, session_id: str):
-        self.Published = self.Published(session_id)
-        self.Received = self.Received(session_id)
-
 class WebappBridge:
     def __init__(self):
         
@@ -68,9 +53,16 @@ class WebappBridge:
         
         # Other initializations
         self.converter = WGS84ToUTMTransformer(use_custom_origin, utm_origin_lat, utm_origin_lon)
-        self.mqtt_topics = None
         self.current_pose = None
         self.current_velocity = None
+        
+        # MQTT published topics
+        self.mqtt_published_status = None
+        self.mqtt_published_route = None
+        
+        # MQTT received topics
+        self.mqtt_received_goal = None
+        self.mqtt_received_rating = None
         
         # Event to block until the initial webapp mqtt connection is established
         self.connection_event = threading.Event()
@@ -91,13 +83,20 @@ class WebappBridge:
             # Duplicate session id check is currently not implemented
             if not self.session_id:
                 self.session_id = f"{secrets.randbelow(1_000_000):06d}"
-            self.mqtt_topics = WebappMqttTopics(self.session_id)
             
             rospy.loginfo(f"WebApp Public URL: {self.public_url}?session_id={self.session_id}")
             
+            # MQTT published topics
+            self.mqtt_published_status = f"session/{self.session_id}/status"
+            self.mqtt_published_route = f"session/{self.session_id}/route"
+            
+            # MQTT received topics
+            self.mqtt_received_goal = f"session/{self.session_id}/goal"
+            self.mqtt_received_rating = f"session/{self.session_id}/rating"
+            
             # Subscribe to desired MQTT topics after successful connection
-            self.client.subscribe(self.mqtt_topics.Received.GOAL, qos=1)
-            self.client.subscribe(self.mqtt_topics.Received.RATING, qos=1)
+            self.client.subscribe(self.mqtt_received_goal, qos=1)
+            self.client.subscribe(self.mqtt_received_rating, qos=1)
             
             self.connection_event.set()  # Notify that the connection is established
         else:
@@ -106,9 +105,9 @@ class WebappBridge:
     def on_mqtt_message(self, client, userdata, msg):
         # General handler for receiving mqtt messages
         data = json.loads(msg.payload.decode())
-        if msg.topic == self.mqtt_topics.Received.GOAL:
+        if msg.topic == self.mqtt_received_goal:
             self.on_goal_point_receive(data)
-        elif msg.topic == self.mqtt_topics.Received.RATING:
+        elif msg.topic == self.mqtt_received_rating:
             self.on_rating_receive(data)
     
     def on_goal_point_receive(self, data):
@@ -157,7 +156,7 @@ class WebappBridge:
                     },
                     "speed": speed
                 }
-                self.client.publish(self.mqtt_topics.Published.STATUS, json.dumps(data))
+                self.client.publish(self.mqtt_published_status, json.dumps(data))
             rate.sleep()
     
     def current_pose_callback(self, msg):
@@ -176,7 +175,7 @@ class WebappBridge:
         data = {
             "waypoints": wp_latlons
         }
-        self.client.publish(self.mqtt_topics.Published.ROUTE, json.dumps(data),  qos=1)
+        self.client.publish(self.mqtt_published_route, json.dumps(data),  qos=1)
     
     def run(self):
         # Connect to the MQTT host
