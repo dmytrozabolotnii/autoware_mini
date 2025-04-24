@@ -58,7 +58,6 @@ class WebappBridge:
         self.client.ws_set_options(path="")
         self.client.username_pw_set(self.mqtt_username, self.mqtt_password)
         self.client.on_connect = self.on_mqtt_connect
-        self.client.on_disconnect = lambda client, userdata, rc: rospy.loginfo(f"Disconnected from MQTT! Reason: {mqtt.connack_string(rc)}")
         self.client.on_message = self.on_mqtt_message
         
         if self.mqtt_tls_enabled:
@@ -137,7 +136,7 @@ class WebappBridge:
     def on_rating_receive(self, data):
         datetime = data["datetime"]
         rating = data["rating"]
-        csv_path = os.path.join(os.path.dirname(__file__), "../../../ratings.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "../../../data/webapp/ratings.csv")
         with open(csv_path, 'a') as f:
             writer = csv.writer(f)
             writer.writerow([datetime, rating])
