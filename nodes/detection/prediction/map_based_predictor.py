@@ -11,8 +11,9 @@ from lanelet2.geometry import findWithin2d
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
 from helpers.path import calculate_cross_track_error
-from helpers.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings, get_point_using_heading_and_distance
+from helpers.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
 from helpers.lanelet2 import load_lanelet2_map, follow_lanelets
+from helpers.shapely import offset_curve
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
     'straight': {'straight': 1, 'left': 0.5, 'right': 0.5},
@@ -48,6 +49,7 @@ class MapBasedPredictor:
     def tracked_objects_callback(self, msg):
 
         for obj in msg.objects:
+            object_distance_on_start_lanelet = {}
             object_speed = get_vector_norm_3d(obj.velocity)
             if object_speed < self.prediction_min_speed:
                 continue
@@ -76,6 +78,7 @@ class MapBasedPredictor:
 
                 # Add lanelet if heading difference is within threshold
                 if heading_difference_degrees < self.heading_difference_threshold:
+                    object_distance_on_start_lanelet[lanelet.id] = object_distance_from_start
                     selected_lanelets.append((lanelet, object_distance_from_start, heading_difference_degrees))
 
             # Sort by heading difference and limit selection to match `trajectories_to_predict`
@@ -106,19 +109,14 @@ class MapBasedPredictor:
             # 4. CREATE PREDICTIONS AND PUBLISH
             # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
             for trajectory in all_trajectories:
-                centerline_linestring = shapely.LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline])
+                centerline_linestring = shapely.simplify(shapely.LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline]), 0.1)
                 if self.use_offset_for_prediction:
                     cross_track_offset = -calculate_cross_track_error(centerline_linestring, object_position)
-                    trajectory_linestring = centerline_linestring.offset_curve(cross_track_offset, join_style="mitre")
+                    trajectory_linestring = offset_curve(centerline_linestring, cross_track_offset)
                 else:
                     trajectory_linestring = centerline_linestring
 
-                # get prediction origin right in front of the object
-                object_front = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
-                object_front = shapely.Point(object_front.x, object_front.y, object_front.z)
-                object_front_distance_from_trajectory_linestring_start = trajectory_linestring.project(object_front)
-
-                interpolate_distances = distances + object_front_distance_from_trajectory_linestring_start
+                interpolate_distances = distances + object_distance_on_start_lanelet[trajectory[0].id] + obj.dimensions.x / 2
                 # interpolate_distances extend further than trajectory_linestring (case of dangling lanelets and sometimes also offset curve might reduce
                 # its length), so clip the exessive distances otherwise duplicate points cause problems later with triangulation
                 if interpolate_distances[-1] > trajectory_linestring.length:
@@ -126,21 +124,14 @@ class MapBasedPredictor:
                     # adding 1 to include first point past the trajectory length - will be interpolated to the very end of it
                     interpolate_distances = interpolate_distances[:index + 1]
 
-                # for offset curve z is not available, therefore taken from the centerline
-                points_centerline = centerline_linestring.interpolate(interpolate_distances)
-                if self.use_offset_for_prediction:
-                    points_offset = trajectory_linestring.interpolate(interpolate_distances)
+                points_trajectory = trajectory_linestring.interpolate(interpolate_distances)
 
                 path = Path()
                 for i, d in enumerate(interpolate_distances):
                     wp = Waypoint()
-                    if self.use_offset_for_prediction:
-                        wp.position.x = points_offset[i].x
-                        wp.position.y = points_offset[i].y
-                    else:
-                        wp.position.x = points_centerline[i].x
-                        wp.position.y = points_centerline[i].y
-                    wp.position.z = points_centerline[i].z
+                    wp.position.x = points_trajectory[i].x
+                    wp.position.y = points_trajectory[i].y
+                    wp.position.z = points_trajectory[i].z
                     wp.speed = velocities[i]
                     path.waypoints.append(wp)
                 obj.candidate_trajectories.paths.append(path)
