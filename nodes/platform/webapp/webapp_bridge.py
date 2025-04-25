@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 
-# The messages are not sometimes received by this node for some unknown reason. 
-# Steps to reproduce:
-# 1. Choose some random far away origin and dest locations
-# 2. Order the car
-
 import rospy, os, dotenv, json, csv, threading, secrets
 import paho.mqtt.client as mqtt
 
@@ -57,12 +52,12 @@ class WebappBridge:
         self.current_velocity = None
         
         # MQTT published topics
-        self.mqtt_published_status = None
-        self.mqtt_published_route = None
+        self.mqtt_topic_published_status = None
+        self.mqtt_topic_published_route = None
         
         # MQTT received topics
-        self.mqtt_received_goal = None
-        self.mqtt_received_rating = None
+        self.mqtt_topic_received_goal = None
+        self.mqtt_topic_received_rating = None
         
         # Event to block until the initial webapp mqtt connection is established
         self.connection_event = threading.Event()
@@ -87,16 +82,16 @@ class WebappBridge:
             rospy.loginfo(f"WebApp Public URL: {self.public_url}?session_id={self.session_id}")
             
             # MQTT published topics
-            self.mqtt_published_status = f"session/{self.session_id}/status"
-            self.mqtt_published_route = f"session/{self.session_id}/route"
+            self.mqtt_topic_published_status = f"session/{self.session_id}/status"
+            self.mqtt_topic_published_route = f"session/{self.session_id}/route"
             
             # MQTT received topics
-            self.mqtt_received_goal = f"session/{self.session_id}/goal"
-            self.mqtt_received_rating = f"session/{self.session_id}/rating"
+            self.mqtt_topic_received_goal = f"session/{self.session_id}/goal"
+            self.mqtt_topic_received_rating = f"session/{self.session_id}/rating"
             
             # Subscribe to desired MQTT topics after successful connection
-            self.client.subscribe(self.mqtt_received_goal, qos=1)
-            self.client.subscribe(self.mqtt_received_rating, qos=1)
+            self.client.subscribe(self.mqtt_topic_received_goal, qos=1)
+            self.client.subscribe(self.mqtt_topic_received_rating, qos=1)
             
             self.connection_event.set()  # Notify that the connection is established
         else:
@@ -105,9 +100,9 @@ class WebappBridge:
     def on_mqtt_message(self, client, userdata, msg):
         # General handler for receiving mqtt messages
         data = json.loads(msg.payload.decode())
-        if msg.topic == self.mqtt_received_goal:
+        if msg.topic == self.mqtt_topic_received_goal:
             self.on_goal_point_receive(data)
-        elif msg.topic == self.mqtt_received_rating:
+        elif msg.topic == self.mqtt_topic_received_rating:
             self.on_rating_receive(data)
     
     def on_goal_point_receive(self, data):
@@ -156,7 +151,7 @@ class WebappBridge:
                     },
                     "speed": speed
                 }
-                self.client.publish(self.mqtt_published_status, json.dumps(data))
+                self.client.publish(self.mqtt_topic_published_status, json.dumps(data))
             rate.sleep()
     
     def current_pose_callback(self, msg):
@@ -175,7 +170,7 @@ class WebappBridge:
         data = {
             "waypoints": wp_latlons
         }
-        self.client.publish(self.mqtt_published_route, json.dumps(data),  qos=1)
+        self.client.publish(self.mqtt_topic_published_route, json.dumps(data),  qos=1)
     
     def run(self):
         # Connect to the MQTT host
