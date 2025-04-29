@@ -36,6 +36,7 @@
     <arg name="use_webapp"              default="true"          doc="Set to false to disable web app MQTT bridge node." />
     <arg name="bag_name"                default="recording"     doc="Name of recorded bag files when car buttons are used" />
     <arg name="launch_rviz"             default="true" />
+    <arg name="session_id"              default=""              doc="Session ID for the webapp bridge" />
     
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -102,7 +103,9 @@
     </include>
 
     <!-- Webapp bridge -->
-    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/tools/webapp.launch" />
+    <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/tools/webapp.launch">
+        <arg name="session_id" value="$(arg session_id)" />
+    </include>
 
     <!-- Rosbag recording -->
     <node pkg="autoware_mini" type="record_bag.py" name="record_bag" output="screen" required="true" >
