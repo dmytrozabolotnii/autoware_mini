@@ -66,6 +66,8 @@
         <remap from="/localization/odometry" to="/bag/localization/odometry" if="$(arg use_localization)"/>
         <remap from="/localization/lane_boundary_matcher_markers" to="/bag/localization/lane_boundary_matcher_markers" if="$(arg use_lane_matching)"/>
         <remap from="/detection/lidar/points_ground" to="/bag/detection/lidar/points_ground" if="$(arg use_detection)"/>
+        <remap from="/detection/lidar/center/points_no_ground" to="/bag/detection/lidar/center/points_no_ground" if="$(arg use_detection)"/>
+        <remap from="/detection/lidar/front/points_no_ground" to="/bag/detection/lidar/front/points_no_ground" if="$(arg use_detection)"/>
         <remap from="/detection/lidar/points_no_ground" to="/bag/detection/lidar/points_no_ground" if="$(arg use_detection)"/>
         <remap from="/detection/lidar/points_clustered" to="/bag/detection/lidar/points_clustered" if="$(arg use_detection)"/>
         <remap from="/detection/lidar/points_filtered" to="/bag/detection/lidar/points_filtered" if="$(arg use_detection)"/>
@@ -84,6 +86,7 @@
         <remap from="/detection/predicted_objects_markers" to="/bag/detection/predicted_objects_markers" if="$(arg use_detection)"/>
         <remap from="/detection/final_objects" to="/bag/detection/final_objects" if="$(arg use_detection)"/>
         <remap from="/detection/final_objects_markers" to="/bag/detection/final_objects_markers" if="$(arg use_detection)"/>
+        <remap from="/lidar_front/points_cleaned" to="/bag//lidar_front/points_cleaned" if="$(arg use_detection)"/>
         <remap from="/planning/lanelet2_map_markers" to="/bag/planning/lanelet2_map_markers" if="$(arg use_planning)"/>
         <remap from="/planning/lanelet2_global_path" to="/bag/planning/lanelet2_global_path" if="$(arg use_planning)"/>
         <remap from="/planning/lanelet2_global_path_markers" to="/bag/planning/lanelet2_global_path_markers" if="$(arg use_planning)"/>
