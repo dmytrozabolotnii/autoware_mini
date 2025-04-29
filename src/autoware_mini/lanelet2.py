@@ -53,6 +53,37 @@ def utm_origin():
     utm_point = projector.forward(gps_point)
     return utm_point.x, utm_point.y
 
+def get_linestrings_in_range(lanelet2_map, x, y, range):
+    """
+    Get all linestrings within a given range
+    :param lanelet2_map: lanelet2 map
+    :param x: x-coordinate of the point
+    :param y: y-coordinate of the point
+    :param range: the half-length of the bounding box in both x and y directions
+    :return: {line_id: line, ...}
+    """
+
+    search_box = BoundingBox2d(BasicPoint2d(x - range, y - range), 
+                               BasicPoint2d(x + range, y + range))
+        
+    return lanelet2_map.lineStringLayer.search(search_box)
+
+def filter_linestrings_using_type_and_subtype(linestrings, type, subtype):
+    """
+    Filter linestrings using a specific subtype
+    :param linestrings: {line_id: line, ...}
+    :param subtype: list of subtype's to search for
+    :return: {line_id: line, ...}
+    """
+
+    filtered_lines = {}
+    for line in linestrings:
+        if "type" in line.attributes and line.attributes["type"] == type:
+            if "subtype" in line.attributes and line.attributes["subtype"] in subtype:
+                filtered_lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
+    return filtered_lines
+
+
 def get_crosswalks(lanelet2_map):
     """
     Find all crosswalks on map and return as a list 
@@ -70,18 +101,27 @@ def get_crosswalks(lanelet2_map):
 
 def get_stop_lines_using_subtype(lanelet2_map, subtype):
     """
-    Get all lines with a specific subtype
+    Get all stop lines with a specific subtype
     :param lanelet2_map: lanelet2 map
     :param subtype: list of subtype's to search for
     :return: {line_id: line, ...}
     """
 
-    lines = {}
-    for line in lanelet2_map.lineStringLayer:
-        if "type" in line.attributes and line.attributes["type"] == "stop_line":
-            if "subtype" in line.attributes and line.attributes["subtype"] in subtype:
-                lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
-    return lines
+    return filter_linestrings_using_type_and_subtype(lanelet2_map.lineStringLayer, "stop_line", subtype)
+
+def get_stop_lines_using_range_and_subtype(lanelet2_map, x, y, range, subtype):
+    """
+    Get all stop lines with a specific subtype within a given range
+    :param lanelet2_map: lanelet2 map
+    :param x: x-coordinate of the point
+    :param y: y-coordinate of the point
+    :param range: the half-length of the bounding box in both x and y directions
+    :param subtype: list of subtype's to search for
+    :return: {line_id: line, ...}
+    """
+
+    linestrings = get_linestrings_in_range(lanelet2_map, x, y, range)
+    return filter_linestrings_using_type_and_subtype(linestrings, "stop_line", subtype)
 
 def get_traffic_light_stop_lines(lanelet2_map):
     """
@@ -125,13 +165,10 @@ def get_stoplines_api_id_range(lanelet2_map, x, y, range):
 
     :return: A dictionary of stopline ids and api keys that fall within the search area
     """
-    search_box = BoundingBox2d(BasicPoint2d(x - range, y - range), 
-                               BasicPoint2d(x + range, y + range))
-        
-    filtered_linestrings = lanelet2_map.lineStringLayer.search(search_box)
+    linestrings = get_linestrings_in_range(lanelet2_map, x, y, range)
 
     stop_line_ids = {}
-    for line in filtered_linestrings:
+    for line in linestrings:
         if line.attributes and line.attributes["type"] == "stop_line" and "api_id" in line.attributes:
             stop_line_ids[line.id] = line.attributes["api_id"]
 
