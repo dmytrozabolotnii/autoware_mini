@@ -24,7 +24,8 @@ GREY = ColorRGBA(0.4, 0.4, 0.4, 0.6)
 ORANGE = ColorRGBA(1.0, 0.5, 0.0, 0.6)
 WHITE = ColorRGBA(1.0, 1.0, 1.0, 0.6)
 CYAN = ColorRGBA(0.0, 1.0, 1.0, 0.6)
-BLUE = ColorRGBA(0.3, 0.3, 1.0, 0.6)
+LIGHT_BLUE = ColorRGBA(0.0, 0.7, 0.9, 0.6)
+DARK_BLUE = ColorRGBA(0.3, 0.3, 1.0, 0.6)
 WHITE100 = ColorRGBA(1.0, 1.0, 1.0, 1.0)
 
 TRAFFIC_LIGHT_STATE_TO_MARKER_COLOR = {
@@ -184,10 +185,11 @@ class Lanelet2MapVisualizer:
         right_boundary_points = []
         centerline_points = []
         bus_lane_points = []
+        bicycle_lane_points = []
         crosswalk_points = []
 
         for lanelet in lanelets:
-            if lanelet.attributes["subtype"] == "road" or lanelet.attributes["subtype"] == "bus_lane":
+            if lanelet.attributes["subtype"] == "road" or lanelet.attributes["subtype"] == "bus_lane" or lanelet.attributes["subtype"] == "bicycle_lane":
                 # Visualize left and right boundaries
                 left_boundary_points.extend(convert_geometry_to_line_list(lanelet.leftBound))
                 right_boundary_points.extend(convert_geometry_to_line_list(lanelet.rightBound))
@@ -197,8 +199,10 @@ class Lanelet2MapVisualizer:
                 # triangulate centerline
                 if lanelet.attributes["subtype"] == "road":
                     centerline_points.extend(triangulate_path(centerline, 1.5))
-                if lanelet.attributes["subtype"] == "bus_lane":
+                elif lanelet.attributes["subtype"] == "bus_lane":
                     bus_lane_points.extend(triangulate_path(centerline, 1.5))
+                elif lanelet.attributes["subtype"] == "bicycle_lane":
+                    bicycle_lane_points.extend(triangulate_path(centerline, 0.8))
 
             elif lanelet.attributes["subtype"] == "crosswalk":
                 # create "polygon points" from crosswalk lanelet and then create line list from them
@@ -211,13 +215,15 @@ class Lanelet2MapVisualizer:
         left_boundary_marker = linelist_to_marker(left_boundary_points, "Left boundary", 0, GREY, 0.1, stamp)
         right_boundary_marker = linelist_to_marker(right_boundary_points, "Right boundary", 0, GREY, 0.1, stamp)
         centerline_marker = triangles_to_marker(centerline_points, "Centerline", 0, CYAN, 1.0, stamp)
-        bus_lane_marker = triangles_to_marker(bus_lane_points, "Bus lane", 0, BLUE, 1.0, stamp)
+        bus_lane_marker = triangles_to_marker(bus_lane_points, "Bus lane", 0, DARK_BLUE, 1.0, stamp)
+        bicycle_lane_marker = triangles_to_marker(bicycle_lane_points, "Bicycle lane", 0, LIGHT_BLUE, 1.0, stamp)
         crosswalk_marker = triangles_to_marker(crosswalk_points, "Crosswalk", 0, ORANGE, 1.0, stamp)
 
         marker_array.markers.append(left_boundary_marker)
         marker_array.markers.append(right_boundary_marker)
         marker_array.markers.append(centerline_marker)
         marker_array.markers.append(bus_lane_marker)
+        marker_array.markers.append(bicycle_lane_marker)
         marker_array.markers.append(crosswalk_marker)
 
         return marker_array

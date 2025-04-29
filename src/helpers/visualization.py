@@ -33,15 +33,21 @@ def triangulate_linestring(linestring, width, z_offset=0):
     """
 
     buffer = linestring.buffer(width / 2, cap_style="flat")
-    coords = np.array(buffer.exterior.coords, dtype=np.float32)
+    number_of_exterior_points = len(buffer.exterior.coords)
+    indexes = [number_of_exterior_points]
+    coords = list(buffer.exterior.coords)
 
-    if len(coords) == 0:
-        return []
-    
-    triangles = earcut.triangulate_float32(coords, [len(coords)])
+    if buffer.interiors:
+        number_of_points_in_each_hole = [len(hole.coords) for hole in buffer.interiors]
+        # indexes indicate the end of each ring, first ring is exterior and the rest are holes.
+        # the last index is the end of the last hole (or exterior if no holes present)
+        indexes = np.concatenate([indexes, (number_of_exterior_points + np.cumsum(number_of_points_in_each_hole))])
+        coords = np.concatenate(coords + [hole.coords for hole in buffer.interiors])
+
+    triangles = earcut.triangulate_float32(coords, indexes)
 
     # Extract z coordinates from linestring for each triangle point
-    points = shapely.points(buffer.exterior.coords)
+    points = shapely.points(coords)
     distances = linestring.project(points)
     points_on_linestring = linestring.interpolate(distances)
 
