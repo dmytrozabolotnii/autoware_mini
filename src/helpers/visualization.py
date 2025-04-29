@@ -42,7 +42,7 @@ def triangulate_linestring(linestring, width, z_offset=0):
         # indexes indicate the end of each ring, first ring is exterior and the rest are holes.
         # the last index is the end of the last hole (or exterior if no holes present)
         indexes = np.concatenate([indexes, (number_of_exterior_points + np.cumsum(number_of_points_in_each_hole))])
-        coords = np.concatenate(coords + [hole.coords for hole in buffer.interiors])
+        coords = np.concatenate([coords] + [hole.coords for hole in buffer.interiors])
 
     triangles = earcut.triangulate_float32(coords, indexes)
 
