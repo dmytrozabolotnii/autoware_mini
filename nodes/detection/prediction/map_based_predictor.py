@@ -32,6 +32,7 @@ class MapBasedPredictor:
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
         self.heading_difference_threshold = rospy.get_param('~heading_difference_threshold')
         self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
+        self.prediction_clipping_deceleration_limit = rospy.get_param('~prediction_clipping_deceleration_limit')
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
         self.local_path_length = rospy.get_param("/planning/local_path_length")
 
@@ -137,30 +138,29 @@ class MapBasedPredictor:
                 else:
                     trajectory_linestring = centerline_linestring
 
-                trajectory_length = trajectory_linestring.length
+                trajectory_limit = trajectory_linestring.length
                 interpolate_distances = distances + object_distance_on_start_lanelet[trajectory[0].id] + obj.dimensions.x / 2
 
                 # check intersection with stop_lines
-                stop_lines_list = list(stop_lines.values())
+                stop_lines_list = np.array(list(stop_lines.values()))
                 mask = trajectory_linestring.intersects(stop_lines_list)
                 if np.any(mask):
-                    stop_line_intersection_result = trajectory_linestring.intersection(np.array(stop_lines_list)[mask])
-                    dist = sorted(trajectory_linestring.project(stop_line_intersection_result))
-                    for d in dist:
+                    stop_line_intersection_result = trajectory_linestring.intersection(stop_lines_list[mask])
+                    distances_to_stoplines = sorted(trajectory_linestring.project(stop_line_intersection_result))
+                    for d in distances_to_stoplines:
                         # check for deceleration if stop line somewhere within the predicted trajectory
                         if interpolate_distances[0] < d < interpolate_distances[-1]:
                             deceleration_distance = d - interpolate_distances[0]
                             deceleration = (object_speed**2) / (2 * deceleration_distance)
-                            if deceleration < 2.8:
-                                trajectory_length = min(trajectory_length, d)
+                            if deceleration < self.prediction_clipping_deceleration_limit:
+                                trajectory_limit = min(trajectory_limit, d)
                                 break
 
                 # interpolate_distances extend further than trajectory_linestring (case of dangling lanelets and sometimes also offset curve might reduce
                 # its length), so clip the exessive distances otherwise duplicate points cause problems later with triangulation
-                if interpolate_distances[-1] > trajectory_length:
-                    index = np.argmax(interpolate_distances > trajectory_length)
-                    interpolate_distances = interpolate_distances[:index + 1]
-                    interpolate_distances[-1] = trajectory_length
+                if interpolate_distances[-1] > trajectory_limit:
+                    index = np.argmax(interpolate_distances > trajectory_limit)
+                    interpolate_distances = np.append(interpolate_distances[:index], trajectory_limit)
 
                 points_trajectory = trajectory_linestring.interpolate(interpolate_distances)
 
