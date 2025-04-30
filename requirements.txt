@@ -8,3 +8,4 @@ shapely >= 2.0
 mapbox-earcut
 paho-mqtt
 python-dotenv
+pyaudio
