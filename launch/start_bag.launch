@@ -52,6 +52,8 @@
     <arg name="enable_yielding_checker"      default="true" />
     <arg name="enable_trajectory_checker"    default="true" />
     <arg name="ground_removal"          default="naive"         doc="naive, jcp" />
+    <arg name="use_monitoring"       default="false"          doc="Set to true to enable monitoring." />
+    <arg name="monitoring_conf_path" default="$(find autoware_mini)/config/lexus.csv" doc="Path to the monitoring configuration file." />
 
     <!-- Use simulation time from bag -->
     <param name="/use_sim_time" value="true" />
@@ -216,6 +218,11 @@
         <arg name="use_nvidia_cameras"   value="true" />
         <arg name="nvidia_encoder"       value="$(arg nvidia_encoder)" />
         <arg name="use_ssc"              value="$(arg use_control)" />
+    </include>
+
+    <!-- Monitoring -->
+    <include if="$(arg use_monitoring)" file="$(find autoware_mini)/launch/monitoring.launch">
+        <arg name="monitoring_conf_path" value="$(arg monitoring_conf_path)" />
     </include>
 
     <!-- Rviz -->

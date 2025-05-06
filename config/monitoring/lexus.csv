@@ -1,0 +1,6 @@
+component, topic, nominal_freq, warning_freq, error_freq, nominal_delay, warning_delay, error_delay
+Localization, /localization/current_pose, 50, 40, 30, 0.005, 0.01, 0.02
+Object detection, /detection/predicted_objects, 10, 8, 6, 0.1, 0.15, 0.2
+Traffic lights, /detection/traffic_light_status, 10, 8, 6, 0.1, 0.15, 0.2
+Local planner, /planning/local_path, 10, 8, 6, 0.05, 0.1, 0.15
+Control, /control/vehicle_cmd, 50, 40, 30, 0.005, 0.01, 0.02

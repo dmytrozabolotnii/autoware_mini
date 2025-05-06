@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+    <param name="enable_statistics" value="true" />
+    <group ns="monitoring">
+        <node pkg="autoware_mini" type="topic_monitor.py" name="topic_monitor" output="screen" required="true">
+            <param name="monitoring_conf_path" value="$(arg monitoring_conf_path)" />
+        </node>
+
+        <node pkg="autoware_mini" type="diagnostics_player.py" name="diagnostics_player" output="screen" required="false">
+        </node>
+    </group>
+</launch>
