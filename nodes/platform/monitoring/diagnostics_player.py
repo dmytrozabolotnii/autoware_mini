@@ -34,7 +34,6 @@ class DiagnosticsPlayer:
     
     def play_sound(self, sound_file):
         sound_path = os.path.join(self.sounds_dir, f"{sound_file}")
-        #print(f"Playing sound: {sound_path}")
         if os.path.exists(sound_path):
             data, fs = sf.read(sound_path, dtype='float32')
             sd.play(data, fs, blocking=True)
@@ -69,12 +68,10 @@ class DiagnosticsPlayer:
             if freq_status != self.monitored_components[message.name]['freq']:
                 sound_file = f"{message.name.lower()}_frequency_{get_status_message(freq_status)}.wav"
                 self.soundfile_queue.put(sound_file)
-                print(f"Sound file added to queue: {sound_file}")
                 self.monitored_components[message.name]['freq'] = freq_status
             if delay_status != self.monitored_components[message.name]['delay']:
                 sound_file = f"{message.name.lower()}_delay_{get_status_message(freq_status)}.wav"
                 self.soundfile_queue.put(sound_file)
-                print(f"Sound file added to queue: {sound_file}")
                 self.monitored_components[message.name]['delay'] = delay_status
             
     def poll_soundfile_queue(self):
@@ -85,7 +82,6 @@ class DiagnosticsPlayer:
     
     def run(self):
         Thread(target=rospy.spin, daemon=True).start()
-        rospy.sleep(2) # Give some time for ROS to start
         self.poll_soundfile_queue()
         
 if __name__ == '__main__':
