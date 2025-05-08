@@ -1,37 +1,19 @@
 output_frame: map
 
 lidar:
-  center:
-    crop_box:
-      min_x: -2.0
-      max_x: 3.0
-      min_y: -1.0
-      max_y: 1.0
-      min_z: -2.0
-      max_z: 2.0
-      negative: True
-      input_frame: lidar_center
-      output_frame: lidar_center
-  front:
-    crop_box:
-      min_x: -2.0
-      max_x: 3.0
-      min_y: -1.0
-      max_y: 1.0
-      min_z: -2.0
-      max_z: 2.0
-      negative: True
-      input_frame: lidar_center
-      output_frame: lidar_center
-  points_concatenator:
-    transform_timeout: 0.06
-  naive_ground_removal:
-    min_x: -60.0
-    max_x: 75.0
-    min_y: -60.0
-    max_y: 60.0
-    min_z: -2.5
-    max_z: 0.05
+  points_preprocessor:
+    inner_min_x: -2.0
+    inner_max_x: 3.0
+    inner_min_y: -1.0
+    inner_max_y: 1.0
+    inner_min_z: -2.0
+    inner_max_z: 2.0
+    outer_min_x: -60.0
+    outer_max_x: 75.0
+    outer_min_y: -60.0
+    outer_max_y: 60.0
+    outer_min_z: -2.5
+    outer_max_z: 0.05
     cell_size: 0.6
     tolerance: 0.15
     filter: average                    # none, median, average, minimum

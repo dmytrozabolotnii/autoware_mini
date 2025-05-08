@@ -17,32 +17,16 @@
         <group if="$(eval 'lidar' in detector)" ns="lidar">
             <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <group if="$(eval 'lidar_cluster' in detector)">
-                <group if="$(arg use_lidar_center)" ns="center">
-                    <!-- Only functional in Carla simulation -->
-                    <node pkg="nodelet" type="nodelet" name="crop_box" args="standalone pcl/CropBox" output="screen" required="true">
-                        <remap from="~input" to="/lidar_center/pointcloud" />
-                        <remap from="~output" to="/lidar_center/points_raw" />
-                    </node>
-                </group>
-                <remap unless="$(arg use_lidar_front)" from="points_raw" to="/lidar_center/points_raw" />
-                <group if="$(arg use_lidar_front)" ns="front">
-                    <node pkg="nodelet" type="nodelet" name="crop_box" args="standalone pcl/CropBox" output="screen" required="true">
-                        <remap from="~input" to="/lidar_front/points" />
-                        <remap from="~output" to="/lidar_front/points_cleaned" />
-                    </node>
-                </group>
-                <remap unless="$(arg use_lidar_center)" from="points_raw" to="/lidar_front/points_cleaned" />
-                <group if="$(eval use_lidar_center and use_lidar_front)">
-                    <node type="points_concatenator.py" name="points_concatenator" pkg="autoware_mini" output="screen" required="true">
-                        <remap from="points1" to="/lidar_center/points_raw" />
-                        <remap from="points2" to="/lidar_front/points_cleaned" />
-                        <remap from="points_concatenated" to="points_raw" />
-                    </node>
-                </group>
-                <node if="$(eval ground_removal == 'naive')" type="naive_ground_removal.py" name="naive_ground_removal" pkg="autoware_mini" output="screen" required="true" />
-                <node if="$(eval ground_removal == 'jcp')" type="jcp_ground_removal.py" name="jcp_ground_removal" pkg="autoware_mini" output="screen" required="true" />
+                <node type="points_preprocessor.py" name="points_preprocessor" pkg="autoware_mini" output="screen" required="true">
+                    <param name="use_lidar_center" value="$(arg use_lidar_center)" />
+                    <param name="use_lidar_front" value="$(arg use_lidar_front)" />
+                    <param name="ground_removal" value="$(arg ground_removal)" />
+                    <remap if="$(arg use_lidar_center)" from="points1" to="/lidar_center/points_raw" />
+                    <remap if="$(eval use_lidar_front and not use_lidar_center)" from="points1" to="/lidar_front/points" />
+                    <remap if="$(eval use_lidar_center and use_lidar_front)" from="points2" to="/lidar_front/points" />
+                </node>
                 <node pkg="nodelet" type="nodelet" name="voxel_grid_filter" args="standalone pcl/VoxelGrid" output="screen" required="true">
-                    <remap from="~input" to="/detection/lidar/points_no_ground" />
+                    <remap from="~input" to="/detection/lidar/points_processed" />
                     <remap from="~output" to="/detection/lidar/points_filtered" />
                 </node>
                 <node type="points_clusterer.py" name="points_clusterer" pkg="autoware_mini" output="screen" required="true" />
