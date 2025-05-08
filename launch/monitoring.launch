@@ -10,6 +10,7 @@
         </node>
 
         <node pkg="autoware_mini" type="diagnostics_player.py" name="diagnostics_player" output="screen" required="false">
+            <param name="monitoring_conf_path" value="$(arg monitoring_conf_path)" />
         </node> 
     </group>
 </launch>

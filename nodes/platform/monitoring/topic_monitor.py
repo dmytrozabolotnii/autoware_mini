@@ -47,19 +47,19 @@ class TopicMonitor:
             income_freq = 1.0 / msg.period_mean.to_sec() if msg.period_mean.to_sec() > 0 else 0
             if income_freq < self.monitoring_config[topic]['error_freq']:
                 status.level = DiagnosticStatus.ERROR
-                status.message = f"{status.name} frequency too low: {income_freq} Hz"
+                status.message = f"{status.name} frequency error: {income_freq:.2f} Hz"
             elif income_freq < self.monitoring_config[topic]['warning_freq']:
                 status.level = DiagnosticStatus.WARN
-                status.message = f"{status.name} frequency warning: {income_freq} Hz"
+                status.message = f"{status.name} frequency warning: {income_freq:.2f} Hz"
             else:
                 status.level = DiagnosticStatus.OK
-                status.message = f"{status.name} frequency nominal: {income_freq} Hz"
+                status.message = f"{status.name} frequency nominal: {income_freq:.2f} Hz"
                         
             # Check delay
             delay = msg.stamp_age_mean.to_sec()
             if delay > self.monitoring_config[topic]['error_delay']:
                 status.level = max(status.level, DiagnosticStatus.ERROR)  # Escalate to ERROR if necessary
-                status.message += f", {status.name} delay too high: {delay:.2f} s"
+                status.message += f", {status.name} delay error: {delay:.2f} s"
             elif delay > self.monitoring_config[topic]['warning_delay']:
                 status.level = max(status.level, DiagnosticStatus.WARN)  # Escalate to WARN if necessary
                 status.message += f", {status.name} delay warning: {delay:.2f} s"
