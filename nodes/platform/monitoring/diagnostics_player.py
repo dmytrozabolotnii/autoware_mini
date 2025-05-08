@@ -65,12 +65,23 @@ class DiagnosticsPlayer:
                     return "warning"
                 else:
                     return "ok"
-            if freq_status != self.monitored_components[message.name]['freq']:
+            # Dont play sound if status is same or is downgraded from error to warning
+            if freq_status != self.monitored_components[message.name]['freq'] and not \
+                (
+                    freq_status == DiagnosticStatus.WARN 
+                    and
+                    self.monitored_components[message.name]['freq'] == DiagnosticStatus.ERROR
+                ):
                 sound_file = f"{message.name.lower()}_frequency_{get_status_message(freq_status)}.wav"
                 self.soundfile_queue.put(sound_file)
                 self.monitored_components[message.name]['freq'] = freq_status
-            if delay_status != self.monitored_components[message.name]['delay']:
-                sound_file = f"{message.name.lower()}_delay_{get_status_message(freq_status)}.wav"
+            if delay_status != self.monitored_components[message.name]['delay'] and not \
+                (
+                    delay_status == DiagnosticStatus.WARN 
+                    and
+                    self.monitored_components[message.name]['delay'] == DiagnosticStatus.ERROR
+                ):
+                sound_file = f"{message.name.lower()}_delay_{get_status_message(delay_status)}.wav"
                 self.soundfile_queue.put(sound_file)
                 self.monitored_components[message.name]['delay'] = delay_status
             
