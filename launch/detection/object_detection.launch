@@ -25,10 +25,6 @@
                     <remap if="$(eval use_lidar_front and not use_lidar_center)" from="points1" to="/lidar_front/points" />
                     <remap if="$(eval use_lidar_center and use_lidar_front)" from="points2" to="/lidar_front/points" />
                 </node>
-                <node pkg="nodelet" type="nodelet" name="voxel_grid_filter" args="standalone pcl/VoxelGrid" output="screen" required="true">
-                    <remap from="~input" to="/detection/lidar/points_processed" />
-                    <remap from="~output" to="/detection/lidar/points_filtered" />
-                </node>
                 <node type="points_clusterer.py" name="points_clusterer" pkg="autoware_mini" output="screen" required="true" />
                 <node type="cluster_detector.py" name="cluster_detector" pkg="autoware_mini" output="screen" required="true" />
             </group>

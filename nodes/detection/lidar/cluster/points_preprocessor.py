@@ -39,6 +39,8 @@ class PointsPreprocessor:
         filter_size = rospy.get_param('~filter_size')
         filter_iterations = rospy.get_param('~filter_iterations')
 
+        self.voxel_grid_filter_leaf_size = rospy.get_param('~voxel_grid_filter_leaf_size')
+
         self.outer_min = np.array([outer_min_x, outer_min_y, outer_min_z])
         self.outer_max = np.array([outer_max_x, outer_max_y, outer_max_z])
         self.inner_min = np.array([inner_min_x, inner_min_y, inner_min_z])
@@ -70,6 +72,7 @@ class PointsPreprocessor:
             self.transform_to_lidar_center_gpu(points_gpu)
             self.crop_and_filter_gpu(points_gpu[:, :3])
             self.ground_removal.remove_ground(points_gpu[:, :3])
+            self.voxel_grid_filter_gpu(points_gpu[:, :3], self.voxel_grid_filter_leaf_size)
 
         # Publisher
         self.points_processed_pub = rospy.Publisher('points_processed', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -110,9 +113,12 @@ class PointsPreprocessor:
 
         # Remove ground points
         points_no_ground = self.ground_removal.remove_ground(points_filtered)
+        
+        # Downsample points
+        points_downsampled = self.voxel_grid_filter_gpu(points_no_ground, self.voxel_grid_filter_leaf_size)
 
         # Publish points
-        self.publish_points(cp.asnumpy(points_no_ground).astype(np.float32), points1_msg.header)
+        self.publish_points(cp.asnumpy(points_downsampled).astype(np.float32), points1_msg.header)
 
     def pointcloud_callback(self, msg):
         points_array = numpify(msg)
@@ -137,37 +143,76 @@ class PointsPreprocessor:
 
     def crop_and_filter_gpu(self, points):
         """
-        Transform points from source_frame to target_frame with GPU acceleration.
-        Input points should be in homogeneous coordinates (x, y, z, 1).
+        Crops pointcloud based on inner and outer boundaries with GPU acceleration.
+        Args:
+            points: Nx3 cupy array (x, y, z)
+        Returns:
+            Filtered points (as cupy array).
         """
-        points_gpu = cp.asarray(points)
         outer_min_gpu = cp.asarray(self.outer_min)
         outer_max_gpu = cp.asarray(self.outer_max)
         inner_min_gpu = cp.asarray(self.inner_min)
         inner_max_gpu = cp.asarray(self.inner_max)
-        in_outer = cp.all((points_gpu >= outer_min_gpu) & (points_gpu <= outer_max_gpu), axis=1)
-        in_inner = cp.all((points_gpu >= inner_min_gpu) & (points_gpu <= inner_max_gpu), axis=1)
-        mask = in_outer & (~in_inner)
-        return points_gpu[mask]
-    
-    def remove_nan_rows_gpu(self, points_gpu):
 
+        in_outer = cp.all((points >= outer_min_gpu) & (points <= outer_max_gpu), axis=1)
+        in_inner = cp.all((points >= inner_min_gpu) & (points <= inner_max_gpu), axis=1)
+        mask = in_outer & (~in_inner)
+        return points[mask]
+    
+    def remove_nan_rows_gpu(self, points):
+        """
+        Filters out rows with nan values with GPU acceleration.
+        Args:
+            points: Nx3 cupy array (x, y, z)
+        Returns:
+            Filtered points (as cupy array).
+        """
         # Create a boolean mask where rows with no NaN values are marked as True
-        mask = cp.all(~cp.isnan(points_gpu), axis=1)
+        mask = cp.all(~cp.isnan(points), axis=1)
         
         # Use the mask to filter out rows with NaN values
-        return points_gpu[mask]
+        return points[mask]
     
     def transform_to_lidar_center_gpu(self, points):
         """
         Transform points from lidar_front frame to lidar_center frame with GPU acceleration.
-        Input points should be in homogeneous coordinates (x, y, z, 1).
+        Args:
+            points: Nx4 cupy array. Input points should be in homogeneous (x, y, z, 1)
+        Returns:
+            Transformed points (as cupy array).
         """
-        
         points_gpu = cp.asarray(points).astype(cp.float32)
         transformed_points_gpu = cp.matmul(points_gpu, self.transfrom_matrix_gpu)
 
         return transformed_points_gpu[:, :3]
+    
+    def voxel_grid_filter_gpu(self, points, voxel_size):
+        """
+        Voxel grid downsampling with GPU acceleration.
+        Args:
+            points: Nx3 cupy array (x, y, z)
+            voxel_size: tuple or float, e.g., (0.1, 0.1, 0.1)
+        Returns:
+            Downsampled points (as cupy array).
+        """
+        if isinstance(voxel_size, float):
+            voxel_size = (voxel_size, voxel_size, voxel_size)
+
+        # Compute voxel indices
+        voxel_indices = cp.floor(points / cp.asarray(voxel_size)).astype(cp.int32)
+
+        # Hash voxel indices into scalar keys
+        # Assumption: coordinates are within reasonable bounds (e.g., [-1000, 1000])
+        hash_scale = cp.array([73856093, 19349663, 83492791], dtype=cp.int64)  # large primes
+        voxel_hashes = cp.sum(voxel_indices.astype(cp.int64) * hash_scale, axis=1)
+
+        # Unique voxel hashes and corresponding first indices
+        _, unique_indices = cp.unique(voxel_hashes, return_index=True)
+        
+        # Select representative points (first in voxel)
+        downsampled = points[unique_indices]
+    
+        return downsampled
     
     def publish_points(self, points, header):
         """

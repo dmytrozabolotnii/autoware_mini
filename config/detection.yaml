@@ -19,17 +19,12 @@ lidar:
     filter: average                    # none, median, average, minimum
     filter_size: 3
     filter_iterations: 1
+    voxel_grid_filter_leaf_size: 0.15
   jcp_ground_removal:
     range_img_width: 1024
     range_img_height: 32
     sensor_height: 2.11
     delta_R: 1
-  voxel_grid_filter:
-    leaf_size: 0.15
-    filter_field_name: z
-    filter_limit_min: -2.0
-    filter_limit_max: 0.5
-    filter_limit_negative: False
   points_clusterer:
     cluster_epsilon: 0.6
     cluster_min_size: 4
