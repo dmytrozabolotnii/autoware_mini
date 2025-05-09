@@ -22,12 +22,23 @@ class DiagnosticsPlayer:
             for row in reader:
                 component = row['component']
                 self.monitored_components[component.strip()] = {
-                    'freq': DiagnosticStatus.OK,
-                    'delay': DiagnosticStatus.OK,
+                    'freq': { 
+                        'status': DiagnosticStatus.OK,
+                        'history': [DiagnosticStatus.OK],
+                        'ok_since': -1,
+                    },
+                    'delay': {
+                        'status': DiagnosticStatus.OK,
+                        'history': [DiagnosticStatus.OK],
+                        'ok_since': -1,
+                    }
                 }
+        self.ok_min_duration = rospy.Duration(2)  # seconds
         self.soundfile_queue = Queue()
-                
-        # Publishers
+        
+        self.startup_ignore_duration = rospy.Duration(5)  # seconds
+        rospy.sleep(0.5) # Wait for the clock to be set (necessary when playing back bag files)
+        self.start_time = rospy.Time.now()
 
         # Subscribers
         rospy.Subscriber('/diagnostics', DiagnosticArray, self.diagnostics_callback, queue_size=1)
@@ -39,14 +50,15 @@ class DiagnosticsPlayer:
             sd.play(data, fs, blocking=True)
     
     def diagnostics_callback(self, msg):
+        # Skip checks if within startup period
+        if rospy.Time.now() - self.start_time < self.startup_ignore_duration:
+            return
+        
         # Array will always have exactly one element
         message = msg.status[0]
         if message.name in self.monitored_components:
-            #1st slice is for frequency
-            #2nd slice is for delay
             message_freq_slice, message_delay_slice = message.message.split(",")
-            
-            # Get the status level of frequency and delay from the message
+
             def get_status_level(slice):
                 if "error" in slice:
                     return DiagnosticStatus.ERROR
@@ -54,10 +66,7 @@ class DiagnosticsPlayer:
                     return DiagnosticStatus.WARN
                 else:
                     return DiagnosticStatus.OK
-            freq_status = get_status_level(message_freq_slice)
-            delay_status = get_status_level(message_delay_slice)
-            
-            # If the statuses have changed, play the corresponding sound (put file in queue)
+
             def get_status_message(status):
                 if status == DiagnosticStatus.ERROR:
                     return "error"
@@ -65,25 +74,101 @@ class DiagnosticsPlayer:
                     return "warning"
                 else:
                     return "ok"
-            # Dont play sound if status is same or is downgraded from error to warning
-            if freq_status != self.monitored_components[message.name]['freq'] and not \
-                (
-                    freq_status == DiagnosticStatus.WARN 
-                    and
-                    self.monitored_components[message.name]['freq'] == DiagnosticStatus.ERROR
+
+            now = rospy.Time.now()
+            comp = message.name
+            
+            # --- Frequency ---
+            prev_freq_status = self.monitored_components[comp]['freq']['status']
+            freq_status = get_status_level(message_freq_slice)
+            freq_ok_since = self.monitored_components[comp]['freq']['ok_since']
+            freq_history = self.monitored_components[comp]['freq']['history']
+
+            # Update history (keep last 3)
+            freq_history.append(freq_status)
+            if len(freq_history) > 3:
+                freq_history.pop(0)
+
+            if freq_status == DiagnosticStatus.OK:
+                if prev_freq_status != DiagnosticStatus.OK:
+                    # Just became OK, start timer
+                    self.monitored_components[comp]['freq']['ok_since'] = now
+                elif freq_ok_since != -1 and (now - freq_ok_since) > self.ok_min_duration:
+                    # Has been OK for enough time, play sound and reset timer
+                    sound_file = f"{comp.lower()}_frequency_ok.wav"
+                    self.soundfile_queue.put(sound_file)
+                    self.monitored_components[comp]['freq']['ok_since'] = -1  # Prevent repeated sound
+            else:
+                # If we are in the special case: WARN -> OK (countdown) -> ERROR (before countdown end)
+                if (
+                    freq_status == DiagnosticStatus.ERROR and
+                    freq_ok_since != -1 and
+                    freq_history == [DiagnosticStatus.WARN, DiagnosticStatus.OK, DiagnosticStatus.ERROR]
                 ):
-                sound_file = f"{message.name.lower()}_frequency_{get_status_message(freq_status)}.wav"
-                self.soundfile_queue.put(sound_file)
-                self.monitored_components[message.name]['freq'] = freq_status
-            if delay_status != self.monitored_components[message.name]['delay'] and not \
-                (
-                    delay_status == DiagnosticStatus.WARN 
-                    and
-                    self.monitored_components[message.name]['delay'] == DiagnosticStatus.ERROR
+                    sound_file = f"{comp.lower()}_frequency_error.wav"
+                    self.soundfile_queue.put(sound_file)
+                # Reset ok_since if not OK
+                self.monitored_components[comp]['freq']['ok_since'] = -1
+                # Only play warning/error sound on real transitions (not when Warn -> OK countdown -> Warn OR Error -> OK countdown -> Error)
+                if freq_status != prev_freq_status and not (
+                    freq_status == DiagnosticStatus.WARN and prev_freq_status == DiagnosticStatus.ERROR
                 ):
-                sound_file = f"{message.name.lower()}_delay_{get_status_message(delay_status)}.wav"
-                self.soundfile_queue.put(sound_file)
-                self.monitored_components[message.name]['delay'] = delay_status
+                    # Don't play if we just handled the special case above
+                    if not (
+                        freq_status == DiagnosticStatus.ERROR and
+                        freq_ok_since != -1 and
+                        freq_history == [DiagnosticStatus.WARN, DiagnosticStatus.OK, DiagnosticStatus.ERROR]
+                    ) and not (
+                        freq_ok_since != -1 and
+                        prev_freq_status == DiagnosticStatus.OK
+                    ):
+                        sound_file = f"{comp.lower()}_frequency_{get_status_message(freq_status)}.wav"
+                        self.soundfile_queue.put(sound_file)
+            self.monitored_components[comp]['freq']['status'] = freq_status
+            self.monitored_components[comp]['freq']['history'] = freq_history
+
+            # --- Delay ---
+            prev_delay_status = self.monitored_components[comp]['delay']['status']
+            delay_status = get_status_level(message_delay_slice)
+            delay_ok_since = self.monitored_components[comp]['delay']['ok_since']
+            delay_history = self.monitored_components[comp]['delay']['history']
+
+            # Update history (keep last 3)
+            delay_history.append(delay_status)
+            if len(delay_history) > 3:
+                delay_history.pop(0)
+
+            if delay_status == DiagnosticStatus.OK:
+                if prev_delay_status != DiagnosticStatus.OK:
+                    self.monitored_components[comp]['delay']['ok_since'] = now
+                elif delay_ok_since != -1 and (now - delay_ok_since) > self.ok_min_duration:
+                    sound_file = f"{comp.lower()}_delay_ok.wav"
+                    self.soundfile_queue.put(sound_file)
+                    self.monitored_components[comp]['delay']['ok_since'] = -1
+            else:
+                if (
+                    delay_status == DiagnosticStatus.ERROR and
+                    delay_ok_since != -1 and
+                    delay_history == [DiagnosticStatus.WARN, DiagnosticStatus.OK, DiagnosticStatus.ERROR]
+                ):
+                    sound_file = f"{comp.lower()}_delay_error.wav"
+                    self.soundfile_queue.put(sound_file)
+                self.monitored_components[comp]['delay']['ok_since'] = -1
+                if delay_status != prev_delay_status and not (
+                    delay_status == DiagnosticStatus.WARN and prev_delay_status == DiagnosticStatus.ERROR
+                ):
+                    if not (
+                        delay_status == DiagnosticStatus.ERROR and
+                        delay_ok_since != -1 and
+                        delay_history == [DiagnosticStatus.WARN, DiagnosticStatus.OK, DiagnosticStatus.ERROR]
+                    ) and not (
+                        delay_ok_since != -1 and
+                        prev_delay_status == DiagnosticStatus.OK
+                    ):
+                        sound_file = f"{comp.lower()}_delay_{get_status_message(delay_status)}.wav"
+                        self.soundfile_queue.put(sound_file)
+            self.monitored_components[comp]['delay']['status'] = delay_status
+            self.monitored_components[comp]['delay']['history'] = delay_history
             
     def poll_soundfile_queue(self):
         while not rospy.is_shutdown():

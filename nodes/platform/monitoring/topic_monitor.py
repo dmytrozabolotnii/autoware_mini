@@ -4,6 +4,7 @@ import rospy
 import csv
 from rosgraph_msgs.msg import TopicStatistics
 from diagnostic_msgs.msg import DiagnosticStatus, DiagnosticArray
+from rospy.msg import AnyMsg
 
 class TopicMonitor:
     def __init__(self):
@@ -21,6 +22,16 @@ class TopicMonitor:
         
         # Subscribers
         rospy.Subscriber('/statistics', TopicStatistics, self.topic_statistics_callback, queue_size=1)
+                
+        # Dummy subscribers (otherwise topics may not be monitored)
+        self.dummy_subs = []
+        for topic in self.monitoring_config.keys():
+            dummy_sub = rospy.Subscriber(topic, AnyMsg, self.dummy_callback, queue_size=1)
+            self.dummy_subs.append(dummy_sub)
+    
+    def dummy_callback(self, msg):
+        # Dummy callback to keep the subscriber alive
+        pass
     
     def load_monitoring_config(self):
         config = {}
@@ -39,7 +50,7 @@ class TopicMonitor:
                 }
         return config
     
-    def topic_statistics_callback(self, msg):
+    def topic_statistics_callback(self, msg): 
         topic = msg.topic
         diagnostics_array = DiagnosticArray()
         diagnostics_array.header.stamp = rospy.Time.now()
