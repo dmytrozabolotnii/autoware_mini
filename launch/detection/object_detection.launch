@@ -25,8 +25,7 @@
                     <remap if="$(eval use_lidar_front and not use_lidar_center)" from="points1" to="/lidar_front/points" />
                     <remap if="$(eval use_lidar_center and use_lidar_front)" from="points2" to="/lidar_front/points" />
                 </node>
-                <node type="points_clusterer.py" name="points_clusterer" pkg="autoware_mini" output="screen" required="true" />
-                <node type="cluster_detector.py" name="cluster_detector" pkg="autoware_mini" output="screen" required="true" />
+                <node type="cluster_detector_fast.py" name="cluster_detector_fast" pkg="autoware_mini" output="screen" required="true" />
             </group>
 
             <node if="$(eval 'lidar_sfa' in detector)" pkg="autoware_mini" type="sfa_detector.py" name="sfa_detector" output="screen" required="true">

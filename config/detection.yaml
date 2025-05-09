@@ -25,12 +25,10 @@ lidar:
     range_img_height: 32
     sensor_height: 2.11
     delta_R: 1
-  points_clusterer:
+  cluster_detector_fast:
     cluster_epsilon: 0.6
     cluster_min_size: 4
     cluster_in_2d: True
-  cluster_detector:
-    min_cluster_size: 4
     bounding_box_type: min_area     # axis_aligned, min_area
     transform_timeout: 0.06         # needed for Carla
 
