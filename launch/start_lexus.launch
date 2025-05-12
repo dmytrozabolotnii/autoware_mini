@@ -42,8 +42,6 @@
     <arg name="bag_name"                default="recording"     doc="Name of recorded bag files when car buttons are used" />
     <arg name="launch_rviz"             default="true" />
     <arg name="session_id"              default=""              doc="Session ID for the webapp bridge" />
-    <arg name="use_monitoring"       default="false"          doc="Set to true to enable monitoring." />
-    <arg name="monitoring_conf_path" default="$(find autoware_mini)/config/monitoring/lexus.csv" doc="Path to the monitoring configuration file." />
     
     <!-- Localization -->
     <include file="$(find autoware_mini)/launch/localization.launch">
@@ -116,11 +114,6 @@
     <!-- Webapp bridge -->
     <include if="$(arg use_webapp)" file="$(find autoware_mini)/launch/tools/webapp.launch">
         <arg name="session_id" value="$(arg session_id)" />
-    </include>
-
-    <!-- Monitoring -->
-    <include if="$(arg use_monitoring)" file="$(find autoware_mini)/launch/monitoring.launch">
-        <arg name="monitoring_conf_path" value="$(arg monitoring_conf_path)" />
     </include>
 
     <!-- Rosbag recording -->

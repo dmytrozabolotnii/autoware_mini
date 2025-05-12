@@ -46,6 +46,7 @@ class WaypointLoader:
                 # 0  1  2  3    4         5            6              7           8          9
                 # x, y, z, yaw, velocity, change_flag, steering_flag, accel_flag, stop_flag, event_flag
                 # set waypoint values
+                waypoint.gid = wp_id
                 waypoint.position.x = float(row[0])
                 waypoint.position.y = float(row[1])
                 waypoint.position.z = float(row[2])
@@ -56,7 +57,11 @@ class WaypointLoader:
                 waypoint.speed = float(row[4])
 
                 # set waypoint flags
+                waypoint.change_flag = int(row[5])
                 waypoint.blinker_state = int(row[6])
+                #waypoint.wpstate.accel_state = int(row[7])
+                #waypoint.wpstate.stop_state = int(row[8])
+                #waypoint.wpstate.event_state = int(row[9])
 
                 # set waypoint width
                 waypoint.left_width = self.default_left_width
