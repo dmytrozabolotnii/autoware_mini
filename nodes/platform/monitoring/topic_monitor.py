@@ -6,6 +6,8 @@ from rosgraph_msgs.msg import TopicStatistics
 from diagnostic_msgs.msg import DiagnosticStatus, DiagnosticArray
 from rospy.msg import AnyMsg
 
+# TODO Plot the frequency and delay values over time (when ROS is shutdown, generate png files (one for freq, one for delay))
+
 class TopicMonitor:
     def __init__(self):
         
