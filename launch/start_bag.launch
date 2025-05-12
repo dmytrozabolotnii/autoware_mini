@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     
-    <arg name="bag_file"                default="2025-04-29-11-19-09_april_demo_29.bag" doc="bag file to play" />
+    <arg name="bag_file"                default="2023-05-25-14-21-10_sensors_Raekoda.bag" doc="bag file to play" />
     <arg name="bag_folder"              default="$(find autoware_mini)/data/bags"              doc="Folder, where the bag_file is located. By default, it tries to search from the autoware_mini bags folder" />
     <arg name='map_name'                default='tartu_demo' />
     <arg name="lanelet2_map_name"       default="$(arg map_name).osm" />
