@@ -2,9 +2,12 @@
 
 import rospy
 import numpy as np
-import cupy as cp
-import message_filters
+try:
+    import cupy as cp
+except ImportError:
+    cp = np # Fallback to numpy if cupy is not available
 
+import message_filters
 from tf2_ros import TransformListener, Buffer, TransformException
 from sensor_msgs.msg import PointCloud2
 from ros_numpy import numpify, msgify
@@ -61,8 +64,8 @@ class PointsPreprocessor:
             points_gpu = cp.random.rand(131072, 4).astype(cp.float32) * 100
             transform_matrix_gpu= cp.array([[0.6492562, 0.7605143, 0.00918187, 0.], [-0.76056415, 0.64925057, 0.00399486, 0.], 
                                             [-0.00292319, -0.00957709, 0.9999499, 0.], [ 0.8559, 0.0642, -0.4051, 1.]]).astype(cp.float32)
-            nan_mask = np.random.rand(*points_gpu.shape) < 10. # Randomly set 10% of elements to NaN
-            points_gpu[nan_mask] = np.nan
+            nan_mask = cp.random.rand(*points_gpu.shape) < 10. # Randomly set 10% of elements to NaN
+            points_gpu[nan_mask] = cp.nan
             mask = cp.all(~cp.isnan(points_gpu), axis=1)
             points_gpu[mask]
             cp.matmul(points_gpu, transform_matrix_gpu)[:, :3]
