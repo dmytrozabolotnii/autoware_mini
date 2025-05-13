@@ -1,7 +1,14 @@
 import math
 import cv2
 import numpy as np
-import cupy as cp
+try:
+    import cupy as cp
+    from cupyx.scipy.signal import convolve2d
+    CUPY_AVAILABLE = True
+except ImportError:
+    cp = np # Fallback to numpy if cupy is not available
+    CUPY_AVAILABLE = False
+
 from cupyx.scipy.signal import convolve2d
 
 class NaiveGroundDetector:
@@ -19,13 +26,14 @@ class NaiveGroundDetector:
         self.width = int(math.ceil((self.max_x - self.min_x) / self.cell_size))
         self.height = int(math.ceil((self.max_y - self.min_y) / self.cell_size))
         self.cols = cp.empty((self.width, self.height), dtype=cp.float32)
-        self.kernel = cp.ones((self.filter_size, self.filter_size), dtype=cp.float32) / self.filter_size**2
+        if CUPY_AVAILABLE:
+            self.kernel = cp.ones((self.filter_size, self.filter_size), dtype=cp.float32) / self.filter_size**2
 
     def detect_ground(self, pointcloud):
 
         # convert x and y coordinates into indexes
-        xi = ((pointcloud[:, 0] - self.min_x) / self.cell_size).astype(np.int32)
-        yi = ((pointcloud[:, 1] - self.min_y) / self.cell_size).astype(np.int32)
+        xi = ((pointcloud[:, 0] - self.min_x) / self.cell_size).astype(cp.int32)
+        yi = ((pointcloud[:, 1] - self.min_y) / self.cell_size).astype(cp.int32)
         zi = pointcloud[:, 2]
 
         # write minimum height for each cell to cols
@@ -38,29 +46,41 @@ class NaiveGroundDetector:
         # bring cell minimum lower, if all cells around it are lower
         for _ in range(self.filter_iterations):
             if self.filter == 'median':
-                cols_cpu = cp.asnumpy(self.cols)
+                if CUPY_AVAILABLE:
+                    cols_cpu = cp.asnumpy(self.cols)
+                else:
+                    cols_cpu = self.cols
                 cols_filtered = cv2.medianBlur(cols_cpu, self.filter_size)
                 np.fmin(cols_cpu, cols_filtered, out=cols_cpu)
-                self.cols = cp.asarray(cols_cpu)
+                if CUPY_AVAILABLE:
+                    self.cols = cp.asarray(cols_cpu)
+                else:
+                    self.cols = cols_cpu
             elif self.filter == 'average':
-                mask_gpu = cp.isnan(self.cols)
-                self.cols[mask_gpu] = 0
-                cols_filtered = convolve2d(self.cols, self.kernel, mode='same', boundary='symm') / convolve2d((~mask_gpu).astype(cp.float32), self.kernel, mode='same', boundary='symm')
-                cp.fmin(self.cols, cols_filtered, out=self.cols)
-                #cols_cpu = cp.asnumpy(self.cols)
-                #mask = np.isnan(cols_cpu)
-                #cols_cpu[mask] = 0
-                #cols_filtered = cv2.blur(cols_cpu, (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE) / \
-                #        cv2.blur((~mask).astype(np.float32), (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE)
-                #np.fmin(cols_cpu, cols_filtered, out=cols_cpu)
-                #self.cols = cp.asarray(cols_cpu)
+                if CUPY_AVAILABLE:
+                    mask_gpu = cp.isnan(self.cols)
+                    self.cols[mask_gpu] = 0
+                    cols_filtered = convolve2d(self.cols, self.kernel, mode='same', boundary='symm') / convolve2d((~mask_gpu).astype(cp.float32), self.kernel, mode='same', boundary='symm')
+                    cp.fmin(self.cols, cols_filtered, out=self.cols)
+                else:
+                    mask = np.isnan(self.cols)
+                    self.cols[mask] = 0
+                    cols_filtered = cv2.blur(self.cols, (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE) / \
+                            cv2.blur((~mask).astype(np.float32), (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE)
+                    np.fmin(self.cols, cols_filtered, out=self.cols)
             elif self.filter == 'minimum':
-                cols_cpu = cp.asnumpy(self.cols)
+                if CUPY_AVAILABLE:
+                    cols_cpu = cp.asnumpy(self.cols)
+                else:
+                    cols_cpu = self.cols
                 mask = np.isnan(cols_cpu)
                 cols_cpu[mask] = np.inf
                 cols_filtered = cv2.erode(cols_cpu, np.ones((self.filter_size, self.filter_size)), cv2.BORDER_REPLICATE)
                 np.fmin(cols_cpu, cols_filtered, out=cols_cpu)
-                self.cols = cp.asarray(cols_cpu)
+                if CUPY_AVAILABLE:
+                    self.cols = cp.asarray(cols_cpu)
+                else:
+                    self.cols = cols_cpu
             elif self.filter != 'none':
                 assert False, "Unknown filter value: " + self.filter
 

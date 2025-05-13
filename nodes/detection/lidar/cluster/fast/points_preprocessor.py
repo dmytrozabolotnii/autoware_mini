@@ -4,8 +4,10 @@ import rospy
 import numpy as np
 try:
     import cupy as cp
+    CUPY_AVAILABLE = True
 except ImportError:
     cp = np # Fallback to numpy if cupy is not available
+    CUPY_AVAILABLE = False
 
 import message_filters
 from tf2_ros import TransformListener, Buffer, TransformException
@@ -56,21 +58,20 @@ class PointsPreprocessor:
         # TF buffer setup
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
-        # Allow time for tf buffer to fill
-        rospy.sleep(0.5)
 
         # Warmup GPU with dummy data
-        for _ in range(3):
-            points_gpu = cp.random.rand(131072, 4).astype(cp.float32) * 100
-            transform_matrix_gpu= cp.array([[0.6492562, 0.7605143, 0.00918187, 0.], [-0.76056415, 0.64925057, 0.00399486, 0.], 
-                                            [-0.00292319, -0.00957709, 0.9999499, 0.], [ 0.8559, 0.0642, -0.4051, 1.]]).astype(cp.float32)
-            nan_mask = cp.random.rand(*points_gpu.shape) < 10. # Randomly set 10% of elements to NaN
-            points_gpu[nan_mask] = cp.nan
-            mask = cp.all(~cp.isnan(points_gpu), axis=1)
-            points_gpu[mask]
-            cp.matmul(points_gpu, transform_matrix_gpu)[:, :3]
-            self.ground_detector.detect_ground(points_gpu[:, :3])
-            self.voxel_grid_filter_gpu(points_gpu[:, :3], self.voxel_grid_filter_leaf_size)
+        if CUPY_AVAILABLE:
+            for _ in range(3):
+                points_gpu = cp.random.rand(131072, 4).astype(cp.float32) * 100
+                transform_matrix_gpu= cp.array([[0.6492562, 0.7605143, 0.00918187, 0.], [-0.76056415, 0.64925057, 0.00399486, 0.], 
+                                                [-0.00292319, -0.00957709, 0.9999499, 0.], [ 0.8559, 0.0642, -0.4051, 1.]]).astype(cp.float32)
+                nan_mask = cp.random.rand(*points_gpu.shape) < .1 # Randomly set 10% of elements to NaN
+                points_gpu[nan_mask] = cp.nan
+                mask = cp.all(~cp.isnan(points_gpu), axis=1)
+                points_gpu[mask]
+                cp.matmul(points_gpu, transform_matrix_gpu)[:, :3]
+                self.ground_detector.detect_ground(points_gpu[:, :3])
+                self.voxel_grid_filter_gpu(points_gpu[:, :3], self.voxel_grid_filter_leaf_size)
 
         # Publisher
         self.points_processed_pub = rospy.Publisher('points_processed', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -100,10 +101,15 @@ class PointsPreprocessor:
             points_array = numpify(msg)
             if msg.header.frame_id == self.output_frame:
                 points = np.stack([points_array['x'], points_array['y'], points_array['z']], axis=-1).reshape(-1, 3)
-                points = cp.asarray(points).astype(cp.float32)
+
+                if CUPY_AVAILABLE:
+                    points = cp.asarray(points)
+                #points = points.astype(cp.float32)
+
                 mask = cp.all(~cp.isnan(points), axis=1)
                 points = points[mask]
                 pointclouds.append(points)
+            
             else:
                 # Static transforms, fetch only once
                 if self.transforms[i] is None:
@@ -119,7 +125,10 @@ class PointsPreprocessor:
 
                 untransformed_points = np.stack([points_array['x'], points_array['y'], points_array['z'], points_array['z']], axis=-1).reshape(-1, 4)
                 untransformed_points[:, 3] = 1.0 # Add homogeneous coordinate
-                untransformed_points = cp.asarray(untransformed_points).astype(cp.float32)
+                
+                if CUPY_AVAILABLE:
+                    untransformed_points = cp.asarray(untransformed_points)
+                #untransformed_points = untransformed_points.astype(cp.float32)
 
                 t1 = time.perf_counter()
                 
@@ -155,8 +164,11 @@ class PointsPreprocessor:
 
         t6 = time.perf_counter()
 
+        if CUPY_AVAILABLE:
+            points_downsampled = cp.asnumpy(points_downsampled)
+
         # Publish points
-        self.publish_points(cp.asnumpy(points_downsampled).astype(np.float32), msgs[0].header)
+        self.publish_points(points_downsampled.astype(np.float32), msgs[0].header)
 
         t7 = time.perf_counter()
 
