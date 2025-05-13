@@ -104,7 +104,8 @@ class PointsPreprocessor:
 
                 if CUPY_AVAILABLE:
                     points = cp.asarray(points)
-                #points = points.astype(cp.float32)
+
+                t1 = time.perf_counter()
 
                 mask = cp.all(~cp.isnan(points), axis=1)
                 points = points[mask]
@@ -128,7 +129,6 @@ class PointsPreprocessor:
                 
                 if CUPY_AVAILABLE:
                     untransformed_points = cp.asarray(untransformed_points)
-                #untransformed_points = untransformed_points.astype(cp.float32)
 
                 t1 = time.perf_counter()
                 

@@ -9,8 +9,6 @@ except ImportError:
     cp = np # Fallback to numpy if cupy is not available
     CUPY_AVAILABLE = False
 
-from cupyx.scipy.signal import convolve2d
-
 class NaiveGroundDetector:
     def __init__(self, min_x, max_x, min_y, max_y, cell_size, tolerance, filter_type, filter_size, filter_iterations):
         self.min_x = min_x

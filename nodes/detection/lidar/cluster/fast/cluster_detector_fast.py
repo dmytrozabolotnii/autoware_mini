@@ -33,7 +33,7 @@ class ClusterDetectorFast:
             # Warm up the GPU
             for _ in range(3):
                 points = np.random.rand(1000, 3).astype(np.float32)
-                labels = self.clusterer.fit_predict(points[:, :2] if self.cluster_in_2d else points)
+                self.clusterer.fit_predict(points[:, :2] if self.cluster_in_2d else points)
         except ImportError:
             try:
                 from sklearnex.cluster import DBSCAN
