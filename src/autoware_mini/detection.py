@@ -65,7 +65,7 @@ def get_axis_oriented_bounding_box(obj):
     :return: tuple of minx, miny, maxx, maxy
     """
     # take all points from the convex hull
-    points = np.array([(p.x, p.y) for p in obj.convex_hull.points], dtype=np.float32)
+    points = np.array(obj.convex_hull).reshape(-1, 3)[:, :2]
 
     # find axis-oriented bounding box
     minx, miny = np.min(points, axis=0)
@@ -80,7 +80,7 @@ def update_object_position_dimensions(obj):
     """
 
     # Collect points from convex_hull and extract rotation center
-    points = np.array([(p.x, p.y) for p in obj.convex_hull.points])
+    points = np.array(obj.convex_hull).reshape(-1, 3)[:, :2]
     centroid = np.array([obj.position.x, obj.position.y])
     heading_angle = get_heading_from_vector(obj.velocity)
 

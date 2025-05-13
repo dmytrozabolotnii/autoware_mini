@@ -17,14 +17,15 @@
         <group if="$(eval 'lidar' in detector)" ns="lidar">
             <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <group if="$(eval 'lidar_cluster' in detector)">
+                <!-- <node launch-prefix="pprofile3 __format callgrind __out /home/pilve/points_preprocessor.pprofile" type="points_preprocessor.py" name="points_preprocessor" pkg="autoware_mini" output="screen" required="true"> -->
                 <node type="points_preprocessor.py" name="points_preprocessor" pkg="autoware_mini" output="screen" required="true">
                     <param name="use_lidar_center" value="$(arg use_lidar_center)" />
                     <param name="use_lidar_front" value="$(arg use_lidar_front)" />
-                    <param name="ground_removal" value="$(arg ground_removal)" />
                     <remap if="$(arg use_lidar_center)" from="points1" to="/lidar_center/points_raw" />
                     <remap if="$(eval use_lidar_front and not use_lidar_center)" from="points1" to="/lidar_front/points" />
                     <remap if="$(eval use_lidar_center and use_lidar_front)" from="points2" to="/lidar_front/points" />
                 </node>
+                <!-- <node launch-prefix="pprofile3 __format callgrind __out /home/pilve/cluster_detector_fast.pprofile" type="cluster_detector_fast.py" name="cluster_detector_fast" pkg="autoware_mini" output="screen" required="true" /> -->
                 <node type="cluster_detector_fast.py" name="cluster_detector_fast" pkg="autoware_mini" output="screen" required="true" />
             </group>
 

@@ -63,7 +63,7 @@ class DetectedObjectsVisualizer:
             markers.markers.append(marker)
 
             # convex hull
-            if len(obj.convex_hull.points) > 0:
+            if len(obj.convex_hull) > 0:
                 marker = Marker(header=msg.header)
                 marker.ns = 'convex_hull'
                 marker.id = obj.id
@@ -72,7 +72,7 @@ class DetectedObjectsVisualizer:
                 marker.pose.orientation.w = 1.0
                 marker.scale.x = 0.1
                 marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
-                marker.points = [Point(p.x, p.y, p.z) for p in obj.convex_hull.points]
+                marker.points = [Point(obj.convex_hull[i], obj.convex_hull[i+1], obj.convex_hull[i+2]) for i in range(0, len(obj.convex_hull), 3)]
                 marker.points.append(marker.points[0])
                 markers.markers.append(marker)
 

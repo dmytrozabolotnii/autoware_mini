@@ -108,7 +108,7 @@ class TrajectoryCollisionChecker:
 
                         object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
                         heading_difference = math.degrees(get_angle_between_two_headings(obj.heading, object_local_path_heading))
-                        object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                        object_polygon = shapely.Polygon(np.array(obj.convex_hull).reshape(-1, 3)[:, :2])
 
                         # Ignore object trajectories that are on our path and with similar heading - must be in front of us
                         if local_path_buffer.intersects(object_polygon) and heading_difference < self.heading_alignment_limit:

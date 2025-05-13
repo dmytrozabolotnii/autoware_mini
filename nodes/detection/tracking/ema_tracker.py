@@ -171,9 +171,11 @@ class EMATracker:
             for idx in missed_track_indices:
                 obj = self.tracked_objects[idx]
                 obj.position.x, obj.position.y = self.tracked_objects_array['centroid'][idx]
-                for p in obj.convex_hull.points:
-                    p.x += position_change[idx][0]
-                    p.y += position_change[idx][1]
+                convex_hull_points = list(obj.convex_hull)
+                for i in range(0, len(convex_hull_points), 3):
+                    convex_hull_points[i] += position_change[idx][0]
+                    convex_hull_points[i+1] += position_change[idx][1]
+                obj.convex_hull = convex_hull_points
 
         # delete stale tracks
         stale_track_indices = np.where(self.tracked_objects_array['missed_counter'] >= self.missed_counter_threshold)[0]

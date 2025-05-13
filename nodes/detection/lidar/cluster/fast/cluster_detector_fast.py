@@ -9,9 +9,10 @@ from tf2_ros import TransformListener, Buffer, TransformException
 from ros_numpy import numpify
 
 from sensor_msgs.msg import PointCloud2
-from geometry_msgs.msg import Point32
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
+
+import time
 
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 DEG2RAD = math.pi / 180.0
@@ -50,23 +51,40 @@ class ClusterDetectorFast:
         rospy.Subscriber('points_processed', PointCloud2, self.points_callback, queue_size=1, buff_size=2**24, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
+        self.totals = [0, 0, 0, 0, 0, 0, 0]
+        self.count = 0
 
     def points_callback(self, msg):
+        t0 = time.perf_counter()
         data = numpify(msg)
 
+        t1 = time.perf_counter()
+
         # convert point cloud into ndarray, take only xyz coordinates
-        points = np.stack([data['x'], data['y'], data['z']], axis=-1).reshape(-1, 3)
-        points = points.astype(np.float32)
+        points_homo = np.stack([data['x'], data['y'], data['z'], data['z']], axis=-1).reshape(-1, 4)
+        points_homo[:, 3] = 1.0  # Add homogeneous coordinate
+        points_homo = points_homo.astype(np.float32)
+        points = points_homo[:, :3]
+
+        t2 = time.perf_counter()
 
         # get labels for clusters
         labels = self.clusterer.fit_predict(points[:, :2] if self.cluster_in_2d else points)
 
-        # concatenate points with labels
-        points_labeled = np.hstack((points, labels.reshape(-1, 1)))
+        t3 = time.perf_counter()
 
-        # filter out noise points
-        points_labeled = points_labeled[labels != -1]
-        rospy.logdebug("%s - %d points, %d clusters", rospy.get_name(), len(points), np.max(labels) + 1)
+        counts = np.bincount(labels + 1)  # +1 offset to handle -1 label
+        valid_labels = np.where(counts >= self.cluster_min_size)[0] - 1  # -1 to adjust back
+        
+        # remove noise label (-1)
+        valid_labels = valid_labels[valid_labels != -1]
+        
+        filter_mask = np.isin(labels, valid_labels)
+
+        filtered_labels = labels[filter_mask]
+        filtered_points_homo = points_homo[filter_mask]
+        
+        t4 = time.perf_counter()
 
         # if target frame does not match the header frame
         if msg.header.frame_id != self.output_frame:
@@ -77,31 +95,22 @@ class ClusterDetectorFast:
                 rospy.logwarn("%s - %s", rospy.get_name(), e)
                 return
             tf_matrix = numpify(transform.transform).astype(np.float32)
-            # make copy of points
-            points = np.concatenate((points, np.ones((points.shape[0], 1))), axis=-1) # Homogeneous coordinates
             # transform points to target frame
-            points = points.dot(tf_matrix.T).astype(np.float32)
+            filtered_points = filtered_points_homo.dot(tf_matrix.T).astype(np.float32)
 
+        t5 = time.perf_counter()
+        
         # create detected objects
         objects = DetectedObjectArray()
         objects.header.stamp = msg.header.stamp
         objects.header.frame_id = self.output_frame
 
-        if len(labels) == 0:
-            num_clusters = 0
-        else:
-            num_clusters = np.max(labels) + 1
-
-        for i in range(num_clusters):
+        for i in valid_labels:
             # filter points for this cluster
-            idx = np.nonzero(labels == i)[0] #np.where(labels == i)[0]
-
-            # ignore clusters smaller than certain size
-            if len(idx) < self.cluster_min_size:
-                continue
+            idx = np.nonzero(filtered_labels == i)[0]
 
             # fetch points for this cluster
-            points3d = points[idx,:3]
+            points3d = filtered_points[idx,:3]
             points2d = np.ascontiguousarray(points3d[:,:2])
 
             if self.bounding_box_type == 'axis_aligned':
@@ -151,11 +160,23 @@ class ClusterDetectorFast:
             
             hull_points = cv2.convexHull(points2d)[:,0,:]
 
-            object.convex_hull.points = [Point32(x, y, min_z) for x, y in hull_points]
+            object.convex_hull = np.hstack((hull_points, np.full((hull_points.shape[0], 1), min_z))).flatten().tolist()
             objects.objects.append(object)
 
         # publish detected objects message
         self.objects_pub.publish(objects)
+
+        t6 = time.perf_counter()
+        self.totals[0] += (t6 - t0)*1000
+        self.totals[1] += (t1 - t0)*1000
+        self.totals[2] += (t2 - t1)*1000
+        self.totals[3] += (t3 - t2)*1000
+        self.totals[4] += (t4 - t3)*1000
+        self.totals[5] += (t5 - t4)*1000
+        self.totals[6] += (t6 - t5)*1000
+        self.count += 1
+        print(f"CLUSTER DETECTOR: Total time: {self.totals[0] / self.count:.2f} | Numpify time: {self.totals[1] / self.count:.2f} | Unstructured time: {self.totals[2] / self.count:.2f} | Clustering time: {self.totals[3] / self.count:.2f} | Filtering time: {self.totals[4] / self.count:.2f} | Transform time: {self.totals[5] / self.count:.2f} | Publishing time: {self.totals[6] / self.count:.2f}")
+        
 
     def run(self):
         rospy.spin()

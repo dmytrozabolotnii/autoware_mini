@@ -2,6 +2,7 @@ output_frame: map
 
 lidar:
   points_preprocessor:
+    output_frame: lidar_center
     inner_min_x: -2.0
     inner_max_x: 3.0
     inner_min_y: -1.0
@@ -15,7 +16,7 @@ lidar:
     outer_min_z: -2.5
     outer_max_z: 0.05
     cell_size: 0.6
-    tolerance: 0.15
+    tolerance: 0.05
     filter: average                    # none, median, average, minimum
     filter_size: 3
     filter_iterations: 1

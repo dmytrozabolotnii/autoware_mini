@@ -12,7 +12,7 @@ geometry_msgs/Vector3           velocity
 geometry_msgs/Vector3           acceleration
 float32                         heading
 
-geometry_msgs/Polygon           convex_hull
+float32[]           	       convex_hull
 PathArray                       candidate_trajectories
 
 bool                            position_reliable
