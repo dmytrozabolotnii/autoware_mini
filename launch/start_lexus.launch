@@ -7,6 +7,7 @@
     <arg name="localizer"               default="novatel"           doc="novatel, carla"/>
     <arg name="use_lidar_center"        default="true"              doc="use velodyne lidar"/>
     <arg name="use_lidar_front"         default="false"             doc="use ouster lidar"/>
+    <arg name="gpu_lidar_processing"    default="true"              doc="use gpu optimized lidar pointcloud processing nodes" />
     <arg name="detector"                default="lidar_cluster"     doc="lidar_cluster, sim, carla"/>
     <arg name="tfl_detector"            default="mqtt_camera_fusion" doc="mqtt, camera, mqtt_camera_fusion" />
     <arg name="tfl_cameras"             default="mako"              doc="mako, nvidia" />
@@ -54,6 +55,7 @@
     <include file="$(find autoware_mini)/launch/detection.launch">
         <arg name="use_lidar_center"    value="$(arg use_lidar_center)" />
         <arg name="use_lidar_front"     value="$(arg use_lidar_front)" />
+        <arg name="gpu_lidar_processing" value="$(arg gpu_lidar_processing)" />
         <arg name="detector"            value="$(arg detector)" />
         <arg name="tfl_detector"        value="$(arg tfl_detector)" />
         <arg name="tfl_cameras"         value="$(arg tfl_cameras)" />

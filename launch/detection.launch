@@ -3,6 +3,7 @@
     <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
     <arg name="use_lidar_center"    default="true"              doc="use velodyne lidar"/>
     <arg name="use_lidar_front"     default="false"             doc="use ouster lidar"/>
+    <arg name="gpu_lidar_processing" default="true"             doc="use gpu optimized lidar pointcloud processing nodes" />
     <arg name="map_name"            default="tartu_demo"        doc="map name for road area filter" />
     <arg name="use_road_area_filter" default="false"            doc="use road area filter"/>
     <arg name="tfl_detector"        default="none"              doc="carla, mqtt, camera, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
@@ -21,6 +22,7 @@
             <arg name="detector"            value="$(arg detector)" />
             <arg name="use_lidar_center"    value="$(arg use_lidar_center)" />
             <arg name="use_lidar_front"     value="$(arg use_lidar_front)" />
+            <arg name="gpu_lidar_processing" value="$(arg gpu_lidar_processing)" />
             <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
             <arg name="tracker"             value="$(arg tracker)" />
             <arg name="predictor"           value="$(arg predictor)" />

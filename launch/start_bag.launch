@@ -9,6 +9,7 @@
     <arg name="detector"                default="lidar_cluster" doc="lidar_cluster, sim, carla"/>
     <arg name="use_lidar_center"        default="true"          doc="use velodyne lidar"/>
     <arg name="use_lidar_front"         default="false"         doc="use ouster lidar"/>
+    <arg name="gpu_lidar_processing"    default="true"          doc="use gpu optimized lidar pointcloud processing nodes" />
     <arg name="tfl_detector"            default="camera"        doc="camera, mqtt, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
     <arg name="tfl_cameras"             default="mako"          doc="mako, nvidia" />
     <arg name="nvidia_encoder"          default="$(eval 'jpeg' if ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='nvidia' else 'h264')" doc="h264, jpeg"/> 
@@ -176,6 +177,7 @@
         <arg name="detector"            value="$(arg detector)" />
         <arg name="use_lidar_center"    value="$(arg use_lidar_center)" />
         <arg name="use_lidar_front"     value="$(arg use_lidar_front)" />
+        <arg name="gpu_lidar_processing" value="$(arg gpu_lidar_processing)" />
         <arg name="tfl_detector"        value="$(arg tfl_detector)" />
         <arg name="tfl_cameras"         value="$(arg tfl_cameras)" />
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />

@@ -29,7 +29,7 @@ class PointsClusterer:
                 rospy.loginfo("Using DBSCAN from Scikit-learn")
 
         self.cluster_pub = rospy.Publisher('points_clustered', PointCloud2, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('points_processed', PointCloud2, self.points_callback, queue_size=1, buff_size=2**24, tcp_nodelay=True)
+        rospy.Subscriber('points_filtered', PointCloud2, self.points_callback, queue_size=1, buff_size=2**24, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 

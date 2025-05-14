@@ -27,6 +27,7 @@ class PointsPreprocessor:
         self.use_lidar_center = rospy.get_param("~use_lidar_center")
         self.use_lidar_front = rospy.get_param("~use_lidar_front")
         self.output_frame = rospy.get_param("~output_frame")
+        self.transform_timeout = rospy.get_param('~transform_timeout')
 
         outer_min_x = rospy.get_param('~outer_min_x')
         outer_max_x = rospy.get_param('~outer_max_x')
@@ -122,7 +123,7 @@ class PointsPreprocessor:
                 # Static transforms, fetch only once
                 if self.transforms[i] is None:
                     try:
-                        transform = self.tf_buffer.lookup_transform(self.output_frame, msg.header.frame_id, msg.header.stamp, rospy.Duration(0.06))
+                        transform = self.tf_buffer.lookup_transform(self.output_frame, msg.header.frame_id, msg.header.stamp, rospy.Duration(self.transform_timeout))
                     except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
                         rospy.logwarn("%s - %s", rospy.get_name(), e)
                         return

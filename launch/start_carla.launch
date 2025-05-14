@@ -18,6 +18,7 @@
     <arg name="use_road_area_filter"    default="$(eval 'tartu' in map_name)"   doc="use road area filter"/>
     <arg name='use_lidar_center'        default='true'/>
     <arg name='use_lidar_front'         default='false'/>
+    <arg name="gpu_lidar_processing"    default="true"                  doc="use gpu optimized lidar pointcloud processing nodes" />
     <arg name='launch_rviz'             default='true'/>
     <arg name="use_lane_matching"       default="false" />
     <!-- Scenario Runner args -->
@@ -50,6 +51,7 @@
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name='use_lidar_center'    value='$(arg use_lidar_center)'/>
         <arg name='use_lidar_front'     value='$(arg use_lidar_front)'/>
+        <arg name="gpu_lidar_processing" value="$(arg gpu_lidar_processing)" />
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
         <arg name="detection_range"     value="$(arg detection_range)" />

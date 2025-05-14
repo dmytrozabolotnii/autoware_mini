@@ -13,6 +13,7 @@ from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
 
 import time
+import gc
 
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 DEG2RAD = math.pi / 180.0
@@ -69,6 +70,7 @@ class ClusterDetectorFast:
         t2 = time.perf_counter()
 
         # get labels for clusters
+        print(points.shape)
         labels = self.clusterer.fit_predict(points[:, :2] if self.cluster_in_2d else points)
 
         t3 = time.perf_counter()
