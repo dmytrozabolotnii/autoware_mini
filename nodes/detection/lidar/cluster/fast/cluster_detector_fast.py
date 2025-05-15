@@ -52,9 +52,7 @@ class ClusterDetectorFast:
 
         rospy.loginfo("%s - initialized", rospy.get_name())
         self.totals = [0, 0, 0, 0, 0, 0, 0]
-        self.total2 = 0
         self.count = 0
-        self.count2 = 0
 
     def points_callback(self, msg):
         t0 = time.perf_counter()
@@ -164,14 +162,7 @@ class ClusterDetectorFast:
             object.acceleration_reliable = False
             
             hull_points = cv2.convexHull(points2d)[:,0,:]
-
-            #print(np.broadcast_to(min_z, (hull_points.shape[0], 1)))
-            #print(np.hstack((hull_points, np.broadcast_to(min_z, (hull_points.shape[0], 1)))))
-            l0 = time.perf_counter()
-            #object.convex_hull = np.concatenate((hull_points, np.broadcast_to(min_z, (hull_points.shape[0], 1))), axis=1).ravel().tolist()
             object.convex_hull = np.concatenate((hull_points, np.full((hull_points.shape[0], 1), min_z)), axis=1).ravel().tolist()
-            #[Point32(x, y, min_z) for x, y in hull_points]
-            self.total2 += (time.perf_counter() - l0)*1000
             objects.objects.append(object)
 
         # publish detected objects message
@@ -187,7 +178,6 @@ class ClusterDetectorFast:
         self.totals[6] += (t6 - t5)*1000
         self.count += 1
         print(f"CLUSTER DETECTOR: Total time: {self.totals[0] / self.count:.2f} | Numpify time: {self.totals[1] / self.count:.2f} | Unstructured time: {self.totals[2] / self.count:.2f} | Clustering time: {self.totals[3] / self.count:.2f} | Filtering time: {self.totals[4] / self.count:.2f} | Transform time: {self.totals[5] / self.count:.2f} | Publishing time: {self.totals[6] / self.count:.2f}")
-        print(f"In for loop: {self.total2 / self.count:.2f}")
 
     def run(self):
         rospy.spin()
