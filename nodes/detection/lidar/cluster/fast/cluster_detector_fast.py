@@ -98,7 +98,7 @@ class ClusterDetectorFast:
                 return
             tf_matrix = numpify(transform.transform).astype(np.float32)
             # transform points to target frame
-            filtered_points = filtered_points_homo.dot(tf_matrix.T).astype(np.float32)
+            filtered_points = filtered_points_homo.dot(tf_matrix.T)
 
         t5 = time.perf_counter()
         
