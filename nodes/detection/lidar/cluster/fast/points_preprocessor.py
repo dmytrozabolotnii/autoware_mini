@@ -9,7 +9,7 @@ from tf2_ros import TransformListener, Buffer, TransformException
 from sensor_msgs.msg import PointCloud2
 from ros_numpy import numpify, msgify
 
-from helpers.naive_ground_detector import NaiveGroundDetectorGPU
+from helpers.naive_ground_detector import NaiveGroundDetectorFast
 
 import time
 
@@ -47,7 +47,7 @@ class PointsPreprocessor:
         self.inner_min_gpu = cp.array([inner_min_x, inner_min_y, inner_min_z])
         self.inner_max_gpu = cp.array([inner_max_x, inner_max_y, inner_max_z])
 
-        self.ground_detector = NaiveGroundDetectorGPU(outer_min_x, outer_max_x, outer_min_y, outer_max_y, cell_size, tolerance, 
+        self.ground_detector = NaiveGroundDetectorFast(outer_min_x, outer_max_x, outer_min_y, outer_max_y, cell_size, tolerance, 
                                                     filter, filter_size, filter_iterations)
 
         # TF buffer setup

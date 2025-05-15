@@ -4,7 +4,7 @@ import numpy as np
 import cupy as cp
 from cupyx.scipy.ndimage import convolve
     
-class NaiveGroundDetectorGPU:
+class NaiveGroundDetectorFast:
     def __init__(self, min_x, max_x, min_y, max_y, cell_size, tolerance, filter_type, filter_size, filter_iterations):
         self.min_x = min_x
         self.max_x = max_x
