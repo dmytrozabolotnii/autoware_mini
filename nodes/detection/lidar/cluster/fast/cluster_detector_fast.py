@@ -162,7 +162,7 @@ class ClusterDetectorFast:
             object.acceleration_reliable = False
             
             hull_points = cv2.convexHull(points2d)[:,0,:]
-            object.convex_hull = np.concatenate((hull_points, np.full((hull_points.shape[0], 1), min_z)), axis=1).ravel().tolist()
+            object.convex_hull.points = [Point32(x, y, min_z) for x, y in hull_points]
             objects.objects.append(object)
 
         # publish detected objects message
