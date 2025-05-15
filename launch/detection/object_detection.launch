@@ -1,10 +1,9 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
+    <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_cluster_fast,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
     <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="for carla traffic light detector" />
     <arg name="use_lidar_center"    default="true"              doc="use velodyne lidar"/>
     <arg name="use_lidar_front"     default="false"             doc="use velodyne lidar"/>
-    <arg name="gpu_lidar_processing" default="true"             doc="use gpu optimized lidar pointcloud processing nodes" />
     <arg name="use_road_area_filter"  default="false"           doc="use road area filter"/>
     <arg name="map_name"            default="tartu_demo"        doc="map name for road area filter" />
     <arg name="road_area_file"      default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
@@ -18,17 +17,15 @@
         <group if="$(eval 'lidar' in detector)" ns="lidar">
             <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <group if="$(eval 'lidar_cluster' in detector)">
-                <group if="$(arg gpu_lidar_processing)">
+                <group if="$(eval 'fast' in detector)">
                     <node type="points_preprocessor.py" name="points_preprocessor" pkg="autoware_mini" output="screen" required="true">
-                        <param name="use_lidar_center" value="$(arg use_lidar_center)" />
-                        <param name="use_lidar_front" value="$(arg use_lidar_front)" />
-                        <remap if="$(arg use_lidar_center)" from="points1" to="/lidar_center/points_raw" />
-                        <remap if="$(eval use_lidar_front and not use_lidar_center)" from="points1" to="/lidar_front/points" />
-                        <remap if="$(eval use_lidar_center and use_lidar_front)" from="points2" to="/lidar_front/points" />
+                        <rosparam if="$(eval use_lidar_center and not use_lidar_front)" param="points_topics">["/lidar_center/points_raw"]</rosparam>
+                        <rosparam if="$(eval not use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_front/points"]</rosparam>
+                        <rosparam if="$(eval use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_center/points_raw", "/lidar_front/points"]</rosparam>
                     </node>
                     <node type="cluster_detector_fast.py" name="cluster_detector_fast" pkg="autoware_mini" output="screen" required="true" />
                 </group>
-                <group unless="$(arg gpu_lidar_processing)">
+                <group unless="$(eval 'lidar_cluster' in detector)">
                     <group if="$(arg use_lidar_center)" ns="center">
                         <!-- Only functional in Carla simulation -->
                         <node pkg="nodelet" type="nodelet" name="crop_box" args="standalone pcl/CropBox" output="screen" required="true">

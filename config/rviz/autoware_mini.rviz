@@ -902,7 +902,6 @@ Visualization Manager:
                     Points filtered: true
                     Points ground: true
                     Points no ground: true
-                    Points processed: true
                     Value: true
                   Predicted objects: true
                   Radar:
@@ -922,19 +921,7 @@ Visualization Manager:
                   Road area: true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -970,10 +957,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1047,7 +1031,6 @@ Visualization Manager:
                     Points filtered: true
                     Points ground: true
                     Points no ground: true
-                    Points processed: true
                     Value: true
                   Predicted objects: true
                   Radar:
@@ -1067,19 +1050,7 @@ Visualization Manager:
                   Road area: true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1115,10 +1086,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1196,7 +1164,6 @@ Visualization Manager:
                     Points filtered: true
                     Points ground: true
                     Points no ground: true
-                    Points processed: true
                     Value: true
                   Predicted objects: true
                   Radar:
@@ -1216,19 +1183,7 @@ Visualization Manager:
                   Road area: true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1261,10 +1216,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1338,7 +1290,6 @@ Visualization Manager:
                     Points filtered: true
                     Points ground: true
                     Points no ground: true
-                    Points processed: true
                     Value: true
                   Predicted objects: true
                   Radar:
@@ -1358,19 +1309,7 @@ Visualization Manager:
                   Road area: true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1403,10 +1342,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1480,7 +1416,6 @@ Visualization Manager:
                     Points filtered: true
                     Points ground: true
                     Points no ground: true
-                    Points processed: true
                     Value: true
                   Predicted objects: true
                   Radar:
@@ -1500,19 +1435,7 @@ Visualization Manager:
                   Road area: true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1545,10 +1468,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1622,7 +1542,6 @@ Visualization Manager:
                     Points filtered: true
                     Points ground: true
                     Points no ground: true
-                    Points processed: true
                     Value: true
                   Predicted objects: true
                   Radar:
@@ -1642,19 +1561,7 @@ Visualization Manager:
                   Road area: true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1687,10 +1594,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -1764,7 +1668,6 @@ Visualization Manager:
                     Points filtered: true
                     Points ground: true
                     Points no ground: true
-                    Points processed: true
                     Value: true
                   Predicted objects: true
                   Radar:
@@ -1784,19 +1687,7 @@ Visualization Manager:
                   Road area: true
                   Value: true
                 Planning:
-                  Collision points:
-                    All collision points: true
-                    Goal: true
-                    Local path: true
-                    Pedestrian crosswalk: true
-                    Stop line: true
-                    Traffic light stopline: true
-                    Trajectory: true
-                    Value: true
-                  Global path: true
-                  Local path: true
-                  Start and Goal lanelet markers: true
-                  Stop point: true
+                  "": true
                   Value: true
                 Sensing:
                   Mako:
@@ -1829,10 +1720,7 @@ Visualization Manager:
                   Radar raw: true
                   Value: true
                 Simulation:
-                  Bicycle markers: true
-                  Carla camera view: true
-                  Carla image view: true
-                  Carla route: true
+                  "": true
                   Value: true
                 System:
                   Current pose: true
@@ -2204,10 +2092,10 @@ Visualization Manager:
               Axis: Z
               Channel Name: intensity
               Class: rviz/PointCloud2
-              Color: 252; 233; 79
-              Color Transformer: Intensity
+              Color: 114; 159; 207
+              Color Transformer: FlatColor
               Decay Time: 0
-              Enabled: false
+              Enabled: true
               Invert Rainbow: false
               Max Color: 255; 255; 255
               Min Color: 0; 0; 0
@@ -2222,7 +2110,7 @@ Visualization Manager:
               Unreliable: false
               Use Fixed Frame: true
               Use rainbow: true
-              Value: false
+              Value: true
             - Alpha: 1
               Autocompute Intensity Bounds: true
               Autocompute Value Bounds:
@@ -2232,7 +2120,7 @@ Visualization Manager:
               Axis: Z
               Channel Name: label
               Class: rviz/PointCloud2
-              Color: 114; 159; 207
+              Color: 238; 238; 236
               Color Transformer: FlatColor
               Decay Time: 0
               Enabled: true
@@ -2247,34 +2135,6 @@ Visualization Manager:
               Size (m): 0.10000000149011612
               Style: Points
               Topic: /detection/lidar/points_clustered
-              Unreliable: false
-              Use Fixed Frame: true
-              Use rainbow: true
-              Value: true
-            - Alpha: 1
-              Autocompute Intensity Bounds: true
-              Autocompute Value Bounds:
-                Max Value: 10
-                Min Value: -10
-                Value: true
-              Axis: Z
-              Channel Name: intensity
-              Class: rviz/PointCloud2
-              Color: 114; 159; 207
-              Color Transformer: FlatColor
-              Decay Time: 0
-              Enabled: true
-              Invert Rainbow: false
-              Max Color: 255; 255; 255
-              Min Color: 0; 0; 0
-              Name: Points processed
-              Position Transformer: XYZ
-              Queue Size: 10
-              Selectable: true
-              Size (Pixels): 3
-              Size (m): 0.009999999776482582
-              Style: Points
-              Topic: /detection/lidar/points_processed
               Unreliable: false
               Use Fixed Frame: true
               Use rainbow: true
@@ -2706,7 +2566,35 @@ Visualization Manager:
                 Value: true
                 Wheel: true
             Detection:
-              "": true
+              Detected objects: true
+              Let's go yield line: true
+              Lidar:
+                Center:
+                  Points center ground: true
+                  Points center no ground: true
+                  Value: true
+                Front:
+                  Points front filtered: true
+                  Points front ground: true
+                  Points front no ground: true
+                  Value: true
+                Lidar detections: true
+                Points clustered: true
+                Points filtered: true
+                Points ground: true
+                Points no ground: true
+                Value: true
+              Predicted objects: true
+              Radar:
+                Radar detections: true
+                Value: true
+              Tracked objects: true
+              Tracked objects bboxes: true
+              Traffic lights:
+                Forward camera ROI image: true
+                Right camera ROI image: true
+                Stop line status: true
+                Value: true
               Value: true
             Grid: true
             Map:
@@ -2714,23 +2602,14 @@ Visualization Manager:
               Road area: true
               Value: true
             Planning:
-              Collision points:
-                All collision points: true
-                Goal: true
-                Local path: true
-                Pedestrian crosswalk: true
-                Stop line: true
-                Traffic light stopline: true
-                Trajectory: true
-                Value: true
-              Global path: true
-              Local path: true
-              Start and Goal lanelet markers: true
-              Stop point: true
+              "": true
               Value: true
             Sensing:
-              "":
-                "": true
+              Mako:
+                Camera left: true
+                Camera right: true
+                Image left: true
+                Image right: true
                 Value: true
               Nvidia:
                 Camera Interface link1 Right: true
@@ -2848,10 +2727,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.0010000000474974513
-      Scale: 14.748391151428223
+      Scale: 22.164138793945312
       Target Frame: base_link
-      X: -13.755409240722656
-      Y: 9.974417686462402
+      X: 3.141218662261963
+      Y: 5.9220781326293945
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho

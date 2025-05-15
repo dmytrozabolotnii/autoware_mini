@@ -11,9 +11,9 @@ from ros_numpy import numpify
 from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
+from geometry_msgs.msg import Point32
 
 import time
-import gc
 
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 DEG2RAD = math.pi / 180.0
@@ -27,14 +27,13 @@ class ClusterDetectorFast:
         self.output_frame = rospy.get_param('/detection/output_frame')
         self.transform_timeout = rospy.get_param('~transform_timeout')
 
+        if self.bounding_box_type not in ["axis_aligned", "min_area"]:
+            raise ValueError(f"{rospy.get_name()} - 'bounding_box_type' must be one of 'axis_aligned' or 'min_area', not '{self.bounding_box_type}'")
+
         try:
             from cuml.cluster import DBSCAN
             self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_size)
             rospy.loginfo("Using DBSCAN from cuML")
-            # Warm up the GPU
-            for _ in range(3):
-                points = np.random.rand(1000, 3).astype(np.float32)
-                self.clusterer.fit_predict(points[:, :2] if self.cluster_in_2d else points)
         except ImportError:
             try:
                 from sklearnex.cluster import DBSCAN
@@ -49,11 +48,13 @@ class ClusterDetectorFast:
         self.tf_listener = TransformListener(self.tf_buffer)
 
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('points_processed', PointCloud2, self.points_callback, queue_size=1, buff_size=2**24, tcp_nodelay=True)
+        rospy.Subscriber('points_filtered', PointCloud2, self.points_callback, queue_size=1, buff_size=2**24, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
         self.totals = [0, 0, 0, 0, 0, 0, 0]
+        self.total2 = 0
         self.count = 0
+        self.count2 = 0
 
     def points_callback(self, msg):
         t0 = time.perf_counter()
@@ -62,9 +63,8 @@ class ClusterDetectorFast:
         t1 = time.perf_counter()
 
         # convert point cloud into ndarray, take only xyz coordinates
-        points_homo = np.stack([data['x'], data['y'], data['z'], data['z']], axis=-1).reshape(-1, 4)
+        points_homo = np.stack([data['x'], data['y'], data['z'], data['z']], axis=-1).reshape(-1, 4).astype(np.float32)
         points_homo[:, 3] = 1.0  # Add homogeneous coordinate
-        points_homo = points_homo.astype(np.float32)
         points = points_homo[:, :3]
 
         t2 = time.perf_counter()
@@ -75,16 +75,18 @@ class ClusterDetectorFast:
 
         t3 = time.perf_counter()
 
-        counts = np.bincount(labels + 1)  # +1 offset to handle -1 label
-        valid_labels = np.where(counts >= self.cluster_min_size)[0] - 1  # -1 to adjust back
-        
+        #"""
         # remove noise label (-1)
-        valid_labels = valid_labels[valid_labels != -1]
+        valid_labels = labels[labels != -1]
+
+        counts = np.bincount(valid_labels)
+        valid_labels = np.where(counts >= self.cluster_min_size)[0]
         
         filter_mask = np.isin(labels, valid_labels)
 
         filtered_labels = labels[filter_mask]
         filtered_points_homo = points_homo[filter_mask]
+        #"""
         
         t4 = time.perf_counter()
 
@@ -107,6 +109,7 @@ class ClusterDetectorFast:
         objects.header.stamp = msg.header.stamp
         objects.header.frame_id = self.output_frame
 
+        
         for i in valid_labels:
             # filter points for this cluster
             idx = np.nonzero(filtered_labels == i)[0]
@@ -162,7 +165,13 @@ class ClusterDetectorFast:
             
             hull_points = cv2.convexHull(points2d)[:,0,:]
 
-            object.convex_hull = np.hstack((hull_points, np.full((hull_points.shape[0], 1), min_z))).flatten().tolist()
+            #print(np.broadcast_to(min_z, (hull_points.shape[0], 1)))
+            #print(np.hstack((hull_points, np.broadcast_to(min_z, (hull_points.shape[0], 1)))))
+            l0 = time.perf_counter()
+            #object.convex_hull = np.concatenate((hull_points, np.broadcast_to(min_z, (hull_points.shape[0], 1))), axis=1).ravel().tolist()
+            object.convex_hull = np.concatenate((hull_points, np.full((hull_points.shape[0], 1), min_z)), axis=1).ravel().tolist()
+            #[Point32(x, y, min_z) for x, y in hull_points]
+            self.total2 += (time.perf_counter() - l0)*1000
             objects.objects.append(object)
 
         # publish detected objects message
@@ -178,7 +187,7 @@ class ClusterDetectorFast:
         self.totals[6] += (t6 - t5)*1000
         self.count += 1
         print(f"CLUSTER DETECTOR: Total time: {self.totals[0] / self.count:.2f} | Numpify time: {self.totals[1] / self.count:.2f} | Unstructured time: {self.totals[2] / self.count:.2f} | Clustering time: {self.totals[3] / self.count:.2f} | Filtering time: {self.totals[4] / self.count:.2f} | Transform time: {self.totals[5] / self.count:.2f} | Publishing time: {self.totals[6] / self.count:.2f}")
-        
+        print(f"In for loop: {self.total2 / self.count:.2f}")
 
     def run(self):
         rospy.spin()

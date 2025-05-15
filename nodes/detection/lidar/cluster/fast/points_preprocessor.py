@@ -2,30 +2,21 @@
 
 import rospy
 import numpy as np
-try:
-    import cupy as cp
-    CUPY_AVAILABLE = True
-except ImportError:
-    cp = np # Fallback to numpy if cupy is not available
-    CUPY_AVAILABLE = False
-
+import cupy as cp
 import message_filters
+
 from tf2_ros import TransformListener, Buffer, TransformException
 from sensor_msgs.msg import PointCloud2
 from ros_numpy import numpify, msgify
 
-if CUPY_AVAILABLE:
-    from helpers.naive_ground_detector import NaiveGroundDetectorGPU
-else:
-    from helpers.naive_ground_detector import NaiveGroundDetector
+from helpers.naive_ground_detector import NaiveGroundDetectorGPU
 
 import time
 
 class PointsPreprocessor:
     def __init__(self):
 
-        self.use_lidar_center = rospy.get_param("~use_lidar_center")
-        self.use_lidar_front = rospy.get_param("~use_lidar_front")
+        points_topics = rospy.get_param("~points_topics")
         self.output_frame = rospy.get_param("~output_frame")
         self.transform_timeout = rospy.get_param('~transform_timeout')
 
@@ -56,11 +47,7 @@ class PointsPreprocessor:
         self.inner_min_gpu = cp.array([inner_min_x, inner_min_y, inner_min_z])
         self.inner_max_gpu = cp.array([inner_max_x, inner_max_y, inner_max_z])
 
-        if CUPY_AVAILABLE:
-            self.ground_detector = NaiveGroundDetectorGPU(outer_min_x, outer_max_x, outer_min_y, outer_max_y, cell_size, tolerance, 
-                                                    filter, filter_size, filter_iterations)
-        else:
-            self.ground_detector = NaiveGroundDetector(outer_min_x, outer_max_x, outer_min_y, outer_max_y, cell_size, tolerance, 
+        self.ground_detector = NaiveGroundDetectorGPU(outer_min_x, outer_max_x, outer_min_y, outer_max_y, cell_size, tolerance, 
                                                     filter, filter_size, filter_iterations)
 
         # TF buffer setup
@@ -68,27 +55,25 @@ class PointsPreprocessor:
         self.tf_listener = TransformListener(self.tf_buffer)
 
         # Warmup GPU with dummy data
-        if CUPY_AVAILABLE:
-            for _ in range(3):
-                points_gpu = cp.random.rand(131072, 4).astype(cp.float32) * 100
-                transform_matrix_gpu= cp.array([[0.6492562, 0.7605143, 0.00918187, 0.], [-0.76056415, 0.64925057, 0.00399486, 0.], 
-                                                [-0.00292319, -0.00957709, 0.9999499, 0.], [ 0.8559, 0.0642, -0.4051, 1.]]).astype(cp.float32)
-                nan_mask = cp.random.rand(*points_gpu.shape) < .1 # Randomly set 10% of elements to NaN
-                points_gpu[nan_mask] = cp.nan
-                mask = cp.all(~cp.isnan(points_gpu), axis=1)
-                points_gpu[mask]
-                cp.matmul(points_gpu, transform_matrix_gpu)[:, :3]
-                self.ground_detector.detect_ground(points_gpu[:, :3])
-                self.voxel_grid_filter_gpu(points_gpu[:, :3], self.voxel_grid_filter_leaf_size)
+        for _ in range(3):
+            points_gpu = cp.random.rand(131072, 4).astype(cp.float32) * 100
+            transform_matrix_gpu= cp.array([[0.6492562, 0.7605143, 0.00918187, 0.], [-0.76056415, 0.64925057, 0.00399486, 0.], 
+                                            [-0.00292319, -0.00957709, 0.9999499, 0.], [ 0.8559, 0.0642, -0.4051, 1.]]).astype(cp.float32)
+            nan_mask = cp.random.rand(*points_gpu.shape) < .1 # Randomly set 10% of elements to NaN
+            points_gpu[nan_mask] = cp.nan
+            mask = cp.all(~cp.isnan(points_gpu), axis=1)
+            points_gpu[mask]
+            cp.matmul(points_gpu, transform_matrix_gpu)[:, :3]
+            self.ground_detector.detect_ground(points_gpu[:, :3])
+            self.voxel_grid_filter_gpu(points_gpu[:, :3], self.voxel_grid_filter_leaf_size)
 
         # Publisher
-        self.points_processed_pub = rospy.Publisher('points_processed', PointCloud2, queue_size=1, tcp_nodelay=True)
+        self.points_processed_pub = rospy.Publisher('points_filtered', PointCloud2, queue_size=1, tcp_nodelay=True)
+        self.points_ground_pub = rospy.Publisher('points_ground', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         subscribers = []
-        if self.use_lidar_center:
-            subscribers.append(message_filters.Subscriber("points1", PointCloud2, tcp_nodelay=True))
-        if self.use_lidar_front:
-            subscribers.append(message_filters.Subscriber("points2", PointCloud2, tcp_nodelay=True))
+        for topic in points_topics:
+            subscribers.append(message_filters.Subscriber(topic, PointCloud2, tcp_nodelay=True))
 
         if not subscribers:
             raise ValueError("No topics to subscribe to.")
@@ -109,9 +94,7 @@ class PointsPreprocessor:
             points_array = numpify(msg)
             if msg.header.frame_id == self.output_frame:
                 points = np.stack([points_array['x'], points_array['y'], points_array['z']], axis=-1).reshape(-1, 3)
-
-                if CUPY_AVAILABLE:
-                    points = cp.asarray(points)
+                points = cp.asarray(points)
 
                 t1 = time.perf_counter()
 
@@ -134,9 +117,7 @@ class PointsPreprocessor:
 
                 untransformed_points = np.stack([points_array['x'], points_array['y'], points_array['z'], points_array['z']], axis=-1).reshape(-1, 4)
                 untransformed_points[:, 3] = 1.0 # Add homogeneous coordinate
-                
-                if CUPY_AVAILABLE:
-                    untransformed_points = cp.asarray(untransformed_points)
+                untransformed_points = cp.asarray(untransformed_points)
 
                 t1 = time.perf_counter()
                 
@@ -165,6 +146,11 @@ class PointsPreprocessor:
         ground_mask = self.ground_detector.detect_ground(points_filtered)
         points_no_ground = points_filtered[~ground_mask]
 
+        if self.points_ground_pub.get_num_connections() > 0:
+            points_ground = points_filtered[ground_mask]
+            points_ground = cp.asnumpy(points_ground).astype(np.float32)
+            self.publish_points(points_ground, msgs[0].header, self.points_ground_pub)
+
         t5 = time.perf_counter()
         
         # Downsample points
@@ -172,11 +158,10 @@ class PointsPreprocessor:
 
         t6 = time.perf_counter()
 
-        if CUPY_AVAILABLE:
-            points_downsampled = cp.asnumpy(points_downsampled)
+        points_downsampled = cp.asnumpy(points_downsampled).astype(np.float32)
 
         # Publish points
-        self.publish_points(points_downsampled.astype(np.float32), msgs[0].header)
+        self.publish_points(points_downsampled, msgs[0].header)
 
         t7 = time.perf_counter()
 
@@ -209,7 +194,7 @@ class PointsPreprocessor:
 
         # Hash voxel indices into scalar keys
         # Assumption: coordinates are within reasonable bounds (e.g., [-1000, 1000])
-        hash_scale = cp.array([73856093, 19349663, 83492791], dtype=cp.int64)  # large primes
+        hash_scale = cp.array([73856093, 19349669, 83492791], dtype=cp.int64)  # large primes
         voxel_hashes = cp.sum(voxel_indices.astype(cp.int64) * hash_scale, axis=1)
 
         # Unique voxel hashes and corresponding first indices
@@ -220,7 +205,7 @@ class PointsPreprocessor:
     
         return downsampled
     
-    def publish_points(self, points, header):
+    def publish_points(self, points, header, publisher=None):
         """
         Publish points as PointCloud2 message.
         """
@@ -229,7 +214,10 @@ class PointsPreprocessor:
         points_msg = msgify(PointCloud2, points_data)
         points_msg.header.stamp = header.stamp
         points_msg.header.frame_id = self.output_frame
-        self.points_processed_pub.publish(points_msg)
+        if publisher is None:
+            self.points_processed_pub.publish(points_msg)
+        else:
+            publisher.publish(points_msg)
 
     def run(self):
         rospy.spin()

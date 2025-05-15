@@ -1,66 +1,8 @@
 import math
 import cv2
 import numpy as np
-try:
-    import cupy as cp
-    from cupyx.scipy.signal import convolve2d
-except ImportError:
-    cp = np # Fallback to numpy if cupy is not available
-    
-class NaiveGroundDetector:
-    def __init__(self, min_x, max_x, min_y, max_y, cell_size, tolerance, filter_type, filter_size, filter_iterations):
-        self.min_x = min_x
-        self.max_x = max_x
-        self.min_y = min_y
-        self.max_y = max_y
-        self.cell_size = cell_size
-        self.tolerance = tolerance
-        self.filter = filter_type
-        self.filter_size = filter_size
-        self.filter_iterations = filter_iterations
-
-        self.width = int(math.ceil((self.max_x - self.min_x) / self.cell_size))
-        self.height = int(math.ceil((self.max_y - self.min_y) / self.cell_size))
-        self.cols = np.empty((self.width, self.height), dtype=np.float32)
-
-    def detect_ground(self, pointcloud):
-
-        # convert x and y coordinates into indexes
-        xi = ((pointcloud[:, 0] - self.min_x) / self.cell_size).astype(np.int32)
-        yi = ((pointcloud[:, 1] - self.min_y) / self.cell_size).astype(np.int32)
-        zi = pointcloud[:, 2]
-
-        # write minimum height for each cell to cols
-        # thanks to sorting in descending order,
-        # the minimum value will overwrite previous values
-        self.cols[...] = np.nan
-        idx = np.argsort(-zi)
-        self.cols[xi[idx], yi[idx]] = zi[idx]
-
-        # bring cell minimum lower, if all cells around it are lower
-        for _ in range(self.filter_iterations):
-            if self.filter == 'median':
-                cols_filtered = cv2.medianBlur(self.cols, self.filter_size)
-                np.fmin(self.cols, cols_filtered, out=self.cols)
-            elif self.filter == 'average':
-                mask = np.isnan(self.cols)
-                self.cols[mask] = 0
-                cols_filtered = cv2.blur(self.cols, (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE) / \
-                        cv2.blur((~mask).astype(np.float32), (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE)
-                np.fmin(self.cols, cols_filtered, out=self.cols)
-            elif self.filter == 'minimum':
-                mask = np.isnan(self.cols)
-                self.cols[mask] = np.inf
-                cols_filtered = cv2.erode(self.cols, np.ones((self.filter_size, self.filter_size)), cv2.BORDER_REPLICATE)
-                np.fmin(self.cols, cols_filtered, out=self.cols)
-            elif self.filter != 'none':
-                assert False, "Unknown filter value: " + self.filter
-
-        # filter out closest points to minimum point up to some tolerance
-        ground_mask = (zi <= (self.cols[xi, yi] + self.tolerance))
-
-        # return ground mask
-        return ground_mask
+import cupy as cp
+from cupyx.scipy.ndimage import convolve
     
 class NaiveGroundDetectorGPU:
     def __init__(self, min_x, max_x, min_y, max_y, cell_size, tolerance, filter_type, filter_size, filter_iterations):
@@ -73,6 +15,9 @@ class NaiveGroundDetectorGPU:
         self.filter = filter_type
         self.filter_size = filter_size
         self.filter_iterations = filter_iterations
+
+        if self.filter not in ["median", "average", "minimum", "none"]:
+            raise ValueError(f"NaiveGroundDetector - 'filter' must be one of 'median', 'average', 'minimum' or 'none', not '{self.filter}'")
 
         self.width = int(math.ceil((self.max_x - self.min_x) / self.cell_size))
         self.height = int(math.ceil((self.max_y - self.min_y) / self.cell_size))
@@ -104,7 +49,7 @@ class NaiveGroundDetectorGPU:
             elif self.filter == 'average':
                 mask_gpu = cp.isnan(self.cols)
                 self.cols[mask_gpu] = 0
-                cols_filtered = convolve2d(self.cols, self.kernel, mode='same', boundary='symm') / convolve2d((~mask_gpu).astype(cp.float32), self.kernel, mode='same', boundary='symm')
+                cols_filtered = convolve(self.cols, self.kernel, mode='nearest') / convolve((~mask_gpu).astype(cp.float32), self.kernel, mode='nearest')
                 cp.fmin(self.cols, cols_filtered, out=self.cols)
 
             elif self.filter == 'minimum':

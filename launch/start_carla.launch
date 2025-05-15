@@ -8,7 +8,7 @@
     <arg name="local_planner"           default="rule"                  doc="rule, none"/>
     <arg name="use_path_smoothing"      default="true" />
     <arg name="localizer"               default="carla"                 doc="novatel, carla" />
-    <arg name="detector"                default="carla"                 doc="lidar_cluster, lidar_sfa, sim, carla" />
+    <arg name="detector"                default="carla"                 doc="lidar_cluster, lidar_cluster_fast, lidar_sfa, sim, carla" />
     <arg name="tfl_detector"            default="carla"                 doc="carla, camera, mqtt_camera_fusion" />
     <arg name="tfl_cameras"             default="mako"                  doc="mako, nvidia" />
     <arg name="tracker"                 default="$(eval 'ema' if detector != 'carla' else 'none')" />
@@ -18,7 +18,6 @@
     <arg name="use_road_area_filter"    default="$(eval 'tartu' in map_name)"   doc="use road area filter"/>
     <arg name='use_lidar_center'        default='true'/>
     <arg name='use_lidar_front'         default='false'/>
-    <arg name="gpu_lidar_processing"    default="true"                  doc="use gpu optimized lidar pointcloud processing nodes" />
     <arg name='launch_rviz'             default='true'/>
     <arg name="use_lane_matching"       default="false" />
     <!-- Scenario Runner args -->
@@ -51,7 +50,6 @@
         <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name='use_lidar_center'    value='$(arg use_lidar_center)'/>
         <arg name='use_lidar_front'     value='$(arg use_lidar_front)'/>
-        <arg name="gpu_lidar_processing" value="$(arg gpu_lidar_processing)" />
         <arg name="tracker"             value="$(arg tracker)" />
         <arg name="predictor"           value="$(arg predictor)" />
         <arg name="detection_range"     value="$(arg detection_range)" />
