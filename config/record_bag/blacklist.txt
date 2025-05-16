@@ -91,3 +91,5 @@
 /interfacea_link3_rectifier/parameter_updates
 /lidar_center/scan
 /lidar_center/velodyne_packets
+/lidar_front/scan
+/lidar_front/lidar_packets
