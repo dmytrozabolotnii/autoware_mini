@@ -5,7 +5,7 @@ import numpy as np
 
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
-from autoware_mini.geometry import get_vector_norm_3d, get_point_using_heading_and_distance
+from autoware_mini.geometry import get_vector_norm_2d, get_point_using_heading_and_distance
 
 class NaivePredictor:
     def __init__(self):
@@ -34,7 +34,8 @@ class NaivePredictor:
 
         for i, obj in enumerate(msg.objects):
             # Skip objects that do not need predictions
-            if get_vector_norm_3d(obj.velocity) < self.prediction_min_speed or len(obj.candidate_trajectories.paths) > 0:
+            # Don't create any trajectories if object doesn't have 2D speed
+            if get_vector_norm_2d(obj.velocity) < self.prediction_min_speed or len(obj.candidate_trajectories.paths) > 0:
                 continue
 
             # calculate prediction origin in front of the object
