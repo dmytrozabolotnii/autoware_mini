@@ -4,7 +4,7 @@ import threading
 import math
 
 import rospy
-from tf2_ros import TransformBroadcaster
+from tf2_ros import TransformBroadcaster, Buffer, TransformListener
 
 from geometry_msgs.msg import TransformStamped, PoseStamped, TwistStamped, PoseWithCovarianceStamped, Quaternion, Point
 from autoware_mini.msg import VehicleCmd, VehicleStatus, Gear
@@ -14,6 +14,7 @@ from std_msgs.msg import ColorRGBA
 
 from helpers.geometry import get_orientation_from_heading, get_heading_from_orientation
 from helpers.lanelet2 import load_lanelet2_map, get_height_at_position
+from helpers.transform import transform_point
 
 class BicycleSimulation:
 
@@ -43,6 +44,9 @@ class BicycleSimulation:
         self.current_pose_pub = rospy.Publisher('/localization/current_pose', PoseStamped, queue_size=1, tcp_nodelay=True)
         self.current_velocity_pub = rospy.Publisher('/localization/current_velocity', TwistStamped, queue_size=1, tcp_nodelay=True)
         self.vehicle_status_pub = rospy.Publisher('vehicle_status', VehicleStatus, queue_size=1, tcp_nodelay=True)
+        
+        tf_buffer = Buffer()
+        tf_listener = TransformListener(tf_buffer)
         self.br = TransformBroadcaster()
 
         # visualization of the bicycle model
@@ -52,6 +56,8 @@ class BicycleSimulation:
         rospy.Subscriber('/initialpose', PoseWithCovarianceStamped, self.initialpose_callback, queue_size=None, tcp_nodelay=True)
         rospy.Subscriber('/initialvelocity', TwistStamped, self.initialvelocity_callback, queue_size=None, tcp_nodelay=True)
         rospy.Subscriber('/control/vehicle_cmd', VehicleCmd, self.vehicle_cmd_callback, queue_size=1, tcp_nodelay=True)
+
+        self.base_link_to_base_foorprint_tf = tf_buffer.lookup_transform("base_footprint", "base_link", rospy.Time(0), rospy.Duration(1.0))
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
@@ -167,9 +173,12 @@ class BicycleSimulation:
         t.header.frame_id = "map"
         t.child_frame_id = "base_link"
 
-        t.transform.translation.x = self.x
-        t.transform.translation.y = self.y
-        t.transform.translation.z = self.z
+        # transform translation from base_footprint to base_link
+        transformed_point = transform_point(Point(self.x, self.y, self.z), self.base_link_to_base_foorprint_tf)
+
+        t.transform.translation.x = transformed_point.x
+        t.transform.translation.y = transformed_point.y
+        t.transform.translation.z = transformed_point.z
         t.transform.rotation = self.orientation
 
         self.br.sendTransform(t)
