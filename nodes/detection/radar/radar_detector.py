@@ -39,11 +39,9 @@ class RadarDetector:
         # Dynamic transform listener
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
-        # allow time for tf buffer to fill
-        rospy.sleep(0.5)
 
         # Static transform, fetch once
-        self.base_link_to_radar_tf = self.tf_buffer.lookup_transform('radar_fc', 'base_link', rospy.Time(0))
+        self.base_link_to_radar_tf = self.tf_buffer.lookup_transform('radar_fc', 'base_link', rospy.Time(0), rospy.Duration(1.0))
 
         # Subscribers
         tracks_sub = message_filters.Subscriber('/radar_fc/radar_tracks', RadarTracks, queue_size=1, buff_size=2**20, tcp_nodelay=True)
