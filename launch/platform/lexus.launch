@@ -8,7 +8,8 @@
     <arg name="use_radar_fc"        default="false" />
     <arg name="use_nvidia_cameras"  default="false" />
     <arg name="nvidia_encoder"      default="h264" />
-    <arg name="use_openpilot"       default="false" />
+    <arg name="use_openpilot_predictions" default="false"  />
+    <arg name="use_openpilot_cameras"     default="false"  />
 
     <!-- Transforms -->
     <include file="$(find autoware_mini)/launch/platform/tf.launch" />
@@ -29,7 +30,8 @@
         <arg name="nvidia_rectify"              value="$(arg use_nvidia_cameras)" />
         <arg name="nvidia_encoder"              value="$(arg nvidia_encoder)" />
         <arg name="nvidia_fps"                  value="10" />
-        <arg name="use_openpilot"               value="$(arg use_openpilot)" />
+        <arg name="use_openpilot_predictions"   value="$(arg use_openpilot_predictions)" />
+        <arg name="use_openpilot_cameras"       value="$(arg use_openpilot_cameras)" />
     </include>
 
     <group ns="vehicle">
