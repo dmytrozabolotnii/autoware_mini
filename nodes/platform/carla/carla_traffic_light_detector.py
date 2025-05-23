@@ -9,7 +9,6 @@ from sklearn.neighbors import KNeighborsClassifier
 from carla_msgs.msg import CarlaTrafficLightStatus, CarlaTrafficLightStatusList, CarlaTrafficLightInfoList
 from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
-from localization.SimulationToUTMTransformer import SimulationToUTMTransformer
 from helpers.lanelet2 import get_stoplines_center, load_lanelet2_map
 
 # Carla to Autoware traffic light status mapping
@@ -33,19 +32,10 @@ class CarlaTrafficLightDetector:
     def __init__(self):
 
         # Node parameters
-        self.use_transformer = rospy.get_param("/carla_localization/use_transformer")
-        use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-        utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-        utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # Load lanelet2 map
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-
-        # Coordinate transformer from simulation coordinates to UTM
-        self.sim2utm_transformer = SimulationToUTMTransformer(use_custom_origin=use_custom_origin,
-                                                              origin_lat=utm_origin_lat,
-                                                              origin_lon=utm_origin_lon)
         
         # Get stopline centers with stopline_id and corresponding light_ids mapping
         self.stopline_centers_map = get_stoplines_center(lanelet2_map)
@@ -72,8 +62,6 @@ class CarlaTrafficLightDetector:
 
         for tfl in msg.traffic_lights:
             pose = tfl.transform
-            if self.use_transformer:
-                pose = self.sim2utm_transformer.transform_pose(pose)
 
             # Transform trigger volume location using the transformation matrix from tfl pose
             trans_matrix = ros_numpy.numpify(pose)

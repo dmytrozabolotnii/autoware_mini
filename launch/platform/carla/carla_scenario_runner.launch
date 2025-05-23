@@ -13,7 +13,7 @@
     <arg name='scenario_file'           default='$(find autoware_mini)/data/scenarios/$(arg map_name)/$(arg scenario_name).xosc'/>
     <arg name='scenario_path'           default='$(find autoware_mini)/data/scenarios/$(arg map_name)'/>
     <!-- Route scenario args-->
-    <arg name='routes_file'             default='$(find autoware_mini)/data/routes/routes_devtest.xml'/>
+    <arg name='routes_file'             default='$(find autoware_mini)/data/routes/$(arg map_name).xml'/>
     <arg name='route_id'                default=''/>
     <arg name='agent_file'              default='$(find autoware_mini)/nodes/platform/carla/carla_minimal_agent.py'/>
 
