@@ -113,7 +113,6 @@
 /openpilot/wide_road_camera/compressedDepth
 /openpilot/wide_road_camera/compressedDepth/parameter_descriptions
 /openpilot/wide_road_camera/compressedDepth/parameter_updates
-/openpilot/wide_road_camera/h265
 /openpilot/wide_road_camera/theora
 /openpilot/wide_road_camera/theora/parameter_descriptions
 /openpilot/wide_road_camera/theora/parameter_updates
