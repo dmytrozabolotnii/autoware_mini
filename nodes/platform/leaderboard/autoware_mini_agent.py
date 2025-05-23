@@ -30,8 +30,6 @@ from sensor_msgs.point_cloud2 import create_cloud
 from carla_msgs.msg import CarlaEgoVehicleInfo, CarlaEgoVehicleInfoWheel, CarlaEgoVehicleStatus, CarlaEgoVehicleControl, CarlaWorldInfo
 from std_msgs.msg import String, Header
 
-from localization.SimulationToUTMTransformer import SimulationToUTMTransformer
-
 from tf.transformations import quaternion_from_euler
 
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
@@ -68,10 +66,6 @@ class AutowareMiniRosAgent(AutonomousAgent):
 
         self.track = Track.MAP
         topic_base = "/carla/ego_vehicle"
-
-        # Sim2UTM transformer placeholders, these are initialized once the stack process has started
-        self.use_transformer = None
-        self.sim2utm_transformer = None
 
         # get start_script from environment
         team_code_path = os.environ['TEAM_CODE_ROOT']
@@ -202,9 +196,6 @@ class AutowareMiniRosAgent(AutonomousAgent):
             pose.pose.orientation.y = quaternion[1]
             pose.pose.orientation.z = quaternion[2]
             pose.pose.orientation.w = quaternion[3]
-
-            if self.use_transformer:
-                pose.pose = self.sim2utm_transformer.transform_pose(pose.pose)
 
             msg.poses.append(pose)
 
@@ -458,9 +449,6 @@ class AutowareMiniRosAgent(AutonomousAgent):
             pose.pose.orientation.z = quaternion[2]
             pose.pose.orientation.w = quaternion[3]
 
-            if self.use_transformer:
-                pose.pose = self.sim2utm_transformer.transform_pose(pose.pose)
-
             self.goal_publisher.publish(pose)
             self.goal_waypoint_counter += 1
 
@@ -486,9 +474,6 @@ class AutowareMiniRosAgent(AutonomousAgent):
             pose.pose.orientation.y = quaternion[1]
             pose.pose.orientation.z = quaternion[2]
             pose.pose.orientation.w = quaternion[3]
-
-            if self.use_transformer:
-                pose.pose = self.sim2utm_transformer.transform_pose(pose.pose)
 
             self.goal_publisher.publish(pose)
             self.goal_waypoint_counter += 1
@@ -519,17 +504,11 @@ class AutowareMiniRosAgent(AutonomousAgent):
         self.clock_publisher.publish(Clock(rospy.Time.from_sec(timestamp)))
 
         # Wait for few seconds to read ros parameters from parameter server
-        if (timestamp - self.rosparam_check_time) > 2.0 and self.use_transformer is None:
+        if (timestamp - self.rosparam_check_time) > 2.0:
             self.rosparam_check_time = self.timestamp
             try:
-                self.use_transformer = rospy.get_param("/carla_localization/use_transformer")
-                use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-                utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
                 utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
 
-                self.sim2utm_transformer = SimulationToUTMTransformer(use_custom_origin=use_custom_origin,
-                                                                origin_lat=utm_origin_lat,
-                                                                origin_lon=utm_origin_lon)
             except (Exception) as e:
                 rospy.logerr("%s: Couldn't load parameters from ros parameter server - %s", rospy.get_name(), e) 
 
@@ -539,7 +518,7 @@ class AutowareMiniRosAgent(AutonomousAgent):
                 self.stack_process.returncode, self.stack_process.communicate()[0]))
 
         # publish global plan to ROS once
-        if self._global_plan_world_coord and not self.global_plan_published and self.use_transformer is not None:
+        if self._global_plan_world_coord and not self.global_plan_published:
             self.global_plan_published = True
             self.publish_plan()
 
@@ -566,7 +545,7 @@ class AutowareMiniRosAgent(AutonomousAgent):
             
         self.publish_can()
 
-        if self._global_plan_world_coord and (self.timestamp - self.goal_publish_time) > 2.0 and self.use_transformer is not None:
+        if self._global_plan_world_coord and (self.timestamp - self.goal_publish_time) > 2.0:
             self.goal_publish_time = self.timestamp
             self.publish_goal_points()
 

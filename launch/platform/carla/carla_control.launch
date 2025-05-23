@@ -36,10 +36,6 @@
     <rosparam command="load" file="$(find autoware_mini)/config/vehicle.yaml" />
   </group>
 
-  <group if="$(eval 'town' in map_name.lower())">
-    <param name="/carla_localization/use_transformer" type="boolean" value="false" />
-  </group>
-
   <!-- Patch controller params because simulation does not have delay -->
   <rosparam param="simulate_cmd_delay" ns="control/pure_pursuit_controller">0.0</rosparam>
   <rosparam param="simulate_cmd_delay" ns="control/stanley_controller">0.0</rosparam>

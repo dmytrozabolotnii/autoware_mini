@@ -11,7 +11,6 @@ This node provides a ROS autonomous agent interface to control the ego vehicle v
 | `/localization/use_custom_origin` | bool | `True` | Whether to use custom origin for UTM transformation. |
 | `/localization/utm_origin_lat` | float | `0.0` | Latitude of UTM origin if using custom origin. |
 | `/localization/utm_origin_lon` | float | `0.0` | Longitude of UTM origin if using custom origin. |
-| `/carla_localization/use_transformer` | bool | `true` | Whether to use coordinate transformation between simulation and UTM coordinates. |
 | `init_goal_delay` | float | `5` | Delay in seconds before publishing the first goal point. |
 | `downsampling_interval` | int | `42` | Interval for downsampling the global path points. |
 

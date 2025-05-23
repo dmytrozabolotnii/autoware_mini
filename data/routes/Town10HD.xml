@@ -1,5 +1,5 @@
 <routes>
-   <route id="0" town="tartu_demo">
+  <route id="0" town="Town10HD">
       <weathers>
          <weather route_percentage="0"
             cloudiness="5.0" precipitation="0.0" precipitation_deposits="0.0" wetness="0.0"
@@ -8,31 +8,6 @@
             cloudiness="5.0" precipitation="0.0" precipitation_deposits="0.0" wetness="0.0"
             wind_intensity="10.0" sun_azimuth_angle="-1.0" sun_altitude_angle="15.0" fog_density="2.0"/>
       </weathers>
-      <ego_vehicle x="4.698569297790527" y="-342.07464599609375" z="34.58877182006836" yaw="97.9912567138672" rolename="ego_vehicle" model="vehicle.lexus.utlexus" />
-      <waypoints>
-         <position pitch="0.0" x="4.698569297790527" y="-342.07464599609375" z="34.58877182006836" yaw="97.9912567138672" />
-         <!-- <position pitch="0.0" x="5.0379157066345215" y="-251.0943145751953" z="34.20974349975586" yaw="79.58540344238281" /> -->
-         <position pitch="0.0" x="99.28218841552734" y="-10.223148345947266" z="34.23603057861328" yaw="67.74333953857423" />
-         <!-- <position pitch="0.0" x="-30.841970443725586" y="253.3561248779297" z="35.335269927978516" yaw="-124.58447265625001" /> -->
-         <position pitch="0.0" x="8.546760559082031" y="-358.6293640136719" z="34.68978500366211" yaw="109.52626800537111" />
-      </waypoints>
-      <scenarios>
-         <scenario name="FollowLeadingVehicle_1" type="FollowLeadingVehicle">
-            <trigger_point x="2.04" y="-281.81" z="34.26" yaw="90.45"/>
-         </scenario>
-      </scenarios>
-   </route>
-
-
-   <route id="1" town="Town10HD">
-      <!-- <weathers>
-         <weather route_percentage="0"
-            cloudiness="5.0" precipitation="0.0" precipitation_deposits="0.0" wetness="0.0"
-            wind_intensity="10.0" sun_azimuth_angle="-1.0" sun_altitude_angle="90.0" fog_density="2.0"/>
-         <weather route_percentage="100"
-            cloudiness="5.0" precipitation="0.0" precipitation_deposits="0.0" wetness="0.0"
-            wind_intensity="10.0" sun_azimuth_angle="-1.0" sun_altitude_angle="15.0" fog_density="2.0"/>
-      </weathers> -->
       <ego_vehicle x="85.7" y="66.4" z="0.0" rolename="ego_vehicle" model="vehicle.lexus.utlexus" />
       <waypoints>
          <position x="85.7" y="66.4" z="0.0"/>

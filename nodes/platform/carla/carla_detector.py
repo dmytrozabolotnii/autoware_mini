@@ -13,7 +13,6 @@ import rospy
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from derived_object_msgs.msg import ObjectArray, Object
-from localization.SimulationToUTMTransformer import SimulationToUTMTransformer
 from helpers.detection import create_hull
 from helpers.geometry import get_heading_from_orientation
 
@@ -39,16 +38,7 @@ class CarlaDetector:
     def __init__(self):
 
         # Node parameters
-        self.use_transformer = rospy.get_param("/carla_localization/use_transformer")
-        use_custom_origin = rospy.get_param("/localization/use_custom_origin")
-        utm_origin_lat = rospy.get_param("/localization/utm_origin_lat")
-        utm_origin_lon = rospy.get_param("/localization/utm_origin_lon")
         self.output_frame = rospy.get_param("/detection/output_frame")
-
-        # Internal parameters
-        self.sim2utm_transformer = SimulationToUTMTransformer(use_custom_origin=use_custom_origin,
-                                                              origin_lat=utm_origin_lat,
-                                                              origin_lon=utm_origin_lon)
 
         # Publishers
         self.detected_objects_pub = rospy.Publisher(
@@ -76,8 +66,6 @@ class CarlaDetector:
             object_msg.valid = True
             
             pose = obj.pose
-            if self.use_transformer:
-                pose = self.sim2utm_transformer.transform_pose(pose)
 
             object_msg.position = pose.position
             object_msg.heading = get_heading_from_orientation(pose.orientation)

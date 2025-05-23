@@ -10,7 +10,6 @@ ROS node for converting ground truth detections from the CARLA simulator and pub
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
 | `~output_frame` | `string` | - | The output coordinate frame for detections. |
-| `~use_transformer` | `bool` | `true` | If true, will use the `localization.SimulationToUTMTransformer` class to convert the detected objects to the UTM coordinate system. |
 
 
 #### Subscribed Topics
@@ -39,7 +38,6 @@ ROS node for converting initial pose to simulation pose.
 | --- | --- | --- | --- |
 | `/localization/utm_origin_lat` | `float` | `0.0` | Latitude of the custom origin for UTM coordinates. |
 | `/localization/utm_origin_lon` | `float` | `0.0` | Longitude of the custom origin for UTM coordinates. |
-| `/carla_localization/use_transformer` | `bool` | `true` | Whether to use a transformation from UTM coordinates to simulation coordinates. |
 | `/localization/use_custom_origin` | `bool` | `True` | Whether to use a custom origin for UTM coordinates. |
 
 
@@ -70,7 +68,6 @@ ROS node for ground truth localization.
 | --- | --- | --- | --- |
 | `/localization/utm_origin_lat` | `float` | `0.0` | Latitude of the custom origin for UTM coordinates. |
 | `/localization/utm_origin_lon` | `float` | `0.0` | Longitude of the custom origin for UTM coordinates. |
-| `/carla_localization/use_transformer` | `bool` | `true` | Whether to use a transformation from simulation coordinates to UTM coordinates. |
 | `/localization/use_custom_origin` | `bool` | `True` | Whether to use a custom origin for UTM coordinates. |
 
 
@@ -104,7 +101,6 @@ ROS node that implements a minimal agent for the CARLA scenario runner. Publishe
 | `/localization/utm_origin_lon` | `float` | `0.0` | Longitude of the custom origin for UTM coordinates. |
 | `~init_goal_delay` | `int` | `5` | Delay in seconds before publishing the initial goal. |
 | `~downsampling_interval` | `int` | `42` | Interval for downsampling route points. |
-| `/carla_localization/use_transformer` | `bool` | `true` | Whether to use a transformation from simulation coordinates to UTM coordinates. |
 | `/localization/use_custom_origin` | `bool` | `True` | Whether to use a custom origin for UTM coordinates. |
 
 
@@ -198,7 +194,6 @@ ROS node that detects traffic lights from the Carla simulator and publishes the 
 | `/localization/utm_origin_lat` | `float` | `0.0` | The latitude of the UTM origin. |
 | `/localization/utm_origin_lon` | `float` | `0.0` | The longitude of the UTM origin. |
 | `~lanelet2_map_name` | `string` | - | The name of the Lanelet2 map file to load. |
-| `~use_transformer` | `bool` | `true` | Whether to use transformer when converting the traffic light position from the simulator coordinates to the UTM coordinates. |
 | `/localization/use_custom_origin` | `bool` | `True` | Whether to use a custom origin. |
 
 
