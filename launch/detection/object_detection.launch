@@ -25,7 +25,7 @@
                     </node>
                     <node type="cluster_detector_fast.py" name="cluster_detector_fast" pkg="autoware_mini" output="screen" required="true" />
                 </group>
-                <group unless="$(eval 'lidar_cluster' in detector)">
+                <group unless="$(eval 'fast' in detector)">
                     <group if="$(arg use_lidar_center)" ns="center">
                         <!-- Only functional in Carla simulation -->
                         <node pkg="nodelet" type="nodelet" name="crop_box" args="standalone pcl/CropBox" output="screen" required="true">

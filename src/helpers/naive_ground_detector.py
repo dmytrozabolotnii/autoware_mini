@@ -1,6 +1,4 @@
 import math
-import cv2
-import numpy as np
 import cupy as cp
 from cupyx.scipy.ndimage import convolve
     
@@ -16,8 +14,8 @@ class NaiveGroundDetectorFast:
         self.filter_size = filter_size
         self.filter_iterations = filter_iterations
 
-        if self.filter not in ["median", "average", "minimum", "none"]:
-            raise ValueError(f"NaiveGroundDetector - 'filter' must be one of 'median', 'average', 'minimum' or 'none', not '{self.filter}'")
+        if self.filter != "average":
+            raise ValueError(f"NaiveGroundDetectorFast - 'filter' type must be 'average', not '{self.filter}'")
 
         self.width = int(math.ceil((self.max_x - self.min_x) / self.cell_size))
         self.height = int(math.ceil((self.max_y - self.min_y) / self.cell_size))
@@ -40,25 +38,11 @@ class NaiveGroundDetectorFast:
 
         # bring cell minimum lower, if all cells around it are lower
         for _ in range(self.filter_iterations):
-            if self.filter == 'median':
-                cols_cpu = cp.asnumpy(self.cols)
-                cols_filtered = cv2.medianBlur(cols_cpu, self.filter_size)
-                np.fmin(cols_cpu, cols_filtered, out=cols_cpu)
-                self.cols = cp.asarray(cols_cpu)
-
-            elif self.filter == 'average':
+            if self.filter == 'average':
                 mask_gpu = cp.isnan(self.cols)
                 self.cols[mask_gpu] = 0
                 cols_filtered = convolve(self.cols, self.kernel, mode='nearest') / convolve((~mask_gpu).astype(cp.float32), self.kernel, mode='nearest')
                 cp.fmin(self.cols, cols_filtered, out=self.cols)
-
-            elif self.filter == 'minimum':
-                cols_cpu = cp.asnumpy(self.cols)
-                mask = np.isnan(cols_cpu)
-                cols_cpu[mask] = np.inf
-                cols_filtered = cv2.erode(cols_cpu, np.ones((self.filter_size, self.filter_size)), cv2.BORDER_REPLICATE)
-                np.fmin(cols_cpu, cols_filtered, out=cols_cpu)
-                self.cols = cp.asarray(cols_cpu)
 
             elif self.filter != 'none':
                 assert False, "Unknown filter value: " + self.filter

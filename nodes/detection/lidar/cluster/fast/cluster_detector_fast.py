@@ -73,7 +73,6 @@ class ClusterDetectorFast:
 
         t3 = time.perf_counter()
 
-        #"""
         # remove noise label (-1)
         valid_labels = labels[labels != -1]
 
@@ -84,7 +83,6 @@ class ClusterDetectorFast:
 
         filtered_labels = labels[filter_mask]
         filtered_points_homo = points_homo[filter_mask]
-        #"""
         
         t4 = time.perf_counter()
 
@@ -98,7 +96,7 @@ class ClusterDetectorFast:
                 return
             tf_matrix = numpify(transform.transform).astype(np.float32)
             # transform points to target frame
-            filtered_points = filtered_points_homo.dot(tf_matrix.T)
+            filtered_points_homo = filtered_points_homo.dot(tf_matrix.T)
 
         t5 = time.perf_counter()
         
@@ -113,7 +111,7 @@ class ClusterDetectorFast:
             idx = np.nonzero(filtered_labels == i)[0]
 
             # fetch points for this cluster
-            points3d = filtered_points[idx,:3]
+            points3d = filtered_points_homo[idx,:3]
             points2d = np.ascontiguousarray(points3d[:,:2])
 
             if self.bounding_box_type == 'axis_aligned':

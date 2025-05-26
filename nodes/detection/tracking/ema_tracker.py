@@ -175,7 +175,6 @@ class EMATracker:
                     p.x += position_change[idx][0]
                     p.y += position_change[idx][1]
 
-
         # delete stale tracks
         stale_track_indices = np.where(self.tracked_objects_array['missed_counter'] >= self.missed_counter_threshold)[0]
         for idx in sorted(stale_track_indices, reverse=True):

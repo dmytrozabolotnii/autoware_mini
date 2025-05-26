@@ -73,7 +73,7 @@ class PointsPreprocessor:
 
         subscribers = []
         for topic in points_topics:
-            subscribers.append(message_filters.Subscriber(topic, PointCloud2, tcp_nodelay=True))
+            subscribers.append(message_filters.Subscriber(topic, PointCloud2, queue_size=1, buff_size=2**24, tcp_nodelay=True))
 
         if not subscribers:
             raise ValueError("No topics to subscribe to.")
@@ -146,11 +146,6 @@ class PointsPreprocessor:
         ground_mask = self.ground_detector.detect_ground(points_filtered)
         points_no_ground = points_filtered[~ground_mask]
 
-        if self.points_ground_pub.get_num_connections() > 0:
-            points_ground = points_filtered[ground_mask]
-            points_ground = cp.asnumpy(points_ground).astype(np.float32)
-            self.publish_points(points_ground, msgs[0].header, self.points_ground_pub)
-
         t5 = time.perf_counter()
         
         # Downsample points
@@ -176,6 +171,11 @@ class PointsPreprocessor:
         self.count += 1
 
         print(f"PREPROCESSOR: Total time: {self.totals[0] / self.count:.2f} | Unstructured time: {self.totals[1] / self.count:.2f} | Transform time: {self.totals[2] / self.count:.2f} | Concatenate time: {self.totals[3] / self.count:.2f} | Crop time: {self.totals[4] / self.count:.2f} | Ground removal time: {self.totals[5] / self.count:.2f} | Downsampling time: {self.totals[6] / self.count:.2f} | Publishing time: {self.totals[7] / self.count:.2f}")
+
+        if self.points_ground_pub.get_num_connections() > 0:
+            points_ground = points_filtered[ground_mask]
+            points_ground = cp.asnumpy(points_ground).astype(np.float32)
+            self.publish_points(points_ground, msgs[0].header, self.points_ground_pub)
     
     def voxel_grid_filter_gpu(self, points, voxel_size):
         """
