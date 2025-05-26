@@ -16,7 +16,6 @@ from geometry_msgs.msg import Point32
 import time
 
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
-DEG2RAD = math.pi / 180.0
 
 class ClusterDetectorFast:
     def __init__(self):
@@ -129,7 +128,7 @@ class ClusterDetectorFast:
                 (center_x, center_y), (dim_x, dim_y), heading_angle = cv2.minAreaRect(points2d)
 
                 # convert degrees to radians for heading angle
-                heading = heading_angle * DEG2RAD
+                heading = math.radians(heading_angle)
 
                 # calculate height and vertical position
                 z_points = points3d[:,2]
