@@ -10,7 +10,7 @@ from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 from geometry_msgs.msg import PoseStamped
 
 from autoware_mini.path import calculate_cross_track_error
-from autoware_mini.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
+from autoware_mini.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings, get_distance_between_two_points_2d
 from autoware_mini.lanelet2 import load_lanelet2_map, follow_lanelets, get_stop_lines_using_range_and_subtype
 from autoware_mini.shapely import offset_curve
 
@@ -35,12 +35,13 @@ class MapBasedPredictor:
         self.local_path_length = rospy.get_param("/planning/local_path_length")
 
         # Variables
-        self.current_position = None
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.Vehicle)
         self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
         num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
         self.timesteps = np.arange(num_timesteps) * self.prediction_interval
+        self.last_stop_line_extract_location = None
+        self.stop_lines = []
 
         # Publishers
         self.predicted_objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
@@ -50,23 +51,19 @@ class MapBasedPredictor:
         rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
 
     def current_pose_callback(self, msg):
-        self.current_position = msg.pose.position
+        if self.last_stop_line_extract_location is not None and get_distance_between_two_points_2d(self.last_stop_line_extract_location, msg.pose.position) < self.local_path_length:
+            return
+        # Fetch stop lines within a range (2 x local_path length) around the current position
+        stop_lines = get_stop_lines_using_range_and_subtype(self.lanelet2_map, msg.pose.position.x, msg.pose.position.y, 2 * self.local_path_length,
+                                                                    subtype=["stop_line", "yield_stop", "yield"])
+        stop_lines = np.array(list(stop_lines.values()))
+
+        self.stop_lines = stop_lines
+        self.last_stop_line_extract_location = msg.pose.position
 
     def tracked_objects_callback(self, msg):
 
-        current_position = self.current_position
-        stop_lines = {}
-
-        if current_position is None:
-            rospy.logwarn_throttle(3, "%s - current position not received!", rospy.get_name())
-            return
-
-        if len(msg.objects) > 0:
-            stop_lines = get_stop_lines_using_range_and_subtype(self.lanelet2_map,
-                                                                x = current_position.x,
-                                                                y = current_position.y,
-                                                                range = self.local_path_length,
-                                                                subtype=["stop_line", "yield_stop", "yield"])
+        stop_lines = self.stop_lines
 
         for obj in msg.objects:
             object_distance_on_start_lanelet = {}
@@ -139,10 +136,9 @@ class MapBasedPredictor:
                 interpolate_distances = distances + object_distance_on_start_lanelet[trajectory[0].id] + obj.dimensions.x / 2
 
                 # check intersection with stop_lines
-                stop_lines_list = np.array(list(stop_lines.values()))
-                mask = trajectory_linestring.intersects(stop_lines_list)
+                mask = trajectory_linestring.intersects(stop_lines)
                 if np.any(mask):
-                    stop_line_intersection_result = trajectory_linestring.intersection(stop_lines_list[mask])
+                    stop_line_intersection_result = trajectory_linestring.intersection(stop_lines[mask])
                     distances_to_stoplines = sorted(trajectory_linestring.project(stop_line_intersection_result))
                     for d in distances_to_stoplines:
                         # check for deceleration if stop line somewhere within the predicted trajectory
