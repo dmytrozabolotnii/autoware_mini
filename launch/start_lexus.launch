@@ -28,7 +28,7 @@
     <arg name="use_openpilot_driver_camera" default="false"  />
     <arg name="use_openpilot_qroad_camera"  default="true"  />
     <arg name="blacklist_file"          default="$(find autoware_mini)/config/record_bag/blacklist.txt" />
-    <arg name="recorded_bags_dir"       default="/media/$(env USER)/adl_sandisk_2TB/$(env USER)" />
+    <arg name="recorded_bags_dir"       default="/media/$(env USER)/ExtremePro/$(env USER)" />
     <arg name="enable_goal_checker"          default="true" />
     <arg name="enable_object_checker"        default="true" />
     <arg name="enable_auto_stop_checker"     default="true" />
