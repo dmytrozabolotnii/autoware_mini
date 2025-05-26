@@ -53,6 +53,18 @@ def utm_origin():
     utm_point = projector.forward(gps_point)
     return utm_point.x, utm_point.y
 
+def create_search_box(x, y, range):
+    """
+    Create a bounding box for searching lanelets and linestrings
+    :param x: x-coordinate of the point
+    :param y: y-coordinate of the point
+    :param range: the half-length of the bounding box in both x and y directions
+    :return: BoundingBox2d object
+    """
+
+    return BoundingBox2d(BasicPoint2d(x - range, y - range), 
+                         BasicPoint2d(x + range, y + range))
+
 def get_linestrings_in_range(lanelet2_map, x, y, range):
     """
     Get all linestrings within a given range
@@ -63,10 +75,21 @@ def get_linestrings_in_range(lanelet2_map, x, y, range):
     :return: {line_id: line, ...}
     """
 
-    search_box = BoundingBox2d(BasicPoint2d(x - range, y - range), 
-                               BasicPoint2d(x + range, y + range))
-        
+    search_box = create_search_box(x, y, range)
     return lanelet2_map.lineStringLayer.search(search_box)
+
+def get_lanelets_in_range(lanelet2_map, x, y, range):
+    """
+    Get all lanelets within a given range
+    :param lanelet2_map: lanelet2 map
+    :param x: x-coordinate of the point
+    :param y: y-coordinate of the point
+    :param range: the half-length of the bounding box in both x and y directions
+    :return: {lanelet_id: lanelet, ...}
+    """
+
+    search_box = create_search_box(x, y, range)
+    return lanelet2_map.laneletLayer.search(search_box)
 
 def filter_linestrings_using_type_and_subtype(linestrings, type, subtype):
     """
@@ -82,6 +105,19 @@ def filter_linestrings_using_type_and_subtype(linestrings, type, subtype):
             if "subtype" in line.attributes and line.attributes["subtype"] in subtype:
                 filtered_lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
     return filtered_lines
+
+def remove_lanelet_subtypes(lanelets, subtypes_to_remove):
+    """
+    Remove lanelets with specific subtypes from the lanelets
+    :param lanelets: array of lanelets
+    :param subtypes_to_remove: list of subtypes to remove
+    :return: lanelets without the specified subtypes
+    """
+    filtered_lanelets = []
+    for lanelet in lanelets:
+        if "subtype" in lanelet.attributes and lanelet.attributes["subtype"] not in subtypes_to_remove:
+            filtered_lanelets.append(lanelet)
+    return filtered_lanelets
 
 
 def get_crosswalks(lanelet2_map):

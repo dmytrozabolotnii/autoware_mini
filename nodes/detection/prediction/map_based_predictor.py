@@ -5,8 +5,6 @@ import math
 import numpy as np
 import shapely
 import lanelet2
-from lanelet2.core import BasicPoint2d
-from lanelet2.geometry import findWithin2d
 
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 from geometry_msgs.msg import PoseStamped
@@ -78,14 +76,13 @@ class MapBasedPredictor:
 
             # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
             object_position = shapely.Point(obj.center.x, obj.center.y)
+
             # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
-            lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(obj.center.x, obj.center.y), self.distance_from_lanelet)
+            lanelets_within_distance = get_lanelets_in_range(self.lanelet2_map, obj.center.x, obj.center.y, self.distance_from_lanelet)
+            lanelets_within_distance = remove_lanelet_subtypes(lanelets_within_distance, ["crosswalk"])
 
             selected_lanelets = []
-            for _, lanelet in lanelets_within_distance:
-                # Skip undesired lanelets
-                if lanelet.attributes["subtype"] == "crosswalk" or lanelet.attributes["subtype"] == "bus_lane":
-                    continue
+            for lanelet in lanelets_within_distance:
 
                 # Calculate heading difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
