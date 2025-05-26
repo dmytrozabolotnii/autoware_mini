@@ -106,7 +106,7 @@ def filter_linestrings_using_type_and_subtype(linestrings, type, subtype, mode='
         if "type" in line.attributes and line.attributes["type"] == type:
             has_subtype = "subtype" in line.attributes and line.attributes["subtype"] in subtype
             if (mode == 'exclude' and not has_subtype) or (mode == 'include' and has_subtype):
-                filtered_lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
+                filtered_lines[line.id] = shapely.linestrings([(p.x, p.y, p.z) for p in line])
     return filtered_lines
 
 def filter_lanelets_using_subtype(lanelets, subtype, mode='include'):
@@ -190,7 +190,7 @@ def get_traffic_light_stop_lines(lanelet2_map):
     for reg_el in lanelet2_map.regulatoryElementLayer:
         if reg_el.attributes["subtype"] == "traffic_light":
             for line in reg_el.parameters["ref_line"]:
-                lines[line.id] = shapely.LineString([(p.x, p.y, p.z) for p in line])
+                lines[line.id] = shapely.linestrings([(p.x, p.y, p.z) for p in line])
     return lines
 
 # TODO: Add function to get all stop lines that are associated with traffic lights join with next function
