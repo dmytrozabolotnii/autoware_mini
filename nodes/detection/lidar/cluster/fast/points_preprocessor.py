@@ -7,6 +7,7 @@ import message_filters
 
 from tf2_ros import TransformListener, Buffer, TransformException
 from sensor_msgs.msg import PointCloud2
+from cuml.cluster import DBSCAN
 from ros_numpy import numpify, msgify
 
 from helpers.naive_ground_detector import NaiveGroundDetectorFast
@@ -20,6 +21,7 @@ class PointsPreprocessor:
         self.output_frame = rospy.get_param("~output_frame")
         self.transform_timeout = rospy.get_param('~transform_timeout')
 
+        # Crop box parameters
         outer_min_x = rospy.get_param('~outer_min_x')
         outer_max_x = rospy.get_param('~outer_max_x')
         outer_min_y = rospy.get_param('~outer_min_y')
@@ -34,21 +36,28 @@ class PointsPreprocessor:
         inner_min_z = rospy.get_param('~inner_min_z')
         inner_max_z = rospy.get_param('~inner_max_z')
 
+        # Ground detection parameters
         cell_size = rospy.get_param('~cell_size')
         tolerance = rospy.get_param('~tolerance')
-        filter = rospy.get_param('~filter')
         filter_size = rospy.get_param('~filter_size')
         filter_iterations = rospy.get_param('~filter_iterations')
 
+        # Voxel grid filter parameters
         self.voxel_grid_filter_leaf_size = rospy.get_param('~voxel_grid_filter_leaf_size')
+
+        # Clustering parameters
+        self.cluster_epsilon = rospy.get_param('~cluster_epsilon')
+        self.cluster_min_size = rospy.get_param('~cluster_min_size')
+        self.cluster_in_2d = rospy.get_param('~cluster_in_2d')
 
         self.outer_min_gpu = cp.array([outer_min_x, outer_min_y, outer_min_z])
         self.outer_max_gpu = cp.array([outer_max_x, outer_max_y, outer_max_z])
         self.inner_min_gpu = cp.array([inner_min_x, inner_min_y, inner_min_z])
         self.inner_max_gpu = cp.array([inner_max_x, inner_max_y, inner_max_z])
 
-        self.ground_detector = NaiveGroundDetectorFast(outer_min_x, outer_max_x, outer_min_y, outer_max_y, cell_size, tolerance, 
-                                                    filter, filter_size, filter_iterations)
+        self.ground_detector = NaiveGroundDetectorFast(outer_min_x, outer_max_x, outer_min_y, outer_max_y, cell_size, tolerance, filter_size, filter_iterations)
+        
+        self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_size)
 
         # TF buffer setup
         self.tf_buffer = Buffer()
@@ -68,8 +77,9 @@ class PointsPreprocessor:
             self.voxel_grid_filter_gpu(points_gpu[:, :3], self.voxel_grid_filter_leaf_size)
 
         # Publisher
-        self.points_processed_pub = rospy.Publisher('points_filtered', PointCloud2, queue_size=1, tcp_nodelay=True)
+        self.points_clustered_pub = rospy.Publisher('points_clustered', PointCloud2, queue_size=1, tcp_nodelay=True)
         self.points_ground_pub = rospy.Publisher('points_ground', PointCloud2, queue_size=1, tcp_nodelay=True)
+        self.points_no_ground_pub = rospy.Publisher('points_no_ground', PointCloud2, queue_size=1, tcp_nodelay=True)
 
         subscribers = []
         for topic in points_topics:
@@ -84,7 +94,7 @@ class PointsPreprocessor:
         self.transforms = [None] * len(subscribers)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
-        self.totals = [0, 0, 0, 0, 0, 0, 0, 0]
+        self.totals = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.count = 0
 
     def synced_pointcloud_callback(self, *msgs):
@@ -106,7 +116,7 @@ class PointsPreprocessor:
                 # Static transforms, fetch only once
                 if self.transforms[i] is None:
                     try:
-                        transform = self.tf_buffer.lookup_transform(self.output_frame, msg.header.frame_id, msg.header.stamp, rospy.Duration(self.transform_timeout))
+                        transform = self.tf_buffer.lookup_transform(self.output_frame, msg.header.frame_id, rospy.Time(0), rospy.Duration(self.transform_timeout))
                     except (TransformException, rospy.ROSTimeMovedBackwardsException) as e:
                         rospy.logwarn("%s - %s", rospy.get_name(), e)
                         return
@@ -123,9 +133,9 @@ class PointsPreprocessor:
                 
                 mask = cp.all(~cp.isnan(untransformed_points), axis=1)
                 untransformed_points = untransformed_points[mask]
-                # Transform lidar front points to output frame
-                points = cp.matmul(untransformed_points, self.transforms[i])[:, :3]
-                pointclouds.append(points)
+                # Transform points to output frame
+                points = cp.matmul(untransformed_points, self.transforms[i])
+                pointclouds.append(points[:, :3])
 
         t2 = time.perf_counter()
 
@@ -155,12 +165,26 @@ class PointsPreprocessor:
 
         points_downsampled = cp.asnumpy(points_downsampled).astype(np.float32)
 
-        # Publish points
-        self.publish_points(points_downsampled, msgs[0].header)
+        # Cluster points
+        labels = self.clusterer.fit_predict(points_downsampled[:, :2] if self.cluster_in_2d else points_downsampled)
+        valid_labels = labels[labels != -1] # remove noise label (-1)
+
+        counts = np.bincount(valid_labels)
+        valid_labels = np.where(counts >= self.cluster_min_size)[0]
+
+        filter_mask = np.isin(labels, valid_labels)
+
+        cluster_labels = labels[filter_mask]
+        points_clustered = points_downsampled[filter_mask]
 
         t7 = time.perf_counter()
 
-        self.totals[0] += (t7 - t0)*1000
+        # Publish points
+        self.publish_points(points_clustered, cluster_labels, msgs[0].header.stamp, self.points_clustered_pub)
+
+        t8 = time.perf_counter()
+
+        self.totals[0] += (t8 - t0)*1000
         self.totals[1] += (t1 - t0)*1000
         self.totals[2] += (t2 - t1)*1000
         self.totals[3] += (t3 - t2)*1000
@@ -168,14 +192,18 @@ class PointsPreprocessor:
         self.totals[5] += (t5 - t4)*1000
         self.totals[6] += (t6 - t5)*1000
         self.totals[7] += (t7 - t6)*1000
+        self.totals[8] += (t8 - t7)*1000
         self.count += 1
 
-        print(f"PREPROCESSOR: Total time: {self.totals[0] / self.count:.2f} | Unstructured time: {self.totals[1] / self.count:.2f} | Transform time: {self.totals[2] / self.count:.2f} | Concatenate time: {self.totals[3] / self.count:.2f} | Crop time: {self.totals[4] / self.count:.2f} | Ground removal time: {self.totals[5] / self.count:.2f} | Downsampling time: {self.totals[6] / self.count:.2f} | Publishing time: {self.totals[7] / self.count:.2f}")
+        print(f"PREPROCESSOR: Total time: {self.totals[0] / self.count:.2f} | Unstructured time: {self.totals[1] / self.count:.2f} | Transform time: {self.totals[2] / self.count:.2f} | Concatenate time: {self.totals[3] / self.count:.2f} | Crop time: {self.totals[4] / self.count:.2f} | Ground removal time: {self.totals[5] / self.count:.2f} | Downsampling time: {self.totals[6] / self.count:.2f} | Clustering time: {self.totals[7] / self.count:.2f} | Publishing time: {self.totals[8] / self.count:.2f}")
 
         if self.points_ground_pub.get_num_connections() > 0:
             points_ground = points_filtered[ground_mask]
             points_ground = cp.asnumpy(points_ground).astype(np.float32)
-            self.publish_points(points_ground, msgs[0].header, self.points_ground_pub)
+            self.publish_points(points_ground, None, msgs[0].header.stamp, self.points_ground_pub)
+
+        if self.points_no_ground_pub.get_num_connections() > 0:
+            self.publish_points(points_no_ground, None, msgs[0].header.stamp, self.points_no_ground_pub)
     
     def voxel_grid_filter_gpu(self, points, voxel_size):
         """
@@ -205,19 +233,25 @@ class PointsPreprocessor:
     
         return downsampled
     
-    def publish_points(self, points, header, publisher=None):
+    def publish_points(self, points, labels, stamp, publisher):
         """
         Publish points as PointCloud2 message.
         """
         dtype = [('x', np.float32), ('y', np.float32), ('z', np.float32)]
-        points_data = points.view(dtype).reshape(-1)
-        points_msg = msgify(PointCloud2, points_data)
-        points_msg.header.stamp = header.stamp
+        if labels is not None:
+            dtype.append(('label', np.int32))
+
+        data = np.empty(points.shape[0], dtype=dtype)
+        data['x'] = points[:, 0]
+        data['y'] = points[:, 1]
+        data['z'] = points[:, 2]
+        if labels is not None:
+            data['label'] = labels
+        
+        points_msg = msgify(PointCloud2, data)
+        points_msg.header.stamp = stamp
         points_msg.header.frame_id = self.output_frame
-        if publisher is None:
-            self.points_processed_pub.publish(points_msg)
-        else:
-            publisher.publish(points_msg)
+        publisher.publish(points_msg)
 
     def run(self):
         rospy.spin()
