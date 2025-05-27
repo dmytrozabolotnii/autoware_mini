@@ -203,6 +203,7 @@ class PointsPreprocessor:
             self.publish_points(points_ground, None, msgs[0].header.stamp, self.points_ground_pub)
 
         if self.points_no_ground_pub.get_num_connections() > 0:
+            points_no_ground = cp.asnumpy(points_no_ground).astype(np.float32)
             self.publish_points(points_no_ground, None, msgs[0].header.stamp, self.points_no_ground_pub)
     
     def voxel_grid_filter_gpu(self, points, voxel_size):
