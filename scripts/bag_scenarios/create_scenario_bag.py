@@ -15,15 +15,16 @@ def process_rosbags(args):
     # Open the input bag for reading
     with rosbag.Bag(args.input_bag, 'r') as in_bag:
         # Determine the start time of the bag
+        
         bag_start_time = in_bag.get_start_time()
-        start_time = rospy.Time(bag_start_time + args.start_time) if args.start_time is not None else None
-        end_time = rospy.Time(bag_start_time + args.end_time) if args.end_time is not None else None
-        goal_pose_time = rospy.Time(bag_start_time + args.end_time + args.end_to_goal_time) if args.end_time and args.end_to_goal_time is not None else None
+        start_time = rospy.Time(bag_start_time + args.start_time) if args.start_time is not None else rospy.Time(bag_start_time)
+        end_time = rospy.Time(bag_start_time + args.end_time) if args.end_time is not None else rospy.Time(in_bag.get_end_time())
+        goal_pose_time = rospy.Time(end_time.to_sec() + args.end_to_goal_time) if args.end_to_goal_time is not None else end_time
 
         for topic, msg, t in in_bag.read_messages(topics=['/localization/current_pose', '/localization/current_velocity']):
-            if start_time and t < start_time:
+            if t < start_time:
                 continue
-            if goal_pose_time and t > goal_pose_time:
+            if t > goal_pose_time:
                 break
 
             if topic == '/localization/current_pose':
@@ -53,9 +54,9 @@ def process_rosbags(args):
 
             # Copy relevant topics from the input bag to the output bag
             for topic, msg, t in in_bag.read_messages(topics=[args.detected_objects_topic, args.traffic_light_status_topic, '/tf']):
-                if start_time and t < start_time:
+                if t < start_time:
                     continue
-                if end_time and t > end_time:
+                if t > end_time:
                     break
 
                 if last_pose and t >= goal_time:
