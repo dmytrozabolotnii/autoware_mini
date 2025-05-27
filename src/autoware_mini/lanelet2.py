@@ -1,7 +1,7 @@
 from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
 from lanelet2.core import GPSPoint, BasicPoint2d, BoundingBox2d, BasicPoint3d
-from lanelet2.geometry import length2d, findNearest, project
+from lanelet2.geometry import length2d, findNearest, project, findWithin2d
 import shapely
 import numpy as np
 import rospy
@@ -53,18 +53,6 @@ def utm_origin():
     utm_point = projector.forward(gps_point)
     return utm_point.x, utm_point.y
 
-def create_search_box(x, y, range):
-    """
-    Create a bounding box for searching lanelets and linestrings
-    :param x: x-coordinate of the point
-    :param y: y-coordinate of the point
-    :param range: the half-length of the bounding box in both x and y directions
-    :return: BoundingBox2d object
-    """
-
-    return BoundingBox2d(BasicPoint2d(x - range, y - range), 
-                         BasicPoint2d(x + range, y + range))
-
 def get_linestrings_in_range(lanelet2_map, x, y, range):
     """
     Get all linestrings within a given range
@@ -75,12 +63,12 @@ def get_linestrings_in_range(lanelet2_map, x, y, range):
     :return: {line_id: line, ...}
     """
 
-    search_box = create_search_box(x, y, range)
+    search_box = BoundingBox2d(BasicPoint2d(x - range, y - range), BasicPoint2d(x + range, y + range))
     return lanelet2_map.lineStringLayer.search(search_box)
 
 def get_lanelets_in_range(lanelet2_map, x, y, range, subtypes=None):
     """
-    Get all lanelets within a given range, optionally filtering by subtypes.
+    Get all lanelets within a given range, optionally filtering by subtype.
     :param lanelet2_map: lanelet2 map
     :param x: x-coordinate of the point
     :param y: y-coordinate of the point
@@ -89,12 +77,12 @@ def get_lanelets_in_range(lanelet2_map, x, y, range, subtypes=None):
     :return: list of lanelets
     """
 
-    search_box = create_search_box(x, y, range)
-    lanelets = lanelet2_map.laneletLayer.search(search_box)
+    lanelets = findWithin2d(lanelet2_map.laneletLayer, BasicPoint2d(x, y), range)
 
     if subtypes is not None:
-        return [lanelet for lanelet in lanelets if "subtype" in lanelet.attributes and lanelet.attributes["subtype"] in subtypes]
-    return lanelets
+        return [lanelet for _, lanelet in lanelets if "subtype" in lanelet.attributes and lanelet.attributes["subtype"] in subtypes]
+    else:
+        return [lanelet for _, lanelet in lanelets]
 
 def get_stop_lines_in_range(lanelet2_map, x, y, range, subtypes=None):
     """
