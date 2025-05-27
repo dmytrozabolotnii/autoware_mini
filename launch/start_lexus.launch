@@ -22,7 +22,11 @@
     <arg name="detection_range"         default=""                  doc="enter a value in meters to enable it" />
     <arg name="more_visualizations"     default="false"             doc="By default visualize only the final detections" />
     <arg name="use_lane_matching"       default="false" />
-    <arg name="use_openpilot"           default="$(eval 'openpilot' in local_planner or use_lane_matching)" />
+    <arg name="use_openpilot_predictions" default="$(eval 'openpilot' in local_planner or use_lane_matching)" />
+    <arg name="use_openpilot_road_camera"   default="false"  />
+    <arg name="use_openpilot_wide_camera"   default="false"  />
+    <arg name="use_openpilot_driver_camera" default="false"  />
+    <arg name="use_openpilot_qroad_camera"  default="true"  />
     <arg name="blacklist_file"          default="$(find autoware_mini)/config/record_bag/blacklist.txt" />
     <arg name="recorded_bags_dir"       default="/media/$(env USER)/ExtremePro/$(env USER)" />
     <arg name="enable_goal_checker"          default="true" />
@@ -94,7 +98,11 @@
         <arg name="use_nvidia_cameras"  value="true" />
         <arg name="nvidia_encoder"      value="$(arg nvidia_encoder)" />
         <arg name="use_radar_fc"        value="$(eval 'radar' in detector)" />
-        <arg name="use_openpilot"       value="$(arg use_openpilot)" />
+        <arg name="use_openpilot_predictions"   value="$(arg use_openpilot_predictions)" />
+        <arg name="use_openpilot_road_camera"   value="$(arg use_openpilot_road_camera)" />
+        <arg name="use_openpilot_wide_camera"   value="$(arg use_openpilot_wide_camera)" />
+        <arg name="use_openpilot_driver_camera" value="$(arg use_openpilot_driver_camera)" />
+        <arg name="use_openpilot_qroad_camera"  value="$(arg use_openpilot_qroad_camera)" />
     </include>
 
     <!-- Rviz -->
