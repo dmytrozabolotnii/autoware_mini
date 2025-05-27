@@ -11,7 +11,7 @@ from geometry_msgs.msg import PoseStamped
 
 from autoware_mini.path import calculate_cross_track_error
 from autoware_mini.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings, get_distance_between_two_points_2d
-from autoware_mini.lanelet2 import load_lanelet2_map, follow_lanelets, get_stop_lines_using_range_and_subtype
+from autoware_mini.lanelet2 import load_lanelet2_map, follow_lanelets, get_stop_lines_in_range, get_lanelets_in_range
 from autoware_mini.shapely import offset_curve
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
@@ -54,11 +54,10 @@ class MapBasedPredictor:
         if self.last_stop_line_extract_location is not None and get_distance_between_two_points_2d(self.last_stop_line_extract_location, msg.pose.position) < self.local_path_length:
             return
         # Fetch stop lines within a range (2 x local_path length) around the current position
-        stop_lines = get_stop_lines_using_range_and_subtype(self.lanelet2_map, msg.pose.position.x, msg.pose.position.y, 2 * self.local_path_length,
-                                                                    subtype=["stop_line", "yield_stop", "yield"])
-        stop_lines = np.array(list(stop_lines.values()))
+        stop_lines = get_stop_lines_in_range(self.lanelet2_map, msg.pose.position.x, msg.pose.position.y, 2 * self.local_path_length,
+                                                ["stop_line", "yield_stop", "yield"])
 
-        self.stop_lines = stop_lines
+        self.stop_lines = np.array(stop_lines)
         self.last_stop_line_extract_location = msg.pose.position
 
     def tracked_objects_callback(self, msg):
@@ -75,7 +74,8 @@ class MapBasedPredictor:
             object_position = shapely.Point(obj.center.x, obj.center.y)
 
             # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
-            lanelets_within_distance = get_lanelets_using_range_and_subtype(self.lanelet2_map, obj.position.x, obj.position.y, self.distance_from_lanelet, ["crosswalk"], mode="exclude")
+            lanelets_within_distance = get_lanelets_in_range(self.lanelet2_map, obj.position.x, obj.position.y, self.distance_from_lanelet,
+                                                             ["road", "bus_lane", "bicycle_lane"])
 
             selected_lanelets = []
             for lanelet in lanelets_within_distance:

@@ -78,52 +78,45 @@ def get_linestrings_in_range(lanelet2_map, x, y, range):
     search_box = create_search_box(x, y, range)
     return lanelet2_map.lineStringLayer.search(search_box)
 
-def get_lanelets_in_range(lanelet2_map, x, y, range):
+def get_lanelets_in_range(lanelet2_map, x, y, range, subtypes=None):
     """
-    Get all lanelets within a given range
+    Get all lanelets within a given range, optionally filtering by subtypes.
     :param lanelet2_map: lanelet2 map
     :param x: x-coordinate of the point
     :param y: y-coordinate of the point
     :param range: the half-length of the bounding box in both x and y directions
-    :return: {lanelet_id: lanelet, ...}
+    :param subtypes: (optional) list of subtypes to filter by
+    :return: list of lanelets
     """
 
     search_box = create_search_box(x, y, range)
-    return lanelet2_map.laneletLayer.search(search_box)
+    lanelets = lanelet2_map.laneletLayer.search(search_box)
 
-def filter_linestrings_using_type_and_subtype(linestrings, type, subtype, mode='include'):
+    if subtypes is not None:
+        return [lanelet for lanelet in lanelets if "subtype" in lanelet.attributes and lanelet.attributes["subtype"] in subtypes]
+    return lanelets
+
+def get_stop_lines_in_range(lanelet2_map, x, y, range, subtype=None):
     """
-    Filter linestrings using a specific subtype, with mode to include or exclude subtypes.
-    :param linestrings: {line_id: line, ...}
-    :param type: type of linestring to filter
-    :param subtype: list of subtype's to search for
-    :param mode: 'include' to keep only those with subtypes, 'exclude' to remove those with subtypes
-    :return: {line_id: line, ...}
+    Get all stop lines within a given range, optionally filtering by subtype.
+    :param lanelet2_map: lanelet2 map
+    :param x: x-coordinate of the point
+    :param y: y-coordinate of the point
+    :param range: the half-length of the bounding box in both x and y directions
+    :param subtype: (optional) list of subtypes to filter by
+    :return: list of stopline linestrings
     """
 
-    filtered_lines = {}
+    linestrings = get_linestrings_in_range(lanelet2_map, x, y, range)
+    stop_lines = []
     for line in linestrings:
-        if "type" in line.attributes and line.attributes["type"] == type:
-            has_subtype = "subtype" in line.attributes and line.attributes["subtype"] in subtype
-            if (mode == 'exclude' and not has_subtype) or (mode == 'include' and has_subtype):
-                filtered_lines[line.id] = shapely.linestrings([(p.x, p.y, p.z) for p in line])
-    return filtered_lines
-
-def filter_lanelets_using_subtype(lanelets, subtype, mode='include'):
-    """
-    Filter lanelets based on specific subtypes.
-    :param lanelets: array of lanelets
-    :param subtype: list of subtypes to filter
-    :param mode: 'remove' to exclude lanelets with subtypes, 'include' to keep only those with subtypes
-    :return: filtered lanelets
-    """
-
-    filtered_lanelets = []
-    for lanelet in lanelets:
-        has_subtype = "subtype" in lanelet.attributes and lanelet.attributes["subtype"] in subtype
-        if (mode == 'exclude' and not has_subtype) or (mode == 'include' and has_subtype):
-            filtered_lanelets.append(lanelet)
-    return filtered_lanelets
+        if "type" in line.attributes and line.attributes["type"] == "stop_line":
+            if subtype is not None:
+                if "subtype" in line.attributes and line.attributes["subtype"] in subtype:
+                    stop_lines.append(shapely.linestrings([(p.x, p.y, p.z) for p in line]))
+            else:
+                stop_lines.append(shapely.linestrings([(p.x, p.y, p.z) for p in line]))
+    return stop_lines
 
 def get_crosswalks(lanelet2_map):
     """
@@ -140,44 +133,20 @@ def get_crosswalks(lanelet2_map):
 
     return crosswalks
 
-def get_stop_lines_using_subtype(lanelet2_map, subtype):
+def get_stop_lines_using_subtype(lanelet2_map, subtypes):
     """
     Get all stop lines with a specific subtype
     :param lanelet2_map: lanelet2 map
     :param subtype: list of subtype's to search for
-    :return: {line_id: line, ...}
+    :return: {line_id: linestring, ...}
     """
 
-    return filter_linestrings_using_type_and_subtype(lanelet2_map.lineStringLayer, "stop_line", subtype)
-
-def get_lanelets_using_range_and_subtype(lanelet2_map, x, y, range, subtype, mode):
-    """
-    Get all lanelets with a specific subtype within a given range
-    :param lanelet2_map: lanelet2 map
-    :param x: x-coordinate of the point
-    :param y: y-coordinate of the point
-    :param range: the half-length of the bounding box in both x and y directions
-    :param subtype: list of subtype's to search for
-    :param mode: 'include' to keep only those with subtypes, 'exclude' to remove those with subtypes
-    :return: {lanelet_id: lanelet, ...}
-    """
-
-    lanelets = get_lanelets_in_range(lanelet2_map, x, y, range)
-    return filter_lanelets_using_subtype(lanelets, subtype, mode)
-
-def get_stop_lines_using_range_and_subtype(lanelet2_map, x, y, range, subtype):
-    """
-    Get all stop lines with a specific subtype within a given range
-    :param lanelet2_map: lanelet2 map
-    :param x: x-coordinate of the point
-    :param y: y-coordinate of the point
-    :param range: the half-length of the bounding box in both x and y directions
-    :param subtype: list of subtype's to search for
-    :return: {line_id: line, ...}
-    """
-
-    linestrings = get_linestrings_in_range(lanelet2_map, x, y, range)
-    return filter_linestrings_using_type_and_subtype(linestrings, "stop_line", subtype)
+    filtered_lines = {}
+    for line in lanelet2_map.lineStringLayer:
+        if "type" in line.attributes and line.attributes["type"] == "stop_line":
+            if "subtype" in line.attributes and line.attributes["subtype"] in subtypes:
+                filtered_lines[line.id] = shapely.linestrings([(p.x, p.y, p.z) for p in line])
+    return filtered_lines
 
 def get_traffic_light_stop_lines(lanelet2_map):
     """
