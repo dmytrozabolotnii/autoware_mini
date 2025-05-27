@@ -96,7 +96,7 @@ def get_lanelets_in_range(lanelet2_map, x, y, range, subtypes=None):
         return [lanelet for lanelet in lanelets if "subtype" in lanelet.attributes and lanelet.attributes["subtype"] in subtypes]
     return lanelets
 
-def get_stop_lines_in_range(lanelet2_map, x, y, range, subtype=None):
+def get_stop_lines_in_range(lanelet2_map, x, y, range, subtypes=None):
     """
     Get all stop lines within a given range, optionally filtering by subtype.
     :param lanelet2_map: lanelet2 map
@@ -111,8 +111,8 @@ def get_stop_lines_in_range(lanelet2_map, x, y, range, subtype=None):
     stop_lines = []
     for line in linestrings:
         if "type" in line.attributes and line.attributes["type"] == "stop_line":
-            if subtype is not None:
-                if "subtype" in line.attributes and line.attributes["subtype"] in subtype:
+            if subtypes is not None:
+                if "subtype" in line.attributes and line.attributes["subtype"] in subtypes:
                     stop_lines.append(shapely.linestrings([(p.x, p.y, p.z) for p in line]))
             else:
                 stop_lines.append(shapely.linestrings([(p.x, p.y, p.z) for p in line]))
