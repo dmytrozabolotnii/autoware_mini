@@ -138,6 +138,8 @@
         <remap from="/dashboard/acceleration_limit" to="/bag/dashboard/acceleration_limit" />
         <remap from="/dashboard/deceleration_limit" to="/bag/dashboard/deceleration_limit" />
         <remap from="/dashboard/gnss_corrections_detailed" to="/bag/dashboard/gnss_corrections_detailed" if="$(arg use_lane_matching)"/>
+        <remap from="/dashboard/left_blinker_arrow" to="/bag/dashboard/left_blinker_arrow" />
+        <remap from="/dashboard/right_blinker_arrow" to="/bag/dashboard/right_blinker_arrow" />
         <!-- For compatibility with older bags and Vella bags -->
         <remap from="/points_raw_center" to="/lidar_center/points_raw"/>
         <remap from="/points_raw_front" to="/lidar_front/points_raw"/>
