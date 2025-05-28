@@ -57,6 +57,7 @@ class MapBasedPredictor:
         stop_lines = get_stop_lines_in_area(self.lanelet2_map, msg.pose.position.x, msg.pose.position.y, 2 * self.local_path_length,
                                                 ["stop_line", "yield_stop", "yield"])
 
+        shapely.prepare(stop_lines)
         self.stop_lines = np.array(stop_lines)
         self.last_stop_line_extract_location = msg.pose.position
 
