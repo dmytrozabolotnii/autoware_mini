@@ -6,9 +6,9 @@ import numpy as np
 from autoware_mini.msg import Path, TrafficLightResultArray
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import PointCloud2
-from helpers.path import PathWrapper
-from helpers.collision import CollisionPoints
-from helpers.lanelet2 import load_lanelet2_map, get_traffic_light_stop_lines
+from autoware_mini.path import PathWrapper
+from autoware_mini.collision import CollisionPoints
+from autoware_mini.lanelet2 import load_lanelet2_map, get_traffic_light_stop_lines
 
 class TrafficLightStoplineChecker:
 

@@ -5,7 +5,7 @@ import traceback
 import shapely
 from autoware_mini.msg import Path
 from geometry_msgs.msg import PoseStamped
-from helpers.path import PathWrapper
+from autoware_mini.path import PathWrapper
 
 class LocalPathExtractor:
 

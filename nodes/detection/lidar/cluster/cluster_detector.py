@@ -14,7 +14,7 @@ from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from std_msgs.msg import ColorRGBA, Header
 from geometry_msgs.msg import Point32, Quaternion
 
-from helpers.geometry import get_orientation_from_heading
+from autoware_mini.geometry import get_orientation_from_heading
 
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 

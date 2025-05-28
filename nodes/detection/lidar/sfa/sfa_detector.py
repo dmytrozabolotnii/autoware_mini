@@ -14,9 +14,9 @@ from autoware_mini.msg import DetectedObjectArray, DetectedObject
 
 import onnxruntime
 
-from helpers.geometry import get_orientation_from_heading, get_heading_from_orientation
-from helpers.detection import create_hull
-from helpers.transform import transform_pose
+from autoware_mini.geometry import get_orientation_from_heading, get_heading_from_orientation
+from autoware_mini.detection import create_hull
+from autoware_mini.transform import transform_pose
 
 
 LIGHT_BLUE = ColorRGBA(0.5, 0.5, 1.0, 0.5)

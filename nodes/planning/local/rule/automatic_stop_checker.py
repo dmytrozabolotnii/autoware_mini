@@ -3,8 +3,8 @@
 import rospy
 import shapely
 import numpy as np
-from helpers.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
-from helpers.collision import CollisionPoints
+from autoware_mini.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
+from autoware_mini.collision import CollisionPoints
 from std_msgs.msg import Int32
 from autoware_mini.msg import Path, Log
 from sensor_msgs.msg import PointCloud2

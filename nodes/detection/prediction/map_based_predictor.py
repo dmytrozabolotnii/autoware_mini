@@ -10,10 +10,10 @@ from lanelet2.geometry import findWithin2d
 
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
-from helpers.path import calculate_cross_track_error
-from helpers.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
-from helpers.lanelet2 import load_lanelet2_map, follow_lanelets
-from helpers.shapely import offset_curve
+from autoware_mini.path import calculate_cross_track_error
+from autoware_mini.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
+from autoware_mini.lanelet2 import load_lanelet2_map, follow_lanelets
+from autoware_mini.shapely import offset_curve
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
     'straight': {'straight': 1, 'left': 0.5, 'right': 0.5},

@@ -11,8 +11,8 @@ import paho.mqtt.client as paho
 from geometry_msgs.msg import PoseStamped
 from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
-from helpers.geometry import get_distance_between_two_points_2d
-from helpers.lanelet2 import load_lanelet2_map, get_stoplines_api_id, get_stoplines_api_id_range
+from autoware_mini.geometry import get_distance_between_two_points_2d
+from autoware_mini.lanelet2 import load_lanelet2_map, get_stoplines_api_id, get_stoplines_api_id_range
 
 MQTT_TO_AUTOWARE_TFL_MAP = {
     "RED": 0,

@@ -3,7 +3,7 @@
 import rospy
 import numpy as np
 from autoware_mini.msg import Path, Waypoint
-from helpers.geometry import get_orientation_from_heading
+from autoware_mini.geometry import get_orientation_from_heading
 
 
 class PathSmoothing:

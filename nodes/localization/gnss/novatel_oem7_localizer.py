@@ -13,8 +13,8 @@ from std_srvs.srv import Empty, EmptyResponse
 from ros_numpy import numpify, msgify
 import numpy as np
 
-from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
-from localization.WGS84ToLest97Transformer import WGS84ToLest97Transformer
+from autoware_mini.localization import WGS84ToUTMTransformer
+from autoware_mini.localization import WGS84ToLest97Transformer
 
 
 class NovatelOem7Localizer:

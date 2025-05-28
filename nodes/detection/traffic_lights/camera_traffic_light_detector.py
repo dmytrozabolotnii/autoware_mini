@@ -17,8 +17,8 @@ from autoware_mini.msg import Path
 
 from cv_bridge import CvBridge
 
-from helpers.transform import transform_point
-from helpers.lanelet2 import get_traffic_light_stop_lines, get_stoplines_trafficlights, load_lanelet2_map
+from autoware_mini.transform import transform_point
+from autoware_mini.lanelet2 import get_traffic_light_stop_lines, get_stoplines_trafficlights, load_lanelet2_map
 
 # Classifier outputs 4 classes (LightState)
 CLASSIFIER_RESULT_TO_STRING = {

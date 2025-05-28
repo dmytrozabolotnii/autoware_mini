@@ -5,8 +5,8 @@ import shapely
 import numpy as np
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
-from helpers.geometry import get_vector_norm_3d
-from helpers.collision import CollisionPoints
+from autoware_mini.geometry import get_vector_norm_3d
+from autoware_mini.collision import CollisionPoints
 
 class ObjectCollisionChecker:
 

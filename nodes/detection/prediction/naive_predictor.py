@@ -5,7 +5,7 @@ import numpy as np
 
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 
-from helpers.geometry import get_vector_norm_3d, get_point_using_heading_and_distance
+from autoware_mini.geometry import get_vector_norm_3d, get_point_using_heading_and_distance
 
 class NaivePredictor:
     def __init__(self):

@@ -11,7 +11,7 @@ from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import ColorRGBA
 
-from helpers.geometry import get_heading_from_orientation
+from autoware_mini.geometry import get_heading_from_orientation
 
 VEHICLE_STATUS_LAMP_TO_WAYPOINT_STATE_MAP = {
     0: Waypoint.STR_STRAIGHT,

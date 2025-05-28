@@ -3,7 +3,7 @@
 import rospy, os, dotenv, json, csv, threading, secrets
 import paho.mqtt.client as mqtt
 
-from localization.WGS84ToUTMTransformer import WGS84ToUTMTransformer
+from autoware_mini.localization import WGS84ToUTMTransformer
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from autoware_mini.msg import Path
 

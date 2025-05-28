@@ -7,8 +7,8 @@ from autoware_mini.msg import Path, Waypoint
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 
-from helpers.geometry import get_orientation_from_heading
-from helpers.visualization import triangulate_path
+from autoware_mini.geometry import get_orientation_from_heading
+from autoware_mini.visualization import triangulate_path
 
 GLOBAL_PATH_COLOR = ColorRGBA(0.9, 0.6, 1.0, 0.7)
 

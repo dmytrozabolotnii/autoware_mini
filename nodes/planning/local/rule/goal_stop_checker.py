@@ -5,8 +5,8 @@ import math
 import numpy as np
 from autoware_mini.msg import Path
 from sensor_msgs.msg import PointCloud2
-from helpers.collision import CollisionPoints
-from helpers.geometry import get_distance_between_two_points_2d
+from autoware_mini.collision import CollisionPoints
+from autoware_mini.geometry import get_distance_between_two_points_2d
 
 class GoalStopChecker:
 

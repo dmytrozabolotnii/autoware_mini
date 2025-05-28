@@ -12,9 +12,9 @@ from autoware_mini.msg import VehicleCmd, VehicleStatus, Gear
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 
-from helpers.geometry import get_orientation_from_heading, get_heading_from_orientation
-from helpers.lanelet2 import load_lanelet2_map, get_height_at_position
-from helpers.transform import transform_point
+from autoware_mini.geometry import get_orientation_from_heading, get_heading_from_orientation
+from autoware_mini.lanelet2 import load_lanelet2_map, get_height_at_position
+from autoware_mini.transform import transform_point
 
 class BicycleSimulation:
 
