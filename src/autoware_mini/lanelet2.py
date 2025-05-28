@@ -53,49 +53,49 @@ def utm_origin():
     utm_point = projector.forward(gps_point)
     return utm_point.x, utm_point.y
 
-def get_linestrings_in_range(lanelet2_map, x, y, range):
+def get_linestrings_in_area(lanelet2_map, x, y, extent):
     """
-    Get all linestrings within a given range
+    Get all linestrings within a given area
     :param lanelet2_map: lanelet2 map
     :param x: x-coordinate of the point
     :param y: y-coordinate of the point
-    :param range: the half-length of the bounding box in both x and y directions
+    :param extent: the half-length of the bounding box in both x and y directions
     :return: {line_id: line, ...}
     """
 
-    search_box = BoundingBox2d(BasicPoint2d(x - range, y - range), BasicPoint2d(x + range, y + range))
+    search_box = BoundingBox2d(BasicPoint2d(x - extent, y - extent), BasicPoint2d(x + extent, y + extent))
     return lanelet2_map.lineStringLayer.search(search_box)
 
-def get_lanelets_in_range(lanelet2_map, x, y, range, subtypes=None):
+def get_lanelets_in_range(lanelet2_map, x, y, radius, subtypes=None):
     """
-    Get all lanelets within a given range, optionally filtering by subtype.
+    Get all lanelets within a given radius, optionally filtering by subtype.
     :param lanelet2_map: lanelet2 map
     :param x: x-coordinate of the point
     :param y: y-coordinate of the point
-    :param range: the half-length of the bounding box in both x and y directions
+    :param radius: maximum distance between geometries. If zero, only primitives containing the element are returned.
     :param subtypes: (optional) list of subtypes to filter by
     :return: list of lanelets
     """
 
-    lanelets = findWithin2d(lanelet2_map.laneletLayer, BasicPoint2d(x, y), range)
+    lanelets = findWithin2d(lanelet2_map.laneletLayer, BasicPoint2d(x, y), radius)
 
     if subtypes is not None:
         return [lanelet for _, lanelet in lanelets if "subtype" in lanelet.attributes and lanelet.attributes["subtype"] in subtypes]
     else:
         return [lanelet for _, lanelet in lanelets]
 
-def get_stop_lines_in_range(lanelet2_map, x, y, range, subtypes=None):
+def get_stop_lines_in_area(lanelet2_map, x, y, extent, subtypes=None):
     """
-    Get all stop lines within a given range, optionally filtering by subtype.
+    Get all stop lines within a given area, optionally filtering by subtype.
     :param lanelet2_map: lanelet2 map
     :param x: x-coordinate of the point
     :param y: y-coordinate of the point
-    :param range: the half-length of the bounding box in both x and y directions
+    :param extent: the half-length of the bounding box in both x and y directions
     :param subtype: (optional) list of subtypes to filter by
     :return: list of stopline linestrings
     """
 
-    linestrings = get_linestrings_in_range(lanelet2_map, x, y, range)
+    linestrings = get_linestrings_in_area(lanelet2_map, x, y, extent)
     stop_lines = []
     for line in linestrings:
         if "type" in line.attributes and line.attributes["type"] == "stop_line":
@@ -178,7 +178,7 @@ def get_stoplines_api_id_range(lanelet2_map, x, y, range):
 
     :return: A dictionary of stopline ids and api keys that fall within the search area
     """
-    linestrings = get_linestrings_in_range(lanelet2_map, x, y, range)
+    linestrings = get_linestrings_in_area(lanelet2_map, x, y, range)
 
     stop_line_ids = {}
     for line in linestrings:
