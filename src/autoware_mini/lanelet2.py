@@ -100,10 +100,9 @@ def get_stop_lines_in_area(lanelet2_map, x, y, extent, subtypes=None):
     for line in linestrings:
         if "type" in line.attributes and line.attributes["type"] == "stop_line":
             if subtypes is not None:
-                if "subtype" in line.attributes and line.attributes["subtype"] in subtypes:
-                    stop_lines.append(shapely.linestrings([(p.x, p.y, p.z) for p in line]))
-            else:
-                stop_lines.append(shapely.linestrings([(p.x, p.y, p.z) for p in line]))
+                if "subtype" not in line.attributes or line.attributes["subtype"] not in subtypes:
+                    continue
+            stop_lines.append(shapely.linestrings([(p.x, p.y, p.z) for p in line]))
     return stop_lines
 
 def get_crosswalks(lanelet2_map):
