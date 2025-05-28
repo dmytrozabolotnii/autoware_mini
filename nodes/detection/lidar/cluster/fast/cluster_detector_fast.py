@@ -68,19 +68,18 @@ class ClusterDetectorFast:
         objects.header.stamp = msg.header.stamp
         objects.header.frame_id = self.output_frame
 
+        # sort points by labels
         sorted_indices = np.argsort(labels)
         sorted_labels = labels[sorted_indices]
+        sorted_points = points_homogeneous[sorted_indices]
 
         # get the split indices
-        unique_labels, label_starts = np.unique(sorted_labels, return_index=True)
-        label_ends = np.append(label_starts[1:], len(labels))
+        unique_labels, label_starts, label_counts = np.unique(sorted_labels, return_index=True, return_counts=True)
+        label_ends = label_starts + label_counts
 
         for label, start, end in zip(unique_labels, label_starts, label_ends):
-            # get indices for this cluster
-            idx = sorted_indices[start:end]
-
             # fetch points for this cluster
-            points3d = points_homogeneous[idx,:3]
+            points3d = sorted_points[start:end,:3]
             points2d = np.ascontiguousarray(points3d[:,:2])
 
             if self.bounding_box_type == 'axis_aligned':
