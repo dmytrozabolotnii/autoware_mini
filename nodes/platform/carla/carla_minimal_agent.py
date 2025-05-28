@@ -22,7 +22,7 @@ from srunner.autoagents.autonomous_agent import AutonomousAgent
 from srunner.scenariomanager.timer import GameTime
 from srunner.tools.route_manipulation import downsample_route
 
-from helpers.geometry import  get_point_using_heading_and_distance, get_heading_from_orientation
+from autoware_mini.geometry import  get_point_using_heading_and_distance, get_heading_from_orientation
 
 
 def get_entry_point():

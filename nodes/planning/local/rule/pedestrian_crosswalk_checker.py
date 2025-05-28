@@ -7,10 +7,10 @@ import numpy as np
 from collections import defaultdict
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
-from helpers.geometry import get_vector_norm_3d, get_heading_from_vector, get_angle_between_two_headings
-from helpers.collision import CollisionPoints
-from helpers.path import PathWrapper
-from helpers.lanelet2 import load_lanelet2_map, get_crosswalks
+from autoware_mini.geometry import get_vector_norm_3d, get_heading_from_vector, get_angle_between_two_headings
+from autoware_mini.collision import CollisionPoints
+from autoware_mini.path import PathWrapper
+from autoware_mini.lanelet2 import load_lanelet2_map, get_crosswalks
 
 class PedestrianCrosswalkChecker:
 

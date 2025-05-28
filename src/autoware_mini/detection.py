@@ -2,7 +2,7 @@ import math
 import cv2
 import numpy as np
 from geometry_msgs.msg import Polygon, Point
-from helpers.geometry import get_heading_from_vector
+from autoware_mini.geometry import get_heading_from_vector
 
 def create_hull(obj):
 

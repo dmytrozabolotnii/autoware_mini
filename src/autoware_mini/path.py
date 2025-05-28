@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 import shapely.ops
 from autoware_mini.msg import Waypoint
 from geometry_msgs.msg import Point, Pose
-from helpers.geometry import get_heading_between_two_points, get_orientation_from_heading
+from autoware_mini.geometry import get_heading_between_two_points, get_orientation_from_heading
 
 class PathWrapper:
     def __init__(self, waypoints, distances=False, velocities=False, blinkers=False, boundaries=False):

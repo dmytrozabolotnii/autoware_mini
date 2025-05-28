@@ -9,7 +9,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from carla_msgs.msg import CarlaTrafficLightStatus, CarlaTrafficLightStatusList, CarlaTrafficLightInfoList
 from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
-from helpers.lanelet2 import get_stoplines_center, load_lanelet2_map
+from autoware_mini.lanelet2 import get_stoplines_center, load_lanelet2_map
 
 # Carla to Autoware traffic light status mapping
 CARLA_TO_AUTOWARE_TFL_MAP = {

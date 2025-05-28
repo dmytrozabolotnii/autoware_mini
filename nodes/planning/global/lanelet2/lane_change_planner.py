@@ -7,7 +7,7 @@ import math
 from geometry_msgs.msg import Point
 from autoware_mini.msg import Path, Waypoint
 
-from helpers.geometry import get_heading_between_two_points, get_point_using_heading_and_distance, \
+from autoware_mini.geometry import get_heading_between_two_points, get_point_using_heading_and_distance, \
     get_distance_between_two_points_2d, get_angle_between_three_points, calculate_points_on_bezier_curve
 
 

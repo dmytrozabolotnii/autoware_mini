@@ -9,7 +9,7 @@ from geometry_msgs.msg import Point
 from std_msgs.msg import ColorRGBA
 from jsk_recognition_msgs.msg import BoundingBox, BoundingBoxArray 
 
-from helpers.geometry import get_orientation_from_heading
+from autoware_mini.geometry import get_orientation_from_heading
 
 class DetectedObjectsVisualizer:
     def __init__(self):

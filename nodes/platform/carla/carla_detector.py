@@ -13,8 +13,8 @@ import rospy
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from derived_object_msgs.msg import ObjectArray, Object
-from helpers.detection import create_hull
-from helpers.geometry import get_heading_from_orientation
+from autoware_mini.detection import create_hull
+from autoware_mini.geometry import get_heading_from_orientation
 
 CLASS_ID_TO_LABEL = {
     Object.CLASSIFICATION_UNKNOWN: 'unknown',

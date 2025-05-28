@@ -9,10 +9,10 @@ from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from jsk_rviz_plugins.msg import OverlayText
 
-from helpers.path import PathWrapper
-from helpers.collision import CollisionPoints
-from helpers.geometry import get_orientation_from_heading
-from helpers.visualization import triangulate_linestring
+from autoware_mini.path import PathWrapper
+from autoware_mini.collision import CollisionPoints
+from autoware_mini.geometry import get_orientation_from_heading
+from autoware_mini.visualization import triangulate_linestring
 
 
 COLLISION_POINT_CATEGORY_COLOR = {

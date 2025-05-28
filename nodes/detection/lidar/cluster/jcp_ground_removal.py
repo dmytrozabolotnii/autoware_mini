@@ -7,7 +7,7 @@ from numpy.lib.recfunctions import structured_to_unstructured
 from ros_numpy import numpify, msgify
 from sensor_msgs.msg import PointCloud2
 
-from helpers.jcp import JPCGroundRemove
+from autoware_mini.jcp import JPCGroundRemove
 
 class JCPGroundRemovalNode:
     def __init__(self):

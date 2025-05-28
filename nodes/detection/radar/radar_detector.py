@@ -13,8 +13,8 @@ from autoware_mini.msg import DetectedObject, DetectedObjectArray
 from radar_msgs.msg import RadarTracks
 from std_msgs.msg import ColorRGBA
 
-from helpers.detection import create_hull
-from helpers.transform import transform_point, transform_vector3
+from autoware_mini.detection import create_hull
+from autoware_mini.transform import transform_point, transform_vector3
 
 RED = ColorRGBA(1.0, 0.0, 0.0, 0.5)
 RADAR_CLASSIFICATION = {0:'unknown', 1:'static', 2:'dynamic'}

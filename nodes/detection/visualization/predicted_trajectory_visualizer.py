@@ -7,7 +7,7 @@ from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import Header, ColorRGBA
 
-from helpers.visualization import triangulate_linestring
+from autoware_mini.visualization import triangulate_linestring
 
 COLOR = ColorRGBA(1.0, 1.0, 0.0, 0.5) # Yellow
 

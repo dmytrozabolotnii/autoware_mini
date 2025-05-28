@@ -13,9 +13,9 @@ from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Empty, EmptyResponse
 from visualization_msgs.msg import MarkerArray, Marker
 
-from helpers.geometry import get_heading_between_two_points
-from helpers.lanelet2 import load_lanelet2_map, find_following_lane_change_lanelet
-from helpers.path import PathWrapper
+from autoware_mini.geometry import get_heading_between_two_points
+from autoware_mini.lanelet2 import load_lanelet2_map, find_following_lane_change_lanelet
+from autoware_mini.path import PathWrapper
 
 LANELET_TURN_DIRECTION_TO_WAYPOINT_STATE_MAP = {
     "straight": Waypoint.STR_STRAIGHT,

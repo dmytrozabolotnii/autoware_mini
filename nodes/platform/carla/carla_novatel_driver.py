@@ -17,7 +17,7 @@ from novatel_oem7_msgs.msg import INSPVA, BESTPOS, InertialSolutionStatus
 from nav_msgs.msg import Odometry
 import pyproj
 
-from helpers.geometry import get_vector_norm_3d
+from autoware_mini.geometry import get_vector_norm_3d
 
 class CarlaNovatelDriver():
     def __init__(self):

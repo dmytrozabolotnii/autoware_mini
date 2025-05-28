@@ -12,8 +12,8 @@ from lapsolver import solve_dense
 from autoware_mini.msg import DetectedObjectArray
 from std_msgs.msg import ColorRGBA
 
-from helpers.geometry import get_vector_norm_3d
-from helpers.detection import calculate_iou, get_axis_oriented_bounding_box
+from autoware_mini.geometry import get_vector_norm_3d
+from autoware_mini.detection import calculate_iou, get_axis_oriented_bounding_box
 
 
 GREEN = ColorRGBA(0.0, 1.0, 0.0, 0.8)
