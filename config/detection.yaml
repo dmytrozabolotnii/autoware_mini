@@ -15,10 +15,10 @@ lidar:
     outer_max_y: 60.0
     outer_min_z: -2.5
     outer_max_z: 0.05
-    cell_size: 0.6
-    tolerance: 0.15
-    filter_size: 3
-    filter_iterations: 1
+    ground_removal_cell_size: 0.6
+    ground_removal_tolerance: 0.15
+    ground_removal_filter_size: 3
+    ground_removal_filter_iterations: 1
     voxel_grid_filter_leaf_size: 0.08
     cluster_epsilon: 0.6
     cluster_min_size: 4
@@ -86,7 +86,7 @@ lidar:
   points_concatenator:
     transform_timeout: 0.06
   voxel_grid_filter:
-    leaf_size: 0.08
+    leaf_size: 0.15
     filter_field_name: z
     filter_limit_min: -2.0
     filter_limit_max: 0.5

@@ -37,13 +37,14 @@ class PointsPreprocessor:
         inner_max_z = rospy.get_param('~inner_max_z')
 
         # Ground detection parameters
-        cell_size = rospy.get_param('~cell_size')
-        tolerance = rospy.get_param('~tolerance')
-        filter_size = rospy.get_param('~filter_size')
-        filter_iterations = rospy.get_param('~filter_iterations')
+        cell_size = rospy.get_param('~ground_removal_cell_size')
+        tolerance = rospy.get_param('~ground_removal_tolerance')
+        filter_size = rospy.get_param('~ground_removal_filter_size')
+        filter_iterations = rospy.get_param('~ground_removal_filter_iterations')
 
         # Voxel grid filter parameters
-        self.voxel_grid_filter_leaf_size = rospy.get_param('~voxel_grid_filter_leaf_size')
+        voxel_size = cp.asarray(rospy.get_param('~voxel_grid_filter_leaf_size'))
+        self.voxel_grid_filter_leaf_size = cp.asanyarray((voxel_size, voxel_size, voxel_size))
 
         # Clustering parameters
         self.cluster_epsilon = rospy.get_param('~cluster_epsilon')
@@ -66,15 +67,10 @@ class PointsPreprocessor:
         # Warmup GPU with dummy data
         for _ in range(3):
             points_gpu = cp.random.rand(131072, 4).astype(cp.float32) * 100
-            transform_matrix_gpu= cp.array([[0.6492562, 0.7605143, 0.00918187, 0.], [-0.76056415, 0.64925057, 0.00399486, 0.], 
-                                            [-0.00292319, -0.00957709, 0.9999499, 0.], [ 0.8559, 0.0642, -0.4051, 1.]]).astype(cp.float32)
-            nan_mask = cp.random.rand(*points_gpu.shape) < .1 # Randomly set 10% of elements to NaN
-            points_gpu[nan_mask] = cp.nan
-            mask = cp.all(~cp.isnan(points_gpu), axis=1)
-            points_gpu[mask]
-            cp.matmul(points_gpu, transform_matrix_gpu)[:, :3]
-            self.ground_detector.detect_ground(points_gpu[:, :3])
-            self.voxel_grid_filter_gpu(points_gpu[:, :3], self.voxel_grid_filter_leaf_size)
+            nan_idx = cp.nonzero(cp.random.rand(*points_gpu.shape) < .1) # Randomly set 10% of elements to NaN
+            points_gpu[nan_idx] = cp.nan
+            idx = cp.nonzero(cp.all(~cp.isnan(points_gpu), axis=1))
+            points_gpu[idx]
 
         # Publisher
         self.points_clustered_pub = rospy.Publisher('points_clustered', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -108,8 +104,8 @@ class PointsPreprocessor:
 
                 t1 = time.perf_counter()
 
-                mask = cp.all(~cp.isnan(points), axis=1)
-                points = points[mask]
+                idx = cp.nonzero(cp.all(~cp.isnan(points), axis=1))
+                points = points[idx]
                 pointclouds.append(points)
             
             else:
@@ -131,8 +127,8 @@ class PointsPreprocessor:
 
                 t1 = time.perf_counter()
                 
-                mask = cp.all(~cp.isnan(untransformed_points), axis=1)
-                untransformed_points = untransformed_points[mask]
+                idx = cp.nonzero(cp.all(~cp.isnan(untransformed_points), axis=1))
+                untransformed_points = untransformed_points[idx]
                 # Transform points to output frame
                 points = cp.matmul(untransformed_points, self.transforms[i])
                 pointclouds.append(points[:, :3])
@@ -147,37 +143,38 @@ class PointsPreprocessor:
         # Filter points
         in_outer = cp.all((points_concatenated >= self.outer_min_gpu) & (points_concatenated <= self.outer_max_gpu), axis=1)
         in_inner = cp.all((points_concatenated >= self.inner_min_gpu) & (points_concatenated <= self.inner_max_gpu), axis=1)
-        mask = in_outer & (~in_inner)
-        points_filtered = points_concatenated[mask]
+        keep_idx = cp.nonzero(in_outer & (~in_inner))
+        points_filtered = points_concatenated[keep_idx]
 
         t4 = time.perf_counter()
 
         # Remove ground points
         ground_mask = self.ground_detector.detect_ground(points_filtered)
-        points_no_ground = points_filtered[~ground_mask]
+        no_ground_idx = cp.nonzero(~ground_mask)
+        points_no_ground = points_filtered[no_ground_idx]
 
         t5 = time.perf_counter()
         
         # Downsample points
-        points_downsampled = self.voxel_grid_filter_gpu(points_no_ground, self.voxel_grid_filter_leaf_size)
+        points_downsampled = self.voxel_grid_filter_gpu(points_no_ground)
 
         t6 = time.perf_counter()
-
-        points_downsampled = cp.asnumpy(points_downsampled).astype(np.float32)
 
         # Cluster points
         labels = self.clusterer.fit_predict(points_downsampled[:, :2] if self.cluster_in_2d else points_downsampled)
         valid_labels = labels[labels != -1] # remove noise label (-1)
 
-        counts = np.bincount(valid_labels)
-        valid_labels = np.where(counts >= self.cluster_min_size)[0]
+        counts = cp.bincount(valid_labels)
+        valid_labels = cp.where(counts >= self.cluster_min_size)[0]
 
-        filter_mask = np.isin(labels, valid_labels)
+        filter_idx = cp.nonzero(cp.isin(labels, valid_labels))
 
-        cluster_labels = labels[filter_mask]
-        points_clustered = points_downsampled[filter_mask]
+        cluster_labels = labels[filter_idx]
+        points_clustered = points_downsampled[filter_idx]
 
         t7 = time.perf_counter()
+        points_clustered = cp.asnumpy(points_clustered).astype(np.float32)
+        cluster_labels = cp.asnumpy(cluster_labels).astype(np.int32)
 
         # Publish points
         self.publish_points(points_clustered, cluster_labels, msgs[0].header.stamp, self.points_clustered_pub)
@@ -198,7 +195,7 @@ class PointsPreprocessor:
         print(f"PREPROCESSOR: Total time: {self.totals[0] / self.count:.2f} | Unstructured time: {self.totals[1] / self.count:.2f} | Transform time: {self.totals[2] / self.count:.2f} | Concatenate time: {self.totals[3] / self.count:.2f} | Crop time: {self.totals[4] / self.count:.2f} | Ground removal time: {self.totals[5] / self.count:.2f} | Downsampling time: {self.totals[6] / self.count:.2f} | Clustering time: {self.totals[7] / self.count:.2f} | Publishing time: {self.totals[8] / self.count:.2f}")
 
         if self.points_ground_pub.get_num_connections() > 0:
-            points_ground = points_filtered[ground_mask]
+            points_ground = points_filtered[np.nonzero(ground_mask)]
             points_ground = cp.asnumpy(points_ground).astype(np.float32)
             self.publish_points(points_ground, None, msgs[0].header.stamp, self.points_ground_pub)
 
@@ -206,7 +203,7 @@ class PointsPreprocessor:
             points_no_ground = cp.asnumpy(points_no_ground).astype(np.float32)
             self.publish_points(points_no_ground, None, msgs[0].header.stamp, self.points_no_ground_pub)
     
-    def voxel_grid_filter_gpu(self, points, voxel_size):
+    def voxel_grid_filter_gpu(self, points):
         """
         Voxel grid downsampling with GPU acceleration.
         Args:
@@ -215,11 +212,8 @@ class PointsPreprocessor:
         Returns:
             Downsampled points (as cupy array).
         """
-        if isinstance(voxel_size, float):
-            voxel_size = (voxel_size, voxel_size, voxel_size)
-
         # Compute voxel indices
-        voxel_indices = cp.floor(points / cp.asarray(voxel_size)).astype(cp.int32)
+        voxel_indices = cp.floor(points / self.voxel_grid_filter_leaf_size).astype(cp.int32)
 
         # Hash voxel indices into scalar keys
         # Assumption: coordinates are within reasonable bounds (e.g., [-1000, 1000])
