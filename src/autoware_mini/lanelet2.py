@@ -151,33 +151,19 @@ def get_traffic_light_stop_lines(lanelet2_map):
 
 # TODO: Add function to get all stop lines that are associated with traffic lights join with next function
 
-def get_stoplines_api_id(lanelet2_map):
+def get_stop_lines_api_id_in_area(lanelet2_map, x = None, y = None, extent = None):
     """
-    Iterate over all stop lines and extract all stop lines that have api_id and add to dict
-    :param lanelet2_map: lanelet2 map
-    :return: {stop_line_id: stop_line.api_id, ...}
-    """
-
-    # extract all stop lines that have api_id and add to dict
-    stopline_ids = {}
-    for line in lanelet2_map.lineStringLayer:
-        if line.attributes and line.attributes["type"] == "stop_line" and "api_id" in line.attributes:
-            stopline_ids[line.id] = line.attributes["api_id"]
-
-    return stopline_ids
-
-def get_stoplines_api_id_range(lanelet2_map, x, y, range):
-    """
-    Retrieve stop line ids within a specified range from a given point on a Lanelet2 map.
-
+    Retrieve stop line ids within a specified area from a given point on a Lanelet2 map.
     :param lanelet2_map: the Lanelet2 map
     :param x: x-coordinate of the given point
     :param y: y-coordinate of the given point
-    :param range: the half-length of the bounding box in both x and y directions
-
+    :param extent: the half-length of the bounding box in both x and y directions
     :return: A dictionary of stopline ids and api keys that fall within the search area
     """
-    linestrings = get_linestrings_in_area(lanelet2_map, x, y, range)
+    if x is None or y is None or extent is None:
+        linestrings = get_linestrings_in_area(lanelet2_map, x, y, extent)
+    else:
+        linestrings = lanelet2_map.lineStringLayer
 
     stop_line_ids = {}
     for line in linestrings:
