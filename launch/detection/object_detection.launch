@@ -17,14 +17,11 @@
         <group if="$(eval 'lidar' in detector)" ns="lidar">
             <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <group if="$(eval 'lidar_cluster' in detector)">
-                <group if="$(eval 'fast' in detector)">
-                    <node type="points_preprocessor.py" name="points_preprocessor" pkg="autoware_mini" output="screen" required="true">
-                        <rosparam if="$(eval use_lidar_center and not use_lidar_front)" param="points_topics">["/lidar_center/points_raw"]</rosparam>
-                        <rosparam if="$(eval not use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_front/points"]</rosparam>
-                        <rosparam if="$(eval use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_center/points_raw", "/lidar_front/points"]</rosparam>
-                    </node>
-                    <node type="cluster_detector_fast.py" name="cluster_detector_fast" pkg="autoware_mini" output="screen" required="true" />
-                </group>
+                <node if="$(eval 'fast' in detector)" type="points_preprocessor.py" name="points_preprocessor" pkg="autoware_mini" output="screen" required="true">
+                    <rosparam if="$(eval use_lidar_center and not use_lidar_front)" param="points_topics">["/lidar_center/points_raw"]</rosparam>
+                    <rosparam if="$(eval not use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_front/points"]</rosparam>
+                    <rosparam if="$(eval use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_center/points_raw", "/lidar_front/points"]</rosparam>
+                </node>
                 <group unless="$(eval 'fast' in detector)">
                     <group if="$(arg use_lidar_center)" ns="center">
                         <!-- Only functional in Carla simulation -->
@@ -61,8 +58,8 @@
                         <remap from="~output" to="/detection/lidar/points_filtered" />
                     </node>
                     <node type="points_clusterer.py" name="points_clusterer" pkg="autoware_mini" output="screen" required="true" />
-                    <node type="cluster_detector.py" name="cluster_detector" pkg="autoware_mini" output="screen" required="true" />
                 </group>
+                <node type="cluster_detector.py" name="cluster_detector" pkg="autoware_mini" output="screen" required="true" />
             </group>
 
             <node if="$(eval 'lidar_sfa' in detector)" pkg="autoware_mini" type="sfa_detector.py" name="sfa_detector" output="screen" required="true">
