@@ -33,6 +33,7 @@
     <arg name="benchmark_topic"         default=""              doc="Name of the topic to benchmark" />
     <arg name="benchmark_type"          default="delay"         doc="Type of benchmark, e.g. delay or hz" />
     <arg name="launch_rviz"             default="true"          doc="Determines if rviz is launched or not. Rviz will be launched by default." />
+    <arg name="use_driver_status"       default="false"         doc="Whether to use pacmod3 msgs for additional dashboard visualization (requires pacmod3_msgs ros package installed)" />
     <arg name="loop"                    default="$(eval benchmark_topic == '' '' and record_bag == '')" />
     <arg name="loop_option"             default="$(eval '--loop' if loop else '')" doc="rosbag play parameter" />
     <arg name="start"                   default=""              doc="Seconds from the start of the bag" />
@@ -218,7 +219,7 @@
 
     <!-- Rviz -->
     <include if="$(arg launch_rviz)" file="$(find autoware_mini)/launch/rviz.launch">
-        <arg name="driver_status"   value="true" />
+        <arg name="driver_status"   value="$(arg use_driver_status)" />
     </include>
 
 </launch>
