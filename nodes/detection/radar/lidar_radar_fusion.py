@@ -66,8 +66,8 @@ class LidarRadarFusion:
                     assert len(matched_lidar_indices) == len(matched_radar_indices)
                 elif self.association_method == 'euclidean':
                     # Collect centroids for the lidar objects and the radar objects
-                    lidar_objects_centroids = np.array([(obj.position.x, obj.position.y) for obj in lidar_detections.objects], dtype=np.float32)
-                    radar_objects_centroids = np.array([(obj.position.x, obj.position.y) for obj in radar_detections.objects], dtype=np.float32)
+                    lidar_objects_centroids = np.array([(obj.centroid.x, obj.centroid.y) for obj in lidar_detections.objects], dtype=np.float32)
+                    radar_objects_centroids = np.array([(obj.centroid.x, obj.centroid.y) for obj in radar_detections.objects], dtype=np.float32)
 
                     # Calculate euclidean distance between the tracked object and the detected object centroids
                     dists = cdist(lidar_objects_centroids, radar_objects_centroids)

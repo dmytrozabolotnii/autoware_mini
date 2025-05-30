@@ -55,9 +55,9 @@ class MapBasedPredictor:
                 continue
 
             # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
-            object_position = shapely.Point(obj.position.x, obj.position.y)
+            object_position = shapely.Point(obj.center.x, obj.center.y)
             # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
-            lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(obj.position.x, obj.position.y), self.distance_from_lanelet)
+            lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(obj.center.x, obj.center.y), self.distance_from_lanelet)
 
             selected_lanelets = []
             for _, lanelet in lanelets_within_distance:
