@@ -17,8 +17,9 @@ from autoware_mini.geometry import get_orientation_from_heading
 
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 
-class ClusterDetectorFast:
+class ClusterDetector:
     def __init__(self):
+        self.cluster_min_size = rospy.get_param('~cluster_min_size')
         self.bounding_box_type = rospy.get_param('~bounding_box_type')
         self.output_frame = rospy.get_param('/detection/output_frame')
         self.transform_timeout = rospy.get_param('~transform_timeout')
@@ -77,7 +78,11 @@ class ClusterDetectorFast:
         unique_labels, label_starts, label_counts = np.unique(sorted_labels, return_index=True, return_counts=True)
         label_ends = label_starts + label_counts
 
-        for label, start, end in zip(unique_labels, label_starts, label_ends):
+        for label, start, end, count in zip(unique_labels, label_starts, label_ends, label_counts):
+            # filter out small clusters
+            if count < self.cluster_min_size:
+                continue
+
             # fetch points for this cluster
             points3d = sorted_points[start:end,:3]
             points2d = np.ascontiguousarray(points3d[:,:2])
@@ -147,6 +152,6 @@ class ClusterDetectorFast:
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('cluster_detector_fast', log_level=rospy.INFO)
-    node = ClusterDetectorFast()
+    rospy.init_node('cluster_detector', log_level=rospy.INFO)
+    node = ClusterDetector()
     node.run()

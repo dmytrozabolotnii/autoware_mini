@@ -93,6 +93,7 @@ lidar:
     cluster_min_size: 4
     cluster_in_2d: True
   cluster_detector:
+    cluster_min_size: 4
     bounding_box_type: min_area     # axis_aligned, min_area
     transform_timeout: 0.06         # needed for Carla
 

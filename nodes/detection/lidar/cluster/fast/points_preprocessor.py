@@ -162,19 +162,13 @@ class PointsPreprocessor:
 
         # Cluster points
         labels = self.clusterer.fit_predict(points_downsampled[:, :2] if self.cluster_in_2d else points_downsampled)
-        valid_labels = labels[labels != -1] # remove noise label (-1)
-
-        counts = cp.bincount(valid_labels)
-        valid_labels = cp.where(counts >= self.cluster_min_size)[0]
-
-        filter_idx = cp.nonzero(cp.isin(labels, valid_labels))
-
-        cluster_labels = labels[filter_idx]
-        points_clustered = points_downsampled[filter_idx]
+        valid_idx = cp.nonzero(labels != -1) # remove noise label (-1)
+        valid_labels = labels[valid_idx] 
+        valid_points = points_downsampled[valid_idx]
 
         t7 = time.perf_counter()
-        points_clustered = cp.asnumpy(points_clustered).astype(np.float32)
-        cluster_labels = cp.asnumpy(cluster_labels).astype(np.int32)
+        points_clustered = cp.asnumpy(valid_points).astype(np.float32)
+        cluster_labels = cp.asnumpy(valid_labels).astype(np.int32)
 
         # Publish points
         self.publish_points(points_clustered, cluster_labels, msgs[0].header.stamp, self.points_clustered_pub)

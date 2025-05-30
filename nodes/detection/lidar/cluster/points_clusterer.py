@@ -42,13 +42,7 @@ class PointsClusterer:
         # get labels for clusters
         labels = self.clusterer.fit_predict(points[:, :2] if self.cluster_in_2d else points)
 
-        # filter out noise points and small clusters
-        valid_labels = labels[labels != -1]
-
-        counts = np.bincount(valid_labels)
-        valid_labels = np.where(counts >= self.cluster_min_size)[0]
-
-        filter_idx = np.nonzero(np.isin(labels, valid_labels))
+        filter_idx = np.nonzero(labels != -1) # remove noise label (-1)
 
         cluster_labels = labels[filter_idx]
         points_clustered = points[filter_idx]
