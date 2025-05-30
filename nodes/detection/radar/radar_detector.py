@@ -93,7 +93,7 @@ class RadarDetector:
                 detected_object.label = RADAR_CLASSIFICATION[track.classification]
                 detected_object.color = RED
                 detected_object.valid = True
-                detected_object.position = transform_point(track.position, source_frame_to_output_tf)
+                detected_object.centroid = detected_object.center = transform_point(track.position, source_frame_to_output_tf)
                 detected_object.heading = 0.0
                 detected_object.position_reliable = True
                 detected_object.velocity = self.transform_velocity(track, current_velocity.twist.linear, source_frame_to_output_tf)

@@ -239,7 +239,7 @@ class SFADetector:
             detected_object.color = LIGHT_BLUE
             detected_object.valid = True
             detected_object.score = score
-            detected_object.position = pose.position
+            detected_object.centroid = detected_object.center = pose.position
             detected_object.heading = get_heading_from_orientation(pose.orientation)
             detected_object.position_reliable = True
 
