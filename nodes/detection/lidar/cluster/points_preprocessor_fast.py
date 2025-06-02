@@ -14,7 +14,7 @@ from helpers.naive_ground_detector import NaiveGroundDetectorFast
 
 import time
 
-class PointsPreprocessor:
+class PointsPreprocessorFast:
     def __init__(self):
 
         points_topics = rospy.get_param("~points_topics")
@@ -48,7 +48,7 @@ class PointsPreprocessor:
 
         # Clustering parameters
         self.cluster_epsilon = rospy.get_param('~cluster_epsilon')
-        self.cluster_min_size = rospy.get_param('~cluster_min_size')
+        self.cluster_min_samples = rospy.get_param('~cluster_min_samples')
         self.cluster_in_2d = rospy.get_param('~cluster_in_2d')
 
         self.outer_min_gpu = cp.array([outer_min_x, outer_min_y, outer_min_z])
@@ -58,7 +58,7 @@ class PointsPreprocessor:
 
         self.ground_detector = NaiveGroundDetectorFast(outer_min_x, outer_max_x, outer_min_y, outer_max_y, cell_size, tolerance, filter_size, filter_iterations)
         
-        self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_size)
+        self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_samples)
 
         # TF buffer setup
         self.tf_buffer = Buffer()
@@ -246,6 +246,6 @@ class PointsPreprocessor:
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('points_preprocessor', log_level=rospy.INFO)
-    node = PointsPreprocessor()
+    rospy.init_node('points_preprocessor_fast', log_level=rospy.INFO)
+    node = PointsPreprocessorFast()
     node.run()

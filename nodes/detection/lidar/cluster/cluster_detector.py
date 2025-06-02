@@ -19,7 +19,7 @@ BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 
 class ClusterDetector:
     def __init__(self):
-        self.cluster_min_size = rospy.get_param('~cluster_min_size')
+        self.min_cluster_size = rospy.get_param('~min_cluster_size')
         self.bounding_box_type = rospy.get_param('~bounding_box_type')
         self.output_frame = rospy.get_param('/detection/output_frame')
         self.transform_timeout = rospy.get_param('~transform_timeout')
@@ -80,7 +80,7 @@ class ClusterDetector:
 
         for label, start, end, count in zip(unique_labels, label_starts, label_ends, label_counts):
             # filter out small clusters
-            if count < self.cluster_min_size:
+            if count < self.min_cluster_size:
                 continue
 
             # fetch points for this cluster

@@ -17,7 +17,7 @@
         <group if="$(eval 'lidar' in detector)" ns="lidar">
             <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <group if="$(eval 'lidar_cluster' in detector)">
-                <node if="$(eval 'fast' in detector)" type="points_preprocessor.py" name="points_preprocessor" pkg="autoware_mini" output="screen" required="true">
+                <node if="$(eval 'fast' in detector)" type="points_preprocessor_fast.py" name="points_preprocessor_fast" pkg="autoware_mini" output="screen" required="true">
                     <rosparam if="$(eval use_lidar_center and not use_lidar_front)" param="points_topics">["/lidar_center/points_raw"]</rosparam>
                     <rosparam if="$(eval not use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_front/points"]</rosparam>
                     <rosparam if="$(eval use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_center/points_raw", "/lidar_front/points"]</rosparam>
