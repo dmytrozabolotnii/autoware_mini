@@ -166,7 +166,6 @@ Visualization Manager:
               Value: true
               auto color change: false
               auto scale: false
-              auto text size in plot: true
               background color: 0; 0; 0
               backround alpha: 0
               border: true
@@ -180,7 +179,6 @@ Visualization Manager:
               min value: 16
               show caption: true
               text size: 10
-              text size in plot: 12
               top: 10
               update interval: 0.03999999910593033
               width: 128
@@ -193,7 +191,6 @@ Visualization Manager:
               Value: true
               auto color change: false
               auto scale: false
-              auto text size in plot: true
               background color: 0; 0; 0
               backround alpha: 0
               border: false
@@ -207,7 +204,6 @@ Visualization Manager:
               min value: 16
               show caption: false
               text size: 12
-              text size in plot: 12
               top: 10
               update interval: 0.03999999910593033
               width: 128
@@ -222,7 +218,6 @@ Visualization Manager:
           Value: true
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -236,7 +231,6 @@ Visualization Manager:
           min value: 25
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -249,7 +243,6 @@ Visualization Manager:
           Value: true
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -263,7 +256,6 @@ Visualization Manager:
           min value: 16
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -276,7 +268,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -290,7 +281,6 @@ Visualization Manager:
           min value: -3
           show caption: false
           text size: 10
-          text size in plot: 12
           top: 168
           update interval: 0.03999999910593033
           width: 128
@@ -303,7 +293,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -317,7 +306,6 @@ Visualization Manager:
           min value: -5
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 168
           update interval: 0.03999999910593033
           width: 128
@@ -330,7 +318,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -344,7 +331,6 @@ Visualization Manager:
           min value: -2
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -357,7 +343,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -371,7 +356,6 @@ Visualization Manager:
           min value: -2
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -384,7 +368,6 @@ Visualization Manager:
           Value: false
           auto color change: false
           auto scale: false
-          auto text size in plot: true
           background color: 0; 0; 0
           backround alpha: 0
           border: true
@@ -398,7 +381,6 @@ Visualization Manager:
           min value: -2
           show caption: true
           text size: 10
-          text size in plot: 12
           top: 10
           update interval: 0.03999999910593033
           width: 128
@@ -743,6 +725,7 @@ Visualization Manager:
           Marker Topic: /planning/lanelet2_map_markers
           Name: Lanelet2 map
           Namespaces:
+            Bicycle lane: true
             Bus lane: true
             Centerline: true
             Crosswalk: true
@@ -877,7 +860,7 @@ Visualization Manager:
                   GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
-                  Pacmod dtailed: true
+                  Pacmod detailed: true
                   Pacmod general: true
                   Planner log: true
                   Planner status: true
@@ -1006,7 +989,7 @@ Visualization Manager:
                   GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
-                  Pacmod dtailed: true
+                  Pacmod detailed: true
                   Pacmod general: true
                   Planner log: true
                   Planner status: true
@@ -1139,7 +1122,7 @@ Visualization Manager:
                   GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
-                  Pacmod dtailed: true
+                  Pacmod detailed: true
                   Pacmod general: true
                   Planner log: true
                   Planner status: true
@@ -1265,7 +1248,7 @@ Visualization Manager:
                   GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
-                  Pacmod dtailed: true
+                  Pacmod detailed: true
                   Pacmod general: true
                   Planner log: true
                   Planner status: true
@@ -1391,7 +1374,7 @@ Visualization Manager:
                   GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
-                  Pacmod dtailed: true
+                  Pacmod detailed: true
                   Pacmod general: true
                   Planner log: true
                   Planner status: true
@@ -1517,7 +1500,7 @@ Visualization Manager:
                   GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
-                  Pacmod dtailed: true
+                  Pacmod detailed: true
                   Pacmod general: true
                   Planner log: true
                   Planner status: true
@@ -1643,7 +1626,7 @@ Visualization Manager:
                   GNSS corrections detailed: true
                   GNSS detailed: true
                   GNSS general: true
-                  Pacmod dtailed: true
+                  Pacmod detailed: true
                   Pacmod general: true
                   Planner log: true
                   Planner status: true
@@ -2201,15 +2184,11 @@ Visualization Manager:
           Unreliable: false
           Value: false
           alpha: 0.800000011920929
-          alpha max: 1
-          alpha method: flat
-          alpha min: 0
           color: 252; 175; 62
           coloring: Flat color
           line width: 0.10000000149011612
           only edge: true
           show coords: false
-          value threshold: 0
         - Class: rviz/MarkerArray
           Enabled: true
           Marker Topic: /detection/predicted_objects_markers
@@ -2249,8 +2228,7 @@ Visualization Manager:
               Marker Topic: /planning/tfl_stop_line_markers
               Name: Stop line status
               Namespaces:
-                Status text: true
-                Stop line: true
+                {}
               Queue Size: 100
               Value: true
           Enabled: true
@@ -2474,9 +2452,7 @@ Visualization Manager:
           Marker Topic: /planning/global_path_markers
           Name: Global path
           Namespaces:
-            Path: true
-            Velocity label: false
-            Waypoint pose: false
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/MarkerArray
@@ -2484,9 +2460,7 @@ Visualization Manager:
           Marker Topic: /planning/local_path_markers
           Name: Local path
           Namespaces:
-            Stopping lateral distance: true
-            Stopping point: true
-            Velocity label: true
+            {}
           Queue Size: 100
           Value: true
         - Class: rviz/Marker
@@ -2567,7 +2541,7 @@ Visualization Manager:
               GNSS corrections detailed: true
               GNSS detailed: true
               GNSS general: true
-              Pacmod dtailed: true
+              Pacmod detailed: true
               Pacmod general: true
               Planner log: true
               Planner status: true
@@ -2848,7 +2822,7 @@ Window Geometry:
     collapsed: false
   Forward camera ROI image:
     collapsed: false
-  Height: 1403
+  Height: 1370
   Hide Left Dock: false
   Hide Right Dock: false
   Image Interface link1 Right:
