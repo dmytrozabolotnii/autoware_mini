@@ -10,7 +10,7 @@ from sensor_msgs.msg import PointCloud2
 from cuml.cluster import DBSCAN
 from ros_numpy import numpify, msgify
 
-from helpers.naive_ground_detector import NaiveGroundDetectorFast
+from autoware_mini.naive_ground_detector import NaiveGroundDetectorFast
 
 class PointsPreprocessorFast:
     def __init__(self):
