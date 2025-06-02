@@ -68,7 +68,7 @@ class BicycleSimulation:
         self.z = msg.pose.pose.position.z
 
         # set z coordinate from nearest lanelet
-        self.z = get_height_at_position(self.lanelet2_map, self.x, self.y, self.z)
+        self.z = get_height_at_position(self.lanelet2_map, self.x, self.y, self.z, initialization=True)
 
         # extract heading angle from orientation
         self.heading_angle = get_heading_from_orientation(msg.pose.pose.orientation)
