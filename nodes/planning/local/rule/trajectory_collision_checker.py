@@ -97,7 +97,7 @@ class TrajectoryCollisionChecker:
                         intersection_distance_from_local_path_start_max = max(distances)
                         last_point_of_trajectory = shapely.Point(trajectory.linestring.coords[-1])
 
-                        object_current_location = shapely.Point(obj.center.x, obj.center.y)
+                        object_current_location = shapely.Point(obj.centroid.x, obj.centroid.y)
                         object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
 
                         # Ignore objects behind local_path start OR trajectory passing through local_path start AND endpoint being also on local_path
