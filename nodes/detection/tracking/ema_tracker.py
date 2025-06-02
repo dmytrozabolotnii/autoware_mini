@@ -173,9 +173,8 @@ class EMATracker:
 
                 obj.centroid.x, obj.centroid.y = self.tracked_objects_array['centroid'][idx]
                 convex_hull = np.array(obj.convex_hull).reshape(-1, 3)
-                convex_hull[:, 0] += position_change[idx][0]
-                convex_hull[:, 1] += position_change[idx][1]
-                obj.convex_hull = np.array(obj.convex_hull).ravel().tolist()
+                convex_hull[:, :2] += position_change[idx]
+                obj.convex_hull = convex_hull.ravel().tolist()
 
 
         # delete stale tracks

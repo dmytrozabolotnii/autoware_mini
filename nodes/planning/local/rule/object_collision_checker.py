@@ -48,7 +48,7 @@ class ObjectCollisionChecker:
 
             for obj in detected_objects:
                 # get the convex hulls and store as shapely polygons
-                object_polygon = shapely.polygons(np.array(obj.convex_hull).reshape(-1, 3)[:, :2])
+                object_polygon = shapely.polygons(np.array(obj.convex_hull).reshape(-1, 3))
 
                 if local_path_buffer.intersects(object_polygon):
                     intersection_result = object_polygon.intersection(local_path_buffer)

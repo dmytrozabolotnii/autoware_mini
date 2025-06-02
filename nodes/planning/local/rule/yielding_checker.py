@@ -93,7 +93,7 @@ class YieldingChecker:
                                 continue
 
                             # Do not yield if object itself is on the local path
-                            object_polygon = shapely.polygons([np.array(obj.convex_hull).reshape(-1, 3)[:, :2]])
+                            object_polygon = shapely.polygons([np.array(obj.convex_hull).reshape(-1, 3)])
                             if local_path_buffer.intersects(object_polygon):
                                 continue
 
