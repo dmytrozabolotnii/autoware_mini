@@ -13,8 +13,6 @@ from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from geometry_msgs.msg import Point32
 
-from autoware_mini.geometry import get_orientation_from_heading
-
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 
 class ClusterDetector:
@@ -34,21 +32,14 @@ class ClusterDetector:
         rospy.Subscriber('points_clustered', PointCloud2, self.points_callback, queue_size=1, buff_size=2**24, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
-        self.totals = [0, 0, 0, 0, 0, 0, 0]
-        self.count = 0
 
     def points_callback(self, msg):
-        t0 = time.perf_counter()
         data = numpify(msg)
-
-        t1 = time.perf_counter()
 
         # convert point cloud into ndarray, take only xyz coordinates
         points_homogeneous = np.stack([data['x'], data['y'], data['z'], data['z']], axis=-1).reshape(-1, 4).astype(np.float32)
         points_homogeneous[:, 3] = 1.0  # Add homogeneous coordinate
         labels = data['label']
-
-        t2 = time.perf_counter()
 
         # if target frame does not match the header frame
         if msg.header.frame_id != self.output_frame:
@@ -61,8 +52,6 @@ class ClusterDetector:
             tf_matrix = numpify(transform.transform).astype(np.float32)
             # transform points to target frame
             points_homogeneous = points_homogeneous.dot(tf_matrix.T)
-
-        t3 = time.perf_counter()
         
         # create detected objects
         objects = DetectedObjectArray()
@@ -138,15 +127,6 @@ class ClusterDetector:
 
         # publish detected objects message
         self.objects_pub.publish(objects)
-
-        t4 = time.perf_counter()
-        self.totals[0] += (t4 - t0)*1000
-        self.totals[1] += (t1 - t0)*1000
-        self.totals[2] += (t2 - t1)*1000
-        self.totals[3] += (t3 - t2)*1000
-        self.totals[4] += (t4 - t3)*1000
-        self.count += 1
-        print(f"CLUSTER DETECTOR: Total time: {self.totals[0] / self.count:.2f} | Numpify time: {self.totals[1] / self.count:.2f} | Unstructured time: {self.totals[2] / self.count:.2f} | Transform time: {self.totals[3] / self.count:.2f} | Publishing time: {self.totals[4] / self.count:.2f}")
 
     def run(self):
         rospy.spin()

@@ -12,8 +12,6 @@ from ros_numpy import numpify, msgify
 
 from helpers.naive_ground_detector import NaiveGroundDetectorFast
 
-import time
-
 class PointsPreprocessorFast:
     def __init__(self):
 
@@ -88,21 +86,15 @@ class PointsPreprocessorFast:
         ts.registerCallback(self.synced_pointcloud_callback)
 
         self.transforms = [None] * len(subscribers)
-
         rospy.loginfo("%s - initialized", rospy.get_name())
-        self.totals = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.count = 0
 
     def synced_pointcloud_callback(self, *msgs):
-        t0 = time.perf_counter()
         pointclouds = []
         for i, msg in enumerate(msgs):
             points_array = numpify(msg)
             if msg.header.frame_id == self.output_frame:
                 points = np.stack([points_array['x'], points_array['y'], points_array['z']], axis=-1).reshape(-1, 3)
                 points = cp.asarray(points)
-
-                t1 = time.perf_counter()
 
                 idx = cp.nonzero(cp.all(~cp.isnan(points), axis=1))
                 points = points[idx]
@@ -124,8 +116,6 @@ class PointsPreprocessorFast:
                 untransformed_points = np.stack([points_array['x'], points_array['y'], points_array['z'], points_array['z']], axis=-1).reshape(-1, 4)
                 untransformed_points[:, 3] = 1.0 # Add homogeneous coordinate
                 untransformed_points = cp.asarray(untransformed_points)
-
-                t1 = time.perf_counter()
                 
                 idx = cp.nonzero(cp.all(~cp.isnan(untransformed_points), axis=1))
                 untransformed_points = untransformed_points[idx]
@@ -133,12 +123,8 @@ class PointsPreprocessorFast:
                 points = cp.matmul(untransformed_points, self.transforms[i])
                 pointclouds.append(points[:, :3])
 
-        t2 = time.perf_counter()
-
         # Concatenate poionts
         points_concatenated = cp.concatenate(pointclouds, axis=0)
-
-        t3 = time.perf_counter()
 
         # Filter points
         in_outer = cp.all((points_concatenated >= self.outer_min_gpu) & (points_concatenated <= self.outer_max_gpu), axis=1)
@@ -146,19 +132,13 @@ class PointsPreprocessorFast:
         keep_idx = cp.nonzero(in_outer & (~in_inner))
         points_filtered = points_concatenated[keep_idx]
 
-        t4 = time.perf_counter()
-
         # Remove ground points
         ground_mask = self.ground_detector.detect_ground(points_filtered)
         no_ground_idx = cp.nonzero(~ground_mask)
         points_no_ground = points_filtered[no_ground_idx]
-
-        t5 = time.perf_counter()
         
         # Downsample points
         points_downsampled = self.voxel_grid_filter_gpu(points_no_ground)
-
-        t6 = time.perf_counter()
 
         # Cluster points
         labels = self.clusterer.fit_predict(points_downsampled[:, :2] if self.cluster_in_2d else points_downsampled)
@@ -166,27 +146,11 @@ class PointsPreprocessorFast:
         valid_labels = labels[valid_idx] 
         valid_points = points_downsampled[valid_idx]
 
-        t7 = time.perf_counter()
         points_clustered = cp.asnumpy(valid_points).astype(np.float32)
         cluster_labels = cp.asnumpy(valid_labels).astype(np.int32)
 
         # Publish points
         self.publish_points(points_clustered, cluster_labels, msgs[0].header.stamp, self.points_clustered_pub)
-
-        t8 = time.perf_counter()
-
-        self.totals[0] += (t8 - t0)*1000
-        self.totals[1] += (t1 - t0)*1000
-        self.totals[2] += (t2 - t1)*1000
-        self.totals[3] += (t3 - t2)*1000
-        self.totals[4] += (t4 - t3)*1000
-        self.totals[5] += (t5 - t4)*1000
-        self.totals[6] += (t6 - t5)*1000
-        self.totals[7] += (t7 - t6)*1000
-        self.totals[8] += (t8 - t7)*1000
-        self.count += 1
-
-        print(f"PREPROCESSOR: Total time: {self.totals[0] / self.count:.2f} | Unstructured time: {self.totals[1] / self.count:.2f} | Transform time: {self.totals[2] / self.count:.2f} | Concatenate time: {self.totals[3] / self.count:.2f} | Crop time: {self.totals[4] / self.count:.2f} | Ground removal time: {self.totals[5] / self.count:.2f} | Downsampling time: {self.totals[6] / self.count:.2f} | Clustering time: {self.totals[7] / self.count:.2f} | Publishing time: {self.totals[8] / self.count:.2f}")
 
         if self.points_ground_pub.get_num_connections() > 0:
             points_ground = points_filtered[np.nonzero(ground_mask)]
