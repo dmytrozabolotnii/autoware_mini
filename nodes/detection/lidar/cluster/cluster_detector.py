@@ -11,7 +11,6 @@ from ros_numpy import numpify
 from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
-from geometry_msgs.msg import Point32
 
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 
@@ -126,7 +125,7 @@ class ClusterDetector:
             object.acceleration_reliable = False
             
             hull_points = cv2.convexHull(points2d)[:,0,:]
-            object.convex_hull.points = [Point32(x, y, min_z) for x, y in hull_points]
+            object.convex_hull = np.concatenate((hull_points, np.full((hull_points.shape[0], 1), min_z)), axis=1).ravel().tolist()
             objects.objects.append(object)
 
         # publish detected objects message

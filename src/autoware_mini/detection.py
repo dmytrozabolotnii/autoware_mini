@@ -1,7 +1,6 @@
 import math
 import cv2
 import numpy as np
-from geometry_msgs.msg import Polygon, Point
 from autoware_mini.geometry import get_heading_from_vector
 
 def create_hull(obj):
@@ -13,16 +12,15 @@ def create_hull(obj):
     :param stamp: Time stamp at which the lidar pointcloud was created
     :return: geometry_msgs/PolygonStamped
     """
-    convex_hull = Polygon()
-
     # use cv2.boxPoints to get a rotated rectangle given the angle
     points = cv2.boxPoints((
         (obj.center.x, obj.center.y),
         (obj.dimensions.x, obj.dimensions.y),
         math.degrees(obj.heading)
     ))
+
     z = obj.center.z - obj.dimensions.z / 2
-    convex_hull.points = [Point(x, y, z) for x, y in points]
+    convex_hull = np.concatenate((points, np.full((points.shape[0], 1), z)), axis=1).ravel().tolist()
 
     return convex_hull
 
@@ -65,7 +63,7 @@ def get_axis_oriented_bounding_box(obj):
     :return: tuple of minx, miny, maxx, maxy
     """
     # take all points from the convex hull
-    points = np.array([(p.x, p.y) for p in obj.convex_hull.points], dtype=np.float32)
+    points = np.array(obj.convex_hull).reshape(-1, 3)[:, :2]
 
     # find axis-oriented bounding box
     minx, miny = np.min(points, axis=0)
@@ -80,8 +78,13 @@ def update_object_position_dimensions(obj):
     """
 
     # Collect points from convex_hull and extract rotation center
+<<<<<<< HEAD
     points = np.array([(p.x, p.y) for p in obj.convex_hull.points])
     center = np.array([obj.center.x, obj.center.y])
+=======
+    points = np.array(obj.convex_hull).reshape(-1, 3)[:, :2]
+    centroid = np.array([obj.position.x, obj.position.y])
+>>>>>>> Change convex_hull type to float32 array in DetectedObject message
     heading_angle = get_heading_from_vector(obj.velocity)
 
     # Create rotation matrix
