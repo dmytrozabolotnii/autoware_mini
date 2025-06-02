@@ -56,7 +56,7 @@ class ObjectCollisionChecker:
                     object_speed = get_vector_norm_3d(obj.velocity)
 
                     collision_points.add_intersection_points(intersection_points,
-                                                            z = obj.position.z,
+                                                            z = obj.center.z - obj.dimensions.z / 2,
                                                             vx = obj.velocity.x,
                                                             vy = obj.velocity.y,
                                                             vz = obj.velocity.z,

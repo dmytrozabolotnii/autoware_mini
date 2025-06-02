@@ -88,7 +88,7 @@ class VellaDetector:
 
         # transform position and orientation to output frame using the transformation saved when callback was received
         pose = transform_pose(vella_track.pose.pose, transform)
-        detected_object.position = pose.position
+        detected_object.centroid = detected_object.center = pose.position
         detected_object.heading = get_heading_from_orientation(pose.orientation)
         detected_object.position_reliable = True
 

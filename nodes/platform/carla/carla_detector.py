@@ -67,7 +67,7 @@ class CarlaDetector:
             
             pose = obj.pose
 
-            object_msg.position = pose.position
+            object_msg.centroid = object_msg.center = pose.position
             object_msg.heading = get_heading_from_orientation(pose.orientation)
             object_msg.dimensions.x = obj.shape.dimensions[0]
             object_msg.dimensions.y = obj.shape.dimensions[1]

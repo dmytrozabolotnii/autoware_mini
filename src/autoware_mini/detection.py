@@ -17,11 +17,11 @@ def create_hull(obj):
 
     # use cv2.boxPoints to get a rotated rectangle given the angle
     points = cv2.boxPoints((
-        (obj.position.x, obj.position.y),
+        (obj.center.x, obj.center.y),
         (obj.dimensions.x, obj.dimensions.y),
         math.degrees(obj.heading)
     ))
-    z = obj.position.z - obj.dimensions.z / 2
+    z = obj.center.z - obj.dimensions.z / 2
     convex_hull.points = [Point(x, y, z) for x, y in points]
 
     return convex_hull
@@ -81,7 +81,7 @@ def update_object_position_dimensions(obj):
 
     # Collect points from convex_hull and extract rotation center
     points = np.array([(p.x, p.y) for p in obj.convex_hull.points])
-    centroid = np.array([obj.position.x, obj.position.y])
+    center = np.array([obj.center.x, obj.center.y])
     heading_angle = get_heading_from_vector(obj.velocity)
 
     # Create rotation matrix
@@ -93,7 +93,7 @@ def update_object_position_dimensions(obj):
     ])
 
     # Translate and rotate points
-    points -= centroid
+    points -= center
     points = points @ rotation_matrix.T
 
     # Calculate bounds in the rotated coordinate system
@@ -116,10 +116,10 @@ def update_object_position_dimensions(obj):
 
     # Apply inverse rotation to target points, then translation
     target_point = target_point @ inverse_rotation_matrix.T
-    target_point += centroid
+    target_point += center
 
-    obj.position.x = target_point[0]
-    obj.position.y = target_point[1]
+    obj.center.x = target_point[0]
+    obj.center.y = target_point[1]
     obj.dimensions.x = length
     obj.dimensions.y = width
     obj.heading = heading_angle 
