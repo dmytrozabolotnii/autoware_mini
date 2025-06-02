@@ -1,6 +1,29 @@
 output_frame: map
 
 lidar:
+  points_preprocessor_fast:
+    output_frame: lidar_center
+    inner_min_x: -2.0
+    inner_max_x: 3.0
+    inner_min_y: -1.0
+    inner_max_y: 1.0
+    inner_min_z: -2.0
+    inner_max_z: 2.0
+    outer_min_x: -60.0
+    outer_max_x: 75.0
+    outer_min_y: -60.0
+    outer_max_y: 60.0
+    outer_min_z: -2.5
+    outer_max_z: 0.05
+    ground_removal_cell_size: 0.6
+    ground_removal_tolerance: 0.15
+    ground_removal_filter_size: 3
+    ground_removal_filter_iterations: 1
+    voxel_grid_filter_leaf_size: 0.08
+    cluster_epsilon: 0.6
+    cluster_min_samples: 4
+    cluster_in_2d: True
+    transform_timeout: 0.06
   center:
     crop_box:
       min_x: -2.0
@@ -67,7 +90,7 @@ lidar:
     filter_limit_negative: False
   points_clusterer:
     cluster_epsilon: 0.6
-    cluster_min_size: 4
+    cluster_min_samples: 4
     cluster_in_2d: True
   cluster_detector:
     min_cluster_size: 4

@@ -11,21 +11,21 @@ from sensor_msgs.msg import PointCloud2
 class PointsClusterer:
     def __init__(self):
         self.cluster_epsilon = rospy.get_param('~cluster_epsilon')
-        self.cluster_min_size = rospy.get_param('~cluster_min_size')
+        self.cluster_min_samples = rospy.get_param('~cluster_min_samples')
         self.cluster_in_2d = rospy.get_param('~cluster_in_2d')
 
         try:
             from cuml.cluster import DBSCAN
-            self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_size)
+            self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_samples)
             rospy.loginfo("Using DBSCAN from cuML")
         except ImportError:
             try:
                 from sklearnex.cluster import DBSCAN
-                self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_size, algorithm='auto')
+                self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_samples, algorithm='auto')
                 rospy.loginfo("Using DBSCAN from Intel® Extension for Scikit-learn")
             except ImportError:
                 from sklearn.cluster import DBSCAN
-                self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_size, algorithm='ball_tree')
+                self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_samples, algorithm='ball_tree')
                 rospy.loginfo("Using DBSCAN from Scikit-learn")
 
         self.cluster_pub = rospy.Publisher('points_clustered', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -42,11 +42,13 @@ class PointsClusterer:
         # get labels for clusters
         labels = self.clusterer.fit_predict(points[:, :2] if self.cluster_in_2d else points)
 
-        # concatenate points with labels
-        points_labeled = np.hstack((points, labels.reshape(-1, 1)))
+        filter_idx = np.nonzero(labels != -1) # remove noise label (-1)
 
-        # filter out noise points
-        points_labeled = points_labeled[labels != -1]
+        cluster_labels = labels[filter_idx]
+        points_clustered = points[filter_idx]
+
+        # concatenate points with labels
+        points_labeled = np.hstack((points_clustered, cluster_labels.reshape(-1, 1)))
 
         # convert labeled points to PointCloud2 format
         data = unstructured_to_structured(points_labeled, dtype=np.dtype([

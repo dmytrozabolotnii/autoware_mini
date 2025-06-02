@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
 
-import math
 import rospy
+import math
 import numpy as np
 import cv2
 
 from tf2_ros import TransformListener, Buffer, TransformException
-from numpy.lib.recfunctions import structured_to_unstructured
-from ros_numpy import numpify, msgify
+from ros_numpy import numpify
 
 from sensor_msgs.msg import PointCloud2
+from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
-from std_msgs.msg import ColorRGBA, Header
-from geometry_msgs.msg import Point32, Quaternion
-
-from autoware_mini.geometry import get_orientation_from_heading
+from geometry_msgs.msg import Point32
 
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 
@@ -25,21 +22,24 @@ class ClusterDetector:
         self.output_frame = rospy.get_param('/detection/output_frame')
         self.transform_timeout = rospy.get_param('~transform_timeout')
 
+        if self.bounding_box_type not in ["axis_aligned", "min_area"]:
+            raise ValueError(f"{rospy.get_name()} - 'bounding_box_type' must be one of 'axis_aligned' or 'min_area', not '{self.bounding_box_type}'")
+
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer)
 
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('points_clustered', PointCloud2, self.cluster_callback, queue_size=1, buff_size=2**24, tcp_nodelay=True)
+        rospy.Subscriber('points_clustered', PointCloud2, self.points_callback, queue_size=1, buff_size=2**24, tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
-    def cluster_callback(self, msg):
+    def points_callback(self, msg):
         data = numpify(msg)
 
-        # make copy of labels
+        # convert point cloud into ndarray, take only xyz coordinates
+        points_homogeneous = np.stack([data['x'], data['y'], data['z'], data['z']], axis=-1).reshape(-1, 4).astype(np.float32)
+        points_homogeneous[:, 3] = 1.0  # Add homogeneous coordinate
         labels = data['label']
-        # convert data to ndarray
-        points = structured_to_unstructured(data[['x', 'y', 'z', 'label']], dtype=np.float32)
 
         # if target frame does not match the header frame
         if msg.header.frame_id != self.output_frame:
@@ -50,33 +50,30 @@ class ClusterDetector:
                 rospy.logwarn("%s - %s", rospy.get_name(), e)
                 return
             tf_matrix = numpify(transform.transform).astype(np.float32)
-            # make copy of points
-            points = points.copy()
-            # turn into homogeneous coordinates
-            points[:,3] = 1
             # transform points to target frame
-            points = points.dot(tf_matrix.T)
-
+            points_homogeneous = points_homogeneous.dot(tf_matrix.T)
+        
         # create detected objects
         objects = DetectedObjectArray()
         objects.header.stamp = msg.header.stamp
         objects.header.frame_id = self.output_frame
 
-        if len(labels) == 0:
-            num_clusters = 0
-        else:
-            num_clusters = np.max(labels) + 1
-        for i in range(num_clusters):
-            # filter points for this cluster
-            mask = (labels == i)
+        # sort points by labels
+        sorted_indices = np.argsort(labels)
+        sorted_labels = labels[sorted_indices]
+        sorted_points = points_homogeneous[sorted_indices]
 
-            # ignore clusters smaller than certain size
-            if np.sum(mask) < self.min_cluster_size:
+        # get the split indices
+        unique_labels, label_starts, label_counts = np.unique(sorted_labels, return_index=True, return_counts=True)
+        label_ends = label_starts + label_counts
+
+        for label, start, end, count in zip(unique_labels, label_starts, label_ends, label_counts):
+            # filter out small clusters
+            if count < self.min_cluster_size:
                 continue
 
             # fetch points for this cluster
-            points3d = points[mask,:3]
-            # cv2.convexHull needs contiguous array of 2D points
+            points3d = sorted_points[start:end,:3]
             points2d = np.ascontiguousarray(points3d[:,:2])
 
             if self.bounding_box_type == 'axis_aligned':
@@ -97,16 +94,19 @@ class ClusterDetector:
                 heading = math.radians(heading_angle)
 
                 # calculate height and vertical position
-                max_z = np.max(points3d[:,2])
-                min_z = np.min(points3d[:,2])
+                z_points = points3d[:,2]
+                max_z = float(z_points.max()) # native Python floats are faster with scalars
+                min_z = float(z_points.min())
+
                 dim_z = max_z - min_z
                 center_z = (max_z + min_z) / 2.0
+                
             else:
                 assert False, "wrong bounding_box_type: " + self.bounding_box_type
 
             # create DetectedObject
             object = DetectedObject()
-            object.id = i
+            object.id = label
             object.label = "unknown"
             object.color = BLUE
             object.valid = True
@@ -120,10 +120,9 @@ class ClusterDetector:
             object.position_reliable = True
             object.velocity_reliable = False
             object.acceleration_reliable = False
-
+            
             hull_points = cv2.convexHull(points2d)[:,0,:]
             object.convex_hull.points = [Point32(x, y, min_z) for x, y in hull_points]
-
             objects.objects.append(object)
 
         # publish detected objects message

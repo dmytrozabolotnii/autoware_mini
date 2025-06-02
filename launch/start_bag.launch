@@ -6,7 +6,7 @@
     <arg name='map_name'                default='tartu_demo' />
     <arg name="lanelet2_map_name"       default="$(arg map_name).osm" />
     <arg name="localizer"               default="novatel"       doc="novatel, carla"/>
-    <arg name="detector"                default="lidar_cluster" doc="lidar_cluster, sim, carla"/>
+    <arg name="detector"                default="lidar_cluster" doc="lidar_cluster,lidar_cluster_fast, sim, carla"/>
     <arg name="use_lidar_center"        default="true"          doc="use velodyne lidar"/>
     <arg name="use_lidar_front"         default="false"         doc="use ouster lidar"/>
     <arg name="tfl_detector"            default="camera"        doc="camera, mqtt, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />

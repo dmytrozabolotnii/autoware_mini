@@ -8,7 +8,7 @@
     <arg name="local_planner"           default="rule"                  doc="rule, none"/>
     <arg name="use_path_smoothing"      default="true" />
     <arg name="localizer"               default="carla"                 doc="novatel, carla" />
-    <arg name="detector"                default="carla"                 doc="lidar_cluster, lidar_sfa, sim, carla" />
+    <arg name="detector"                default="carla"                 doc="lidar_cluster, lidar_cluster_fast, lidar_sfa, sim, carla" />
     <arg name="tfl_detector"            default="carla"                 doc="carla, camera, mqtt_camera_fusion" />
     <arg name="tfl_cameras"             default="mako"                  doc="mako, nvidia" />
     <arg name="tracker"                 default="$(eval 'ema' if detector != 'carla' else 'none')" />

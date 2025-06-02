@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
+    <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_cluster_fast,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
     <arg name="use_lidar_center"    default="true"              doc="use velodyne lidar"/>
     <arg name="use_lidar_front"     default="false"             doc="use ouster lidar"/>
     <arg name="map_name"            default="tartu_demo"        doc="map name for road area filter" />
