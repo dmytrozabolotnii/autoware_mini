@@ -151,7 +151,7 @@ def get_traffic_light_stop_lines(lanelet2_map):
 
 # TODO: Add function to get all stop lines that are associated with traffic lights join with next function
 
-def get_stop_lines_api_id_in_area(lanelet2_map, x = None, y = None, extent = None):
+def get_stop_lines_api_id(lanelet2_map, x = None, y = None, extent = None):
     """
     Retrieve stop line ids within a specified area from a given point on a Lanelet2 map.
     :param lanelet2_map: the Lanelet2 map
