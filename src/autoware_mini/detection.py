@@ -78,13 +78,9 @@ def update_object_position_dimensions(obj):
     """
 
     # Collect points from convex_hull and extract rotation center
-<<<<<<< HEAD
-    points = np.array([(p.x, p.y) for p in obj.convex_hull.points])
-    center = np.array([obj.center.x, obj.center.y])
-=======
     points = np.array(obj.convex_hull).reshape(-1, 3)[:, :2]
-    centroid = np.array([obj.position.x, obj.position.y])
->>>>>>> Change convex_hull type to float32 array in DetectedObject message
+    center = np.array([obj.center.x, obj.center.y])
+
     heading_angle = get_heading_from_vector(obj.velocity)
 
     # Create rotation matrix
