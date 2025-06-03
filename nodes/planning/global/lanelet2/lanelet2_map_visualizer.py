@@ -59,7 +59,7 @@ class Lanelet2MapVisualizer:
 
         self.map_extraction_location = None
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        self.yield_stop_lines = get_stop_lines_using_subtype(self.lanelet2_map, subtype=["yield_stop"])
+        self.yield_stop_lines = get_stop_lines_using_subtype(self.lanelet2_map, subtypes=["yield_stop"])
 
         # Special publishers for stop line markers: traffic_lights and yielding
         self.tfl_stop_line_markers_pub = rospy.Publisher('tfl_stop_line_markers', MarkerArray, queue_size=1, latch=True, tcp_nodelay=True)

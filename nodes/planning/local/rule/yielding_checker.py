@@ -27,7 +27,7 @@ class YieldingChecker:
         self.yield_lines_on_global_path = []
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        yield_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["yield", "yield_stop"])
+        yield_lines = get_stop_lines_using_subtype(lanelet2_map, subtypes=["yield", "yield_stop"])
         self.yield_lines = np.array(list(yield_lines.values()))
 
         # publishers

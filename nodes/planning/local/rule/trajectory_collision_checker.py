@@ -14,7 +14,6 @@ from autoware_mini.geometry import get_angle_between_two_headings, get_vector_no
 from autoware_mini.collision import CollisionPoints, calculate_time_to_destination
 from autoware_mini.path import PathWrapper
 from autoware_mini.transform import get_car_front_point
-from autoware_mini.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 
 class TrajectoryCollisionChecker:
 
@@ -28,7 +27,6 @@ class TrajectoryCollisionChecker:
         self.use_object_width = rospy.get_param("use_object_width")
         self.safety_time_ego_front = rospy.get_param("~safety_time_ego_front")
         self.safety_time_ego_rear = rospy.get_param("~safety_time_ego_rear")
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
         self.tf_buffer = Buffer()
@@ -36,13 +34,6 @@ class TrajectoryCollisionChecker:
         self.detected_objects = None
         self.current_speed = None
 
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["stop", "traffic_light", "yield", "yield_stop"])
-        if stop_lines:
-            self.stop_lines = shapely.multilinestrings(list(stop_lines.values()))
-            shapely.prepare(self.stop_lines)
-        else:
-            self.stop_lines = None
 
         # publishers
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -112,10 +103,6 @@ class TrajectoryCollisionChecker:
 
                         # Ignore object trajectories that are on our path and with similar heading - must be in front of us
                         if local_path_buffer.intersects(object_polygon) and heading_difference < self.heading_alignment_limit:
-                            continue
-
-                        # if predicted trajectory intersects with any of the stop lines, ignore it - we have right of way
-                        if self.stop_lines and self.stop_lines.intersects(trajectory_to_check):
                             continue
 
                         # Extract INTERSECTION AREA: distances on local_path and extract points

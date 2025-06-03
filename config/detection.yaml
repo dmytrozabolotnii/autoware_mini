@@ -149,6 +149,7 @@ map_based_predictor:
   heading_difference_threshold: 30.0  # degrees - object heading and lanelet heading
   prediction_min_speed: 1.0         # m/s
   use_offset_for_prediction: True   # use offset from lanelet centerline for prediction
+  prediction_clipping_deceleration_limit: 2.8  # m/s2
 
 road_area_filter:
   filtering_method: centroid        # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
