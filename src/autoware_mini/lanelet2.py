@@ -161,9 +161,9 @@ def get_stop_lines_api_id_in_area(lanelet2_map, x = None, y = None, extent = Non
     :return: A dictionary of stopline ids and api keys that fall within the search area
     """
     if x is None or y is None or extent is None:
-        linestrings = get_linestrings_in_area(lanelet2_map, x, y, extent)
-    else:
         linestrings = lanelet2_map.lineStringLayer
+    else:
+        linestrings = get_linestrings_in_area(lanelet2_map, x, y, extent)
 
     stop_line_ids = {}
     for line in linestrings:
