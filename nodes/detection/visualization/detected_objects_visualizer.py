@@ -2,6 +2,7 @@
 
 import math
 import rospy
+import numpy as np
 
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
@@ -63,7 +64,7 @@ class DetectedObjectsVisualizer:
             markers.markers.append(marker)
 
             # convex hull
-            if len(obj.convex_hull.points) > 0:
+            if len(obj.convex_hull) > 0:
                 marker = Marker(header=msg.header)
                 marker.ns = 'convex_hull'
                 marker.id = obj.id
@@ -72,7 +73,7 @@ class DetectedObjectsVisualizer:
                 marker.pose.orientation.w = 1.0
                 marker.scale.x = 0.1
                 marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
-                marker.points = [Point(p.x, p.y, p.z) for p in obj.convex_hull.points]
+                marker.points = [Point(x, y, z) for x, y, z in np.array(obj.convex_hull).reshape(-1, 3)]
                 marker.points.append(marker.points[0])
                 markers.markers.append(marker)
 

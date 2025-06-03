@@ -49,12 +49,10 @@ class ObstacleSimulation:
         obj.dimensions.z = 1.0
         obj.position_reliable = True
 
-        obj.convex_hull.points = [
-            Point32(msg.point.x - 0.5, msg.point.y - 0.5, msg.point.z),
-            Point32(msg.point.x - 0.5, msg.point.y + 0.5, msg.point.z),
-            Point32(msg.point.x + 0.5, msg.point.y + 0.5, msg.point.z),
-            Point32(msg.point.x + 0.5, msg.point.y - 0.5, msg.point.z)
-        ]
+        obj.convex_hull = [msg.point.x - 0.5, msg.point.y - 0.5, msg.point.z,
+                           msg.point.x - 0.5, msg.point.y + 0.5, msg.point.z,
+                           msg.point.x + 0.5, msg.point.y + 0.5, msg.point.z,
+                           msg.point.x + 0.5, msg.point.y - 0.5, msg.point.z]
 
         self.objects.append(obj)
         rospy.loginfo("%s - added obstacle %d at (%f, %f, %f) in %s frame", rospy.get_name(), self.id, msg.point.x, msg.point.y, msg.point.z, msg.header.frame_id)
