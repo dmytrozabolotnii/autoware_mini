@@ -7,7 +7,7 @@ import numpy as np
 from collections import defaultdict
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
-from autoware_mini.geometry import get_vector_norm_3d, get_heading_from_vector, get_angle_between_two_headings
+from autoware_mini.geometry import get_vector_norm_2d, get_heading_from_vector, get_angle_between_two_headings
 from autoware_mini.collision import CollisionPoints
 from autoware_mini.path import PathWrapper
 from autoware_mini.lanelet2 import load_lanelet2_map, get_crosswalks
@@ -87,7 +87,7 @@ class PedestrianCrosswalkChecker:
 
             if len(crosswalks_on_local_path) > 0:
                 for obj in objects:
-                    object_speed = get_vector_norm_3d(obj.velocity)
+                    object_speed = get_vector_norm_2d(obj.velocity)
                     # ignore objects that are not moving
                     if self.ignore_static_obstacles and object_speed < self.stopped_speed_limit:
                         continue

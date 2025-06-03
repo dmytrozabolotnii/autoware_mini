@@ -12,7 +12,7 @@ from lapsolver import solve_dense
 from autoware_mini.msg import DetectedObjectArray
 from std_msgs.msg import ColorRGBA
 
-from autoware_mini.geometry import get_vector_norm_3d
+from autoware_mini.geometry import get_vector_norm_2d
 from autoware_mini.detection import calculate_iou, get_axis_oriented_bounding_box
 
 
@@ -104,7 +104,7 @@ class LidarRadarFusion:
             for i, radar_detection in enumerate(radar_detections.objects):
                 if i not in matched_radar_indices:
                     # calculate norm of radar detection's speed
-                    radar_speed = get_vector_norm_3d(radar_detection.velocity)
+                    radar_speed = get_vector_norm_2d(radar_detection.velocity)
 
                     # add only moving radar objects
                     if radar_speed >= self.radar_speed_threshold:

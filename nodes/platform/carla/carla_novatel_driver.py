@@ -17,7 +17,7 @@ from novatel_oem7_msgs.msg import INSPVA, BESTPOS, InertialSolutionStatus
 from nav_msgs.msg import Odometry
 import pyproj
 
-from autoware_mini.geometry import get_vector_norm_3d
+from autoware_mini.geometry import get_vector_norm_2d
 
 class CarlaNovatelDriver():
     def __init__(self):
@@ -52,7 +52,7 @@ class CarlaNovatelDriver():
             msg.height = gnss_data.altitude
             msg.roll = 0
             msg.pitch = 0 
-            msg.north_velocity = get_vector_norm_3d(odometry_data.twist.twist.linear)
+            msg.north_velocity = get_vector_norm_2d(odometry_data.twist.twist.linear)
             msg.east_velocity = 0.0
 
             lat_init = math.radians(gnss_data.latitude)

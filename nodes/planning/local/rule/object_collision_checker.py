@@ -5,7 +5,7 @@ import shapely
 import numpy as np
 from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
-from autoware_mini.geometry import get_vector_norm_3d
+from autoware_mini.geometry import get_vector_norm_2d
 from autoware_mini.collision import CollisionPoints
 
 class ObjectCollisionChecker:
@@ -53,7 +53,7 @@ class ObjectCollisionChecker:
                 if local_path_buffer.intersects(object_polygon):
                     intersection_result = object_polygon.intersection(local_path_buffer)
                     intersection_points = shapely.get_coordinates(intersection_result)
-                    object_speed = get_vector_norm_3d(obj.velocity)
+                    object_speed = get_vector_norm_2d(obj.velocity)
 
                     collision_points.add_intersection_points(intersection_points,
                                                             z = obj.center.z - obj.dimensions.z / 2,

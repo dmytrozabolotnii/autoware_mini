@@ -10,7 +10,7 @@ from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
 from geometry_msgs.msg import PoseStamped
 
 from autoware_mini.path import calculate_cross_track_error
-from autoware_mini.geometry import get_vector_norm_2d, get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings, get_distance_between_two_points_2d
+from autoware_mini.geometry import get_vector_norm_2d, get_heading_between_two_points, get_angle_between_two_headings, get_distance_between_two_points_2d
 from autoware_mini.lanelet2 import load_lanelet2_map, follow_lanelets, get_stop_lines_in_area, get_lanelets_in_range
 from autoware_mini.shapely import offset_curve
 
@@ -105,8 +105,8 @@ class MapBasedPredictor:
             # 2. CREATE ALL TRAJECTORIES
             all_trajectories = []
             if len(selected_lanelets) > 0:
-                object_speed = get_vector_norm_3d(obj.velocity)
-                object_accel = get_vector_norm_3d(obj.acceleration)
+                object_speed = get_vector_norm_2d(obj.velocity)
+                object_accel = get_vector_norm_2d(obj.acceleration)
                 velocities = object_speed + object_accel * self.timesteps
                 distances = (object_accel * self.timesteps**2) / 2 + object_speed * self.timesteps
                 all_trajectories = self.create_trajectories(selected_lanelets, distances[-1], obj.dimensions.x)
