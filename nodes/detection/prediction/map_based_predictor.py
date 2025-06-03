@@ -75,7 +75,7 @@ class MapBasedPredictor:
             object_position = shapely.Point(obj.center.x, obj.center.y)
 
             # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
-            lanelets_within_distance = get_lanelets_in_range(self.lanelet2_map, obj.position.x, obj.position.y, self.distance_from_lanelet,
+            lanelets_within_distance = get_lanelets_in_range(self.lanelet2_map, obj.center.x, obj.center.y, self.distance_from_lanelet,
                                                              ["road", "bus_lane", "bicycle_lane"])
 
             selected_lanelets = []
