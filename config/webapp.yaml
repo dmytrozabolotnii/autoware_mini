@@ -2,4 +2,4 @@ webapp_bridge:
   host: "mqtt.cloud.ut.ee"
   port: 8084
   tls_enabled: True
-  website_public_url: "https://localhost:8080/"
+  website_public_url: "https://traxi.ut.ee/"
