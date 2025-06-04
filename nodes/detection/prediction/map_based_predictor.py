@@ -36,7 +36,7 @@ class MapBasedPredictor:
 
         # Variables
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.Vehicle)
+        traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.VehicleTaxi)
         self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
         num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
         self.timesteps = np.arange(num_timesteps) * self.prediction_interval

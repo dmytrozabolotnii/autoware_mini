@@ -292,6 +292,11 @@ def follow_lanelets(routing_graph, current_lanelet, remaining_distance):
 
     trajectories = []  # Store all possible trajectories
     for next_lanelet in next_lanelets:
+        # if current_lanelet not bus lanelet and next_lanelet is bus lanelet then stop there - don't create predictions heading to bus_lanelets (bus stops)
+        if "subtype" in current_lanelet.attributes and current_lanelet.attributes["subtype"] != "bus_lane" and \
+              "subtype" in next_lanelet.attributes and next_lanelet.attributes["subtype"] == "bus_lane":
+            return [[current_lanelet]]
+
         # Recursively follow the lanelets
         following_trajectories = follow_lanelets(routing_graph, next_lanelet, remaining_distance)
         for traj in following_trajectories:
