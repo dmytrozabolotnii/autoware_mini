@@ -11,7 +11,6 @@ from ros_numpy import numpify
 from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import ColorRGBA
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
-from geometry_msgs.msg import Point32
 
 BLUE = ColorRGBA(0.0, 0.0, 1.0, 0.5)
 
@@ -74,15 +73,16 @@ class ClusterDetector:
 
             # fetch points for this cluster
             points3d = sorted_points[start:end,:3]
+            centroid_x, centroid_y, centroid_z = np.mean(points3d, axis=0)
+            # cv2.convexHull needs contiguous array of 2D points
             points2d = np.ascontiguousarray(points3d[:,:2])
 
             if self.bounding_box_type == 'axis_aligned':
                 # calculate centroid and dimensions
                 maxs = np.max(points3d, axis=0)
                 mins = np.min(points3d, axis=0)
-                center_x, center_y, center_z = np.mean(points3d, axis=0)
                 dim_x, dim_y, dim_z = maxs - mins
-                min_z = mins[2]
+                center_x, center_y, center_z = (maxs + mins) / 2
 
                 # always pointing forward
                 heading = 0.0
@@ -110,9 +110,12 @@ class ClusterDetector:
             object.label = "unknown"
             object.color = BLUE
             object.valid = True
-            object.position.x = center_x
-            object.position.y = center_y
-            object.position.z = center_z
+            object.centroid.x = centroid_x
+            object.centroid.y = centroid_y
+            object.centroid.z = centroid_z
+            object.center.x = center_x
+            object.center.y = center_y
+            object.center.z = center_z
             object.heading = heading
             object.dimensions.x = dim_x
             object.dimensions.y = dim_y
@@ -122,7 +125,7 @@ class ClusterDetector:
             object.acceleration_reliable = False
             
             hull_points = cv2.convexHull(points2d)[:,0,:]
-            object.convex_hull.points = [Point32(x, y, min_z) for x, y in hull_points]
+            object.convex_hull = np.concatenate((hull_points, np.full((hull_points.shape[0], 1), min_z)), axis=1).ravel().tolist()
             objects.objects.append(object)
 
         # publish detected objects message

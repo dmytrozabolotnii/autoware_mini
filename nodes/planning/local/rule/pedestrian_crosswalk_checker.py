@@ -91,12 +91,12 @@ class PedestrianCrosswalkChecker:
                     # ignore objects that are not moving
                     if self.ignore_static_obstacles and object_speed < self.stopped_speed_limit:
                         continue
-                    object_position = shapely.Point(obj.position.x, obj.position.y)
+                    object_position = shapely.Point(obj.centroid.x, obj.centroid.y)
                     object_distance_from_local_path_start = local_path.linestring.project(object_position)
                     # ignore objects behind the ego vehicle
                     if math.isclose(object_distance_from_local_path_start, 0.0, abs_tol=0.001):
                         continue
-                    object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                    object_polygon = shapely.polygons(np.array(obj.convex_hull).reshape(-1, 3))
                     object_heading = get_heading_from_vector(obj.velocity)
                     object_to_path_heading = local_path.get_heading_towards_path(object_position)
                     object_path_approach_angle = math.degrees(get_angle_between_two_headings(object_heading, object_to_path_heading))
@@ -110,7 +110,7 @@ class PedestrianCrosswalkChecker:
                                 (180 - object_path_approach_angle < self.crossing_angle_max_limit and local_path_buffer.intersects(object_polygon)):
                                 collision_points.add_point(x = collision_point.x,
                                                             y = collision_point.y,
-                                                            z = obj.position.z,
+                                                            z = obj.center.z - obj.dimensions.z / 2,
                                                             vx = 0,
                                                             vy = 0,
                                                             vz = 0,
@@ -153,7 +153,7 @@ class PedestrianCrosswalkChecker:
                                         if object_crosswalk_counter[id(crosswalk)][obj.id] >= self.prediction_counter_min_limit:
                                             collision_points.add_point(x = collision_point.x,
                                                                     y = collision_point.y,
-                                                                    z = obj.position.z,
+                                                                    z = obj.center.z - obj.dimensions.z / 2,
                                                                     vx = 0,
                                                                     vy = 0,
                                                                     vz = 0,

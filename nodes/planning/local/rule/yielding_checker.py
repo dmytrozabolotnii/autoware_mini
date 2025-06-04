@@ -27,7 +27,7 @@ class YieldingChecker:
         self.yield_lines_on_global_path = []
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        yield_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["yield", "yield_stop"])
+        yield_lines = get_stop_lines_using_subtype(lanelet2_map, subtypes=["yield", "yield_stop"])
         self.yield_lines = np.array(list(yield_lines.values()))
 
         # publishers
@@ -93,7 +93,7 @@ class YieldingChecker:
                                 continue
 
                             # Do not yield if object itself is on the local path
-                            object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                            object_polygon = shapely.polygons([np.array(obj.convex_hull).reshape(-1, 3)])
                             if local_path_buffer.intersects(object_polygon):
                                 continue
 

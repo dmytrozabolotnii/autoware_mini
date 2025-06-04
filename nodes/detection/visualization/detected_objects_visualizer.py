@@ -2,6 +2,7 @@
 
 import math
 import rospy
+import numpy as np
 
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import MarkerArray, Marker
@@ -33,7 +34,7 @@ class DetectedObjectsVisualizer:
             marker.id = obj.id
             marker.type = Marker.SPHERE
             marker.action = Marker.ADD
-            marker.pose.position = obj.position
+            marker.pose.position = obj.centroid
             marker.pose.orientation = get_orientation_from_heading(obj.heading)
             marker.scale.x = 0.5
             marker.scale.y = 0.5
@@ -47,7 +48,7 @@ class DetectedObjectsVisualizer:
             marker.id = obj.id
             marker.type = marker.LINE_STRIP
             marker.action = marker.ADD
-            marker.pose.position = obj.position
+            marker.pose.position = obj.center
             marker.pose.orientation = get_orientation_from_heading(obj.heading)
             marker.scale.x = 0.1
             marker.color = ColorRGBA(1.0, 0.0, 0.0, 0.8)
@@ -63,7 +64,7 @@ class DetectedObjectsVisualizer:
             markers.markers.append(marker)
 
             # convex hull
-            if len(obj.convex_hull.points) > 0:
+            if len(obj.convex_hull) > 0:
                 marker = Marker(header=msg.header)
                 marker.ns = 'convex_hull'
                 marker.id = obj.id
@@ -72,7 +73,7 @@ class DetectedObjectsVisualizer:
                 marker.pose.orientation.w = 1.0
                 marker.scale.x = 0.1
                 marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
-                marker.points = [Point(p.x, p.y, p.z) for p in obj.convex_hull.points]
+                marker.points = [Point(x, y, z) for x, y, z in np.array(obj.convex_hull).reshape(-1, 3)]
                 marker.points.append(marker.points[0])
                 markers.markers.append(marker)
 
@@ -82,7 +83,7 @@ class DetectedObjectsVisualizer:
             marker.id = obj.id
             marker.type = Marker.ARROW
             marker.action = Marker.ADD
-            marker.pose.position = obj.position
+            marker.pose.position = obj.centroid
             heading = math.atan2(obj.velocity.y, obj.velocity.x)
             marker.pose.orientation = get_orientation_from_heading(heading)
             marker.scale.x = max(math.sqrt(obj.velocity.x**2 + obj.velocity.y**2), 0.01)
@@ -97,7 +98,7 @@ class DetectedObjectsVisualizer:
             marker.id = obj.id
             marker.type = Marker.TEXT_VIEW_FACING
             marker.action = Marker.ADD
-            marker.pose.position = Point(obj.position.x, obj.position.y, obj.position.z + 1.0)
+            marker.pose.position = Point(obj.centroid.x, obj.centroid.y, obj.centroid.z + 1.0)
             marker.scale.z = 0.5
             marker.color = ColorRGBA(1.0, 1.0, 1.0, 1.0)
             marker.text = "%s %d (%d km/h)" % (obj.label, obj.id, math.sqrt(obj.velocity.x**2 + obj.velocity.y**2 + obj.velocity.z**2) * 3.6)
@@ -107,7 +108,7 @@ class DetectedObjectsVisualizer:
 
             # 3D bounding box
             bbox = BoundingBox(header=msg.header)
-            bbox.pose.position = obj.position
+            bbox.pose.position = obj.center
             bbox.pose.orientation = get_orientation_from_heading(obj.heading)
             bbox.dimensions = obj.dimensions
             bbox.label = obj.id

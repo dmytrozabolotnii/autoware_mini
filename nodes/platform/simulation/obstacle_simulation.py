@@ -27,8 +27,8 @@ class ObstacleSimulation:
     def point_callback(self, msg):
         # check if clicked on an existing object
         for o in self.objects:
-            if o.position.x - o.dimensions.x / 2.0 <= msg.point.x <= o.position.x + o.dimensions.x / 2.0 and \
-                    o.position.y - o.dimensions.y / 2.0 <= msg.point.y <= o.position.y + o.dimensions.y / 2.0:
+            if o.center.x - o.dimensions.x / 2.0 <= msg.point.x <= o.center.x + o.dimensions.x / 2.0 and \
+                    o.center.y - o.dimensions.y / 2.0 <= msg.point.y <= o.center.y + o.dimensions.y / 2.0:
                 self.objects.remove(o)
                 rospy.loginfo("%s - removed obstacle %d", rospy.get_name(), o.id)
                 return
@@ -40,21 +40,19 @@ class ObstacleSimulation:
         obj.color = ColorRGBA(1.0, 1.0, 1.0, 0.8)
         obj.valid = True
 
-        obj.position.x = msg.point.x
-        obj.position.y = msg.point.y
-        obj.position.z = msg.point.z
+        obj.center.x = obj.centroid.x = msg.point.x
+        obj.center.y = obj.centroid.y = msg.point.y
+        obj.center.z = obj.centroid.z = msg.point.z
         obj.heading = 0.0
         obj.dimensions.x = 1.0
         obj.dimensions.y = 1.0
         obj.dimensions.z = 1.0
         obj.position_reliable = True
 
-        obj.convex_hull.points = [
-            Point32(msg.point.x - 0.5, msg.point.y - 0.5, msg.point.z),
-            Point32(msg.point.x - 0.5, msg.point.y + 0.5, msg.point.z),
-            Point32(msg.point.x + 0.5, msg.point.y + 0.5, msg.point.z),
-            Point32(msg.point.x + 0.5, msg.point.y - 0.5, msg.point.z)
-        ]
+        obj.convex_hull = [msg.point.x - 0.5, msg.point.y - 0.5, msg.point.z,
+                           msg.point.x - 0.5, msg.point.y + 0.5, msg.point.z,
+                           msg.point.x + 0.5, msg.point.y + 0.5, msg.point.z,
+                           msg.point.x + 0.5, msg.point.y - 0.5, msg.point.z]
 
         self.objects.append(obj)
         rospy.loginfo("%s - added obstacle %d at (%f, %f, %f) in %s frame", rospy.get_name(), self.id, msg.point.x, msg.point.y, msg.point.z, msg.header.frame_id)

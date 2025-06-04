@@ -38,7 +38,7 @@ class NaivePredictor:
                 continue
 
             # calculate prediction origin in front of the object
-            car_front = get_point_using_heading_and_distance(obj.position, obj.heading, obj.dimensions.x / 2)
+            car_front = get_point_using_heading_and_distance(obj.center, obj.heading, obj.dimensions.x / 2)
             tracked_objects_array[i]['position'] = (car_front.x, car_front.y)
             tracked_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y)
             tracked_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
@@ -63,7 +63,7 @@ class NaivePredictor:
         # Create candidate trajectories
         for i in valid_indices:
             obj = msg.objects[i]
-            obj_footprint_z = obj.position.z - obj.dimensions.z / 2
+            obj_footprint_z = obj.center.z - obj.dimensions.z / 2
             path = Path()
 
             for t in range(num_timesteps):

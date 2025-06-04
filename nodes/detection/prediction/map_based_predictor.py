@@ -5,14 +5,13 @@ import math
 import numpy as np
 import shapely
 import lanelet2
-from lanelet2.core import BasicPoint2d
-from lanelet2.geometry import findWithin2d
 
 from autoware_mini.msg import DetectedObjectArray, Path, Waypoint
+from geometry_msgs.msg import PoseStamped
 
 from autoware_mini.path import calculate_cross_track_error
-from autoware_mini.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings
-from autoware_mini.lanelet2 import load_lanelet2_map, follow_lanelets
+from autoware_mini.geometry import get_vector_norm_3d, get_heading_between_two_points, get_angle_between_two_headings, get_distance_between_two_points_2d
+from autoware_mini.lanelet2 import load_lanelet2_map, follow_lanelets, get_stop_lines_in_area, get_lanelets_in_range
 from autoware_mini.shapely import offset_curve
 
 CAR_INDICATOR_VS_TURN_DIRECTION_SCORING = {
@@ -31,7 +30,9 @@ class MapBasedPredictor:
         self.distance_from_lanelet = rospy.get_param('~distance_from_lanelet')
         self.heading_difference_threshold = rospy.get_param('~heading_difference_threshold')
         self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
+        self.prediction_clipping_deceleration_limit = rospy.get_param('~prediction_clipping_deceleration_limit')
         lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        self.local_path_length = rospy.get_param("/planning/local_path_length")
 
         # Variables
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
@@ -39,14 +40,30 @@ class MapBasedPredictor:
         self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
         num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
         self.timesteps = np.arange(num_timesteps) * self.prediction_interval
+        self.last_stop_line_extract_location = None
+        self.stop_lines = []
 
         # Publishers
         self.predicted_objects_pub = rospy.Publisher('predicted_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('tracked_objects', DetectedObjectArray, self.tracked_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
+
+    def current_pose_callback(self, msg):
+        if self.last_stop_line_extract_location is not None and get_distance_between_two_points_2d(self.last_stop_line_extract_location, msg.pose.position) < self.local_path_length:
+            return
+        # Fetch stop lines within a range (2 x local_path length) around the current position
+        stop_lines = get_stop_lines_in_area(self.lanelet2_map, msg.pose.position.x, msg.pose.position.y, 2 * self.local_path_length,
+                                                ["stop_line", "yield_stop", "yield"])
+
+        shapely.prepare(stop_lines)
+        self.stop_lines = np.array(stop_lines)
+        self.last_stop_line_extract_location = msg.pose.position
 
     def tracked_objects_callback(self, msg):
+
+        stop_lines = self.stop_lines
 
         for obj in msg.objects:
             object_distance_on_start_lanelet = {}
@@ -55,15 +72,14 @@ class MapBasedPredictor:
                 continue
 
             # 1. SEARCH BEST MATCHING LANELET FOR AN OBJECT
-            object_position = shapely.Point(obj.position.x, obj.position.y)
+            object_position = shapely.Point(obj.center.x, obj.center.y)
+
             # find lanelets within distance to object_location - distance measured from lanelet borders. Inside lanelet area this distance would be 0
-            lanelets_within_distance = findWithin2d(self.lanelet2_map.laneletLayer, BasicPoint2d(obj.position.x, obj.position.y), self.distance_from_lanelet)
+            lanelets_within_distance = get_lanelets_in_range(self.lanelet2_map, obj.center.x, obj.center.y, self.distance_from_lanelet,
+                                                             ["road", "bus_lane", "bicycle_lane"])
 
             selected_lanelets = []
-            for _, lanelet in lanelets_within_distance:
-                # Skip undesired lanelets
-                if lanelet.attributes["subtype"] == "crosswalk" or lanelet.attributes["subtype"] == "bus_lane":
-                    continue
+            for lanelet in lanelets_within_distance:
 
                 # Calculate heading difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
@@ -116,13 +132,28 @@ class MapBasedPredictor:
                 else:
                     trajectory_linestring = centerline_linestring
 
+                trajectory_limit = trajectory_linestring.length
                 interpolate_distances = distances + object_distance_on_start_lanelet[trajectory[0].id] + obj.dimensions.x / 2
+
+                # check intersection with stop_lines
+                mask = trajectory_linestring.intersects(stop_lines)
+                if np.any(mask):
+                    stop_line_intersection_result = trajectory_linestring.intersection(stop_lines[mask])
+                    distances_to_stoplines = sorted(trajectory_linestring.project(stop_line_intersection_result))
+                    for d in distances_to_stoplines:
+                        # check for deceleration if stop line somewhere within the predicted trajectory
+                        if interpolate_distances[0] < d < interpolate_distances[-1]:
+                            deceleration_distance = d - interpolate_distances[0]
+                            deceleration = (object_speed**2) / (2 * deceleration_distance)
+                            if deceleration < self.prediction_clipping_deceleration_limit:
+                                trajectory_limit = min(trajectory_limit, d)
+                                break
+
                 # interpolate_distances extend further than trajectory_linestring (case of dangling lanelets and sometimes also offset curve might reduce
                 # its length), so clip the exessive distances otherwise duplicate points cause problems later with triangulation
-                if interpolate_distances[-1] > trajectory_linestring.length:
-                    index = np.argmax(interpolate_distances > trajectory_linestring.length)
-                    # adding 1 to include first point past the trajectory length - will be interpolated to the very end of it
-                    interpolate_distances = interpolate_distances[:index + 1]
+                if interpolate_distances[-1] > trajectory_limit:
+                    index = np.argmax(interpolate_distances > trajectory_limit)
+                    interpolate_distances = np.append(interpolate_distances[:index], trajectory_limit)
 
                 points_trajectory = trajectory_linestring.interpolate(interpolate_distances)
 

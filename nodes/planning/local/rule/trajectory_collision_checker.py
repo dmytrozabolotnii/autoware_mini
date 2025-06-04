@@ -14,7 +14,6 @@ from autoware_mini.geometry import get_angle_between_two_headings, get_vector_no
 from autoware_mini.collision import CollisionPoints, calculate_time_to_destination
 from autoware_mini.path import PathWrapper
 from autoware_mini.transform import get_car_front_point
-from autoware_mini.lanelet2 import load_lanelet2_map, get_stop_lines_using_subtype
 
 class TrajectoryCollisionChecker:
 
@@ -28,7 +27,6 @@ class TrajectoryCollisionChecker:
         self.use_object_width = rospy.get_param("use_object_width")
         self.safety_time_ego_front = rospy.get_param("~safety_time_ego_front")
         self.safety_time_ego_rear = rospy.get_param("~safety_time_ego_rear")
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
 
         # variables
         self.tf_buffer = Buffer()
@@ -36,13 +34,6 @@ class TrajectoryCollisionChecker:
         self.detected_objects = None
         self.current_speed = None
 
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["stop", "traffic_light", "yield", "yield_stop"])
-        if stop_lines:
-            self.stop_lines = shapely.multilinestrings(list(stop_lines.values()))
-            shapely.prepare(self.stop_lines)
-        else:
-            self.stop_lines = None
 
         # publishers
         self.local_path_collision_pub = rospy.Publisher('trajectory_collision_points', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -97,7 +88,7 @@ class TrajectoryCollisionChecker:
                         intersection_distance_from_local_path_start_max = max(distances)
                         last_point_of_trajectory = shapely.Point(trajectory.linestring.coords[-1])
 
-                        object_current_location = shapely.Point(obj.position.x, obj.position.y)
+                        object_current_location = shapely.Point(obj.centroid.x, obj.centroid.y)
                         object_distance_from_local_path_start = local_path.linestring.project(object_current_location)
 
                         # Ignore objects behind local_path start OR trajectory passing through local_path start AND endpoint being also on local_path
@@ -108,14 +99,10 @@ class TrajectoryCollisionChecker:
 
                         object_local_path_heading = local_path.get_heading_at_distance(object_distance_from_local_path_start)
                         heading_difference = math.degrees(get_angle_between_two_headings(obj.heading, object_local_path_heading))
-                        object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
+                        object_polygon = shapely.polygons(np.array(obj.convex_hull).reshape(-1, 3))
 
                         # Ignore object trajectories that are on our path and with similar heading - must be in front of us
                         if local_path_buffer.intersects(object_polygon) and heading_difference < self.heading_alignment_limit:
-                            continue
-
-                        # if predicted trajectory intersects with any of the stop lines, ignore it - we have right of way
-                        if self.stop_lines and self.stop_lines.intersects(trajectory_to_check):
                             continue
 
                         # Extract INTERSECTION AREA: distances on local_path and extract points

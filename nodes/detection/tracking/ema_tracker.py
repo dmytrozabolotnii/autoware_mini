@@ -50,7 +50,7 @@ class EMATracker:
         detected_objects = msg.objects
         detected_objects_array = np.empty((len(detected_objects)), dtype=self.tracked_objects_array.dtype)
         for i, obj in enumerate(detected_objects):
-            detected_objects_array[i]['centroid'] = (obj.position.x, obj.position.y)
+            detected_objects_array[i]['centroid'] = (obj.centroid.x, obj.centroid.y)
             detected_objects_array[i]['bbox'] = get_axis_oriented_bounding_box(obj)
             detected_objects_array[i]['velocity'] = (obj.velocity.x, obj.velocity.y) 
             detected_objects_array[i]['acceleration'] = (obj.acceleration.x, obj.acceleration.y)
@@ -170,10 +170,12 @@ class EMATracker:
             self.tracked_objects_array['bbox'][missed_track_indices] = tracked_object_bboxes[missed_track_indices]
             for idx in missed_track_indices:
                 obj = self.tracked_objects[idx]
-                obj.position.x, obj.position.y = self.tracked_objects_array['centroid'][idx]
-                for p in obj.convex_hull.points:
-                    p.x += position_change[idx][0]
-                    p.y += position_change[idx][1]
+
+                obj.centroid.x, obj.centroid.y = self.tracked_objects_array['centroid'][idx]
+                convex_hull = np.array(obj.convex_hull).reshape(-1, 3)
+                convex_hull[:, :2] += position_change[idx]
+                obj.convex_hull = convex_hull.ravel().tolist()
+
 
         # delete stale tracks
         stale_track_indices = np.where(self.tracked_objects_array['missed_counter'] >= self.missed_counter_threshold)[0]

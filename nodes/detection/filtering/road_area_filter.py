@@ -3,6 +3,7 @@
 import rospy
 import json
 import shapely
+import numpy as np
 from autoware_mini.msg import DetectedObjectArray
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import PoseStamped
@@ -124,9 +125,9 @@ class RoadAreaFilter:
 
         for obj in msg.objects:
             if self.filtering_method == "centroid":
-                obj_geom = shapely.Point(obj.position.x, obj.position.y)
+                obj_geom = shapely.Point(obj.centroid.x, obj.centroid.y)
             else:
-                obj_geom = shapely.polygons([(p.x, p.y) for p in obj.convex_hull.points])
+                obj_geom = shapely.polygons(np.array(obj.convex_hull).reshape(-1, 3))
 
             if self.filtering_method == "centroid" or self.filtering_method == "intersects":
                 if self.road_area.intersects(obj_geom):

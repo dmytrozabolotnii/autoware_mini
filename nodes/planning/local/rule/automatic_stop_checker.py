@@ -26,7 +26,7 @@ class AutomaticStopChecker:
         self.timer = rospy.Time.now()
 
         lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        self.stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtype=["yield_stop"])
+        self.stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtypes=["yield_stop"])
 
         # publishers
         self.lets_go_pub = rospy.Publisher('lets_go', Int32, queue_size=1, tcp_nodelay=True)

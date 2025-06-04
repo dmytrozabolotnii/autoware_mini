@@ -13,7 +13,7 @@ lidar:
     outer_max_x: 75.0
     outer_min_y: -60.0
     outer_max_y: 60.0
-    outer_min_z: -2.5
+    outer_min_z: -3.5
     outer_max_z: 0.05
     ground_removal_cell_size: 0.6
     ground_removal_tolerance: 0.15
@@ -40,7 +40,7 @@ lidar:
       max_x: 75.0
       min_y: -60.0
       max_y: 60.0
-      min_z: -2.5
+      min_z: -3.5
       max_z: 0.05
       cell_size: 0.6
       tolerance: 0.15
@@ -128,7 +128,7 @@ ema_tracker:
   enable_initial_acceleration_estimate: False
   enable_missed_detection_propagation: True
   detection_counter_threshold: 4
-  missed_counter_threshold: 2
+  missed_counter_threshold: 3
   iou_threshold: 0.1
   velocity_gain: 0.2
   acceleration_gain: 0.0
@@ -149,6 +149,7 @@ map_based_predictor:
   heading_difference_threshold: 30.0  # degrees - object heading and lanelet heading
   prediction_min_speed: 1.0         # m/s
   use_offset_for_prediction: True   # use offset from lanelet centerline for prediction
+  prediction_clipping_deceleration_limit: 2.8  # m/s2
 
 road_area_filter:
   filtering_method: centroid        # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)

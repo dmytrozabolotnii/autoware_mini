@@ -5,14 +5,15 @@ std_msgs/ColorRGBA              color   # Define this object specific color
 bool                            valid   # Defines if this object is valid, or invalid as defined by the filtering
 
 ################ 3D BB
-geometry_msgs/Point32           position
+geometry_msgs/Point32           centroid    # mass center of lidar points for better tracking
+geometry_msgs/Point32           center      # center of the bounding box and origin for object dimensions
 geometry_msgs/Vector3           dimensions
 #geometry_msgs/Vector3           variance
 geometry_msgs/Vector3           velocity
 geometry_msgs/Vector3           acceleration
 float32                         heading
 
-geometry_msgs/Polygon           convex_hull
+float32[]                       convex_hull
 PathArray                       candidate_trajectories
 
 bool                            position_reliable

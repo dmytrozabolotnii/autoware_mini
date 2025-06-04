@@ -12,7 +12,7 @@ from geometry_msgs.msg import PoseStamped
 from autoware_mini.msg import TrafficLightResult, TrafficLightResultArray
 
 from autoware_mini.geometry import get_distance_between_two_points_2d
-from autoware_mini.lanelet2 import load_lanelet2_map, get_stoplines_api_id, get_stoplines_api_id_range
+from autoware_mini.lanelet2 import load_lanelet2_map, get_stop_lines_api_id
 
 MQTT_TO_AUTOWARE_TFL_MAP = {
     "RED": 0,
@@ -77,7 +77,7 @@ class MqttTrafficLightDetector:
             self.last_fetch_location = None
             rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
         else:
-            self.stop_line_ids = get_stoplines_api_id(self.lanelet2_map)
+            self.stop_line_ids = get_stop_lines_api_id(self.lanelet2_map)
         
         self.client = paho.Client()
         self.client.on_message = self.on_message
@@ -93,7 +93,7 @@ class MqttTrafficLightDetector:
         if self.last_fetch_location is not None and get_distance_between_two_points_2d(self.last_fetch_location, msg.pose.position) < self.local_path_length:
             return
 
-        stop_line_ids_in_range = get_stoplines_api_id_range(self.lanelet2_map, msg.pose.position.x, msg.pose.position.y, 
+        stop_line_ids_in_range = get_stop_lines_api_id(self.lanelet2_map, msg.pose.position.x, msg.pose.position.y, 
                                                    self.automatic_subscription_range + self.local_path_length)
 
         seen_api_ids = set(stop_line_ids_in_range.values())
