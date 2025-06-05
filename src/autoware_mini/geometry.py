@@ -85,7 +85,7 @@ def get_distance_between_two_points_2d(p1, p2):
 
     return math.hypot(p2.x - p1.x, p2.y - p1.y)
 
-def get_vector_norm_2d(vec):
+def get_speed_from_velocity(vec):
     """
     Get norm of 2d vector
     :param vec: vector
@@ -93,15 +93,6 @@ def get_vector_norm_2d(vec):
     """
 
     return math.hypot(vec.x, vec.y)
-
-def get_vector_norm_3d(vec):
-    """
-    Get norm of 3d vector
-    :param vec: vector
-    :return: norm
-    """
-
-    return math.sqrt(vec.x ** 2 + vec.y ** 2 + vec.z ** 2)
 
 def project_vector_to_heading(heading_angle, vector):
     """
