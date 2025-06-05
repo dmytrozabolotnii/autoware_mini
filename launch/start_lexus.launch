@@ -6,8 +6,8 @@
     <arg name="max_speed"               default="40" />
     <arg name="localizer"               default="novatel"           doc="novatel, carla"/>
     <arg name="use_lidar_center"        default="true"              doc="use velodyne lidar"/>
-    <arg name="use_lidar_front"         default="false"             doc="use ouster lidar"/>
-    <arg name="detector"                default="lidar_cluster" doc="lidar_cluster, lidar_cluster_fast, sim, carla"/>
+    <arg name="use_lidar_front"         default="true"              doc="use ouster lidar"/>
+    <arg name="detector"                default="lidar_cluster_fast" doc="lidar_cluster, lidar_cluster_fast, sim, carla"/>
     <arg name="tfl_detector"            default="mqtt_camera_fusion" doc="mqtt, camera, mqtt_camera_fusion" />
     <arg name="tfl_cameras"             default="mako"              doc="mako, nvidia" />
     <arg name="use_nvidia_cameras"      default="$(eval 'camera' in tfl_detector and tfl_cameras=='nvidia')" doc="use nvidia cameras" />
