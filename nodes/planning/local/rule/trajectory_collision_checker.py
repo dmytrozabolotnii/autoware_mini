@@ -10,7 +10,7 @@ from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import PointCloud2
 from tf2_ros import TransformListener, Buffer
 
-from autoware_mini.geometry import get_angle_between_two_headings, get_vector_norm_3d
+from autoware_mini.geometry import get_angle_between_two_headings, get_speed_from_velocity
 from autoware_mini.collision import CollisionPoints, calculate_time_to_destination
 from autoware_mini.path import PathWrapper
 from autoware_mini.transform import get_car_front_point
@@ -116,8 +116,8 @@ class TrajectoryCollisionChecker:
                         ego_leaving_times += self.safety_time_ego_rear
 
                         # OBJECT distances, arrival and leaving times
-                        obj_velocity = get_vector_norm_3d(obj.velocity)
-                        obj_acceleration = get_vector_norm_3d(obj.acceleration)
+                        obj_velocity = get_speed_from_velocity(obj.velocity)
+                        obj_acceleration = get_speed_from_velocity(obj.acceleration)
                         collision_distance_from_obj_front = np.array([trajectory.linestring.project(p) for p in collision_area_points])
                         obj_arrival_times = calculate_time_to_destination(obj_velocity, obj_acceleration, collision_distance_from_obj_front)
                         obj_leaving_times = calculate_time_to_destination(obj_velocity, obj_acceleration, collision_distance_from_obj_front + obj.dimensions.x)
