@@ -36,8 +36,10 @@ class MapBasedPredictor:
 
         # Variables
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
-        traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.VehicleTaxi)
-        self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
+        traffic_rules_vehicle = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.Vehicle)
+        traffic_rules_vehicle_taxi = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.VehicleTaxi)
+        self.graph_vehicle = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules_vehicle)
+        self.graph_vehicle_taxi = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules_vehicle_taxi)
         num_timesteps = int(self.prediction_horizon // self.prediction_interval) + 1
         self.timesteps = np.arange(num_timesteps) * self.prediction_interval
         self.last_stop_line_extract_location = None
@@ -85,7 +87,7 @@ class MapBasedPredictor:
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
                 object_distance_from_start = linestring.project(object_position)
                 # skip lanelet if object front is over it and there are no following lanelets
-                if (object_distance_from_start + obj.dimensions.x / 2) > linestring.length and not self.graph.following(lanelet):
+                if (object_distance_from_start + obj.dimensions.x / 2) > linestring.length and not self.graph_vehicle_taxi.following(lanelet):
                     continue
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
                 forward_point = linestring.interpolate(object_distance_from_start + 0.1)
@@ -175,8 +177,12 @@ class MapBasedPredictor:
         heading_differences = []
         for start_lanelet, object_distance_from_start, heading_difference in start_lanelets:
             prediction_length_from_start_lanelet = prediction_length + object_distance_from_start + object_length / 2
+            if "subtype" in start_lanelet.attributes and start_lanelet.attributes["subtype"] == "bus_lane":
+                routing_graph = self.graph_vehicle_taxi
+            else:
+                routing_graph = self.graph_vehicle
             # explore following lanelets recursively
-            trajectories = follow_lanelets(self.graph, start_lanelet, prediction_length_from_start_lanelet)
+            trajectories = follow_lanelets(routing_graph, start_lanelet, prediction_length_from_start_lanelet)
             all_trajectories.extend(trajectories)
             for i in range(len(trajectories)):
                 heading_differences.append(heading_difference)
