@@ -392,18 +392,18 @@ Visualization Manager:
           Foreground Color: 25; 255; 240
           Invert Shadow: false
           Name: Autonomous Manual
-          Overtake BG Color Properties: false
+          Overtake BG Color Properties: true
           Overtake FG Color Properties: false
-          Overtake Position Properties: false
+          Overtake Position Properties: true
           Topic: /dashboard/vehicle_drivemode
           Value: true
           font: DejaVu Sans Mono
-          height: 128
-          left: 0
+          height: 35
+          left: 10
           line width: 2
-          text size: 12
-          top: 0
-          width: 128
+          text size: 20
+          top: 170
+          width: 266
         - Align Bottom: false
           Background Alpha: 0.800000011920929
           Background Color: 0; 0; 0
