@@ -1,14 +1,17 @@
 <?xml version="1.0"?>
 <launch>
-
-    <arg name="global_planner"              default="lanelet2"  doc="waypoints, lanelet2, carla" />
-    <arg name="local_planner"               default="rule"      doc="none, rule, openpilot" />
-    <arg name="synchronization_method"      default="$(eval 'approximate' if 'openpilot' in local_planner else 'exact')" />
-    <arg name="use_path_smoothing"          default="true" />
-    <arg name="waypoints_file"              default="waypoints_erm_utm_1m.csv" />
-    <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
+    <!-- Map configuration -->
     <arg name="map_name"                    default="tartu_demo" />
+    <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
+    
+    <!-- Global planning -->
+    <arg name="global_planner"              default="lanelet2"  doc="waypoints, lanelet2, carla" />
+    <arg name="waypoints_file"              default="waypoints_erm_utm_1m.csv" />
+    <arg name="use_path_smoothing"          default="true" />
     <arg name="load_goals"                  default="true" />
+    
+    <!-- Local planning -->
+    <arg name="local_planner"               default="rule"      doc="none, rule, openpilot" />
     <arg name="enable_goal_checker"         default="true" />
     <arg name="enable_object_checker"       default="true" />
     <arg name="enable_auto_stop_checker"    default="true" />
@@ -16,6 +19,7 @@
     <arg name="enable_crosswalk_checker"    default="true" />
     <arg name="enable_yielding_checker"     default="true" />
     <arg name="enable_trajectory_checker"   default="true" />
+    <arg name="synchronization_method"      default="$(eval 'approximate' if 'openpilot' in local_planner else 'exact')" />
 
     <group ns="planning">
 

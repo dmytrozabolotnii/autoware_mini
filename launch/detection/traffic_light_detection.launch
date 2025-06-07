@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="tfl_detector"        default="none"      doc="carla, mqtt, camera, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
-    <arg name="tfl_cameras"         default="mako"      doc="mako, nvidia" />
-    <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="for carla traffic light detector" />
+    <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="For traffic light detection" />
+    <arg name="tfl_detector"        default="none"              doc="carla, mqtt, camera, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
+    <arg name="tfl_cameras"         default="mako"              doc="mako, nvidia" />
     <arg name="camera_onnx_path"    default="$(find autoware_mini)/data/models/traffic_lights/tlr_model.onnx" doc="onnx model path" />
     <arg name="yolo_onnx_path"      default="$(find autoware_mini)/data/models/traffic_lights/yolov3-tiny-608.onnx" doc="yolo model path" />
 

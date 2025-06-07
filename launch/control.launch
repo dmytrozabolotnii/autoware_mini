@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-
-    <arg name="controller"            default="pure_pursuit"  doc="pure_pursuit, stanley" />
+    <arg name="controller"          default="pure_pursuit"  doc="pure_pursuit, stanley" />
     
     <group ns="control">
 

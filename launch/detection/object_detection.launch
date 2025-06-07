@@ -1,17 +1,24 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_cluster_fast,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
-    <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="for carla traffic light detector" />
-    <arg name="use_lidar_center"    default="true"              doc="use velodyne lidar"/>
-    <arg name="use_lidar_front"     default="false"             doc="use velodyne lidar"/>
-    <arg name="use_road_area_filter"  default="false"           doc="use road area filter"/>
-    <arg name="map_name"            default="tartu_demo"        doc="map name for road area filter" />
+    <!-- Map configuration -->
+    <arg name="map_name"            default="tartu_demo"        doc="Map name for road area filter" />
+    <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="For traffic light detection" />
     <arg name="road_area_file"      default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
+    
+    <!-- Detection -->
+    <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_cluster_fast,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
+    <arg name="use_lidar_center"    default="true"              doc="Use velodyne lidar"/>
+    <arg name="use_lidar_front"     default="false"             doc="Use velodyne lidar"/>
+    <arg name="use_road_area_filter"  default="false"           doc="Use road area filter"/>
+    <arg name="ground_removal"      default="naive"             doc="naive, jcp" />
+    <arg name="detection_range"     default=""                  doc="Enter a value in meters to enable it" />
+    
+    <!-- Tracking and Prediction -->
     <arg name="tracker"             default="ema"               doc="none, ema" />
     <arg name="predictor"           default="none"              doc="none, naive, map, map_naive" />
+    
+    <!-- Visualization and Debug -->
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
-    <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
-    <arg name="ground_removal"      default="naive"             doc="naive, jcp" />
 
     <group>
         <group if="$(eval 'lidar' in detector)" ns="lidar">

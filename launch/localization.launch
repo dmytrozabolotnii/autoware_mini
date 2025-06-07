@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="localizer"           default="novatel"  doc="novatel, carla" />
     <arg name="map_name"            default="tartu_demo" />
+    <arg name="localizer"           default="novatel"    doc="novatel, carla" />
     <arg name="use_lane_matching"   default="false" />
 
 

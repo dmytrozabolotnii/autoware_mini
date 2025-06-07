@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="driver_status" default="false"/>   
+    <arg name="driver_status"       default="false" />   
 
     <group ns="dashboard">
         <!-- Current and target speed -->
