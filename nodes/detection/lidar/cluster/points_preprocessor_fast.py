@@ -43,6 +43,8 @@ class PointsPreprocessorFast:
         # Voxel grid filter parameters
         voxel_size = cp.asarray(rospy.get_param('~voxel_grid_filter_leaf_size'))
         self.voxel_grid_filter_leaf_size = cp.asanyarray((voxel_size, voxel_size, voxel_size))
+        # Assumption: coordinates are within reasonable bounds (e.g., [-1000, 1000])
+        self.hash_scale = cp.array([73856093, 19349669, 83492791], dtype=cp.int64)  # large primes
 
         # Clustering parameters
         self.cluster_epsilon = rospy.get_param('~cluster_epsilon')
@@ -171,12 +173,10 @@ class PointsPreprocessorFast:
             Downsampled points (as cupy array).
         """
         # Compute voxel indices
-        voxel_indices = cp.floor(points / self.voxel_grid_filter_leaf_size).astype(cp.int32)
+        voxel_indices = cp.floor(points / self.voxel_grid_filter_leaf_size).astype(cp.int64)
 
         # Hash voxel indices into scalar keys
-        # Assumption: coordinates are within reasonable bounds (e.g., [-1000, 1000])
-        hash_scale = cp.array([73856093, 19349669, 83492791], dtype=cp.int64)  # large primes
-        voxel_hashes = cp.sum(voxel_indices.astype(cp.int64) * hash_scale, axis=1)
+        voxel_hashes = cp.sum(voxel_indices * self.hash_scale, axis=1)
 
         # Unique voxel hashes and corresponding first indices
         _, unique_indices = cp.unique(voxel_hashes, return_index=True)
