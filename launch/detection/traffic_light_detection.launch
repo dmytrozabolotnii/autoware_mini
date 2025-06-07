@@ -8,12 +8,12 @@
 
     <!-- Carla's ground truth traffic lights -->
     <node if="$(eval tfl_detector=='carla')" pkg="autoware_mini" type="carla_traffic_light_detector.py" name="carla_traffic_light_detector" output="screen" required="true">
-        <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+        <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
     </node>
 
     <!-- MQTT traffic light detector -->
     <node if="$(eval 'mqtt' in tfl_detector)" pkg="autoware_mini" type="mqtt_traffic_light_detector.py" name="mqtt_traffic_light_detector" output="screen" required="true">
-        <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+        <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
         <remap if="$(eval 'fusion' in tfl_detector)" from="traffic_light_status" to="mqtt/traffic_light_status"/>
     </node>
 
@@ -28,7 +28,7 @@
                     <remap from="camera_info" to="/camera_fl/camera_info"/>
                     <remap from="image_raw" to="/camera_fl/image_raw"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
                 </node>
                 <!-- Camera FR -->
@@ -36,7 +36,7 @@
                     <remap from="camera_info" to="/camera_fr/camera_info"/>
                     <remap from="image_raw" to="/camera_fr/image_raw"/>
                     <remap from="traffic_light_roi" to="/detection/camera2/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
                 </node>
             </group>
@@ -48,7 +48,7 @@
                     <remap from="camera_info" to="/camera_fl/camera_info"/>
                     <remap from="image_raw" to="/camera_fl/image_raw"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
                 </node>
                 <!-- Camera FR -->
@@ -56,7 +56,7 @@
                     <remap from="camera_info" to="/camera_fr/camera_info"/>
                     <remap from="image_raw" to="/camera_fr/image_raw"/>
                     <remap from="traffic_light_roi" to="/detection/camera2/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
                 </node>
             </group>
@@ -70,7 +70,7 @@
                     <remap from="camera_info" to="/interfacea/link2/camera_info"/>
                     <remap from="image_raw" to="/interfacea/link2/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera2/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
                 </node>
                 
@@ -79,7 +79,7 @@
                     <remap from="camera_info" to="/interfaceb/link0/camera_info"/>
                     <remap from="image_raw" to="/interfaceb/link0/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
                 </node>
             </group>
@@ -91,7 +91,7 @@
                     <remap from="camera_info" to="/interfacea/link2/camera_info"/>
                     <remap from="image_raw" to="/interfacea/link2/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera2/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
                 </node>
                 
@@ -100,7 +100,7 @@
                     <remap from="camera_info" to="/interfaceb/link0/camera_info"/>
                     <remap from="image_raw" to="/interfaceb/link0/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
                 </node>
             </group>

@@ -123,7 +123,7 @@
     <group unless="$(eval predictor=='none')">
         <node if="$(eval 'map' in predictor)" type="map_based_predictor.py" name="map_based_predictor" pkg="autoware_mini" output="screen" required="true">
             <remap from="predicted_objects" to="predicted_objects_map" />
-            <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+            <param name="lanelet2_map_name" value="$(arg lanelet2_map_name)" />
         </node>
         <node if="$(eval predictor=='map')" pkg="topic_tools" type="relay" args="predicted_objects_map predicted_objects" name="predicted_objects_relay" output="screen" required="true" />
         <node if="$(eval predictor=='naive')" pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />

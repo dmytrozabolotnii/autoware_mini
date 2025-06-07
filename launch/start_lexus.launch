@@ -2,8 +2,8 @@
 <launch>
 
     <!-- Map configuration -->
-    <arg name='map_name'                default='tartu_demo'                   doc="Map name to use"/>
-    <arg name="lanelet2_map_name"       default="$(arg map_name).osm"          doc="Lanelet2 map file name"/>
+    <arg name='map_name'                default='tartu_large'                  doc="Map name to use"/>
+    <arg name="lanelet2_map_name"       default="$(find autoware_mini)/data/maps/$(arg map_name).osm" doc="Lanelet2 map file path"/>
     
     <!-- Localization -->
     <arg name="localizer"               default="novatel"                      doc="Localizer to use (novatel, carla)"/>

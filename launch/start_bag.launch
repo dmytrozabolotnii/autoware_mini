@@ -3,7 +3,7 @@
     
     <!-- Map configuration -->
     <arg name='map_name'                default='tartu_demo'                   doc="Map name to use"/>
-    <arg name="lanelet2_map_name"       default="$(arg map_name).osm"          doc="Lanelet2 map file name"/>
+    <arg name="lanelet2_map_name"       default="$(find autoware_mini)/data/maps/$(arg map_name).osm" doc="Lanelet2 map file path"/>
 
     <!-- Autonomy options -->
     <arg name="use_tf"                  default="true"                         doc="Replace tf-s in bag with the current ones"/>
