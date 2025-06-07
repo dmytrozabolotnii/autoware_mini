@@ -18,12 +18,12 @@ class TrafficLightStoplineChecker:
         self.tfl_force_stop_speed_limit = rospy.get_param("~tfl_force_stop_speed_limit")
         self.braking_safety_distance_stopline = rospy.get_param("~braking_safety_distance_stopline")
         self.tfl_maximum_deceleration = rospy.get_param("~tfl_maximum_deceleration")
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
 
         # variables
         self.current_speed = None
         self.stopline_statuses = {}
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_path)
         self.all_stoplines = get_traffic_light_stop_lines(lanelet2_map)
 
         # publishers

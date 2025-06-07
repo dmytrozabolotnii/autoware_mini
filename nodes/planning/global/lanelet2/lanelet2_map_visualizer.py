@@ -51,14 +51,14 @@ class Lanelet2MapVisualizer:
     def __init__(self):
     
         # Parameters
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
         self.local_path_length = rospy.get_param("local_path_length")
         self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
         self.use_map_extraction = rospy.get_param("~use_map_extraction")
         self.enable_auto_stop_checker = rospy.get_param("~enable_auto_stop_checker")
 
         self.map_extraction_location = None
-        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        self.lanelet2_map = load_lanelet2_map(lanelet2_map_path)
         self.yield_stop_lines = get_stop_lines_using_subtype(self.lanelet2_map, subtypes=["yield_stop"])
 
         # Special publishers for stop line markers: traffic_lights and yielding
@@ -82,7 +82,7 @@ class Lanelet2MapVisualizer:
             self.lanelet2_map_markers_pub.publish(marker_array)
 
         rospy.loginfo("%s - map loaded with %i lanelets and %i regulatory elements from file: %s", rospy.get_name(),
-                      len(self.lanelet2_map.laneletLayer), len(self.lanelet2_map.regulatoryElementLayer), lanelet2_map_name)
+                      len(self.lanelet2_map.laneletLayer), len(self.lanelet2_map.regulatoryElementLayer), lanelet2_map_path)
 
     def current_pose_callback(self, msg):
 

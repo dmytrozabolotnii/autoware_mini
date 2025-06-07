@@ -26,7 +26,7 @@ class BicycleSimulation:
         self.deceleration_limit = rospy.get_param("deceleration_limit")
         self.default_acceleration = rospy.get_param("/planning/default_acceleration")
         self.default_deceleration = rospy.get_param("/planning/default_deceleration")
-        self.lanelet2_map = load_lanelet2_map(rospy.get_param("~lanelet2_map_name"))
+        self.lanelet2_map = load_lanelet2_map(rospy.get_param("~lanelet2_map_path"))
 
         # internal state of bicycle model
         self.x = 0.0

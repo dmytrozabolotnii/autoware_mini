@@ -15,7 +15,7 @@ ROS node that detects traffic lights using camera images. It projects traffic li
 | Name | Type | Default Value | Description |
 | ----- | ----- | ------------- | ------------ |
 | `~onnx_path` | string | - | Path to the ONNX model file for traffic light classification. |
-| `~lanelet2_map_name` | string | - | Name of the Lanelet2 map file. |
+| `~lanelet2_map_path` | string | - | Path of the Lanelet2 map file. |
 | `~rectify_image` | bool | `False` | Whether to rectify the image before processing. |
 | `~roi_width_extent` | float | `0.65` | ROI box width extension amount in meters. |
 | `~roi_height_extent` | float | `0.55` | ROI box height extension amount in meters. |
@@ -50,7 +50,7 @@ ROS node that subscribes to MQTT topic, processes received messages and publishe
 
 | Name | Type | Default Value | Description |
 | ----- | ----- | ------------- | ------------ |
-| `~lanelet2_map_name` | string | - | Name of the Lanelet2 map. |
+| `~lanelet2_map_path` | string | - | Name of the Lanelet2 map. |
 | `~mqtt_host` | string | `traffic.traffest.com` | Hostname or IP address of the MQTT broker. |
 | `~mqtt_port` | int | `8883` | Port number of the MQTT broker. |
 | `~mqtt_topic` | string | `Tartu/#` | MQTT topic to subscribe to. |
@@ -136,7 +136,7 @@ ROS node that detects traffic lights using a YOLO model. It projects traffic lig
 | Name | Type | Default Value | Description |
 | ----- | ----- | ------------- | ------------ |
 | `~onnx_path` | string | - | Path to the ONNX model file for YOLO traffic light detection. |
-| `~lanelet2_map_name` | string | - | Name of the Lanelet2 map file. |
+| `~lanelet2_map_path` | string | - | Name of the Lanelet2 map file. |
 | `~rectify_image` | bool | `False` | Whether to rectify the image before processing. |
 | `~roi_width_extent` | float | `0.65` | ROI box width extension amount in meters. |
 | `~roi_height_extent` | float | `0.55` | ROI box height extension amount in meters. |

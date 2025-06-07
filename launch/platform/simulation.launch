@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="lanelet2_map_name" />
+    <arg name="map_name"            default="tartu_demo" />
+    <arg name="lanelet2_map_path"   default="$(find autoware_mini)/data/maps/$(arg map_name).osm" />
     <arg name="max_speed"           default="30" />
 
     <!-- Transforms -->
@@ -10,7 +11,7 @@
 
         <!-- Bicycle_model simulator -->
         <node pkg="autoware_mini" type="bicycle_simulation.py" name="bicycle_simulation" output="screen" required="true">
-            <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)"/>
+            <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)"/>
         </node>
 
         <!-- SSC interface for the sake of visualization of acceleration limits -->

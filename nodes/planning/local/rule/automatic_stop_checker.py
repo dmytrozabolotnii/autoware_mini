@@ -15,7 +15,7 @@ class AutomaticStopChecker:
     def __init__(self):
 
         # parameters
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
         self.keep_stop_line_for = rospy.get_param("~keep_stop_line_for")
         self.braking_safety_distance_stop_line = rospy.get_param("~braking_safety_distance_stop_line")
 
@@ -25,7 +25,7 @@ class AutomaticStopChecker:
         self.ignore_stop_line_id = -1
         self.timer = rospy.Time.now()
 
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_path)
         self.stop_lines = get_stop_lines_using_subtype(lanelet2_map, subtypes=["yield_stop"])
 
         # publishers

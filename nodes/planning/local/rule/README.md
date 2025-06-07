@@ -61,7 +61,7 @@ The `automatic_stop_checker` node detects stop lines on the path and ensures the
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `lanelet2_map_name` | string | `-` | Name of the lanelet2 map to load |
+| `lanelet2_map_path` | string | `-` | Path of the lanelet2 map file to load |
 | `braking_safety_distance_stop_line` | double | `0.1` | Distance to stop before the stop line (m) |
 | `keep_stop_line_for` | double | `15.0` | Time in seconds to keep a stop line removed after pressing "Let's Go" button (s) |
 
@@ -120,7 +120,7 @@ The `pedestrian_crosswalk_checker` node handles crosswalks and checks if pedestr
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `lanelet2_map_name` | string | `-` | Name of the lanelet2 map to load |
+| `lanelet2_map_path` | string | `-` | Name of the lanelet2 map to load |
 | `safety_box_width` | double | `2.7` | Width of the safety buffer around the path (m) |
 | `stopped_speed_limit` | double | `1.0` | Speed below which an object is considered stopped (m/s) |
 | `braking_safety_distance_crosswalk` | double | `6.0` | Distance to stop before a crosswalk (m) |
@@ -152,7 +152,7 @@ The `traffic_light_stopline_checker` node monitors traffic light states and crea
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `lanelet2_map_name` | string | `-` | Name of the lanelet2 map to load |
+| `lanelet2_map_path` | string | `-` | Name of the lanelet2 map to load |
 | `tfl_force_stop_speed_limit` | double | `5.0` | Speed below which vehicle must stop at a red light (km/h) |
 | `braking_safety_distance_stopline` | double | `2` | Distance to stop before the stop line (m) |
 | `tfl_maximum_deceleration` | double | `2.8` | Maximum deceleration for traffic light stops (m/s²) |
@@ -179,7 +179,7 @@ The `trajectory_collision_checker` node checks for potential collisions with oth
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `lanelet2_map_name` | string | `-` | Name of the lanelet2 map to load |
+| `lanelet2_map_path` | string | `-` | Name of the lanelet2 map to load |
 | `safety_box_width` | double | `2.7` | Width of the safety buffer around the path (m) |
 | `safety_box_length` | double | `5.0` | Length of the safety buffer around the vehicle (m) |
 | `braking_safety_distance_trajectory` | double | `4` | Distance to maintain before potential collision point (m) |
@@ -210,7 +210,7 @@ The `yielding_checker` node handles yielding situations at yield signs or inters
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `lanelet2_map_name` | string | `-` | Name of the lanelet2 map to load |
+| `lanelet2_map_path` | string | `-` | Name of the lanelet2 map to load |
 | `safety_box_width` | double | `2.7` | Width of the safety buffer around the path (m) |
 | `braking_safety_distance_yield` | double | `1.0` | Distance to stop before a yield point (m) |
 | `yielding_maximum_deceleration` | double | `2.8` | Maximum deceleration for yielding (m/s²) |

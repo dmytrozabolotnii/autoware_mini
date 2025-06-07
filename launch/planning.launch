@@ -1,14 +1,18 @@
 <?xml version="1.0"?>
 <launch>
-
-    <arg name="global_planner"              default="lanelet2"  doc="waypoints, lanelet2, carla" />
-    <arg name="local_planner"               default="rule"      doc="none, rule, openpilot" />
-    <arg name="synchronization_method"      default="$(eval 'approximate' if 'openpilot' in local_planner else 'exact')" />
-    <arg name="use_path_smoothing"          default="true" />
-    <arg name="waypoints_file"              default="waypoints_erm_utm_1m.csv" />
-    <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
+    <!-- Map configuration -->
     <arg name="map_name"                    default="tartu_demo" />
+    <arg name="lanelet2_map_path"           default="$(find autoware_mini)/data/maps/$(arg map_name).osm" />
+    
+    <!-- Global planning -->
+    <arg name="global_planner"              default="lanelet2"  doc="waypoints, lanelet2, carla" />
+    <arg name="waypoints_file"              default="waypoints_erm_utm_1m.csv" />
+    <arg name="use_path_smoothing"          default="true" />
     <arg name="load_goals"                  default="true" />
+    <arg name="goals_file"                  default="$(find autoware_mini)/data/maps/$(arg map_name)_goals.yaml" />
+    
+    <!-- Local planning -->
+    <arg name="local_planner"               default="rule"      doc="none, rule, openpilot" />
     <arg name="enable_goal_checker"         default="true" />
     <arg name="enable_object_checker"       default="true" />
     <arg name="enable_auto_stop_checker"    default="true" />
@@ -16,12 +20,13 @@
     <arg name="enable_crosswalk_checker"    default="true" />
     <arg name="enable_yielding_checker"     default="true" />
     <arg name="enable_trajectory_checker"   default="true" />
+    <arg name="synchronization_method"      default="$(eval 'approximate' if 'openpilot' in local_planner else 'exact')" />
 
     <group ns="planning">
 
         <!-- Lanelet2 map visualizer -->
         <node pkg="autoware_mini" type="lanelet2_map_visualizer.py" name="lanelet2_map_visualizer" output="screen" required="true">
-            <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+            <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
             <param name="enable_auto_stop_checker" value="$(arg enable_auto_stop_checker)" />
         </node>
 
@@ -33,7 +38,7 @@
         <!-- Lanelet2 global planner -->
         <group if="$(eval global_planner=='lanelet2')">
             <node pkg="autoware_mini" type="lanelet2_global_planner.py" name="lanelet2_global_planner" output="screen" required="true">
-                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
             </node>
             <node pkg="autoware_mini" type="global_path_visualizer.py" name="lanelet2_global_path_visualizer" output="screen" required="true">
                 <remap from="global_path" to="lanelet2_global_path"/>
@@ -63,7 +68,7 @@
 
         <!-- Goal publisher -->
         <node if="$(eval load_goals and eval('_' + '_import_' + '_(\'os\')').path.exists(find('autoware_mini') + '/data/maps/' + map_name + '_goals.yaml'))" pkg="autoware_mini" type="goal_publisher.py" name="goal_publisher" output="screen" required="true">
-            <param name="goals_file" value="$(find autoware_mini)/data/maps/$(arg map_name)_goals.yaml" />
+            <param name="goals_file" value="$(arg goals_file)" />
         </node>
 
         <!-- Rule-based local planner -->
@@ -74,17 +79,17 @@
                 <remap if="$(eval 'openpilot' in local_planner)" from="extracted_local_path" to="openpilot_local_path"/>
             </node>
             <node if="$(arg enable_traffic_light_checker)" pkg="autoware_mini" type="traffic_light_stopline_checker.py" name="traffic_light_stopline_checker" output="screen" required="true" >
-                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
             </node>
             <node if="$(arg enable_crosswalk_checker)" pkg="autoware_mini" type="pedestrian_crosswalk_checker.py" name="pedestrian_crosswalk_checker" output="screen" required="true" >
-                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
             </node>
             <node if="$(arg enable_yielding_checker)" pkg="autoware_mini" type="yielding_checker.py" name="yielding_checker" output="screen" required="true" >
-                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
             </node>
             <node if="$(arg enable_trajectory_checker)" pkg="autoware_mini" type="trajectory_collision_checker.py" name="trajectory_collision_checker" output="screen" required="true" />
             <node if="$(arg enable_auto_stop_checker)" pkg="autoware_mini" type="automatic_stop_checker.py" name="automatic_stop_checker" output="screen" required="true" >
-                <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
             </node>
             <node pkg="autoware_mini" type="collision_points_merger.py" name="collision_points_merger" output="screen" required="true" >
                 <param name="synchronization_method"        value="$(arg synchronization_method)" />

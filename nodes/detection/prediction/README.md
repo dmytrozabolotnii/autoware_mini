@@ -34,7 +34,7 @@ ROS node that predicts future object trajectories using map information from the
 
 | Name                           | Type | Default Value | Description |
 |--------------------------------| ----- | ------------- | ------------ |
-| `~lanelet2_map_name`           | string | `-` | Name of the lanelet2 map file to load. |
+| `~lanelet2_map_path`           | string | `-` | Path of the lanelet2 map file to load. |
 | `~prediction_horizon`          | float | `5.0` | Prediction time horizon in seconds. |
 | `~prediction_interval`         | float | `0.5` | Time interval between prediction points in seconds. |
 | `~trajectories_to_predict`     | int | `1` | Number of trajectories to predict for each object. |

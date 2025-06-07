@@ -62,9 +62,9 @@ class MqttTrafficLightDetector:
         self.local_path_length = rospy.get_param("/planning/local_path_length")
         self.timeout = rospy.get_param('~timeout')
         self.id_string = rospy.get_param('~id_string')
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
 
-        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        self.lanelet2_map = load_lanelet2_map(lanelet2_map_path)
 
         # MQTT traffic light status
         self.mqtt_status = {}

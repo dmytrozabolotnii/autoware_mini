@@ -32,7 +32,7 @@ ROS node that filters detected objects based on whether they're within a road ar
 
 | Name | Type | Default Value | Description |
 | ----- | ----- |---------------| ------------ |
-| `road_area_file` | string | -             | Path to the GeoJSON file containing road area information |
+| `road_area_file_path` | string | -             | Path to the GeoJSON file containing road area information |
 | `filtering_method` | string | `"centroid"`  | Method to filter objects. Options: 'centroid' (centroid inside road area), 'intersects' (has overlap with road area), or 'within' (object completely inside road area) |
 | `use_map_extraction` | bool | `True`        | Whether to extract a smaller map area around the ego vehicle for visualization |
 | `map_extraction_distance` | float | `150`         | Distance in meters from ego vehicle to extract map data |
