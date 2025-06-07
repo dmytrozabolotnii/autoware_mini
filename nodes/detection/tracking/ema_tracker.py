@@ -37,6 +37,8 @@ class EMATracker:
         self.track_id_counter = 0
         self.stamp = None
 
+        self.velocities = []
+        self.object_counts = []
         rospy.on_shutdown(self.shutdown)
 
         # Publishers
@@ -215,11 +217,17 @@ class EMATracker:
         tracked_objects_msg.objects = tracked_objects
         self.tracked_objects_pub.publish(tracked_objects_msg)
 
+        # record statistics
+        self.velocities.append(np.mean(np.linalg.norm(self.tracked_objects_array['velocity'], axis=1)))
+        self.object_counts.append(len(tracked_objects))
+
     def run(self):
         rospy.spin()
     
     def shutdown(self):
         rospy.loginfo('Total tracked objects created: %d', self.track_id_counter)
+        rospy.loginfo('Average object velocity: %f', np.mean(self.velocities))
+        rospy.loginfo('Average object count: %f', np.mean(self.object_counts))
 
 if __name__ == '__main__':
     rospy.init_node('ema_tracker', log_level=rospy.INFO)
