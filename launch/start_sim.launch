@@ -6,6 +6,7 @@
     
     <!-- Bag scenarios -->
     <arg name="scenario_name"           default=""                           doc="Scenario name"/>
+    <arg name="scenario_bag"            default="$(find autoware_mini)/data/bag_scenarios/$(arg map_name)/$(arg scenario_name).bag" doc="Scenario name"/>
     <arg name="rate"                    default="1"                          doc="Scenario bag playback speed"/>
     <arg name="ade_csv_file"            default=""                           doc="CSV file to store ADE values"/>
     <arg name="ade_threshold"           default="10"                         doc="ADE threshold in meters"/>
@@ -102,7 +103,7 @@
     <group if="$(eval scenario_name != '')">
         <!-- Play scenario bag -->
         <node pkg="rosbag" type="play" name="player" required="true" output="screen"
-                args="$(find autoware_mini)/data/bag_scenarios/$(arg map_name)/$(arg scenario_name).bag --clock --queue=1 --rate=$(arg rate) --delay 2.5 --wait-for-subscribers" />
+                args="$(arg scenario_bag) --clock --queue=1 --rate=$(arg rate) --delay 2.5 --wait-for-subscribers" />
 
         <!-- Use simulation time from bag -->
         <param name="/use_sim_time" value="true" />
@@ -114,8 +115,8 @@
         <node pkg="autoware_mini" type="scenario_metrics_calculator.py" name="scenario_metrics_calculator" output="screen" required="true" ns="vehicle">
             <param name="scenario_name" value="$(arg scenario_name)" />
             <param name="ade_threshold" value="$(arg ade_threshold)" />
-            <param name="ade_csv_file" value="$(find autoware_mini)/$(arg ade_csv_file)" />
-            <param name="ade_plot_file" value="$(find autoware_mini)/$(arg ade_plot_file)" />
+            <param name="ade_csv_file" value="$(arg ade_csv_file)" />
+            <param name="ade_plot_file" value="$(arg ade_plot_file)" />
             <param name="speed_smoothness_threshold" value="$(arg speed_smoothness_threshold)" />
         </node>
     </group>

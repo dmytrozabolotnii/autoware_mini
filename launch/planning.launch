@@ -9,6 +9,7 @@
     <arg name="waypoints_file"              default="waypoints_erm_utm_1m.csv" />
     <arg name="use_path_smoothing"          default="true" />
     <arg name="load_goals"                  default="true" />
+    <arg name="goals_file"                  default="$(find autoware_mini)/data/maps/$(arg map_name)_goals.yaml" />
     
     <!-- Local planning -->
     <arg name="local_planner"               default="rule"      doc="none, rule, openpilot" />
@@ -67,7 +68,7 @@
 
         <!-- Goal publisher -->
         <node if="$(eval load_goals and eval('_' + '_import_' + '_(\'os\')').path.exists(find('autoware_mini') + '/data/maps/' + map_name + '_goals.yaml'))" pkg="autoware_mini" type="goal_publisher.py" name="goal_publisher" output="screen" required="true">
-            <param name="goals_file" value="$(find autoware_mini)/data/maps/$(arg map_name)_goals.yaml" />
+            <param name="goals_file" value="$(arg goals_file)" />
         </node>
 
         <!-- Rule-based local planner -->

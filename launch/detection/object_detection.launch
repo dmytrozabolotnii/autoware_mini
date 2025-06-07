@@ -3,7 +3,7 @@
     <!-- Map configuration -->
     <arg name="map_name"            default="tartu_demo"        doc="Map name for road area filter" />
     <arg name="lanelet2_map_path"   default="$(find autoware_mini)/data/maps/$(arg map_name).osm" doc="For map-based prediction" />
-    <arg name="road_area_file"      default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
+    <arg name="road_area_file_path" default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
     
     <!-- Detection -->
     <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_cluster_fast,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
@@ -12,6 +12,7 @@
     <arg name="use_road_area_filter"  default="false"           doc="Use road area filter"/>
     <arg name="ground_removal"      default="naive"             doc="naive, jcp" />
     <arg name="detection_range"     default=""                  doc="Enter a value in meters to enable it" />
+    <arg name="sfa_onnx_path"       default="$(find autoware_mini)/data/models/sfa/nulyaronar2_02_30.onnx" />
     
     <!-- Tracking and Prediction -->
     <arg name="tracker"             default="ema"               doc="none, ema" />
@@ -70,7 +71,7 @@
             </group>
 
             <node if="$(eval 'lidar_sfa' in detector)" pkg="autoware_mini" type="sfa_detector.py" name="sfa_detector" output="screen" required="true">
-                <param name="onnx_path"  value="$(find autoware_mini)/data/models/sfa/nulyaronar2_02_30.onnx"/>
+                <param name="onnx_path"  value="$(arg sfa_onnx_path)"/>
                 <remap if="$(eval use_lidar_center and not use_lidar_front)" from="points_raw" to="/lidar_center/points_raw" />
                 <remap if="$(eval use_lidar_front and not use_lidar_center)" from="points_raw" to="/lidar_front/points" />
             </node>
@@ -113,7 +114,7 @@
             <param name="detection_range" value="$(arg detection_range)" />
         </node>
         <node if="$(arg use_road_area_filter)" pkg="autoware_mini" type="road_area_filter.py" name="road_area_filter" output="screen" required="true" >
-            <param name="road_area_file" value="$(arg road_area_file)" />
+            <param name="road_area_file_path" value="$(arg road_area_file_path)" />
         </node>
     </group>
 

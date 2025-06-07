@@ -15,7 +15,7 @@ class RoadAreaFilter:
     def __init__(self):
 
         # get parameters
-        self.road_area_file = rospy.get_param("~road_area_file")
+        self.road_area_file_path = rospy.get_param("~road_area_file_path")
         self.filtering_method = rospy.get_param("~filtering_method")
         self.use_map_extraction = rospy.get_param("~use_map_extraction")
         self.map_extraction_distance = rospy.get_param("~map_extraction_distance")
@@ -29,12 +29,12 @@ class RoadAreaFilter:
         self.road_area = None
         self.not_road_area = None
 
-        rospy.loginfo("%s - loading road area from file %s", rospy.get_name(), self.road_area_file)
+        rospy.loginfo("%s - loading road area from file %s", rospy.get_name(), self.road_area_file_path)
         easting, northing = utm_origin()
 
         # Read the GeoJSON file and create shapely geometries
         road_area_data = []
-        with open(self.road_area_file, 'r') as f:
+        with open(self.road_area_file_path, 'r') as f:
             self.geojson_data = json.load(f)
             for feature in self.geojson_data['features']:
                 geometry = shapely.geometry.shape(feature['geometry'])

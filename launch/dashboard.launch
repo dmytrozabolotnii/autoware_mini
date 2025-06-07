@@ -24,14 +24,12 @@
         <node pkg="autoware_mini" type="logger.py" name="logger" output="screen" required="true" ></node>
         <group if="$(arg driver_status)">
             <!-- Novatel visualizer -->
-            <node pkg="autoware_mini" type="novatel_oem7_visualizer.py" name="novatel_oem7_visualizer" output="screen" required="true"/>
+            <node pkg="autoware_mini" type="novatel_oem7_visualizer.py" name="novatel_oem7_visualizer" output="screen" required="true" />
             <!-- SSC and Pacmod state visualizer -->
-            <node pkg="autoware_mini" type="pacmod_state_visualizer.py" name="pacmod_state_visualizer" output="screen" required="true" >
-                <param name="image_path"  value="$(find autoware_mini)/images/dashboard/"/>
-            </node>
+            <node pkg="autoware_mini" type="pacmod_state_visualizer.py" name="pacmod_state_visualizer" output="screen" required="true" />
             <!-- Visualize vehicle status in Carla plugin -->
             <node pkg="autoware_mini" type="carla_status_visualizer.py" name="carla_status_visualizer" output="screen" required="true" />
-            <!-- Would have preferred using remap here, but adding remap to every RViz invocation seemed too much -->
+            <!-- Would have preferred using remap here, but adding conditional remap to every RViz invocation seemed too much -->
             <node pkg="topic_tools" type="relay" name="carla_odometry_relay" args="/localization/odometry /carla/ego_vehicle/odometry" output="screen" required="true"/>
         </group>
 

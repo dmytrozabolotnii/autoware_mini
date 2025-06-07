@@ -17,14 +17,6 @@ class WaypointLoader:
 
         # Publishers
         self.waypoints_pub = rospy.Publisher('global_path', Path, queue_size=10, latch=True, tcp_nodelay=True)
-
-        self.waypoints = self.load_waypoints(self.waypoints_file)
-        self.publish_waypoints()  
-
-        if len(self.waypoints) == 0:
-            rospy.logerr("%s - no waypoints found in file: %s ", rospy.get_name(), self.waypoints_file)
-        else:
-            rospy.loginfo("%s - %i waypoints published from file: %s", rospy.get_name(), len(self.waypoints), self.waypoints_file)
         
     def load_waypoints(self, waypoints_file):
         
@@ -68,17 +60,25 @@ class WaypointLoader:
 
         return waypoints
 
-    def publish_waypoints(self):
+    def publish_waypoints(self, waypoints):
         path = Path()
         
         path.header.frame_id = self.output_frame
         path.header.stamp = rospy.Time.now()
-        path.waypoints = self.waypoints
+        path.waypoints = waypoints
         
         self.waypoints_pub.publish(path)
 
 
     def run(self):
+        waypoints = self.load_waypoints(self.waypoints_file)
+        self.publish_waypoints(waypoints)
+
+        if len(waypoints) == 0:
+            rospy.logerr("%s - no waypoints found in file: %s ", rospy.get_name(), self.waypoints_file)
+        else:
+            rospy.loginfo("%s - %i waypoints published from file: %s", rospy.get_name(), len(waypoints), self.waypoints_file)
+
         rospy.spin()
 
 if __name__ == '__main__':
