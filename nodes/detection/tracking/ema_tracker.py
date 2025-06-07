@@ -37,6 +37,8 @@ class EMATracker:
         self.track_id_counter = 0
         self.stamp = None
 
+        rospy.on_shutdown(self.shutdown)
+
         # Publishers
         self.tracked_objects_pub = rospy.Publisher('tracked_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
 
@@ -202,7 +204,7 @@ class EMATracker:
 
         ### 8. update tracked objects dimensions, position, heading based on velocity vector ###
         if self.update_heading_bboxes:
-            for i, obj in enumerate(tracked_objects):
+            for obj in tracked_objects:
                 if get_speed_from_velocity(obj.velocity) >= self.stopped_speed_limit:
                     update_object_position_dimensions(obj)
 
@@ -215,6 +217,9 @@ class EMATracker:
 
     def run(self):
         rospy.spin()
+    
+    def shutdown(self):
+        rospy.loginfo('Total tracked objects created: %d', self.track_id_counter)
 
 if __name__ == '__main__':
     rospy.init_node('ema_tracker', log_level=rospy.INFO)
