@@ -7,10 +7,10 @@ import numpy as np
 import rospy
 
 
-def load_lanelet2_map(lanelet2_map_name):
+def load_lanelet2_map(lanelet2_map_path):
     """
     Load a lanelet2 map from a file and return it
-    :param lanelet2_map_name: name of the lanelet2 map file
+    :param lanelet2_map_path: name of the lanelet2 map file
     :param coordinate_transformer: coordinate transformer
     :param use_custom_origin: use custom origin
     :param utm_origin_lat: utm origin latitude
@@ -30,7 +30,7 @@ def load_lanelet2_map(lanelet2_map_name):
     else:
         raise ValueError('Unknown coordinate_transformer for loading the Lanelet2 map ("utm" should be used): ' + coordinate_transformer)
 
-    lanelet2_map = load(lanelet2_map_name, projector)
+    lanelet2_map = load(lanelet2_map_path, projector)
 
     return lanelet2_map
 

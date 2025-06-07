@@ -10,7 +10,7 @@ A ROS node that implements a global planner for autonomous vehicles based on Lan
 
 | Name | Type | Default Value | Description                                                                                 |
 |------|------|---------|---------------------------------------------------------------------------------------------|
-| `~lanelet2_map_name` | string | `-` | Path to the Lanelet2 map file                                                               |
+| `~lanelet2_map_path` | string | `-` | Path to the Lanelet2 map file                                                               |
 | `~distance_to_centerline_limit` | float | `5.0` | The maximum distance from the centerline for a waypoint on the generated path (m)           |
 | `~lane_change` | bool | `False` | Whether to allow lane changes during route planning                                         |
 | `~lanelet_search_radius` | float | `0.5` | Radius for searching lanelets around a point (m)                                            |
@@ -80,7 +80,7 @@ ROS node for visualizing Lanelet2 map elements including road boundaries, center
 
 | Name | Type | Default Value | Description |
 |------|------|---------|-------------|
-| `~lanelet2_map_name` | string | `-` | Path to the Lanelet2 map file |
+| `~lanelet2_map_path` | string | `-` | Path to the Lanelet2 map file |
 | `~enable_auto_stop_checker` | bool | `-` | Whether to enable the automatic stop checker functionality |
 | `~use_map_extraction` | bool | `False` | Extract smaller map area around the ego vehicle for visualization |
 | `~map_extraction_distance` | float | `500` | Distance from ego vehicle to extract map data (m) |

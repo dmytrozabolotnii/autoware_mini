@@ -31,11 +31,11 @@ class MapBasedPredictor:
         self.heading_difference_threshold = rospy.get_param('~heading_difference_threshold')
         self.use_offset_for_prediction = rospy.get_param('~use_offset_for_prediction')
         self.prediction_clipping_deceleration_limit = rospy.get_param('~prediction_clipping_deceleration_limit')
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
         self.local_path_length = rospy.get_param("/planning/local_path_length")
 
         # Variables
-        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        self.lanelet2_map = load_lanelet2_map(lanelet2_map_path)
         traffic_rules_vehicle = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.Vehicle)
         traffic_rules_vehicle_taxi = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany, lanelet2.traffic_rules.Participants.VehicleTaxi)
         self.graph_vehicle = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules_vehicle)

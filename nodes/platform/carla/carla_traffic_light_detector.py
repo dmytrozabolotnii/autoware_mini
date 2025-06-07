@@ -32,10 +32,10 @@ class CarlaTrafficLightDetector:
     def __init__(self):
 
         # Node parameters
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
 
         # Load lanelet2 map
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_path)
         
         # Get stopline centers with stopline_id and corresponding light_ids mapping
         self.stopline_centers_map = get_stoplines_center(lanelet2_map)

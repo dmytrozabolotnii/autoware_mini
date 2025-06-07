@@ -25,7 +25,7 @@ class PedestrianCrosswalkChecker:
         self.ignore_static_obstacles = rospy.get_param("~ignore_static_obstacles")
         self.crosswalk_maximum_deceleration = rospy.get_param("~crosswalk_maximum_deceleration")
         self.prediction_counter_min_limit = rospy.get_param("~prediction_counter_min_limit")
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
 
         # variables
         self.objects = None
@@ -33,7 +33,7 @@ class PedestrianCrosswalkChecker:
         self.object_crosswalk_counter = defaultdict(dict)
 
         # load lanelet2 map
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_path)
         self.crosswalks = self.prepare_crosswalks(get_crosswalks(lanelet2_map))
 
         # publishers

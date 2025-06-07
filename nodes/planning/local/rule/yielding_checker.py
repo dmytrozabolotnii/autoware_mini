@@ -20,13 +20,13 @@ class YieldingChecker:
         self.yielding_distance_limit = rospy.get_param("~yielding_distance_limit")
         self.heading_alignment_limit = rospy.get_param("~heading_alignment_limit")
         self.use_object_width = rospy.get_param("use_object_width")
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
 
         # variables
         self.objects = None
         self.yield_lines_on_global_path = []
 
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_path)
         yield_lines = get_stop_lines_using_subtype(lanelet2_map, subtypes=["yield", "yield_stop"])
         self.yield_lines = np.array(list(yield_lines.values()))
 

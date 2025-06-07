@@ -41,7 +41,7 @@ class Lanelet2GlobalPlanner:
         self.lane_change_base_length = rospy.get_param("lane_change_base_length")
         self.lane_change_perlane_length = rospy.get_param("lane_change_perlane_length")
         self.waypoint_interval = rospy.get_param("waypoint_interval")
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
         self.routing_cost = rospy.get_param("~routing_cost")
 
         if self.routing_cost == 'distance':
@@ -57,7 +57,7 @@ class Lanelet2GlobalPlanner:
         self.current_speed = None
         self.goal_point = None
 
-        self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        self.lanelet2_map = load_lanelet2_map(lanelet2_map_path)
 
         # traffic rules
         traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany,

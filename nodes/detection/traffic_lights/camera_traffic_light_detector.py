@@ -54,12 +54,12 @@ class CameraTrafficLightDetector:
         self.min_roi_width = rospy.get_param("~min_roi_width")
         self.transform_timeout = rospy.get_param("~transform_timeout")
         self.waypoint_interval = rospy.get_param("/planning/waypoint_interval")
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
         self.camera_delay_compensation = rospy.get_param("~camera_delay_compensation")
 
 
         # Extract all stop lines and traffic lights from the lanelet2 map
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_path)
         self.stoplines = get_traffic_light_stop_lines(lanelet2_map)
         self.trafficlights = get_stoplines_trafficlights(lanelet2_map)
 

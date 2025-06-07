@@ -193,7 +193,7 @@ ROS node that detects traffic lights from the Carla simulator and publishes the 
 | `/localization/coordinate_transformer` | `string` | `utm` | The coordinate transformer used to load the map. Only "utm" is currently supported. |
 | `/localization/utm_origin_lat` | `float` | `0.0` | The latitude of the UTM origin. |
 | `/localization/utm_origin_lon` | `float` | `0.0` | The longitude of the UTM origin. |
-| `~lanelet2_map_name` | `string` | - | The name of the Lanelet2 map file to load. |
+| `~lanelet2_map_path` | `string` | - | Path of the Lanelet2 map file to load. |
 | `/localization/use_custom_origin` | `bool` | `True` | Whether to use a custom origin. |
 
 
