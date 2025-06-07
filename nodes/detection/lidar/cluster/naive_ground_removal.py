@@ -62,8 +62,9 @@ class NaiveGroundRemovalNode:
             elif self.filter == 'average':
                 mask = np.isnan(self.cols)
                 self.cols[mask] = 0
-                cols_filtered = cv2.blur(self.cols, (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE) / \
-                        cv2.blur((~mask).astype(np.float32), (self.filter_size, self.filter_size), cv2.BORDER_REPLICATE)
+                sums = cv2.boxFilter(self.cols, -1, (self.filter_size, self.filter_size), normalize=False, borderType=cv2.BORDER_REPLICATE)
+                counts = cv2.boxFilter((~mask).astype(np.float32), -1, (self.filter_size, self.filter_size), normalize=False, borderType=cv2.BORDER_REPLICATE)
+                cols_filtered = np.divide(sums, counts, where=counts > 0)
                 np.fmin(self.cols, cols_filtered, out=self.cols)
             elif self.filter == 'minimum':
                 mask = np.isnan(self.cols)
