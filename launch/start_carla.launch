@@ -3,7 +3,6 @@
     
     <!-- Map configuration -->
     <arg name='map_name'                default='tartu_demo'                   doc="Map name to use"/>
-    <arg name="lanelet2_map_name"       default="$(find autoware_mini)/data/maps/$(arg map_name).osm" doc="Lanelet2 map file path"/>
     
     <!-- Localization -->
     <arg name="localizer"               default="carla"                        doc="Localizer to use (novatel, carla)"/>
@@ -59,7 +58,6 @@
         <arg name="detector"            value="$(arg detector)" />
         <arg name="tfl_detector"        value="$(arg tfl_detector)" />
         <arg name="tfl_cameras"         value="$(arg tfl_cameras)" />
-        <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name='use_lidar_center'    value='$(arg use_lidar_center)'/>
         <arg name='use_lidar_front'     value='$(arg use_lidar_front)'/>
         <arg name="tracker"             value="$(arg tracker)" />
@@ -76,7 +74,6 @@
         <arg name="local_planner"       value="$(arg local_planner)" />
         <arg name="use_path_smoothing"  value="$(arg use_path_smoothing)" />
         <arg name="waypoints_file"      value="$(arg waypoints_file)" />
-        <arg name="lanelet2_map_name"   value="$(arg lanelet2_map_name)" />
         <arg name="map_name"            value="$(arg map_name)" />
         <arg name="load_goals"          value="$(eval not use_scenario_runner)" />
         <arg name="enable_goal_checker"          value="$(arg enable_goal_checker)" />

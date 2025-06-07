@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="lanelet2_map_name" />
+    <arg name="map_name"            default="tartu_demo" />
+    <arg name="lanelet2_map_name"   default="$(find autoware_mini)/data/maps/$(arg map_name).osm" />
     <arg name="max_speed"           default="30" />
 
     <!-- Transforms -->

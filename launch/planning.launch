@@ -2,7 +2,7 @@
 <launch>
     <!-- Map configuration -->
     <arg name="map_name"                    default="tartu_demo" />
-    <arg name="lanelet2_map_name"           default="tartu_demo.osm" />
+    <arg name="lanelet2_map_name"           default="$(find autoware_mini)/data/maps/$(arg map_name).osm" />
     
     <!-- Global planning -->
     <arg name="global_planner"              default="lanelet2"  doc="waypoints, lanelet2, carla" />

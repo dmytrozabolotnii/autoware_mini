@@ -2,7 +2,7 @@
 <launch>
     <!-- Map configuration -->
     <arg name="map_name"            default="tartu_demo"        doc="Map name for road area filter" />
-    <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="For traffic light detection" />
+    <arg name="lanelet2_map_name"   default="$(find autoware_mini)/data/maps/$(arg map_name).osm" doc="For traffic light detection" />
     <arg name="road_area_file"      default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
     
     <!-- Detection -->
