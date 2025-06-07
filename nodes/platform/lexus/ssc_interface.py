@@ -224,7 +224,8 @@ class SSCInterface:
             # current gear
             vehicle_status.current_gear.gear = gear_msg.current_gear.gear
 
-            # turn signals (not used to remove pacmod3 msgs dependency)
+            # turn signals
+            #vehicle_status.lamp = TURN_RPT_TO_VEHICLE_STATUS_LAMP_MAP[self.turn_signals]
             vehicle_status.lamp = 0
 
             # publish the status message
