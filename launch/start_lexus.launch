@@ -123,6 +123,7 @@
     <!-- Rviz -->
     <include if="$(arg launch_rviz)" file="$(find autoware_mini)/launch/rviz.launch">
         <arg name="driver_status"       value="true" />
+        <arg name="carla_status"        value="true" />
     </include>
 
     <!-- Webapp bridge -->

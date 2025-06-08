@@ -236,7 +236,8 @@
 
     <!-- Rviz -->
     <include if="$(arg launch_rviz)" file="$(find autoware_mini)/launch/rviz.launch">
-        <arg name="driver_status"   value="$(arg use_driver_status)" />
+        <arg name="driver_status"       value="$(arg use_driver_status)" />
+        <arg name="carla_status"        value="true" />
     </include>
 
 </launch>
