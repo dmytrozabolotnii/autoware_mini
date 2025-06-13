@@ -6,9 +6,9 @@
 
   <link name="lexus_model">
     <visual name="Body">
-      <origin xyz="1.6 0 -0.6" rpy="0 0 1.5708"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://autoware_mini/config/urdf/lexus_model/Exterior.dae" scale="1.0 1.02346 1.041"/>
+        <mesh filename="package://autoware_mini/config/urdf/lexus_model/Exterior.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </visual>
   </link>
