@@ -40,7 +40,7 @@ class PointsClusterer:
         points = structured_to_unstructured(data[['x', 'y', 'z']], dtype=np.float32)
 
         # get labels for clusters
-        labels = self.clusterer.fit_predict(points[:, :2] if self.cluster_in_2d else points)
+        labels = self.clusterer.fit_predict(np.ascontiguousarray(points[:, :2], dtype=np.float32) if self.cluster_in_2d else points)
 
         filter_idx = np.nonzero(labels != -1) # remove noise label (-1)
 

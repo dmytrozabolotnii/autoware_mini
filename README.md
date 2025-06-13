@@ -1,6 +1,6 @@
 # Autoware Mini
 
-Autoware Mini is a minimalistic Python-based autonomy software. It is built on Python and ROS 1 to make it easy to get started and tinkering. It uses Autoware messages to define the interfaces between the modules, aiming to be compatible with [Autoware](https://www.autoware.org/). Autoware Mini currently works on ROS Noetic (Ubuntu 20.04). The software is open-source with a friendly MIT license.
+Autoware Mini is a minimalistic Python-based autonomy software inspired by [Autoware](https://www.autoware.org/). It is built on Python and ROS 1 to make it easy to get started and tinkering. Autoware Mini currently works on ROS Noetic (Ubuntu 20.04). The software is open-source with a friendly MIT license.
 
 ## Goals
 
@@ -9,7 +9,7 @@ Our goals with the Autoware Mini were:
 * simple and pedagogical --> simple Python nodes and ROS 1
 * easy to implement machine learning based approaches --> Python
 
-It is not production-level software, but aimed for teaching and research. At the same time we have validated the software with a real car in real traffic in the city center of Tartu, Estonia.
+It is not production-level software, but aimed for teaching and research. At the same time we have validated the software with a real car in real traffic in the city of Tartu, Estonia.
 
 ## Architecture
 
@@ -23,7 +23,7 @@ The key modules of Autoware Mini are:
 * **[Local planner](nodes/planning/local)** - given the global path and obstacles, plans a local path that avoids obstacles and respects traffic lights.
 * **[Controller](nodes/control)** - follows the local path given by the local planner, matching target speeds at different points of trajectory.
 
-Here are couple of short videos introducing the Autoware Mini features.
+Here are couple of (slightly outdated) short videos introducing the Autoware Mini features.
 
 [![Autoware Mini planning simulator](https://img.youtube.com/vi/k3dOySPAYaY/mqdefault.jpg)](https://www.youtube.com/watch?v=k3dOySPAYaY&list=PLuQzXioASss3dJvI9kLvriGXMfQEYKXZO&index=1 "Autoware Mini planning simulator")
 [![Autoware Mini perception testing with SFA detector](https://img.youtube.com/vi/bn3G2WqHEYA/mqdefault.jpg)](https://www.youtube.com/watch?v=bn3G2WqHEYA&list=PLuQzXioASss3dJvI9kLvriGXMfQEYKXZO&index=2 "Autoware Mini perception testing with SFA detector")
@@ -35,16 +35,18 @@ Here are couple of short videos introducing the Autoware Mini features.
 
 1. You should have ROS Noetic installed, follow the official instructions for [Ubuntu 20.04](http://wiki.ros.org/noetic/Installation/Ubuntu).
 
-2. Some of the nodes need NVIDIA GPU, CUDA and cuDNN. At this point we suggest installing both the latest CUDA _and_ CUDA 11.8, which seems to be needed by the ONNX Runtime. **Notice that the default setup also runs without GPU.**
+2. Some of the nodes need NVIDIA GPU, CUDA and cuDNN. At this point we suggest installing CUDA 11.8 for the best compatibility. **Notice that the default setup also runs without GPU.**
 
    ```
    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.1-1_all.deb
    sudo dpkg -i cuda-keyring_1.1-1_all.deb
    sudo apt-get update
-   sudo apt-get -y install cuda cuda-11-8 libcudnn8
+   sudo apt-get -y --allow-downgrades install cuda=11.8.0-1 libcudnn8=8.9.7.29-1+cuda11.8
+   sudo apt-mark hold cuda cuda-drivers
    ```
+   If the above instructions installed/upgraded Nvidia drivers, please reboot your system before proceeding.
 
-   In case the above instructions are out of date, follow the official [CUDA](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) and [cuDNN](https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html) installation instructions.
+   In case the above instructions are out of date, follow the official [CUDA](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) and [cuDNN](https://docs.nvidia.com/deeplearning/cudnn/installation/latest/linux.html) installation instructions.
 
 ## Installation
 
@@ -54,28 +56,22 @@ Here are couple of short videos introducing the Autoware Mini features.
    cd autoware_mini_ws/src
    ```
 
-2. Clone the repos
+2. Clone the repo
    ```
    git clone https://github.com/UT-ADL/autoware_mini.git
-   # for replaying bags with nvidia images
-   git clone https://github.com/UT-ADL/lexus_platform.git
-   # for decoding h264 nvidia camera images
-   git clone https://github.com/UT-ADL/h264_image_transport.git
-   # if using Carla simulation
-   git clone --recurse-submodules -b route_scenario_v0.9.15 https://github.com/UT-ADL/ros-bridge carla_ros_bridge
    ```
 
-3. Install system dependencies
+3. Install system dependencies (ignore the errors for missing Carla packages if not using Carla)
 
    ```
    rosdep update
-   rosdep install --from-paths . --ignore-src -r -y
+   rosdep install --include-eol-distros --from-paths . --ignore-src -r -y
    ```
 
 4. Install Python dependencies
    ```
    pip install -r autoware_mini/requirements.txt
-   # only when planning to use GPU based clustering
+   # only when planning to use GPU based clustering, long download
    pip install -r autoware_mini/requirements_cuml.txt
    ```
 
@@ -134,38 +130,61 @@ Another possible test is to run camera-based traffic light detection against bag
 roslaunch autoware_mini start_bag.launch tfl_detector:=camera
 ```
 
-To see the traffic light detections enable **Detections** > **Traffic lights** > **Left ROI image** and **Right ROI image** in RViz. 
+To see the camera traffic light detections enable **Detections** > **Traffic lights** > **Left ROI image** and **Right ROI image** in RViz. Other possible `tfl_detector` argument values are `yolo`, `camera_mqtt_fusion` and `yolo_mqtt_fusion`. Note that there is no point to use `mqtt` with bag files, as real-time traffic light status is not appropriate for recorded data.
 
 ## Launching Carla simulation
 
-### Installation (skip if already done)
+### Installation (one time only)
 
 1. Download [Carla 0.9.15](https://tiny.carla.org/carla-0-9-15-linux).
-2. Extract the file with `tar xzvf CARLA_0.9.15.tar.gz`. We will call this extracted folder `<CARLA ROOT>`.
-3. Download [tartu_demo.tar.gz](https://github.com/UT-ADL/carla_tartu_demo/releases/download/v0.9.15/tartu_demo.tar.gz).
-4. Copy `tartu_demo.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
+2. Extract the file to a new folder with `tar xzvf CARLA_0.9.15.tar.gz`. We will call this extracted folder `<CARLA ROOT>`.
+3. Download [tartu_demo.tar.gz](https://github.com/UT-ADL/carla_tartu_demo/releases/download/v0.9.15.2/tartu_demo_v0.9.15.2.tar.gz).
+4. Copy `tartu_demo_v0.9.15.2.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
 5. Run `./ImportAssets.sh` from the `<CARLA ROOT>` directory. This will install the `tartu_demo` map.
-6. Delete the `tartu_demo.tar.gz` file from the `Import` folder.
-7. Download [utlexus.tar.gz](https://github.com/UT-ADL/carla_lexus/releases/download/v0.9.15/utlexus.tar.gz).
-8. Copy `utlexus.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
+6. Delete the `tartu_demo_v0.9.15.2.tar.gz` file from the `Import` folder.
+7. Download [utlexus.tar.gz](https://github.com/UT-ADL/carla_lexus/releases/download/v0.9.15.tar.gz/carla_lexus-0.9.15.tar.gz).
+8. Copy `carla_lexus-0.9.15.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
 9. Run `./ImportAssets.sh` from the `<CARLA ROOT>` directory. This will install the UT Lexus vehicle model.
-10. Delete the `utlexus.tar.gz` file from the `Import` folder.
+10. Delete the `carla_lexus-0.9.15.tar.gz` file from the `Import` folder.
 11. Since we will be referring to `<CARLA ROOT>` a lot, let's export it as an environment variable. Make sure to replace the path where Carla is extracted.
 
-   ```
-   export CARLA_ROOT=$HOME/path/to/carla
-   ```
+    ```
+    export CARLA_ROOT=$HOME/path/to/carla
+    ```
 
-7. Now, enter the following command. (**NOTE:** Here we assume that `CARLA_ROOT`  was set from the previous command.)
-   ```
-   export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla/dist/carla-0.9.15-py3.7-linux-x86_64.egg:${CARLA_ROOT}/PythonAPI/carla/agents:${CARLA_ROOT}/PythonAPI/carla
-   ```
-   **Note:** It will be convenient if the above variables are automatically exported whenever you open a terminal. Putting above exports in `~/.bashrc` will reduce the hassle of exporting everytime.
+12. Now, enter the following command. (**NOTE:** Here we assume that `CARLA_ROOT`  was set from the previous command.)
 
-8. Install system dependencies:
-   ```
-   sudo apt install libomp5
-   ```
+    ```
+    export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla/dist/carla-0.9.15-py3.7-linux-x86_64.egg:${CARLA_ROOT}/PythonAPI/carla/agents:${CARLA_ROOT}/PythonAPI/carla
+    ```
+    **Note:** It will be convenient if the above variables are automatically exported whenever you open a terminal. Putting above exports in `~/.bashrc` will reduce the hassle of exporting everytime.
+
+13. Install CARLA dependencies:
+
+    ```
+    sudo apt install libomp5
+    ```
+
+14. Clone the CARLA ROS bridge repo:
+
+    ```
+    cd ~/autoware_mini_ws/src
+    git clone --recurse-submodules -b route_scenario_v0.9.15 https://github.com/UT-ADL/ros-bridge carla_ros_bridge
+    ```
+
+15. Install CARLA ROS bridge dependencies:
+
+    ```
+    cd carla_ros_bridge
+    ./install_dependencies.sh
+    ```
+
+16. Build the workspace
+
+    ```
+    cd ../..
+    catkin build
+    ```
 
 ### Launch instructions
 
@@ -175,13 +194,15 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
    $CARLA_ROOT/CarlaUE4.sh
    ```
 
+   To force using NVIDIA GPU for rendering add `-prefernvidia` to command line. To hide the default CARLA window add `-RenderOffScreen`. To improve the frame rate you can try `-quality-level=Low`.
+
 2. In a new terminal, (assuming enviornment variables are exported) run the following command. This runs Tartu environment of Carla with minimal sensors and our autonomy stack. The detected objects and traffic light statuses come from Carla directly.
 
    ```
    roslaunch autoware_mini start_carla.launch
    ```
 
-   In RViz enable **Simulation** > **Carla camera view** or **Carla image view** to see the third person view behind the vehicle. Set destination as usual with **2D Nav Goal** button. 
+   In RViz enable **Simulation** > **Carla image view** or **Carla camera view** to see the third person view behind the vehicle. Set destination as usual with **2D Nav Goal** button. 
 
    You can also run full Carla sensor simulation and use actual detection nodes. For example to launch Carla with cluster-based detector:
 
@@ -194,6 +215,8 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
    ```
    roslaunch autoware_mini start_carla.launch tfl_detector:=camera
    ```
+
+   **NB!** Enabling both can make the simulation unbearably slow.
 
 ### Launching with Scenario Runner
 
@@ -226,36 +249,33 @@ To see the traffic light detections enable **Detections** > **Traffic lights** >
 
    b) **Route Scenario:**  In a new terminal, (assuming enviornment variables are exported) launch route scenario with:
    ```
-   roslaunch autoware_mini start_carla.launch use_scenario_runner:=true map_name:=tartu_demo route_id:=0
+   roslaunch autoware_mini start_carla.launch use_scenario_runner:=true route_id:=0
    ```
-   This will launch route scenarios using `route_id = 0` which corresponds to `tartu_demo` map in routes definition file [routes_devtest.xml](data/routes/routes_devtest.xml). Make sure to match the `route_id` with the correct `map_name` to avoid discrepancy. For example for `route_id = 1` the `map_name = Town10HD`.
+   This will launch route scenarios using `route_id = 0` in the default `tartu_demo` routes definition file [tartu_demo.xml](data/routes/tartu_demo.xml).
 
 ## Launching in Lexus
 
-### Ouster driver installation (one time only)
+### Installation (one time only)
 
-1. Ensure all dependencies are installed:
-
-   ```
-   sudo apt install -y build-essential libeigen3-dev libjsoncpp-dev libspdlog-dev libcurl4-openssl-dev
-   ```
-
-2. Go to the autoware_mini src directory:
+1. Go to the autoware_mini src directory:
    
    ```
    cd ~/autoware_mini_ws/src
+   ```
+2. Clone the repo containing car driver dependencies and launch files:
+   ```
+   git clone https://github.com/UT-ADL/lexus_platform.git
    ```
 3. Clone the latest Ouster driver repository:  
 
    ```
    git clone --recurse-submodules https://github.com/ouster-lidar/ouster-ros.git
    ```
-4. Move to the Autoware mini catkin workspace:
-
+4. Install system dependencies:
    ```
-   cd ~/autoware_mini_ws
+   rosdep install --include-eol-distros --from-paths . --ignore-src -r -y
    ```
-5. Build the Ouster driver:
+5. Build the workspace:
    
    ```
    catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release 
