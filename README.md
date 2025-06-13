@@ -41,10 +41,10 @@ Here are couple of (slightly outdated) short videos introducing the Autoware Min
    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.1-1_all.deb
    sudo dpkg -i cuda-keyring_1.1-1_all.deb
    sudo apt-get update
-   sudo apt-get -y --allow-downgrades install cuda=11.8.0-1 libcudnn8=8.9.7.29-1+cuda11.8
+   sudo apt-get -y install cuda=11.8.0-1 libcudnn8=8.9.7.29-1+cuda11.8
    sudo apt-mark hold cuda cuda-drivers
    ```
-   If the above instructions installed/upgraded Nvidia drivers, please reboot your system before proceeding.
+   If the above instructions installed/upgraded Nvidia drivers, please reboot your system before proceeding. If you have newer CUDA installed, but are happy to have it downgraded to 11.8, add `--allow-downgrades` to install command. Or you can choose to install `cuda-11.8` instead, which keeps the existing newer CUDA.
 
    In case the above instructions are out of date, follow the official [CUDA](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) and [cuDNN](https://docs.nvidia.com/deeplearning/cudnn/installation/latest/linux.html) installation instructions.
 
