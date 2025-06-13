@@ -88,17 +88,13 @@ class MapBasedPredictor:
                 cross_track_offset = 0.0
                 if self.use_offset_for_prediction:
                     cross_track_offset = -calculate_cross_track_error(linestring, object_position)
+                    # To get correct object_distance_from_start later need to do it on offset curve
+                    linestring = offset_curve(linestring, cross_track_offset)
+                    object_distance_from_start = linestring.project(object_position)
 
                 # skip lanelet if there are no following lanelets and object front is beyond the lanelet length
-                # TODO if there is only 1 following lanelet (or 2 or 3 etc...) and that is too short, then it should be skipped as well
-                if not self.graph_vehicle_taxi.following(lanelet):
-                    if (object_distance_from_start + obj.dimensions.x / 2) > linestring.length:
-                        continue
-                    elif self.use_offset_for_prediction:
-                        # if using offset, check if the offset line is within the lanelet length
-                        offset_linestring = offset_curve(linestring, cross_track_offset)
-                        if (object_distance_from_start + obj.dimensions.x / 2) > offset_linestring.length:
-                            continue
+                if (object_distance_from_start + obj.dimensions.x / 2) > linestring.length and not self.graph_vehicle_taxi.following(lanelet):
+                    continue
 
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
                 forward_point = linestring.interpolate(object_distance_from_start + 0.1)
@@ -146,16 +142,17 @@ class MapBasedPredictor:
                     rospy.logwarn(f"Object with id {obj.id}, has no match in selected_lanelets for its trajectory, skipping prediction.")
                     continue
 
-                centerline_linestring = shapely.simplify(shapely.LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline]), 0.1)
+                trajectory_linestring = shapely.simplify(shapely.LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline]), 0.1)
                 if self.use_offset_for_prediction:
-                    trajectory_linestring = offset_curve(centerline_linestring, cross_track_offset)
-                else:
-                    trajectory_linestring = centerline_linestring
+                    trajectory_linestring = offset_curve(trajectory_linestring, cross_track_offset)
 
                 trajectory_limit = trajectory_linestring.length
                 interpolate_distances = distances + object_distance_from_start + obj.dimensions.x / 2
 
-                # check intersection with stop_lines
+                if trajectory_limit <= interpolate_distances[0]:
+                    # if available trajectory is shorter than the first distance, skip this trajectory
+                    continue
+
                 mask = trajectory_linestring.intersects(stop_lines)
                 if np.any(mask):
                     stop_line_intersection_result = trajectory_linestring.intersection(stop_lines[mask])
