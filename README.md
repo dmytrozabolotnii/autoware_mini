@@ -285,3 +285,11 @@ To see the camera traffic light detections enable **Detections** > **Traffic lig
    ```
    roslaunch autoware_mini start_lexus.launch
    ```
+
+## Acknowledgements
+
+We are standing on the shoulders of giants. These are the key libraries we are using:
+ * [Autoware](https://autoware.org/) and especially [Autoware.AI](https://github.com/autowarefoundation/autoware_ai) - original inspiration and message format.
+ * [Lanelet2](https://github.com/fzi-forschungszentrum-informatik/Lanelet2) - map format and global planning.
+ * [Shapely](https://github.com/shapely/shapely) - collision detection and general geometry calculations.
+ * [Numpy](https://numpy.org/) - efficient vectorized computations.
