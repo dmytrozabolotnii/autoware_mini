@@ -23,7 +23,9 @@
   <arg name='use_manual_control'  default='false' /><!-- Toggle manual control-->
   <arg name='generate_traffic'    default='false'/><!-- Generate Traffic -->
   <!-- CARLA Rosbridge synchronous_mode, only set to false while running route scenario-->
-  <arg name="synchronous_mode"        default="$(eval not (use_scenario_runner and type(route_id) == int))"/>
+  <arg name="synchronous_mode"    default="true" />
+  <arg name='fixed_delta_seconds' default='$(eval 0 if use_manual_control else 0.05)' />
+  <arg name="passive"             default="$(eval use_scenario_runner and type(route_id) == int)" />
   
   <!--
     ################
@@ -50,6 +52,7 @@
     <arg name="timeout"                                           value="$(arg timeout)" />
     <arg name="synchronous_mode"                                  value="$(arg synchronous_mode)" />
     <arg name='fixed_delta_seconds'                               value='$(eval 0 if use_manual_control else 0.05)'/>
+    <arg name="passive"                                           value="$(arg passive)" />
   </include>
 
   <!--
