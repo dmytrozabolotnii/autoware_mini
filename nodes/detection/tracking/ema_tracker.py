@@ -2,7 +2,7 @@
 
 import rospy
 import numpy as np
-from scipy.optimize import linear_sum_assignment
+from lapsolver import solve_dense
 from scipy.spatial.distance import cdist
 from autoware_mini.msg import DetectedObjectArray
 from autoware_mini.geometry import get_speed_from_velocity
@@ -82,72 +82,72 @@ class EMATracker:
 
         ### 3. MATCH TRACKS WITH DETECTIONS ###
 
-        if self.association_method == 'iou':
-            # Calculate the IOU between the tracked objects and the detected objects
-            iou = calculate_iou(tracked_object_bboxes, detected_objects_array['bbox'])
-            assert iou.shape == (len(self.tracked_objects_array), len(detected_objects_array)), str(iou.shape) + ' ' + str((len(self.tracked_objects_array), len(detected_objects_array)))
+        if self.tracked_objects and detected_objects:
+            if self.association_method == 'iou':
+                # Calculate the IOU between the tracked objects and the detected objects
+                iou = calculate_iou(tracked_object_bboxes, detected_objects_array['bbox'])
+                assert iou.shape == (len(self.tracked_objects_array), len(detected_objects_array)), str(iou.shape) + ' ' + str((len(self.tracked_objects_array), len(detected_objects_array)))
 
-            # Calculate the association between the tracked objects and the detected objects
-            matched_track_indices, matched_detection_indicies = linear_sum_assignment(-iou)
-            assert len(matched_track_indices) == len(matched_detection_indicies)
+                # Allow matching only if IOU is greater than threshold
+                iou[iou < self.iou_threshold] = np.nan
 
-            # Only keep those matches where the IOU is greater than threshold
-            matches = iou[matched_track_indices, matched_detection_indicies] > self.iou_threshold
-            matched_track_indices = matched_track_indices[matches]
-            matched_detection_indicies = matched_detection_indicies[matches]
-            assert len(matched_track_indices) == len(matched_detection_indicies)
-        elif self.association_method == 'euclidean':
-            # Calculate euclidean distance between the tracked object and the detected object centroids
-            dists = cdist(tracked_object_centroids, detected_objects_array['centroid'])
-            assert dists.shape == (len(self.tracked_objects_array), len(detected_objects_array))
+                # Calculate the association between the tracked objects and the detected objects
+                matched_track_indices, matched_detection_indicies = solve_dense(-iou)
+                assert len(matched_track_indices) == len(matched_detection_indicies)
+            elif self.association_method == 'euclidean':
+                # Calculate euclidean distance between the tracked object and the detected object centroids
+                dists = cdist(tracked_object_centroids, detected_objects_array['centroid'])
+                assert dists.shape == (len(self.tracked_objects_array), len(detected_objects_array))
 
-            # Calculate the association between the tracked objects and the detected objects
-            matched_track_indices, matched_detection_indicies = linear_sum_assignment(dists)
+                # Don't allow pairing for elements with a distance value greater than self.max_euclidean_distance
+                dists[dists > self.max_euclidean_distance] = np.nan
 
-            # Only keep those matches where the distance is less than threshold
-            matches = dists[matched_track_indices, matched_detection_indicies] <= self.max_euclidean_distance
-            matched_track_indices = matched_track_indices[matches]
-            matched_detection_indicies = matched_detection_indicies[matches]
-            assert len(matched_track_indices) == len(matched_detection_indicies)
+                # Calculate the association between the tracked objects and the detected objects
+                matched_track_indices, matched_detection_indicies = solve_dense(dists)
+                assert len(matched_track_indices) == len(matched_detection_indicies)
+            else:
+                assert False, 'Unknown association method: ' + self.association_method
+
+            ### 4. ESTIMATE TRACKED OBJECT SPEEDS AND ACCELERATIONS ###
+
+            # update tracked object speeds with exponential moving average
+            new_velocities = (detected_objects_array['centroid'][matched_detection_indicies] - self.tracked_objects_array['centroid'][matched_track_indices]) / time_delta
+            old_velocities = self.tracked_objects_array['velocity'][matched_track_indices]
+            if self.enable_initial_velocity_estimate:
+                # make initial velocity of an object equal to its first velocity estimate instead of zero
+                second_time_detections = self.tracked_objects_array['detection_counter'][matched_track_indices] == 1
+                old_velocities[second_time_detections] = new_velocities[second_time_detections]
+            detected_objects_array['velocity'][matched_detection_indicies] = (1 - self.velocity_gain) * old_velocities + self.velocity_gain * new_velocities
+
+            # update tracked object accelerations with exponential moving average
+            new_accelerations = (new_velocities - old_velocities) / time_delta
+            old_accelerations = self.tracked_objects_array['acceleration'][matched_track_indices]
+            if self.enable_initial_acceleration_estimate:
+                # make initial acceleration of an object equal to its first acceleration estimate instead of zero
+                third_time_detections = self.tracked_objects_array['detection_counter'][matched_track_indices] == 2
+                old_accelerations[third_time_detections] = new_accelerations[third_time_detections]
+            detected_objects_array['acceleration'][matched_detection_indicies] = (1 - self.acceleration_gain) * old_accelerations + self.acceleration_gain * new_accelerations
+
+            ### 5. UPDATE TRACKED OBJECTS ###
+
+            # Replace tracked objects with detected objects, keeping the same ID
+            for track_idx, detection_idx in zip(matched_track_indices, matched_detection_indicies):
+                tracked_obj = self.tracked_objects[track_idx]
+                detected_obj = detected_objects[detection_idx]
+                detected_obj.id = tracked_obj.id
+                if not detected_obj.velocity_reliable:
+                    detected_obj.velocity.x, detected_obj.velocity.y = detected_objects_array['velocity'][detection_idx]
+                    detected_obj.velocity_reliable = True
+                if not detected_obj.acceleration_reliable:
+                    detected_obj.acceleration.x, detected_obj.acceleration.y = detected_objects_array['acceleration'][detection_idx]
+                    detected_obj.acceleration_reliable = True
+                self.tracked_objects[track_idx] = detected_obj
+            self.tracked_objects_array[['centroid', 'bbox', 'velocity', 'acceleration']][matched_track_indices] = \
+                detected_objects_array[['centroid', 'bbox', 'velocity', 'acceleration']][matched_detection_indicies]
         else:
-            assert False, 'Unknown association method: ' + self.association_method
-
-        ### 4. ESTIMATE TRACKED OBJECT SPEEDS AND ACCELERATIONS ###
-
-        # update tracked object speeds with exponential moving average
-        new_velocities = (detected_objects_array['centroid'][matched_detection_indicies] - self.tracked_objects_array['centroid'][matched_track_indices]) / time_delta
-        old_velocities = self.tracked_objects_array['velocity'][matched_track_indices]
-        if self.enable_initial_velocity_estimate:
-            # make initial velocity of an object equal to its first velocity estimate instead of zero
-            second_time_detections = self.tracked_objects_array['detection_counter'][matched_track_indices] == 1
-            old_velocities[second_time_detections] = new_velocities[second_time_detections]
-        detected_objects_array['velocity'][matched_detection_indicies] = (1 - self.velocity_gain) * old_velocities + self.velocity_gain * new_velocities
-
-        # update tracked object accelerations with exponential moving average
-        new_accelerations = (new_velocities - old_velocities) / time_delta
-        old_accelerations = self.tracked_objects_array['acceleration'][matched_track_indices]
-        if self.enable_initial_acceleration_estimate:
-            # make initial acceleration of an object equal to its first acceleration estimate instead of zero
-            third_time_detections = self.tracked_objects_array['detection_counter'][matched_track_indices] == 2
-            old_accelerations[third_time_detections] = new_accelerations[third_time_detections]
-        detected_objects_array['acceleration'][matched_detection_indicies] = (1 - self.acceleration_gain) * old_accelerations + self.acceleration_gain * new_accelerations
-
-        ### 5. UPDATE TRACKED OBJECTS ###
-
-        # Replace tracked objects with detected objects, keeping the same ID
-        for track_idx, detection_idx in zip(matched_track_indices, matched_detection_indicies):
-            tracked_obj = self.tracked_objects[track_idx]
-            detected_obj = detected_objects[detection_idx]
-            detected_obj.id = tracked_obj.id
-            if not detected_obj.velocity_reliable:
-                detected_obj.velocity.x, detected_obj.velocity.y = detected_objects_array['velocity'][detection_idx]
-                detected_obj.velocity_reliable = True
-            if not detected_obj.acceleration_reliable:
-                detected_obj.acceleration.x, detected_obj.acceleration.y = detected_objects_array['acceleration'][detection_idx]
-                detected_obj.acceleration_reliable = True
-            self.tracked_objects[track_idx] = detected_obj
-        self.tracked_objects_array[['centroid', 'bbox', 'velocity', 'acceleration']][matched_track_indices] = \
-            detected_objects_array[['centroid', 'bbox', 'velocity', 'acceleration']][matched_detection_indicies]
+            # no tracked objects or no detected objects, so no matches
+            matched_track_indices = np.array([], dtype=int)
+            matched_detection_indicies = np.array([], dtype=int)
 
         ### 6. MANAGE TRACK STATUS ###
 
