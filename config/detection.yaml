@@ -133,7 +133,7 @@ ema_tracker:
   velocity_gain: 0.2
   acceleration_gain: 0.0
   association_method: iou   # iou, euclidean
-  max_euclidean_distance: 2.0
+  max_euclidean_distance: 1.0
   update_heading_bboxes: True
 
 naive_predictor:
