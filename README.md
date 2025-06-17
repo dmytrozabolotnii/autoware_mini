@@ -138,7 +138,7 @@ To see the camera traffic light detections enable **Detections** > **Traffic lig
 
 1. Download [Carla 0.9.15](https://tiny.carla.org/carla-0-9-15-linux).
 2. Extract the file to a new folder with `tar xzvf CARLA_0.9.15.tar.gz`. We will call this extracted folder `<CARLA ROOT>`.
-3. Download [tartu_demo.tar.gz](https://github.com/UT-ADL/carla_tartu_demo/releases/download/v0.9.15.2/tartu_demo_v0.9.15.2.tar.gz).
+3. Download [tartu_demo_v0.9.15.2.tar.gz](https://github.com/UT-ADL/carla_tartu_demo/releases/download/v0.9.15.2/tartu_demo_v0.9.15.2.tar.gz).
 4. Copy `tartu_demo_v0.9.15.2.tar.gz` inside the `Import` folder under `<CARLA ROOT>` directory.
 5. Run `./ImportAssets.sh` from the `<CARLA ROOT>` directory. This will install the `tartu_demo` map.
 6. Delete the `tartu_demo_v0.9.15.2.tar.gz` file from the `Import` folder.
