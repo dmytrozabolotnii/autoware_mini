@@ -23,7 +23,7 @@
     ###############################
     -->
     <group if='$(eval type(route_id) == int)'>
-        <node pkg='autoware_mini' type='carla_route_scenario.sh' name='carla_route_scenario' args='$(arg routes_file) $(arg route_id) $(arg agent_file)' output='screen' required="true"/>
+        <node pkg='autoware_mini' type='carla_route_scenario.sh' name='carla_route_scenario' args='$(arg host) $(arg port) $(arg routes_file) $(arg route_id) $(arg agent_file)' output='screen' required="true"/>
     </group>
 
     <!--

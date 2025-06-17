@@ -72,7 +72,7 @@
     -->
 
   <!-- If traffic is enabled then run traffic generator -->
-  <node if="$(arg generate_traffic)" pkg="autoware_mini" type="carla_traffic_generator.sh" name="carla_traffic_generator" output="screen" required="true" />  
+  <node if="$(arg generate_traffic)" pkg="autoware_mini" type="carla_traffic_generator.sh" name="carla_traffic_generator" args="$(arg host) $(arg port)" output="screen" required="true" />  
 
  <!--
     ###########################
@@ -80,6 +80,8 @@
     ###########################
     -->
   <include if="$(arg use_scenario_runner)" file="$(find autoware_mini)/launch/platform/carla/carla_scenario_runner.launch">
+    <arg name="host"                                value="$(arg host)" />
+    <arg name="port"                                value="$(arg port)" />
     <arg name='map_name'                            value='$(arg map_name)'/>
     <arg name="scenario_name"                       value="$(arg scenario_name)" />
     <arg name="route_id"                            value="$(arg route_id)" />

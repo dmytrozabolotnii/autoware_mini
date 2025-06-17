@@ -40,6 +40,8 @@
     <arg name="launch_rviz"             default='true'                         doc="Determines if rviz is launched or not"/>
     
     <!-- Carla specific -->
+    <arg name='host'                    default='localhost' />
+    <arg name='port'                    default='2000' />
     <arg name="use_scenario_runner"     default='false'                        doc="Use Scenario Runner with Carla"/>
     <arg name="scenario_name"           default=""                             doc="Scenario name for Scenario Runner"/>
     <arg name="route_id"                default=""                             doc="Route ID to follow for running route scenario"/>
@@ -92,6 +94,8 @@
 
     <!-- Carla platform -->
     <include file="$(find autoware_mini)/launch/platform/carla.launch">
+        <arg name='host'                                value='$(arg host)'/>
+        <arg name='port'                                value='$(arg port)'/>
         <arg name='map_name'                            value='$(arg map_name)'/>
         <arg name="use_lidar"                           value="$(eval 'lidar' in detector and detector != 'lidar_vella')" />
         <arg name="use_radar"                           value="$(eval 'radar' in detector)" />
