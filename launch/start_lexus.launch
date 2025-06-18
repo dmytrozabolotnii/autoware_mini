@@ -45,7 +45,7 @@
     <arg name="use_openpilot_road_camera"   default="false"                    doc="Use openpilot road camera"/>
     <arg name="use_openpilot_wide_camera"   default="false"                    doc="Use openpilot wide camera"/>
     <arg name="use_openpilot_driver_camera" default="false"                    doc="Use openpilot driver camera"/>
-    <arg name="use_openpilot_qroad_camera"  default="true"                     doc="Use openpilot qroad camera"/>
+    <arg name="use_openpilot_qroad_camera"  default="false"                    doc="Use openpilot qroad camera"/>
     
     <!-- Recording -->
     <arg name="blacklist_file"          default="$(find autoware_mini)/config/record_bag/blacklist.txt" doc="File with topics to blacklist for recording"/>
