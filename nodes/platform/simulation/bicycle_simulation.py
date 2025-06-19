@@ -132,8 +132,8 @@ class BicycleSimulation:
         self.y += y_dot * delta_t
         self.heading_angle += heading_angle_dot * delta_t
 
-        # set z coordinate from nearest lanelet
-        self.z = get_height_at_position(self.lanelet2_map, self.x, self.y, self.z, num_lanelets=3)
+        # set z coordinate from nearest lanelets, check up to 3 lanelets and choose the first one that has height within 3 meters of current z
+        self.z = get_height_at_position(self.lanelet2_map, self.x, self.y, self.z, num_lanelets=3, max_height_difference=3)
 
         # create quaternion from heading angle to be used later in tf and pose and marker messages
         self.orientation = get_orientation_from_heading(self.heading_angle)
