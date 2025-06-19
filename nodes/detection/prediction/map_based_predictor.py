@@ -138,8 +138,7 @@ class MapBasedPredictor:
                 if matched_selected_lanelet:
                     _, object_distance_from_start, _, cross_track_offset = matched_selected_lanelet
                 else:
-                    rospy.logwarn(f"Object with id {obj.id}, has no match in selected_lanelets for its trajectory, skipping prediction.")
-                    continue
+                    assert False, f"Object with id {obj.id}, has no match in selected_lanelets for its trajectory"
 
                 trajectory_linestring = shapely.simplify(shapely.LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline]), 0.1)
                 if self.use_offset_for_prediction:
