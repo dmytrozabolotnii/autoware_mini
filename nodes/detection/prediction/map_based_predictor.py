@@ -84,13 +84,12 @@ class MapBasedPredictor:
 
                 # Calculate heading difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
-                object_distance_from_start = linestring.project(object_position)
                 cross_track_offset = 0.0
                 if self.use_offset_for_prediction:
                     cross_track_offset = -calculate_cross_track_error(linestring, object_position)
                     # To get correct object_distance_from_start later need to do it on offset curve
                     linestring = offset_curve(linestring, cross_track_offset)
-                    object_distance_from_start = linestring.project(object_position)
+                object_distance_from_start = linestring.project(object_position)
 
                 # skip lanelet if there are no following lanelets and object front is beyond the lanelet length
                 if (object_distance_from_start + obj.dimensions.x / 2) > linestring.length and not self.graph_vehicle_taxi.following(lanelet):
