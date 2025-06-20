@@ -7247,16 +7247,6 @@
     <tag k="local_x" v="28.304944" />
     <tag k="local_y" v="5.738542" />
   </node>
-  <node id="2544" visible="true" version="1" lat="-0.00000324307" lon="0.00019021686">
-    <tag k="ele" v="0.000000" />
-    <tag k="local_x" v="21.195616" />
-    <tag k="local_y" v="-0.358952" />
-  </node>
-  <node id="2545" visible="true" version="1" lat="-0.0000036234" lon="0.00015880891">
-    <tag k="ele" v="0.000000" />
-    <tag k="local_x" v="17.695870" />
-    <tag k="local_y" v="-0.401048" />
-  </node>
   <node id="2546" visible="true" version="1" lat="0.00000160454" lon="0.00019015139">
     <tag k="ele" v="0.000000" />
     <tag k="local_x" v="21.188320" />
@@ -7266,16 +7256,6 @@
     <tag k="ele" v="0.000000" />
     <tag k="local_x" v="17.689449" />
     <tag k="local_y" v="0.088732" />
-  </node>
-  <node id="2551" visible="true" version="1" lat="-0.00000324307" lon="0.00022162709">
-    <tag k="ele" v="0.000000" />
-    <tag k="local_x" v="24.695616" />
-    <tag k="local_y" v="-0.358952" />
-  </node>
-  <node id="2552" visible="true" version="1" lat="-0.0000036234" lon="0.00019021914">
-    <tag k="ele" v="0.000000" />
-    <tag k="local_x" v="21.195870" />
-    <tag k="local_y" v="-0.401048" />
   </node>
   <node id="2553" visible="true" version="1" lat="0.00000244966" lon="0.00022155039">
     <tag k="ele" v="0.000000" />
@@ -8296,16 +8276,6 @@
     <tag k="ele" v="8.000000" />
     <tag k="local_x" v="94.124244" />
     <tag k="local_y" v="75.168610" />
-  </node>
-  <node id="2866" visible="true" version="1" lat="-0.00047731047" lon="0.00082626847">
-    <tag k="ele" v="0.000000" />
-    <tag k="local_x" v="92.070000" />
-    <tag k="local_y" v="-52.829998" />
-  </node>
-  <node id="2867" visible="true" version="1" lat="-0.00050337275" lon="0.00080848014">
-    <tag k="ele" v="0.000000" />
-    <tag k="local_x" v="90.087872" />
-    <tag k="local_y" v="-55.714642" />
   </node>
   <node id="2868" visible="true" version="1" lat="-0.00045172545" lon="0.0007892832">
     <tag k="ele" v="0.000000" />
@@ -53965,19 +53935,19 @@
     <nd ref="2540" />
   <tag k="subtype" v="dashed" /><tag k="type" v="line_thin" /></way>
   <way id="2542" visible="true" version="1">
-    <nd ref="2544" />
+    <nd ref="10445" />
     <nd ref="2546" />
   <tag k="subtype" v="dashed" /><tag k="type" v="line_thin" /></way>
   <way id="2543" visible="true" version="1">
-    <nd ref="2545" />
+    <nd ref="10446" />
     <nd ref="2547" />
   <tag k="subtype" v="dashed" /><tag k="type" v="line_thin" /></way>
   <way id="2549" visible="true" version="1">
-    <nd ref="2551" />
+    <nd ref="10476" />
     <nd ref="2553" />
   <tag k="subtype" v="dashed" /><tag k="type" v="line_thin" /></way>
   <way id="2550" visible="true" version="1">
-    <nd ref="2552" />
+    <nd ref="10477" />
     <nd ref="2554" />
   <tag k="subtype" v="dashed" /><tag k="type" v="line_thin" /></way>
   <way id="2556" visible="true" version="1">
@@ -54319,7 +54289,7 @@
     <nd ref="2862" />
   <tag k="subtype" v="dashed" /><tag k="type" v="line_thin" /></way>
   <way id="2864" visible="true" version="1">
-    <nd ref="2866" />
+    <nd ref="11229" />
     <nd ref="2868" />
     <nd ref="2870" />
     <nd ref="2872" />
@@ -54392,7 +54362,7 @@
     <nd ref="2724" />
   <tag k="subtype" v="dashed" /><tag k="type" v="line_thin" /></way>
   <way id="2865" visible="true" version="1">
-    <nd ref="2867" />
+    <nd ref="11230" />
     <nd ref="2869" />
     <nd ref="2871" />
     <nd ref="2873" />

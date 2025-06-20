@@ -68,7 +68,6 @@ class MapBasedPredictor:
         stop_lines = self.stop_lines
 
         for obj in msg.objects:
-            object_distance_on_start_lanelet = {}
             # when no speed in 2d, don't create any trajectories
             if get_speed_from_velocity(obj.velocity) < self.prediction_min_speed:
                 continue
@@ -85,10 +84,17 @@ class MapBasedPredictor:
 
                 # Calculate heading difference
                 linestring = shapely.LineString([(p.x, p.y) for p in lanelet.centerline])
+                cross_track_offset = 0.0
+                if self.use_offset_for_prediction:
+                    cross_track_offset = -calculate_cross_track_error(linestring, object_position)
+                    # To get correct object_distance_from_start later need to do it on offset curve
+                    linestring = offset_curve(linestring, cross_track_offset)
                 object_distance_from_start = linestring.project(object_position)
-                # skip lanelet if object front is over it and there are no following lanelets
+
+                # skip lanelet if there are no following lanelets and object front is beyond the lanelet length
                 if (object_distance_from_start + obj.dimensions.x / 2) > linestring.length and not self.graph_vehicle_taxi.following(lanelet):
                     continue
+
                 object_location_on_lanelet = linestring.interpolate(object_distance_from_start)
                 forward_point = linestring.interpolate(object_distance_from_start + 0.1)
                 lanelet_heading = get_heading_between_two_points(object_location_on_lanelet, forward_point)
@@ -96,8 +102,7 @@ class MapBasedPredictor:
 
                 # Add lanelet if heading difference is within threshold
                 if heading_difference_degrees < self.heading_difference_threshold:
-                    object_distance_on_start_lanelet[lanelet.id] = object_distance_from_start
-                    selected_lanelets.append((lanelet, object_distance_from_start, heading_difference_degrees))
+                    selected_lanelets.append((lanelet, object_distance_from_start, heading_difference_degrees, cross_track_offset))
 
             # Sort by heading difference and limit selection to match `trajectories_to_predict`
             if len(selected_lanelets) > self.trajectories_to_predict:
@@ -128,17 +133,24 @@ class MapBasedPredictor:
             # 4. CREATE PREDICTIONS AND PUBLISH
             # create shapely linestring from lanelet centerlines and then use it to interpolate points in necessary distances
             for trajectory in all_trajectories:
-                centerline_linestring = shapely.simplify(shapely.LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline]), 0.1)
-                if self.use_offset_for_prediction:
-                    cross_track_offset = -calculate_cross_track_error(centerline_linestring, object_position)
-                    trajectory_linestring = offset_curve(centerline_linestring, cross_track_offset)
+                # Match the first lanelet in trajectory with the selected_lanelets
+                matched_selected_lanelet = next((lanelet_tuple for lanelet_tuple in selected_lanelets if lanelet_tuple[0].id == trajectory[0].id), None)
+                if matched_selected_lanelet:
+                    _, object_distance_from_start, _, cross_track_offset = matched_selected_lanelet
                 else:
-                    trajectory_linestring = centerline_linestring
+                    assert False, f"Object with id {obj.id}, has no match in selected_lanelets for its trajectory"
+
+                trajectory_linestring = shapely.simplify(shapely.LineString([(p.x, p.y, p.z) for lanelet in trajectory for p in lanelet.centerline]), 0.1)
+                if self.use_offset_for_prediction:
+                    trajectory_linestring = offset_curve(trajectory_linestring, cross_track_offset)
 
                 trajectory_limit = trajectory_linestring.length
-                interpolate_distances = distances + object_distance_on_start_lanelet[trajectory[0].id] + obj.dimensions.x / 2
+                interpolate_distances = distances + object_distance_from_start + obj.dimensions.x / 2
 
-                # check intersection with stop_lines
+                if trajectory_limit <= interpolate_distances[0]:
+                    # if available trajectory is shorter than the first distance, skip this trajectory
+                    continue
+
                 mask = trajectory_linestring.intersects(stop_lines)
                 if np.any(mask):
                     stop_line_intersection_result = trajectory_linestring.intersection(stop_lines[mask])
@@ -176,7 +188,7 @@ class MapBasedPredictor:
     def create_trajectories(self, start_lanelets, prediction_length, object_length):
         all_trajectories = []
         heading_differences = []
-        for start_lanelet, object_distance_from_start, heading_difference in start_lanelets:
+        for start_lanelet, object_distance_from_start, heading_difference, _ in start_lanelets:
             prediction_length_from_start_lanelet = prediction_length + object_distance_from_start + object_length / 2
             if "subtype" in start_lanelet.attributes and start_lanelet.attributes["subtype"] == "bus_lane":
                 routing_graph = self.graph_vehicle_taxi
