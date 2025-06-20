@@ -39,8 +39,8 @@ class GoalStopChecker:
         goal_point = self.goal_point
 
         if goal_point is not None and len(msg.waypoints) > 0:
-            # check if goal point is at the end of the local path
-            if math.isclose(get_distance_between_two_points_2d(goal_point, msg.waypoints[-1].position), 0.0):
+            # check if goal point is the second last point on the local_path, last point is added for collision checking after goal point
+            if math.isclose(get_distance_between_two_points_2d(goal_point, msg.waypoints[-2].position), 0.0):
                 # add goal point as collision point
                 collision_points.add_point(x = goal_point.x,
                                            y = goal_point.y,
