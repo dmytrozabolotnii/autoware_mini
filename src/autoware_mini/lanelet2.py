@@ -299,22 +299,26 @@ def follow_lanelets(routing_graph, current_lanelet, remaining_distance):
 
     return trajectories
 
-def get_height_at_position(lanelet2_map, x, y, z):
+def get_height_at_position(lanelet2_map, x, y, z, num_lanelets=1, max_height_difference=3):
     """
     Get the height at a given position on the lanelet2 map
     :param lanelet2_map: lanelet2 map
     :param x: x-coordinate of the point
     :param y: y-coordinate of the point
     :param z: z-coordinate of the point
+    :param num_lanelets: number of lanelets to consider (default is 1)
+    :param max_height_difference: maximum height difference allowed
     :return: height at the given position
     """
 
     point2d = BasicPoint2d(x, y)
-    nearest = findNearest(lanelet2_map.laneletLayer, point2d, 1)
-    if nearest:
-        _, lanelet = nearest[0]
+    nearest = findNearest(lanelet2_map.laneletLayer, point2d, num_lanelets) #TODO: currently handles initialization only in 2d space
+    for _, lanelet in nearest:
         point3d = BasicPoint3d(x, y, z)
         projected_point = project(lanelet.centerline, point3d)
+        # Avoid matching with lanelets that have large height difference compared to the current position
+        if num_lanelets != 1 and abs(projected_point.z - z) > max_height_difference: 
+            continue
         return projected_point.z
 
     return z
