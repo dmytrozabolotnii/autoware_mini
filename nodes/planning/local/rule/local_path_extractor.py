@@ -3,9 +3,10 @@ import rospy
 import threading
 import traceback
 import shapely
-from autoware_mini.msg import Path
+from autoware_mini.msg import Path, Waypoint
 from geometry_msgs.msg import PoseStamped
 from autoware_mini.path import PathWrapper
+from autoware_mini.geometry import get_heading_between_two_points, get_point_using_heading_and_distance
 
 class LocalPathExtractor:
 
@@ -16,6 +17,7 @@ class LocalPathExtractor:
         self.local_path_length = rospy.get_param("local_path_length")
         self.lookahead_distance = rospy.get_param("~lookahead_distance")
         self.distance_to_lookahead_path_limit = rospy.get_param("~distance_to_lookahead_path_limit")
+        self.after_goal_obstacle_check_distance = rospy.get_param("~after_goal_obstacle_check_distance")
 
         # variables
         self.current_pose = None
@@ -79,7 +81,13 @@ class LocalPathExtractor:
             # extract local path using distances
             local_path.waypoints = global_path.extract_waypoints(ego_distance_from_global_path_start, ego_distance_from_global_path_start + self.local_path_length)
             self.last_ego_distance = ego_distance_from_global_path_start
-            
+
+            # if local_path was extracted and approaches end of the global_path, add additonal point for object collision checking
+            if len(local_path.waypoints) > 1 and local_path.waypoints[-1] == global_path.waypoints[-1]:
+                heading = get_heading_between_two_points(local_path.waypoints[-2].position, local_path.waypoints[-1].position)
+                point = get_point_using_heading_and_distance(local_path.waypoints[-1].position, heading, self.after_goal_obstacle_check_distance)
+                local_path.waypoints.append(Waypoint(position=point))
+
             self.local_path_pub.publish(local_path)
         except Exception as e:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
