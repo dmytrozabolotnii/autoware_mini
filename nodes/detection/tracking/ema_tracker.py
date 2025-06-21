@@ -108,6 +108,10 @@ class EMATracker:
             else:
                 assert False, 'Unknown association method: ' + self.association_method
 
+            # Fix lapsolver bug where empty matches are returned as float64 instead of int32
+            matched_track_indices = matched_track_indices.astype(np.int32, copy=False)
+            matched_detection_indicies = matched_detection_indicies.astype(np.int32, copy=False)
+
             ### 4. ESTIMATE TRACKED OBJECT SPEEDS AND ACCELERATIONS ###
 
             # update tracked object speeds with exponential moving average
