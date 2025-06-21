@@ -81,6 +81,10 @@ class LidarRadarFusion:
                 else:
                     raise ValueError(f"{rospy.get_name()} - Unknown association method: '{self.association_method}'")
 
+                # Fix lapsolver bug where empty matches are returned as float64 instead of int32
+                matched_lidar_indices = matched_lidar_indices.astype(np.int32, copy=False)
+                matched_radar_indices = matched_radar_indices.astype(np.int32, copy=False)
+
                 # fuse matched detections
                 for matched_lidar_index, matched_radar_index in zip(matched_lidar_indices, matched_radar_indices):
                     lidar_detections.objects[matched_lidar_index].velocity = radar_detections.objects[matched_radar_index].velocity
