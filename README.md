@@ -169,7 +169,7 @@ To see the camera traffic light detections enable **Detections** > **Traffic lig
 
     ```
     cd ~/autoware_mini_ws/src
-    git clone --recurse-submodules -b route_scenario_v0.9.15 https://github.com/UT-ADL/ros-bridge carla_ros_bridge
+    git clone --recurse-submodules https://github.com/UT-ADL/ros-bridge carla_ros_bridge
     ```
 
 15. Install CARLA ROS bridge dependencies:
@@ -222,7 +222,7 @@ To see the camera traffic light detections enable **Detections** > **Traffic lig
 
 1. Clone [Scenario Runner](https://github.com/UT-ADL/scenario_runner/tree/route_scenario_v0.9.15) to a directory of your choice
    ```
-   git clone -b route_scenario_v0.9.15_updated https://github.com/UT-ADL/scenario_runner.git
+   git clone https://github.com/UT-ADL/scenario_runner.git
    ```
 2. Install requirements
    ```
