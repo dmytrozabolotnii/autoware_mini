@@ -51,7 +51,7 @@
     <arg name="port"                                              value="$(arg port)" />
     <arg name="timeout"                                           value="$(arg timeout)" />
     <arg name="synchronous_mode"                                  value="$(arg synchronous_mode)" />
-    <arg name='fixed_delta_seconds'                               value='$(eval 0 if use_manual_control else 0.05)'/>
+    <arg name='fixed_delta_seconds'                               value='$(arg fixed_delta_seconds)'/>
     <arg name="passive"                                           value="$(arg passive)" />
   </include>
 
