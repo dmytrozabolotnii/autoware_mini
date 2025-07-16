@@ -1,6 +1,29 @@
 output_frame: map
 
 lidar:
+  points_preprocessor_fast:
+    output_frame: lidar_center
+    inner_min_x: -2.0
+    inner_max_x: 3.0
+    inner_min_y: -1.0
+    inner_max_y: 1.0
+    inner_min_z: -2.0
+    inner_max_z: 2.0
+    outer_min_x: -60.0
+    outer_max_x: 75.0
+    outer_min_y: -60.0
+    outer_max_y: 60.0
+    outer_min_z: -3.5
+    outer_max_z: 0.05
+    ground_removal_cell_size: 0.6
+    ground_removal_tolerance: 0.15
+    ground_removal_filter_size: 3
+    ground_removal_filter_iterations: 1
+    voxel_grid_filter_leaf_size: 0.08
+    cluster_epsilon: 0.6
+    cluster_min_samples: 4
+    cluster_in_2d: True
+    transform_timeout: 0.06
   center:
     crop_box:
       min_x: -2.0
@@ -12,17 +35,23 @@ lidar:
       negative: True
       input_frame: lidar_center
       output_frame: lidar_center
-    ground_removal:
+    naive_ground_removal:
       min_x: -60.0
-      max_x: 60.0
+      max_x: 75.0
       min_y: -60.0
       max_y: 60.0
-      min_z: -2.5
+      min_z: -3.5
       max_z: 0.05
       cell_size: 0.6
       tolerance: 0.15
       filter: average                    # none, median, average, minimum
       filter_size: 3
+      filter_iterations: 1
+    jcp_ground_removal:
+      range_img_width: 1024
+      range_img_height: 32
+      sensor_height: 2.11
+      delta_R: 1
   front:
     crop_box:
       min_x: -2.0
@@ -34,33 +63,38 @@ lidar:
       negative: True
       input_frame: lidar_center
       output_frame: lidar_center
-    ground_removal:
+    naive_ground_removal:
       min_x: -60.0
-      max_x: 60.0
+      max_x: 75.0
       min_y: -60.0
       max_y: 60.0
       min_z: -2.0
-      max_z: 0.05
+      max_z: 0.55
       cell_size: 0.6
       tolerance: 0.15
       filter: average                    # none, median, average, minimum
       filter_size: 3
+      filter_iterations: 1
+    jcp_ground_removal:
+      range_img_width: 1024
+      range_img_height: 128
+      sensor_height: 1.7
+      delta_R: 1
   points_concatenator:
     transform_timeout: 0.06
   voxel_grid_filter:
-    leaf_size: 0.25
+    leaf_size: 0.15
     filter_field_name: z
     filter_limit_min: -2.0
     filter_limit_max: 0.5
     filter_limit_negative: False
   points_clusterer:
-    cluster_epsilon: 0.7
-    cluster_min_size: 4
+    cluster_epsilon: 0.6
+    cluster_min_samples: 4
+    cluster_in_2d: True
   cluster_detector:
     min_cluster_size: 4
-    bounding_box_type: axis_aligned # axis_aligned, min_area
-    enable_pointcloud: False
-    enable_convex_hull: True
+    bounding_box_type: min_area     # axis_aligned, min_area
     transform_timeout: 0.06         # needed for Carla
 
   sfa_detector:
@@ -95,24 +129,27 @@ ema_tracker:
   enable_missed_detection_propagation: True
   detection_counter_threshold: 4
   missed_counter_threshold: 4
-  iou_threshold: 0.0
-  velocity_gain: 0.1
+  iou_threshold: 0.1
+  velocity_gain: 0.2
   acceleration_gain: 0.0
   association_method: iou   # iou, euclidean
-  max_euclidean_distance: 2.0
+  max_euclidean_distance: 1.0
+  update_heading_bboxes: True
 
 naive_predictor:
-  prediction_horizon: 2.0           # s
-  prediction_interval: 2.0          # s
+  prediction_horizon: 3.0           # s
+  prediction_interval: 3.0          # s
   prediction_min_speed: 1.0         # m/s
 
 map_based_predictor:
   prediction_horizon: 5.0           # s
   prediction_interval: 0.5          # s
+  trajectories_to_predict: 1        # number of trajectories
   distance_from_lanelet: 0.0        # m - outside of lanelet area
-  angle_threshold: 30.0             # degrees - object heading and lanelet heading
+  heading_difference_threshold: 30.0  # degrees - object heading and lanelet heading
   prediction_min_speed: 1.0         # m/s
   use_offset_for_prediction: True   # use offset from lanelet centerline for prediction
+  prediction_clipping_deceleration_limit: 2.8  # m/s2
 
 pedestrian_predictor:
   prediction_horizon: 12 # prediction horizon in steps
@@ -143,15 +180,18 @@ pedestrian_predictor:
     ga_addon_predictions_amount: 1
 
 road_area_filter:
-  filtering_method: within          # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
-  filtering_extent: 100             # m from ego current location of ego in x and y directions, objects further are removed
+  filtering_method: centroid        # 'intersects' (has overlap with road area), 'centroid' (centroid inside road area), 'within' (object completly inside road area)
+  use_map_extraction: True         # extract smaller map area around the ego vehicle for visualization
+  map_extraction_distance: 150      # m - distance from ego vehicle to extract map data
 
 mqtt_traffic_light_detector:
-  mqtt_host: mqtt.cloud.ut.ee
+  mqtt_host: traffic.traffest.com
   mqtt_port: 8883
   mqtt_topic: Tartu/#
+  enable_automatic_subscribe: True
+  automatic_subscription_range: 200
   timeout: 2.0
-  id_string: " api"      # string added to traffic light result and displayed in rviz
+  id_string: " mqtt"      # string added to traffic light result and displayed in rviz
 
 traffic_light_majority_merger:
   id_string: " cam"      # string added to traffic light result and displayed in rviz
@@ -164,7 +204,7 @@ camera_fl:
     rectify_image: False  # the distortions of Mako cameras are so small they don't matter
     transform_timeout: 0.06
     iou_threshold: 0.05
-    camera_delay_compensation: 0.15
+    camera_delay_compensation: 0.03
 
 camera_fr:
   camera_traffic_light_detector_right:
@@ -174,7 +214,7 @@ camera_fr:
     rectify_image: False  # the distortions of Mako cameras are so small they don't matter
     transform_timeout: 0.06
     iou_threshold: 0.05
-    camera_delay_compensation: 0.15
+    camera_delay_compensation: 0.03
 
 interfacea_link1:
   camera_traffic_light_detector_link1:
@@ -184,7 +224,7 @@ interfacea_link1:
     rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06
     iou_threshold: 0.05
-    camera_delay_compensation: 0.15
+    camera_delay_compensation: 0.2
 
 interfacea_link2:
   camera_traffic_light_detector_link2:
@@ -194,4 +234,4 @@ interfacea_link2:
     rectify_image: False  # the distortions of Nvidia cameras are significant and rectification should be done by image_proc, since PinHoleCameraModel python doesn't have FishEye distortion model
     transform_timeout: 0.06
     iou_threshold: 0.05
-    camera_delay_compensation: 0.15
+    camera_delay_compensation: 0.2

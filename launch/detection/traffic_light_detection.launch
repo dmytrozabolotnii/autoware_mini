@@ -1,19 +1,25 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="tfl_detector"        default="none"      doc="carla, mqtt, camera, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
-    <arg name="tfl_cameras"         default="mako"      doc="mako, nvidia" />
-    <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="for carla traffic light detector" />
+    <!-- Map configuration -->
+    <arg name="map_name"            default="tartu_demo"        doc="Map name for traffic light detection" />
+    <arg name="lanelet2_map_path"   default="$(find autoware_mini)/data/maps/$(arg map_name).osm" doc="For traffic light detection" />
+
+    <!-- Detection configuration -->
+    <arg name="tfl_detector"        default="none"              doc="carla, mqtt, camera, mqtt_camera_fusion, yolo, mqtt_yolo_fusion" />
+    <arg name="tfl_cameras"         default="mako"              doc="mako, nvidia" />
+
+    <!-- Detection models -->
     <arg name="camera_onnx_path"    default="$(find autoware_mini)/data/models/traffic_lights/tlr_model.onnx" doc="onnx model path" />
     <arg name="yolo_onnx_path"      default="$(find autoware_mini)/data/models/traffic_lights/yolov3-tiny-608.onnx" doc="yolo model path" />
 
     <!-- Carla's ground truth traffic lights -->
     <node if="$(eval tfl_detector=='carla')" pkg="autoware_mini" type="carla_traffic_light_detector.py" name="carla_traffic_light_detector" output="screen" required="true">
-        <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+        <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
     </node>
 
     <!-- MQTT traffic light detector -->
     <node if="$(eval 'mqtt' in tfl_detector)" pkg="autoware_mini" type="mqtt_traffic_light_detector.py" name="mqtt_traffic_light_detector" output="screen" required="true">
-        <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+        <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
         <remap if="$(eval 'fusion' in tfl_detector)" from="traffic_light_status" to="mqtt/traffic_light_status"/>
     </node>
 
@@ -28,7 +34,7 @@
                     <remap from="camera_info" to="/camera_fl/camera_info"/>
                     <remap from="image_raw" to="/camera_fl/image_raw"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
                 </node>
                 <!-- Camera FR -->
@@ -36,7 +42,7 @@
                     <remap from="camera_info" to="/camera_fr/camera_info"/>
                     <remap from="image_raw" to="/camera_fr/image_raw"/>
                     <remap from="traffic_light_roi" to="/detection/camera2/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
                 </node>
             </group>
@@ -48,7 +54,7 @@
                     <remap from="camera_info" to="/camera_fl/camera_info"/>
                     <remap from="image_raw" to="/camera_fl/image_raw"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
                 </node>
                 <!-- Camera FR -->
@@ -56,7 +62,7 @@
                     <remap from="camera_info" to="/camera_fr/camera_info"/>
                     <remap from="image_raw" to="/camera_fr/image_raw"/>
                     <remap from="traffic_light_roi" to="/detection/camera2/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
                 </node>
             </group>
@@ -65,12 +71,12 @@
         <group if="$(eval tfl_cameras=='nvidia')">
             <!-- Traffic light ROI boxes from map -->
             <group if="$(eval 'camera' in tfl_detector)">
-                <!-- Nvidia Front Right 120 FOV camera -->
+                <!-- Nvidia Front Forward 120 FOV camera -->
                 <node pkg="autoware_mini" type="camera_traffic_light_detector.py" name="camera_traffic_light_detector_link1" output="screen" required="true" ns="interfacea_link1">
-                    <remap from="camera_info" to="/interfacea/link1/camera_info"/>
-                    <remap from="image_raw" to="/interfacea/link1/image_rect"/>
+                    <remap from="camera_info" to="/interfacea/link2/camera_info"/>
+                    <remap from="image_raw" to="/interfacea/link2/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera2/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
                 </node>
                 
@@ -79,19 +85,19 @@
                     <remap from="camera_info" to="/interfaceb/link0/camera_info"/>
                     <remap from="image_raw" to="/interfaceb/link0/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
                     <param name="onnx_path" value="$(arg camera_onnx_path)" />
                 </node>
             </group>
 
             <!-- Traffic light ROI boxes from yolo -->
             <group if="$(eval 'yolo' in tfl_detector)">
-                <!-- Nvidia Front Right 120 FOV camera -->
+                <!-- Nvidia Front Forward 120 FOV camera -->
                 <node pkg="autoware_mini" type="yolo_traffic_light_detector.py" name="camera_traffic_light_detector_link1" output="screen" required="true" ns="interfacea_link1">
-                    <remap from="camera_info" to="/interfacea/link1/camera_info"/>
-                    <remap from="image_raw" to="/interfacea/link1/image_rect"/>
+                    <remap from="camera_info" to="/interfacea/link2/camera_info"/>
+                    <remap from="image_raw" to="/interfacea/link2/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera2/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
                 </node>
                 
@@ -100,7 +106,7 @@
                     <remap from="camera_info" to="/interfaceb/link0/camera_info"/>
                     <remap from="image_raw" to="/interfaceb/link0/image_rect"/>
                     <remap from="traffic_light_roi" to="/detection/camera1/traffic_light_roi"/>
-                    <param name="lanelet2_map_name" value="$(find autoware_mini)/data/maps/$(arg lanelet2_map_name)" />
+                    <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
                     <param name="onnx_path" value="$(arg yolo_onnx_path)" />
                 </node>
             </group>

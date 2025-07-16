@@ -16,10 +16,10 @@ from autoware_mini.msg import Path, TrafficLightResult, TrafficLightResultArray
 
 from cv_bridge import CvBridge
 
-from helpers.transform import transform_point
-from helpers.lanelet2 import get_traffic_light_stop_lines, get_stoplines_trafficlights, load_lanelet2_map
-from helpers.detection import calculate_iou
-from helpers.yolo import YoloModel
+from autoware_mini.transform import transform_point
+from autoware_mini.lanelet2 import get_traffic_light_stop_lines, get_stoplines_trafficlights, load_lanelet2_map
+from autoware_mini.detection import calculate_iou
+from autoware_mini.yolo import YoloModel
 
 # Classifier outputs 4 classes (LightState)
 CLASSIFIER_RESULT_TO_STRING = {
@@ -61,12 +61,12 @@ class YoloTrafficLightDetector:
         self.roi_height_extent = rospy.get_param("~roi_height_extent")
         self.min_roi_width = rospy.get_param("~min_roi_width")
         self.transform_timeout = rospy.get_param("~transform_timeout")
-        lanelet2_map_name = rospy.get_param("~lanelet2_map_name")
+        lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
         self.iou_threshold = rospy.get_param("~iou_threshold")
         self.camera_delay_compensation = rospy.get_param("~camera_delay_compensation")
 
         # Extract all stop lines and traffic lights from the lanelet2 map
-        lanelet2_map = load_lanelet2_map(lanelet2_map_name)
+        lanelet2_map = load_lanelet2_map(lanelet2_map_path)
         self.stoplines = get_traffic_light_stop_lines(lanelet2_map)
         self.trafficlights = get_stoplines_trafficlights(lanelet2_map)
 
