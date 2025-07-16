@@ -7,7 +7,7 @@ import time
 
 from autoware_mini.msg import Path, DetectedObjectArray, Waypoint
 
-from helpers.message_cache import MessageCache
+from autoware_mini.message_cache import MessageCache
 
 from metrics_calculator import MetricsCalculator
 
@@ -49,7 +49,7 @@ class NetSubscriber(metaclass=ABCMeta):
         active_keys_cars = set()
         for i, detectedobject in enumerate(detectedobjectarray.objects):
             if detectedobject.label == 'pedestrian' or detectedobject.label == 'unknown':
-                position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
+                position = np.array([detectedobject.center.x, detectedobject.center.y])
                 velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
                 acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
                 convex_hull = detectedobject.convex_hull
@@ -65,7 +65,7 @@ class NetSubscriber(metaclass=ABCMeta):
                         self.cache[_id].move_endpoints()
                         self.cache[_id].update_last_trajectory(position, velocity, acceleration, header, convex_hull=convex_hull)
             elif self.collect_car_info and (detectedobject.label == 'bicycle' or detectedobject.label == 'car'):
-                position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
+                position = np.array([detectedobject.center.x, detectedobject.center.y])
                 velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
                 acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
                 convex_hull = detectedobject.convex_hull
@@ -106,7 +106,8 @@ class NetSubscriber(metaclass=ABCMeta):
                     for j in prediction:
                         wp = Waypoint()
                         wp.position.x, wp.position.y = j
-                        wp.position.z = detectedobject.pose.position.z
+                        wp.position.z = detectedobject.center.z
+                        # print(wp)
                         lane.waypoints.append(wp)
                     detectedobject.candidate_trajectories.paths.append(lane)
 

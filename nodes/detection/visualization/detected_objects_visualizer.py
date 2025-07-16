@@ -92,49 +92,6 @@ class DetectedObjectsVisualizer:
             marker.color = ColorRGBA(1.0, 1.0, 0.0, 1.0)
             markers.markers.append(marker)
 
-            # Temp candidate visualization with different colors
-            if len(obj.candidate_trajectories.paths) > 0:
-                for i, candidate_trajectory in enumerate(obj.candidate_trajectories.paths):
-                    marker = Marker(header=msg.header)
-                    marker.ns = 'candidate_trajectories_' + str(i)
-                    marker.id = obj.id
-                    marker.type = marker.LINE_STRIP
-                    marker.action = marker.ADD
-                    marker.pose.orientation.w = 1.0
-                    marker.scale.x = 0.1
-                    color_mod = (i + 1) / len(obj.candidate_trajectories.paths)
-                    marker.color = ColorRGBA(1.0 * color_mod, 1.0 * color_mod, 0.0, 1.0 * color_mod)
-                    marker.points = [Point(wp.position.x, wp.position.y, wp.position.z) for wp in candidate_trajectory.waypoints]
-                    markers.markers.append(marker)
-
-            # candidate trajectories
-            # if len(obj.candidate_trajectories.paths) > 0:
-            # extract and visualize object width - used in object detection
-            marker = Marker(header=msg.header)
-            marker.ns = 'candidate_trajectories'
-            marker.id = obj.id
-            marker.type = marker.LINE_LIST
-            if len(obj.candidate_trajectories.paths) == 0:
-                marker.action = marker.DELETE
-            else:
-                marker.action = marker.ADD
-                marker.pose.orientation.w = 1.0
-                marker.color = ColorRGBA(1.0, 1.0, 0.0, 0.5)
-                if self.use_object_width:
-                    object_polygon = shapely.Polygon([(p.x, p.y) for p in obj.convex_hull.points])
-                    object_heading = math.degrees(math.atan2(obj.velocity.y, obj.velocity.x))
-                    marker.scale.x = get_polygon_width(object_polygon, object_heading)
-                else:
-                    marker.scale.x = 0.2
-                # visualize possible multiple trajectories
-                for lane in obj.candidate_trajectories.paths:
-                    for i in range(len(lane.waypoints) - 1):
-                        p1 = lane.waypoints[i].position
-                        p2 = lane.waypoints[i + 1].position
-                        marker.points.append(Point(p1.x, p1.y, p1.z))
-                        marker.points.append(Point(p2.x, p2.y, p2.z))
-            markers.markers.append(marker)
-
             # text
             marker = Marker(header=msg.header)
             marker.ns = 'text'
@@ -183,20 +140,6 @@ class DetectedObjectsVisualizer:
             marker.id = id
             marker.action = marker.DELETE
             markers.markers.append(marker)
-
-            marker = Marker(header=msg.header)
-            marker.ns = 'candidate_trajectories'
-            marker.id = id
-            marker.action = marker.DELETE
-            markers.markers.append(marker)
-
-            # Temp visualization removal
-            for i in range(20):
-                marker = Marker(header=msg.header)
-                marker.ns = 'candidate_trajectories_' + str(i)
-                marker.id = id
-                marker.action = marker.DELETE
-                markers.markers.append(marker)
 
             marker = Marker(header=msg.header)
             marker.ns = 'text'

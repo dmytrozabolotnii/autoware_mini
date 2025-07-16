@@ -13,7 +13,7 @@ speed_limit: 50.0               # max velocity for route (km/h), will be replace
 output_frame: map
 distance_to_goal_limit: 5.0     # m
 ego_vehicle_stopped_speed_limit: 0.1
-use_object_width: True          # use object width for predictions and collision checks in trajectory_collision_checker and pedestrian_crosswalk_checker
+use_object_width: False          # use object width for predictions and collision checks in trajectory_collision_checker and pedestrian_crosswalk_checker
 default_left_width: 1.4         # m
 default_right_width: 1.4        # m
 

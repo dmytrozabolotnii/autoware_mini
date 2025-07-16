@@ -17,7 +17,7 @@ from shapely.geometry.polygon import orient
 import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
-from helpers.lanelet2 import load_lanelet2_map
+from autoware_mini.lanelet2 import load_lanelet2_map
 
 import torch
 from gatraj_utils import GATraj, GATrajDatasetInit, gatraj_iter
@@ -232,7 +232,7 @@ class RVOPredictor(NetSubscriber):
         self.responsibility_factor = 0.5
         self.range_limit = 10 if self.is_cluster_detector else 100
 
-        lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
+        lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_path")
 
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
 
@@ -333,7 +333,8 @@ class RVOPredictor(NetSubscriber):
                         tracked_objects_array[i]['acceleration'] = (
                         self.cache[key].raw_accelerations[-1][0], self.cache[key].raw_accelerations[-1][1])
                     if self.cache[key].convex_hull is not None:
-                        polygon = Polygon([(p.x, p.y) for p in self.cache[key].convex_hull.points])
+                        polygon = Polygon([(p[0], p[1]) for p in np.array(self.cache[key].convex_hull).reshape(-1, 3)[:, :2]])
+
                         tracked_objects_convex_hull_array.append(orient(polygon))
                 if self.cars_constraints:
                     cars_objects_array = np.empty(

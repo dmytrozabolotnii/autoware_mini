@@ -11,7 +11,6 @@
     <arg name="use_lidar_front"     default="false"             doc="Use velodyne lidar"/>
     <arg name="use_road_area_filter"  default="false"           doc="Use road area filter"/>
     <arg name="ground_removal"      default="naive"             doc="naive, jcp" />
-    <arg name="detection_range"     default=""                  doc="Enter a value in meters to enable it" />
     <arg name="sfa_onnx_path"       default="$(find autoware_mini)/data/models/sfa/nulyaronar2_02_30.onnx" />
 
     <!-- Tracking and Prediction -->

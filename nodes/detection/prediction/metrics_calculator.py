@@ -7,14 +7,14 @@ from os import path as osp
 import rospy
 import numpy as np
 from shapely import Polygon, LineString, prepare
-from helpers.geometry import get_distance_between_two_points_2d
+from autoware_mini.geometry import get_distance_between_two_points_2d
 from std_msgs.msg import Float32
 from autoware_mini.msg import Path
 
 import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
-from helpers.lanelet2 import load_lanelet2_map
+from autoware_mini.lanelet2 import load_lanelet2_map
 
 def calculate_ade(x, y):
     return np.mean(((x[:, 0] - y[:, 0]) ** 2 + (x[:, 1] - y[:, 1]) ** 2) ** 0.5)
@@ -79,7 +79,7 @@ class MetricsCalculator:
         self.dac_history = {}
         self.presence_time_cache = {}
         # self.cache = cache
-        lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
+        lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_path")
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.planned_local_path_cache = {}
 

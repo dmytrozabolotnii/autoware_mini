@@ -33,6 +33,8 @@ def triangulate_linestring(linestring, width, z_offset=0):
     """
 
     buffer = linestring.buffer(width / 2, cap_style="flat")
+    if buffer.geom_type == "MultiPolygon":
+        buffer = buffer.geoms[0]
     number_of_exterior_points = len(buffer.exterior.coords)
     indexes = [number_of_exterior_points]
     coords = list(buffer.exterior.coords)

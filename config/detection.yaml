@@ -159,7 +159,7 @@ pedestrian_predictor:
   inference_timer: 0.4 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
-  results_category_folder: "_contrib_2_metric_change_tracker_experiment_3_rvo_final"
+  results_category_folder: "_contrib_2_new_mainframework"
 
   pecnet_predictor:
     predictions_amount: 10
