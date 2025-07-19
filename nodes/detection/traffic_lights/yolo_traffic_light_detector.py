@@ -19,7 +19,7 @@ from cv_bridge import CvBridge
 from autoware_mini.transform import transform_point
 from autoware_mini.lanelet2 import get_traffic_light_stop_lines, get_stoplines_trafficlights, load_lanelet2_map
 from autoware_mini.detection import calculate_iou
-from autoware_mini.yolo import YoloModel
+from autoware_mini.yolo_models import Yolo3Model
 
 # Classifier outputs 4 classes (LightState)
 CLASSIFIER_RESULT_TO_STRING = {
@@ -74,7 +74,7 @@ class YoloTrafficLightDetector:
         self.stoplines = {k: v for k, v in self.stoplines.items() if k in self.trafficlights}
 
         self.bridge = CvBridge()
-        self.yolo_model = YoloModel(onnx_path)
+        self.yolo_model = Yolo3Model(onnx_path)
 
         # Publishers
         self.tfl_status_pub = rospy.Publisher('traffic_light_status', TrafficLightResultArray, queue_size=1, tcp_nodelay=True)

@@ -4,6 +4,8 @@
     <arg name="map_name"            default="tartu_demo"        doc="Map name for road area filter" />
     <arg name="lanelet2_map_path"   default="$(find autoware_mini)/data/maps/$(arg map_name).osm" doc="For map-based prediction" />
     <arg name="road_area_file_path" default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
+    <arg name="cameras"                 default="mako"              doc="mako, nvidia"/>
+    <arg name="use_camera_classifier"   default="false"             doc="use camera based object classifier"/>
 
     <!-- Detection -->
     <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_cluster_fast,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
@@ -12,6 +14,7 @@
     <arg name="use_road_area_filter"  default="false"           doc="Use road area filter"/>
     <arg name="ground_removal"      default="naive"             doc="naive, jcp" />
     <arg name="sfa_onnx_path"       default="$(find autoware_mini)/data/models/sfa/nulyaronar2_02_30.onnx" />
+    <arg name="yolo_detector_path"      default="$(find autoware_mini)/data/models/object_detection/yolo11l.onnx" doc="object detection yolo model path" />
 
     <!-- Tracking and Prediction -->
     <arg name="tracker"             default="ema"               doc="none, ema" />
@@ -123,9 +126,86 @@
     <node if="$(eval tracker=='ema')" type="ema_tracker.py" name="ema_tracker" pkg="autoware_mini" output="screen" required="true">
         <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="detected_objects_filtered" />
     </node>
-    <node if="$(eval tracker=='none')" pkg="topic_tools" type="relay" args="detected_objects tracked_objects" name="detected_objects_relay" output="screen" required="true" />
+
+    <node if="$(eval tracker=='none')" pkg="topic_tools" type="relay" args="detected_objects tracked_objects" name="tracked_objects_relay" output="screen" required="true" />
+
+    <group if="$(eval use_camera_classifier and tracker=='ema')">
+        <!-- Mako cameras -->
+        <group if="$(eval cameras=='mako')">
+            <node type="camera_object_detector.py" name="camera_object_detector_cam1" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/camera_fl/image_raw"/>
+                <remap from="camera_detections" to="camera_fl/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera1/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam2" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/camera_fr/image_raw"/>
+                <remap from="camera_detections" to="camera_fr/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera2/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+        </group>
+
+        <!-- Nvidia cameras -->
+        <group if="$(eval cameras=='nvidia')">
+            <node type="camera_object_detector.py" name="camera_object_detector_cam1" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link0/image_rect"/>
+                <remap from="camera_detections" to="interfacea/link0/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera1/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam2" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link1/image_rect"/>
+                <remap from="camera_detections" to="interfacea/link1/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera2/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam3" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link2/image_rect"/>
+                <remap from="camera_detections" to="interfacea/link2/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera3/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam4" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link3/image_rect"/>
+                <remap from="camera_detections" to="interfacea/link3/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera4/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam5" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfaceb/link0/image_rect"/>
+                <remap from="camera_detections" to="interfaceb/link0/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera5/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+        </group>
+
+        <node if="$(arg use_camera_classifier)" type="camera_object_classifier.py" name="camera_object_classifier" pkg="autoware_mini" output="screen" required="true">
+            <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="tracked_objects" />
+            <param if="$(eval cameras=='mako')" name="camera1" value="camera_fl" />
+            <param if="$(eval cameras=='mako')" name="camera2" value="camera_fr" />
+            <param if="$(eval cameras=='mako')" name="camera3" value="" />
+            <param if="$(eval cameras=='mako')" name="camera4" value="" />
+            <param if="$(eval cameras=='mako')" name="camera5" value="" />
+
+            <param if="$(eval cameras=='nvidia')" name="camera1" value="interfacea/link0" />
+            <param if="$(eval cameras=='nvidia')" name="camera2" value="interfacea/link1" />
+            <param if="$(eval cameras=='nvidia')" name="camera3" value="interfacea/link2" />
+            <param if="$(eval cameras=='nvidia')" name="camera4" value="interfacea/link3" />
+            <param if="$(eval cameras=='nvidia')" name="camera5" value="interfaceb/link0" />
+        </node>
+
+    </group>
+
+    <node unless="$(eval use_camera_classifier and tracker=='ema')" pkg="topic_tools" type="relay" args="tracked_objects classified_objects" name="classified_objects_relay" output="screen" required="true" />
+
     <node type="detected_objects_visualizer.py" name="tracked_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
-        <remap from="detected_objects" to="tracked_objects" />
+        <remap from="detected_objects" to="classified_objects" />
         <remap from="detected_objects_markers" to="tracked_objects_markers" />
         <remap from="detected_objects_bboxes" to="tracked_objects_bboxes" />
     </node>

@@ -13,6 +13,7 @@
     <arg name="use_lidar_center"        default='true'                         doc="Use velodyne lidar"/>
     <arg name="use_lidar_front"         default='false'                        doc="Use ouster lidar"/>
     <arg name="use_road_area_filter"    default="$(eval 'tartu' in map_name)"  doc="Use road area filter"/>
+    <arg name="use_camera_classifier"   default="false"                        doc="use camera based object classifier"/>
     <arg name="ground_removal"          default="naive"                        doc="Ground removal method (naive, jcp)"/>
     <arg name="tfl_detector"            default="carla"                        doc="Traffic light detector to use (carla, camera, mqtt_camera_fusion)"/>
     <arg name="tfl_cameras"             default="mako"                         doc="Cameras to use for traffic light detection (mako, nvidia)"/>
@@ -68,8 +69,9 @@
         <arg name="predictor_backfill"  value="$(arg predictor_backfill)" />
         <arg name="detection_range"     value="$(arg detection_range)" />
         <arg name="map_name"            value="$(arg map_name)" />
-        <arg name="use_road_area_filter" value="$(arg use_road_area_filter)" />
-        <arg name="ground_removal"      value="$(arg ground_removal)" />
+        <arg name="use_road_area_filter"    value="$(arg use_road_area_filter)" />
+        <arg name="use_camera_classifier"   value="$(arg use_camera_classifier)" />
+        <arg name="ground_removal"          value="$(arg ground_removal)" />
     </include>
 
     <!-- Planning -->
@@ -102,8 +104,8 @@
         <arg name="use_lidar"                           value="$(eval 'lidar' in detector and detector != 'lidar_vella')" />
         <arg name="use_radar"                           value="$(eval 'radar' in detector)" />
         <arg name="use_gnss"                            value="$(eval localizer == 'novatel')" />
-        <arg name="use_mako_cameras"                    value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='mako')" />
-        <arg name="use_nvidia_cameras"                  value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector) and tfl_cameras=='nvidia')" />
+        <arg name="use_mako_cameras"                    value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector or use_camera_classifier) and cameras=='mako')" />
+        <arg name="use_nvidia_cameras"                  value="$(eval ('camera' in tfl_detector or 'yolo' in tfl_detector or use_camera_classifier) and cameras=='nvidia')" />
         <arg name="use_manual_control"                  value="$(arg use_manual_control)" />
         <arg name="generate_traffic"                    value="$(arg generate_traffic)" />
         <arg name="use_scenario_runner"                 value="$(arg use_scenario_runner)" />
