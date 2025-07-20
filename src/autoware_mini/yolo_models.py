@@ -2,7 +2,7 @@ import numpy as np
 import onnxruntime
 from ast import literal_eval
 
-from helpers.yolo_common import preprocess_image, non_maximum_supression_boxes, convert_and_scale_boxes
+from autoware_mini.yolo_common import preprocess_image, non_maximum_supression_boxes, convert_and_scale_boxes
 
 CATEGORY_NUM = 4
 

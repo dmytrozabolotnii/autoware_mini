@@ -6,10 +6,10 @@ from ast import literal_eval
 
 from sensor_msgs.msg import Image
 from std_msgs.msg import MultiArrayDimension, String
-from vehicle_platform.msg import Float32MultiArrayStamped
+from autoware_mini.msg import Float32MultiArrayStamped
 
 from cv_bridge import CvBridge
-from helpers.yolo_models import Yolo11Model
+from autoware_mini.yolo_models import Yolo11Model
 
 class CameraObjectDetector:
     def __init__(self):

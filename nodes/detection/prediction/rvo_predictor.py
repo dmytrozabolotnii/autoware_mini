@@ -25,7 +25,7 @@ from GATraj.GATraj_parser import get_args
 
 
 pedestrian_normal_walking_speed = 1.3888888
-fov_acceptable_circle_radius = 0.5
+fov_acceptable_circle_radius = 0.25
 half_pov_angle = np.pi / 3
 MAX_STEPS_LONG_BRUTEFORCE = 10
 MAX_STEPS_LAT_BRUTEFORCE = 10
@@ -116,7 +116,7 @@ def check_solution(solution, do_not_check_id, pure_deviation_vectors, representa
 
     return solution_passes
 
-def resolve_hard_rvo(velocity, deviation_vectors, fov_constraint=False, crosswalks=None, lanelets=None):
+def resolve_hard_rvo(velocity, deviation_vectors, fov_constraint=False, crosswalks=None, lanelets=None, heading=None):
     # Move to velocity vector center coordinate system:
     if crosswalks is None:
         crosswalks = []
@@ -155,8 +155,12 @@ def resolve_hard_rvo(velocity, deviation_vectors, fov_constraint=False, crosswal
 
     # Add fov constraints if necessary
     if fov_constraint:
-        fov_deviation_vectors = np.array([-1 * velocity] * 2)
-        fov_representative_vectors = np.array([-1 * simple_rotate(velocity, np.pi / 3), simple_rotate(velocity, -1 * np.pi / 3)])
+        if heading is None:
+            fov_deviation_vectors = np.array([-1 * velocity] * 2)
+            fov_representative_vectors = np.array([-1 * simple_rotate(velocity, np.pi / 3), simple_rotate(velocity, -1 * np.pi / 3)])
+        else:
+            fov_deviation_vectors = np.array([-1 * velocity] * 2)
+            fov_representative_vectors = np.array([-1 * simple_rotate([np.cos(heading), np.sin(heading)], np.pi / 3), simple_rotate([np.cos(heading), np.sin(heading)], -1 * np.pi / 3)])
     else:
         fov_deviation_vectors = []
         fov_representative_vectors = []
@@ -322,6 +326,7 @@ class RVOPredictor(NetSubscriber):
                     ('acceleration', np.float32, (2,)),
                 ])
                 tracked_objects_convex_hull_array = []
+                tracked_objects_headings = []
                 tracked_objects_array_ids = np.zeros((len(tracked_objects_array)))
                 for i, key in enumerate(temp_active_keys):
                     tracked_objects_array_ids[i] = key
@@ -332,6 +337,7 @@ class RVOPredictor(NetSubscriber):
                     else:
                         tracked_objects_array[i]['acceleration'] = (
                         self.cache[key].raw_accelerations[-1][0], self.cache[key].raw_accelerations[-1][1])
+                    tracked_objects_headings.append(self.cache[key].heading)
                     if self.cache[key].convex_hull is not None:
                         polygon = Polygon([(p[0], p[1]) for p in np.array(self.cache[key].convex_hull).reshape(-1, 3)[:, :2]])
 
@@ -465,23 +471,23 @@ class RVOPredictor(NetSubscriber):
                 # Construct free from obstacle zone from deviation vectors
                 if not self.multi_solution:
                     if len(deviation_vectors + cars_deviation_vectors) >= 0:
-                        result = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors + cars_deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets)
+                        result = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors + cars_deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets, heading=tracked_objects_headings[i])
                         if result is not None:
                             rvo_objects_array[0, 0, i]['velocity'] = result
                         else:
                             if self.velocity_zero:
                                 rvo_objects_array[0, 0, i]['velocity'] = 0
                 else:
-                    result_rvo = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors, fov_constraint=False, crosswalks=[], lanelets=[])
+                    result_rvo = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors, fov_constraint=False, crosswalks=[], lanelets=[], heading=tracked_objects_headings[i])
                     if result_rvo is not None:
                         rvo_objects_array[0, 0, i]['velocity'] = result_rvo
-                    result_rvofov = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=[], lanelets=[])
+                    result_rvofov = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=[], lanelets=[], heading=tracked_objects_headings[i])
                     if result_rvofov is not None:
                         rvo_objects_array[1, 0, i]['velocity'] = result_rvofov
-                    result_rvofovmap = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets)
+                    result_rvofovmap = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets, heading=tracked_objects_headings[i])
                     if result_rvofovmap is not None:
                         rvo_objects_array[2, 0, i]['velocity'] = result_rvofovmap
-                    result_rvofovmapcars = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors + cars_deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets)
+                    result_rvofovmapcars = resolve_hard_rvo(tracked_objects_array[i]['velocity'], deviation_vectors + cars_deviation_vectors, fov_constraint=self.fov_constraint, crosswalks=crosswalks, lanelets=lanelets, heading=tracked_objects_headings[i])
                     if result_rvofovmapcars is not None:
                         rvo_objects_array[3, 0, i]['velocity'] = result_rvofovmapcars
 

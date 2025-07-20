@@ -15,6 +15,7 @@ add_message_files(
   ControlCommand.msg
   DetectedObject.msg
   DetectedObjectArray.msg
+  Float32MultiArrayStamped.msg
   Gear.msg
   LampCmd.msg
   Log.msg

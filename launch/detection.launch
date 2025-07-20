@@ -8,7 +8,8 @@
     <arg name="use_lidar_center"    default="true"              doc="Use velodyne lidar"/>
     <arg name="use_lidar_front"     default="false"             doc="Use ouster lidar"/>
     <arg name="use_road_area_filter" default="false"            doc="Use road area filter"/>
-    <arg name="use_camera_classifier"   default="false"             doc="use camera based object classifier"/>
+    <arg name="use_camera_classifier"   default="false"         doc="use camera based object classifier"/>
+    <arg name="use_head_pose_detection" default="false"         doc="use head pose detection"/>
     <arg name="ground_removal"      default="naive"             doc="naive, jcp" />
     <arg name="detection_range"     default=""                  doc="Enter a value in meters to enable it" />
 
@@ -42,6 +43,7 @@
             <arg name="use_road_area_filter" value="$(arg use_road_area_filter)" />
             <arg name="cameras"                 value="$(arg tfl_cameras)" />
             <arg name="use_camera_classifier"   value="$(arg use_camera_classifier)" />
+            <arg name="use_head_pose_detection" value="$(arg use_head_pose_detection)" />
             <arg name="ground_removal"      value="$(arg ground_removal)" />
         </include>
 

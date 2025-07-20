@@ -104,6 +104,22 @@ class DetectedObjectsVisualizer:
             marker.text = "%s %d (%d km/h)" % (obj.label, obj.id, math.sqrt(obj.velocity.x**2 + obj.velocity.y**2 + obj.velocity.z**2) * 3.6)
             markers.markers.append(marker)
 
+            # heading arrow
+            marker = Marker(header=msg.header)
+            marker.ns = 'heading'
+            marker.id = obj.id
+            marker.type = Marker.ARROW
+            marker.action = Marker.ADD
+            marker.pose.position = obj.centroid
+            marker.pose.orientation = get_orientation_from_heading(obj.heading)
+            # Fixed length for heading arrow (1 meter)
+            marker.scale.x = 1.0
+            marker.scale.y = 0.15
+            marker.scale.z = 0.15
+            # Blue color for heading to distinguish from yellow speed arrow
+            marker.color = ColorRGBA(0.0, 0.0, 1.0, 1.0)
+            markers.markers.append(marker)
+
             new_published_ids.add(obj.id)
 
             # 3D bounding box
@@ -143,6 +159,12 @@ class DetectedObjectsVisualizer:
 
             marker = Marker(header=msg.header)
             marker.ns = 'text'
+            marker.id = id
+            marker.action = marker.DELETE
+            markers.markers.append(marker)
+
+            marker = Marker(header=msg.header)
+            marker.ns = 'heading'
             marker.id = id
             marker.action = marker.DELETE
             markers.markers.append(marker)

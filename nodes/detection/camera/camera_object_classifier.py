@@ -9,11 +9,11 @@ from ast import literal_eval
 from std_msgs.msg import String
 from sensor_msgs.msg import CameraInfo
 from autoware_mini.msg import DetectedObjectArray
-from vehicle_platform.msg import Float32MultiArrayStamped
+from autoware_mini.msg import Float32MultiArrayStamped
 from ros_numpy import numpify
 
-from helpers.box_matcher_3d_2d import BoxMatcher3DTo2D
-from helpers.detection import get_3d_bbox
+from autoware_mini.box_matcher_3d_2d import BoxMatcher3DTo2D
+from autoware_mini.detection import get_3d_bbox
 
 class CameraObjectClassifier:
     def __init__(self):
@@ -72,7 +72,7 @@ class CameraObjectClassifier:
         bboxes_3d = []
         seen_ids = set()
         for obj in detected_objects:
-            bbox_3d = get_3d_bbox((obj.position.x, obj.position.y, obj.position.z), 
+            bbox_3d = get_3d_bbox((obj.center.x, obj.center.y, obj.center.z),
                                   (obj.dimensions.x, obj.dimensions.y, obj.dimensions.z),
                                   obj.heading)
             bboxes_3d.append(bbox_3d)

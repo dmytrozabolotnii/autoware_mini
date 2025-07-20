@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from helpers.detection import calculate_iou
+from autoware_mini.detection import calculate_iou
 
 class BoxMatcher3DTo2D:
     def __init__(self, iou_threshold, projected_3d_boxes_bounds=(-1000, -500, 3000, 2000)):
