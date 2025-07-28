@@ -7,7 +7,7 @@ import time
 class MessageCache:
     def __init__(self, id,
                  initial_trajectory_point,
-                 initial_velocity, initial_acceleration, initial_heading, initial_header, pad_past=8, hide_past=0, delta_t=0.5, convex_hull=None):
+                 initial_velocity, initial_acceleration, initial_heading, initial_header, pad_past=8, hide_past=0, delta_t=0.5, convex_hull=None, label=None):
         self.id = id
         self.endpoints_count = 0
         self.raw_trajectories = [initial_trajectory_point]
@@ -15,6 +15,7 @@ class MessageCache:
         self.raw_accelerations = [initial_acceleration]
         self.heading = initial_heading
         self.convex_hull = convex_hull
+        self.label = label
         self.headers = [initial_header]
         self.prediction_history = [[]]
         self.predictions_history_headers = [None]
@@ -40,13 +41,18 @@ class MessageCache:
 
         self.endpoints_count = pad_past
 
-    def update_last_trajectory(self, trajectory, velocity, acceleration, heading, header, convex_hull=None):
+    def update_last_trajectory(self, trajectory, velocity, acceleration, heading, header, convex_hull=None, label=None):
         self.raw_trajectories[len(self.raw_trajectories) - 1] = trajectory
         self.raw_velocities[len(self.raw_velocities) - 1] = velocity
         self.raw_accelerations[len(self.raw_accelerations) - 1] = acceleration
         self.headers[len(self.headers) - 1] = header
         self.heading = heading
         self.convex_hull = convex_hull
+        # if self.label == 'pedestrian_with_head_pose' and label == 'pedestrian':
+        #     self.label = 'pedestrian_with_head_pose'
+        # else:
+        #     self.label = label
+        self.label = label
 
     def return_last_header(self):
         return self.headers[len(self.headers) - 1]

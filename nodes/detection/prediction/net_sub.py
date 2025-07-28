@@ -54,17 +54,18 @@ class NetSubscriber(metaclass=ABCMeta):
                 acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
                 heading = detectedobject.heading
                 convex_hull = detectedobject.convex_hull
+                label = detectedobject.label
                 header = detectedobjectarray.header
                 _id = detectedobject.id
                 active_keys.add(_id)
                 with self.lock:
                     if _id not in self.cache:
                         self.cache[_id] = MessageCache(_id, position, velocity, acceleration, heading, header,
-                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=convex_hull)
+                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=convex_hull, label=label)
 
                     else:
                         self.cache[_id].move_endpoints()
-                        self.cache[_id].update_last_trajectory(position, velocity, acceleration, heading, header, convex_hull=convex_hull)
+                        self.cache[_id].update_last_trajectory(position, velocity, acceleration, heading, header, convex_hull=convex_hull, label=label)
             elif self.collect_car_info and (detectedobject.label == 'bicycle' or detectedobject.label == 'car'):
                 position = np.array([detectedobject.center.x, detectedobject.center.y])
                 velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
@@ -98,7 +99,7 @@ class NetSubscriber(metaclass=ABCMeta):
         output_msg_array = DetectedObjectArray(header=detectedobjectsarray.header)
 
         for detectedobject in detectedobjectsarray.objects:
-            if detectedobject.label == 'pedestrian' or detectedobject.label == 'bicycle' or detectedobject.label == 'unknown':
+            if detectedobject.label == 'pedestrian' or detectedobject.label == 'pedestrian_with_head_pose' or detectedobject.label == 'bicycle' or detectedobject.label == 'unknown':
                 with self.lock:
                     predictions = self.cache[detectedobject.id].return_last_prediction()
                     predictions_header = self.cache[detectedobject.id].return_last_prediction_header()

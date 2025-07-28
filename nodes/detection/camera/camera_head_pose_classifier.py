@@ -27,7 +27,7 @@ class CameraHeadPoseClassifier:
 
         # Head pose filter parameters
         filter_window_size = rospy.get_param("~filter_window_size", 5)
-        filter_weight_factor = rospy.get_param("~filter_weight_factor", 0.6)
+        filter_weight_factor = rospy.get_param("~filter_weight_factor", 0.8)
 
         # Initialize head pose temporal filter
         self.head_pose_filter = HeadPoseFilter(window_size=filter_window_size,
@@ -80,7 +80,7 @@ class CameraHeadPoseClassifier:
 
         bboxes_3d = np.array(bboxes_3d)
         
-        rospy.loginfo("%s - Processing %d 3D bounding boxes", rospy.get_name(), len(bboxes_3d))
+        # rospy.loginfo("%s - Processing %d 3D bounding boxes", rospy.get_name(), len(bboxes_3d))
 
         for cam_det_msg in camera_det_msgs:
             cam_frame_id = cam_det_msg.header.frame_id
@@ -88,8 +88,8 @@ class CameraHeadPoseClassifier:
             # Get camera intrinsics
             if cam_frame_id in self.camera_intrinsics:
                 camera_intrinsics = self.camera_intrinsics[cam_frame_id]
-                rospy.loginfo("%s - Camera intrinsics for %s: \n%s",
-                             rospy.get_name(), cam_frame_id, camera_intrinsics)
+                # rospy.loginfo("%s - Camera intrinsics for %s: \n%s",
+                #              rospy.get_name(), cam_frame_id, camera_intrinsics)
             else:
                 rospy.logwarn("%s - %s", rospy.get_name(), f"No intrinsics found for camera {cam_frame_id}")
                 continue
@@ -100,20 +100,20 @@ class CameraHeadPoseClassifier:
                                                         det_objects_msg.header.stamp, rospy.Duration(self.transform_timeout))
                 map_to_cam_transform_matrix = numpify(map_to_cam_transform.transform)
 
-                # Add debug info about the transform
-                rospy.loginfo("%s - Transform from %s to %s:",
-                              rospy.get_name(),
-                              det_objects_msg.header.frame_id,
-                              cam_frame_id)
-                rospy.loginfo("Translation: [%.2f, %.2f, %.2f]",
-                              map_to_cam_transform.transform.translation.x,
-                              map_to_cam_transform.transform.translation.y,
-                              map_to_cam_transform.transform.translation.z)
-                rospy.loginfo("Rotation: [%.2f, %.2f, %.2f, %.2f]",
-                              map_to_cam_transform.transform.rotation.x,
-                              map_to_cam_transform.transform.rotation.y,
-                              map_to_cam_transform.transform.rotation.z,
-                              map_to_cam_transform.transform.rotation.w)
+                # # Add debug info about the transform
+                # rospy.loginfo("%s - Transform from %s to %s:",
+                #               rospy.get_name(),
+                #               det_objects_msg.header.frame_id,
+                #               cam_frame_id)
+                # rospy.loginfo("Translation: [%.2f, %.2f, %.2f]",
+                #               map_to_cam_transform.transform.translation.x,
+                #               map_to_cam_transform.transform.translation.y,
+                #               map_to_cam_transform.transform.translation.z)
+                # rospy.loginfo("Rotation: [%.2f, %.2f, %.2f, %.2f]",
+                #               map_to_cam_transform.transform.rotation.x,
+                #               map_to_cam_transform.transform.rotation.y,
+                #               map_to_cam_transform.transform.rotation.z,
+                #               map_to_cam_transform.transform.rotation.w)
 
             except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
                 rospy.logwarn("%s - %s", rospy.get_name(), e)
@@ -133,21 +133,21 @@ class CameraHeadPoseClassifier:
             if len(head_pose_detections) == 0:
                 continue
 
-            rospy.loginfo("%s - Received %d head pose detections from camera %s",
-                         rospy.get_name(), len(head_pose_detections), cam_frame_id)
+            # rospy.loginfo("%s - Received %d head pose detections from camera %s",
+            #              rospy.get_name(), len(head_pose_detections), cam_frame_id)
 
             # Extract person bounding boxes and rotation matrices
             bboxes_2d = head_pose_detections[:, :4].astype(int)  # [x1, y1, x2, y2]
 
-            # Log the first 5 2D bounding boxes for debugging
-            for i, bbox in enumerate(bboxes_2d[:min(5, len(bboxes_2d))]):
-                rospy.loginfo("%s - 2D box %d: [%d, %d, %d, %d]",
-                             rospy.get_name(), i, bbox[0], bbox[1], bbox[2], bbox[3])
-
-            # Log the first few 3D boxes
-            for i, bbox_3d in enumerate(bboxes_3d[:min(3, len(bboxes_3d))]):
-                rospy.loginfo("%s - 3D box %d corners first point: [%.2f, %.2f, %.2f]",
-                             rospy.get_name(), i, bbox_3d[0, 0], bbox_3d[0, 1], bbox_3d[0, 2])
+            # # Log the first 5 2D bounding boxes for debugging
+            # for i, bbox in enumerate(bboxes_2d[:min(5, len(bboxes_2d))]):
+            #     rospy.loginfo("%s - 2D box %d: [%d, %d, %d, %d]",
+            #                  rospy.get_name(), i, bbox[0], bbox[1], bbox[2], bbox[3])
+            #
+            # # Log the first few 3D boxes
+            # for i, bbox_3d in enumerate(bboxes_3d[:min(3, len(bboxes_3d))]):
+            #     rospy.loginfo("%s - 3D box %d corners first point: [%.2f, %.2f, %.2f]",
+            #                  rospy.get_name(), i, bbox_3d[0, 0], bbox_3d[0, 1], bbox_3d[0, 2])
 
             # The next 9 values represent the flattened 3x3 rotation matrix
             rotation_matrices = head_pose_detections[:, 4:13].reshape(-1, 3, 3)  # Reshape to 3x3 matrices
@@ -156,33 +156,33 @@ class CameraHeadPoseClassifier:
             try:
                 matches, projected_bboxes_2d, kept_3d_boxes = self.box_matcher.match_3d_2d_boxes(bboxes_3d, bboxes_2d, map_to_cam_transform_matrix, camera_intrinsics)
 
-                rospy.loginfo("%s - Matched %d 3D boxes with 2D detections in camera %s",
-                             rospy.get_name(), len(matches), cam_frame_id)
+                # rospy.loginfo("%s - Matched %d 3D boxes with 2D detections in camera %s",
+                #              rospy.get_name(), len(matches), cam_frame_id)
 
-                # Log the projected 2D boxes for debugging
-                if len(projected_bboxes_2d) > 0:
-                    for i, bbox in enumerate(projected_bboxes_2d[:min(5, len(projected_bboxes_2d))]):
-                        rospy.loginfo("%s - Projected 3D->2D box %d: [%d, %d, %d, %d]",
-                                    rospy.get_name(), i, bbox[0], bbox[1], bbox[2], bbox[3])
-                else:
-                    rospy.logwarn("%s - No 3D boxes were projected to 2D for camera %s",
-                                rospy.get_name(), cam_frame_id)
-
-                # Log details about kept 3D boxes
-                if len(kept_3d_boxes) > 0:
-                    rospy.loginfo("%s - Kept %d 3D boxes after filtering for camera %s",
-                                rospy.get_name(), len(kept_3d_boxes), cam_frame_id)
-                else:
-                    rospy.logwarn("%s - No 3D boxes were kept after filtering for camera %s",
-                                rospy.get_name(), cam_frame_id)
+                # # Log the projected 2D boxes for debugging
+                # if len(projected_bboxes_2d) > 0:
+                #     for i, bbox in enumerate(projected_bboxes_2d[:min(5, len(projected_bboxes_2d))]):
+                #         rospy.loginfo("%s - Projected 3D->2D box %d: [%d, %d, %d, %d]",
+                #                     rospy.get_name(), i, bbox[0], bbox[1], bbox[2], bbox[3])
+                # else:
+                #     rospy.logwarn("%s - No 3D boxes were projected to 2D for camera %s",
+                #                 rospy.get_name(), cam_frame_id)
+                #
+                # # Log details about kept 3D boxes
+                # if len(kept_3d_boxes) > 0:
+                #     rospy.loginfo("%s - Kept %d 3D boxes after filtering for camera %s",
+                #                 rospy.get_name(), len(kept_3d_boxes), cam_frame_id)
+                # else:
+                #     rospy.logwarn("%s - No 3D boxes were kept after filtering for camera %s",
+                #                 rospy.get_name(), cam_frame_id)
 
                 # Log matches details
                 for i, match in enumerate(matches[:min(5, len(matches))]):
                     i_3d, i_2d = match
                     obj_idx = kept_3d_boxes[i_3d]
                     obj = detected_objects[obj_idx]
-                    rospy.loginfo("%s - Match %d: 3D box %d -> 2D box %d (object: %s)",
-                                rospy.get_name(), i, i_3d, i_2d, obj.label)
+                    # rospy.loginfo("%s - Match %d: 3D box %d -> 2D box %d (object: %s)",
+                    #             rospy.get_name(), i, i_3d, i_2d, obj.label)
 
             except Exception as e:
                 rospy.logerr("%s - Error during box matching: %s", rospy.get_name(), str(e))

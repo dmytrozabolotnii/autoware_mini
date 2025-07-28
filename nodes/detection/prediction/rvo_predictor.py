@@ -8,6 +8,8 @@ import time
 from math import atan2
 
 from shapely.geometry import LinearRing
+from sympy.physics.quantum import represent
+from tensorflow.python.distribute.strategy_combinations import one_device_strategy_gpu_on_worker_1
 
 from net_sub import NetSubscriber
 from shapely import GeometryCollection, Polygon, LineString, Point, prepare
@@ -137,6 +139,29 @@ def resolve_hard_rvo(velocity, deviation_vectors, fov_constraint=False, crosswal
             pure_deviation_vectors[i] = coords[1] - coords[0]
             representative_vectors[i] = [pure_deviation_vectors[i][1], -1 * pure_deviation_vectors[i][0]]
             pure_deviation_vectors_size[i] = distance(pure_deviation_vectors[i], [0, 0])
+    elif fov_constraint and heading is not None:
+        # Check if heading creates valid deviation vectors
+        vel_normalized = velocity / distance(velocity, [0, 0])
+        angle_between_heading_and_velocity = oriented_angle([np.cos(heading), np.sin(heading)], vel_normalized)
+        # Heading is opposite to velocity
+        if abs(angle_between_heading_and_velocity) >= half_pov_angle + np.pi:
+            no_deviation_vectors = False
+            pure_deviation_vectors = np.array([-1 * velocity])
+            representative_vectors = np.array([[-1 * velocity[1], velocity[0]]])
+            pure_deviation_vectors_size = np.array([distance(pure_deviation_vectors[0], [0, 0])])
+        # Heading is adjacent to velocity but velocity is outside of fov
+        elif abs(angle_between_heading_and_velocity) >= half_pov_angle:
+            no_deviation_vectors = False
+            angle_between_fov_and_velocity = angle_between_heading_and_velocity - half_pov_angle if angle_between_heading_and_velocity > 0 else angle_between_heading_and_velocity + half_pov_angle
+            pure_deviation_vectors = np.array([simple_rotate(velocity, -1 * angle_between_fov_and_velocity) * np.sin(abs(angle_between_fov_and_velocity))])
+            representative_vectors = np.array([[pure_deviation_vectors[0][1], -1 * pure_deviation_vectors[0][0]]])
+            pure_deviation_vectors_size = np.array([distance(pure_deviation_vectors[0], [0, 0])])
+        else:
+            # Hack to create fake deviation vector that is extension of velocity
+            no_deviation_vectors = True
+            pure_deviation_vectors = np.array([velocity / 100])
+            representative_vectors = np.zeros_like(pure_deviation_vectors)
+            pure_deviation_vectors_size = np.array([distance(pure_deviation_vectors[0], [0, 0])])
     else:
         # Hack to create fake deviation vector that is extension of velocity
         no_deviation_vectors = True
@@ -149,22 +174,21 @@ def resolve_hard_rvo(velocity, deviation_vectors, fov_constraint=False, crosswal
     max_deviation_vector = pure_deviation_vectors[max_deviation_vector_index]
     max_deviation_vector_length = np.max(pure_deviation_vectors_size)
 
-    # Default scenario for no constraints at all or only fov constraint
-    if no_deviation_vectors and len(crosswalks) == 0 and len(lanelets) == 0:
+    # Default scenario for no constraints at all
+    if no_deviation_vectors and len(lanelets) == 0:
         return velocity
 
     # Add fov constraints if necessary
     if fov_constraint:
         if heading is None:
             fov_deviation_vectors = np.array([-1 * velocity] * 2)
-            fov_representative_vectors = np.array([-1 * simple_rotate(velocity, np.pi / 3), simple_rotate(velocity, -1 * np.pi / 3)])
+            fov_representative_vectors = np.array([-1 * simple_rotate(velocity, half_pov_angle), simple_rotate(velocity, -1 * half_pov_angle)])
         else:
             fov_deviation_vectors = np.array([-1 * velocity] * 2)
-            fov_representative_vectors = np.array([-1 * simple_rotate([np.cos(heading), np.sin(heading)], np.pi / 3), simple_rotate([np.cos(heading), np.sin(heading)], -1 * np.pi / 3)])
+            fov_representative_vectors = np.array([-1 * simple_rotate([np.cos(heading), np.sin(heading)], half_pov_angle), simple_rotate([np.cos(heading), np.sin(heading)], -1 * half_pov_angle)])
     else:
         fov_deviation_vectors = []
         fov_representative_vectors = []
-
     # Check if it is valid solution for all constraints
     if check_solution(max_deviation_vector, max_deviation_vector_index, pure_deviation_vectors, representative_vectors,
                       fov_deviation_vectors, fov_representative_vectors, crosswalks, lanelets):
@@ -337,7 +361,7 @@ class RVOPredictor(NetSubscriber):
                     else:
                         tracked_objects_array[i]['acceleration'] = (
                         self.cache[key].raw_accelerations[-1][0], self.cache[key].raw_accelerations[-1][1])
-                    tracked_objects_headings.append(self.cache[key].heading)
+                    tracked_objects_headings.append(self.cache[key].heading if self.cache[key].label == 'pedestrian_with_head_pose' else None)
                     if self.cache[key].convex_hull is not None:
                         polygon = Polygon([(p[0], p[1]) for p in np.array(self.cache[key].convex_hull).reshape(-1, 3)[:, :2]])
 
@@ -364,7 +388,7 @@ class RVOPredictor(NetSubscriber):
                             cars_objects_array[i]['acceleration'] = (
                                 self.cache_cars[key].raw_accelerations[-1][0], self.cache_cars[key].raw_accelerations[-1][1])
                         if self.cache_cars[key].convex_hull is not None:
-                            polygon = Polygon([(p.x, p.y) for p in self.cache_cars[key].convex_hull.points])
+                            polygon = Polygon([(p[0], p[1]) for p in np.array(self.cache_cars[key].convex_hull).reshape(-1, 3)[:, :2]])
                             cars_objects_convex_hull_array.append(orient(polygon))
                 if self.ga_addon:
                     if self.use_backpropagation:

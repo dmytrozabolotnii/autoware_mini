@@ -64,8 +64,8 @@ class CameraHeadDetectorYolo:
 
         # Image transformation for the model
         self.transformations = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize(256),
+            transforms.ToPILImage(mode='RGB'),
+            transforms.Resize(224),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -90,12 +90,13 @@ class CameraHeadDetectorYolo:
             if int(cls) == self.person_class_id and score >= self.confidence_threshold:
                 x1, y1, x2, y2 = [int(b) for b in bbox]
 
-                # Estimate head region (top 25% of person bounding box)
+                # Estimate head region (top 25% of person bounding box and 50% of width)
                 head_height = int((y2 - y1) * FACE_FRACTION)
+                head_width = int((x2 - x1) * 0.5)
                 head = {
-                    'left': x1,
+                    'left': x1 + head_width // 2,  # Center the head in the person bounding box
                     'top': y1,
-                    'width': x2 - x1,
+                    'width': head_width,
                     'height': head_height,
                     'confidence': float(score)
                 }
@@ -114,8 +115,6 @@ class CameraHeadDetectorYolo:
 
             # Extract heads from person detections
             heads = self.extract_heads_from_persons(bboxes_2d, classes, scores)
-
-            rospy.loginfo_throttle_identical(3, f"Detected {len(heads)} heads")
         except Exception as e:
             rospy.logerr(f"Error in head detection: {e}")
             heads = []
@@ -155,11 +154,11 @@ class CameraHeadDetectorYolo:
                     rotation_matrix_flat = rotation_matrix_np.flatten()
 
                     # Store person box and full rotation matrix (x1, y, x2, y2, rotation_matrix[0...8]) for matching
-                    head_pose = np.array([x, y, x + w, y + h * (1 / FACE_FRACTION), *rotation_matrix_flat], dtype=np.float32)
+                    head_pose = np.array([x - 0.5 * w, y, x + 1.5 * w, y + h * (1 / FACE_FRACTION), *rotation_matrix_flat], dtype=np.float32)
                     head_poses.append(head_pose)
 
                     # For visualization purposes, still compute Euler angles
-                    euler = compute_euler_angles_from_rotation_matrices(rotation_matrix) * 180/np.pi
+                    euler = compute_euler_angles_from_rotation_matrices(rotation_matrix, full_range=True) * 180/np.pi
                     p_pred_deg = euler[:, 0].cpu().numpy()  # Pitch
                     y_pred_deg = euler[:, 1].cpu().numpy()  # Yaw
                     r_pred_deg = euler[:, 2].cpu().numpy()  # Roll

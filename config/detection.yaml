@@ -159,7 +159,7 @@ pedestrian_predictor:
   inference_timer: 0.4 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
-  results_category_folder: "_contrib_2_new_mainframework_newdata_k_1_head_pose_testing"
+  results_category_folder: "_contrib_2_new_mainframework_newdata_k_1_pedestrian_with_head_pose_count_2"
 
   pecnet_predictor:
     predictions_amount: 1
