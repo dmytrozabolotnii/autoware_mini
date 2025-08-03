@@ -159,19 +159,19 @@ pedestrian_predictor:
   inference_timer: 0.4 # prediction will run every this seconds,
                        # previous param divided by this should be positive integer
 
-  results_category_folder: "_contrib_2_new_mainframework_newdata_k_1_pedestrian_with_head_pose_count_2"
+  results_category_folder: "_contrib_2_headpose_detections_k_5"
 
   pecnet_predictor:
-    predictions_amount: 1
+    predictions_amount: 5
 
   sgnet_predictor:
-    predictions_amount: 1
+    predictions_amount: 5
 
   lednet_predictor:
     predictions_amount: 20
 
   gatraj_predictor:
-    predictions_amount: 1
+    predictions_amount: 5
 
   musevae_predictor:
     predictions_amount: 5
