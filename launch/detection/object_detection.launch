@@ -1,72 +1,85 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
-    <arg name="lanelet2_map_name"   default="tartu_demo.osm"    doc="for carla traffic light detector" />
-    <arg name="use_lidar_center"    default="true"              doc="use velodyne lidar"/>
-    <arg name="use_lidar_front"     default="false"             doc="use velodyne lidar"/>
-    <arg name="use_road_area_filter" default="false"            doc="use road area filter"/>
-    <arg name="map_name"            default="tartu_demo"        doc="map name for road area filter" />
-    <arg name="road_area_file"      default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
+    <!-- Map configuration -->
+    <arg name="map_name"            default="tartu_demo"        doc="Map name for road area filter" />
+    <arg name="lanelet2_map_path"   default="$(find autoware_mini)/data/maps/$(arg map_name).osm" doc="For map-based prediction" />
+    <arg name="road_area_file_path" default="$(find autoware_mini)/data/maps/$(arg map_name).geojson" />
+    <arg name="cameras"                 default="mako"              doc="mako, nvidia"/>
+    <arg name="use_camera_classifier"   default="false"             doc="use camera based object classifier"/>
+    <arg name="use_head_pose_detection" default="false"             doc="use head pose detection instead of object classification"/>
+
+    <!-- Detection -->
+    <arg name="detector"            default="lidar_cluster"     doc="lidar_cluster,lidar_cluster_fast,lidar_sfa,lidar_vella,radar,lidar_cluster_radar_fusion,lidar_sfa_radar_fusion,carla,sim" />
+    <arg name="use_lidar_center"    default="true"              doc="Use velodyne lidar"/>
+    <arg name="use_lidar_front"     default="false"             doc="Use velodyne lidar"/>
+    <arg name="use_road_area_filter"  default="false"           doc="Use road area filter"/>
+    <arg name="ground_removal"      default="naive"             doc="naive, jcp" />
+    <arg name="sfa_onnx_path"       default="$(find autoware_mini)/data/models/sfa/nulyaronar2_02_30.onnx" />
+    <arg name="yolo_detector_path"      default="$(find autoware_mini)/data/models/object_detection/yolo11l.onnx" doc="object detection yolo model path" />
+    <arg name="head_pose_model_path"    default="$(find autoware_mini)/data/models/head_pose/cmu.pth" doc="6DoF head pose estimation model path" />
+    <arg name="head_detection_model_path"    default="$(find autoware_mini)/data/models/head_pose/Head_detection_300x300.onnx" doc="Head detection model path" />
+
+    <!-- Tracking and Prediction -->
     <arg name="tracker"             default="ema"               doc="none, ema" />
     <arg name="predictor"           default="none"              doc="none, naive, map, map_naive, pedestrian, pedestriansg, pedestrianga, pedestrianmuse, pedestrianhp" />
     <arg name="predictor_backfill"  default="false"             doc="By default don't backfill object trajectories" />
+
+    <!-- Visualization and Debug -->
     <arg name="more_visualizations" default="false"             doc="By default only visualize final detections" />
     <arg name="detection_range"     default=""                  doc="enter a value in meters to enable it" />
     <arg name="bag_file"            default=""                  doc="bag file name" />
 
     <group>
-        <node if="$(eval detection_range != '')" pkg="autoware_mini" type="detection_range_filter.py" name="detection_range_filter" output="screen" required="true" >
-            <param name="detection_range" value="$(arg detection_range)" />
-        </node>
-        <node if="$(arg use_road_area_filter)" pkg="autoware_mini" type="road_area_filter.py" name="road_area_filter" output="screen" required="true" >
-            <param name="road_area_file" value="$(arg road_area_file)" />
-        </node>
-        <remap if="$(eval detection_range != '' or use_road_area_filter)" from="/detection/detected_objects" to="/detection/detected_objects_unfiltered" />
-
         <group if="$(eval 'lidar' in detector)" ns="lidar">
-            <remap if="$(eval 'fusion' not in detector and (detection_range == '' and not use_road_area_filter))" from="detected_objects" to="/detection/detected_objects" />
-            <remap if="$(eval 'fusion' not in detector and (detection_range != '' or use_road_area_filter))" from="detected_objects" to="/detection/detected_objects_unfiltered" />
+            <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <group if="$(eval 'lidar_cluster' in detector)">
-                <group if="$(arg use_lidar_center)" ns="center">
-                    <!-- Only functional in Carla simulation -->
-                    <node pkg="nodelet" type="nodelet" name="crop_box" args="standalone pcl/CropBox" output="screen" required="true">
-                        <remap from="~input" to="/lidar_center/pointcloud" />
-                        <remap from="~output" to="/lidar_center/points_raw" />
-                    </node>
-                    <node type="ground_removal.py" name="ground_removal" pkg="autoware_mini" output="screen" required="true">
+                <node if="$(eval 'fast' in detector)" type="points_preprocessor_fast.py" name="points_preprocessor_fast" pkg="autoware_mini" output="screen" required="true">
+                    <rosparam if="$(eval use_lidar_center and not use_lidar_front)" param="points_topics">["/lidar_center/points_raw"]</rosparam>
+                    <rosparam if="$(eval not use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_front/points"]</rosparam>
+                    <rosparam if="$(eval use_lidar_center and use_lidar_front)" param="points_topics">["/lidar_center/points_raw", "/lidar_front/points"]</rosparam>
+                </node>
+                <group unless="$(eval 'fast' in detector)">
+                    <group if="$(arg use_lidar_center)" ns="center">
+                        <!-- Only functional in Carla simulation -->
+                        <node pkg="nodelet" type="nodelet" name="crop_box" args="standalone pcl/CropBox" output="screen" required="true">
+                            <remap from="~input" to="/lidar_center/pointcloud" />
+                            <remap from="~output" to="/lidar_center/points_raw" />
+                        </node>
                         <remap from="points_raw" to="/lidar_center/points_raw" />
                         <remap unless="$(arg use_lidar_front)" from="points_ground" to="/detection/lidar/points_ground" />
                         <remap unless="$(arg use_lidar_front)" from="points_no_ground" to="/detection/lidar/points_no_ground" />
-                    </node>
-                </group>
-                <group if="$(arg use_lidar_front)" ns="front">
-                    <node pkg="nodelet" type="nodelet" name="crop_box" args="standalone pcl/CropBox" output="screen" required="true">
-                        <remap from="~input" to="/lidar_front/points" />
-                        <remap from="~output" to="/lidar_front/points_cleaned" />
-                    </node>
-                    <node type="ground_removal.py" name="ground_removal" pkg="autoware_mini" output="screen" required="true">
+                        <node if="$(eval ground_removal == 'naive')" type="naive_ground_removal.py" name="naive_ground_removal" pkg="autoware_mini" output="screen" required="true" />
+                        <node if="$(eval ground_removal == 'jcp')" type="jcp_ground_removal.py" name="jcp_ground_removal" pkg="autoware_mini" output="screen" required="true" />
+                    </group>
+                    <group if="$(arg use_lidar_front)" ns="front">
+                        <node pkg="nodelet" type="nodelet" name="crop_box" args="standalone pcl/CropBox" output="screen" required="true">
+                            <remap from="~input" to="/lidar_front/points" />
+                            <remap from="~output" to="/lidar_front/points_cleaned" />
+                        </node>
                         <remap from="points_raw" to="/lidar_front/points_cleaned" />
                         <remap unless="$(arg use_lidar_center)" from="points_ground" to="/detection/lidar/points_ground" />
                         <remap unless="$(arg use_lidar_center)" from="points_no_ground" to="/detection/lidar/points_no_ground" />
+                        <node if="$(eval ground_removal == 'naive')" type="naive_ground_removal.py" name="naive_ground_removal" pkg="autoware_mini" output="screen" required="true" />
+                        <node if="$(eval ground_removal == 'jcp')" type="jcp_ground_removal.py" name="jcp_ground_removal" pkg="autoware_mini" output="screen" required="true" />
+                    </group>
+                    <group if="$(eval use_lidar_center and use_lidar_front)">
+                        <node type="points_concatenator.py" name="points_concatenator" pkg="autoware_mini" output="screen" required="true">
+                            <remap from="points1" to="center/points_no_ground" />
+                            <remap from="points2" to="front/points_no_ground" />
+                            <remap from="points_concatenated" to="points_no_ground" />
+                        </node>
+                    </group>
+                    <node pkg="nodelet" type="nodelet" name="voxel_grid_filter" args="standalone pcl/VoxelGrid" output="screen" required="true">
+                        <remap from="~input" to="/detection/lidar/points_no_ground" />
+                        <remap from="~output" to="/detection/lidar/points_filtered" />
                     </node>
+                    <node type="points_clusterer.py" name="points_clusterer" pkg="autoware_mini" output="screen" required="true" />
                 </group>
-                <group if="$(eval use_lidar_center and use_lidar_front)">
-                    <node type="points_concatenator.py" name="points_concatenator" pkg="autoware_mini" output="screen" required="true">
-                        <remap from="points1" to="center/points_no_ground" />
-                        <remap from="points2" to="front/points_no_ground" />
-                        <remap from="points_concatenated" to="points_no_ground" />
-                    </node>
-                </group>
-                <node pkg="nodelet" type="nodelet" name="voxel_grid_filter" args="standalone pcl/VoxelGrid" output="screen" required="true">
-                    <remap from="~input" to="/detection/lidar/points_no_ground" />
-                    <remap from="~output" to="/detection/lidar/points_filtered" />
-                </node>
-                <node type="points_clusterer.py" name="points_clusterer" pkg="autoware_mini" output="screen" required="true" />
                 <node type="cluster_detector.py" name="cluster_detector" pkg="autoware_mini" output="screen" required="true" />
             </group>
 
             <node if="$(eval 'lidar_sfa' in detector)" pkg="autoware_mini" type="sfa_detector.py" name="sfa_detector" output="screen" required="true">
-                <param name="onnx_path"  value="$(find autoware_mini)/data/models/sfa/nulyaronar2_02_30.onnx"/>
+                <param name="onnx_path"  value="$(arg sfa_onnx_path)"/>
                 <remap if="$(eval use_lidar_center and not use_lidar_front)" from="points_raw" to="/lidar_center/points_raw" />
                 <remap if="$(eval use_lidar_front and not use_lidar_center)" from="points_raw" to="/lidar_front/points" />
             </node>
@@ -85,8 +98,7 @@
         </group>
 
         <group if="$(eval 'radar' in detector)" ns="radar">
-            <remap if="$(eval 'fusion' not in detector and (detection_range == '' and not use_road_area_filter))" from="detected_objects" to="/detection/detected_objects" />
-            <remap if="$(eval 'fusion' not in detector and (detection_range != '' or use_road_area_filter))" from="detected_objects" to="/detection/detected_objects_unfiltered" />
+            <remap if="$(eval 'fusion' not in detector)" from="detected_objects" to="/detection/detected_objects" />
             <node pkg="autoware_mini" type="radar_detector.py" name="radar_detector" output="screen" required="true"/>
             <group if="$(arg more_visualizations)">
                 <!-- visualizer for radar detections-->
@@ -104,20 +116,193 @@
 
         <!-- Detected objects visualizer -->
         <node if="$(arg more_visualizations)" type="detected_objects_visualizer.py" name="detected_objects_visualizer" pkg="autoware_mini" output="screen" required="true" />
+
+        <!-- Object filters -->
+        <node if="$(eval detection_range != '')" pkg="autoware_mini" type="detection_range_filter.py" name="detection_range_filter" output="screen" required="true" >
+            <param name="detection_range" value="$(arg detection_range)" />
+        </node>
+        <node if="$(arg use_road_area_filter)" pkg="autoware_mini" type="road_area_filter.py" name="road_area_filter" output="screen" required="true" >
+            <param name="road_area_file_path" value="$(arg road_area_file_path)" />
+        </node>
     </group>
 
-    <node if="$(eval tracker=='ema')" type="ema_tracker.py" name="ema_tracker" pkg="autoware_mini" output="screen" required="true" />
-    <node if="$(eval tracker=='none')" pkg="topic_tools" type="relay" args="detected_objects tracked_objects" name="detected_objects_relay" output="screen" required="true" />
+    <node if="$(eval tracker=='ema')" type="ema_tracker.py" name="ema_tracker" pkg="autoware_mini" output="screen" required="true">
+        <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="detected_objects_filtered" />
+    </node>
+
+    <node if="$(eval tracker=='none')" pkg="topic_tools" type="relay" args="detected_objects tracked_objects" name="tracked_objects_relay" output="screen" required="true" />
+
+    <group if="$(eval use_camera_classifier and tracker=='ema')">
+        <!-- Mako cameras -->
+        <group if="$(eval cameras=='mako')">
+            <node type="camera_object_detector.py" name="camera_object_detector_cam1" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/camera_fl/image_raw"/>
+                <remap from="camera_detections" to="camera_fl/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera1/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam2" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/camera_fr/image_raw"/>
+                <remap from="camera_detections" to="camera_fr/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera2/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+        </group>
+
+        <!-- Nvidia cameras -->
+        <group if="$(eval cameras=='nvidia')">
+            <node type="camera_object_detector.py" name="camera_object_detector_cam1" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link0/image_rect"/>
+                <remap from="camera_detections" to="interfacea/link0/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera1/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam2" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link1/image_rect"/>
+                <remap from="camera_detections" to="interfacea/link1/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera2/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam3" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link2/image_rect"/>
+                <remap from="camera_detections" to="interfacea/link2/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera3/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam4" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link3/image_rect"/>
+                <remap from="camera_detections" to="interfacea/link3/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera4/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+
+            <node type="camera_object_detector.py" name="camera_object_detector_cam5" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfaceb/link0/image_rect"/>
+                <remap from="camera_detections" to="interfaceb/link0/camera_detections"/>
+                <remap from="camera_detections_visualizer" to="camera5/camera_detections_visualizer"/>
+                <param name="onnx_path" value="$(arg yolo_detector_path)" />
+            </node>
+        </group>
+
+        <node type="camera_object_classifier.py" name="camera_object_classifier" pkg="autoware_mini" output="screen" required="true">
+            <remap if="$(eval detection_range != '' or use_road_area_filter)" from="detected_objects" to="tracked_objects" />
+            <param if="$(eval cameras=='mako')" name="camera1" value="camera_fl" />
+            <param if="$(eval cameras=='mako')" name="camera2" value="camera_fr" />
+            <param if="$(eval cameras=='mako')" name="camera3" value="" />
+            <param if="$(eval cameras=='mako')" name="camera4" value="" />
+            <param if="$(eval cameras=='mako')" name="camera5" value="" />
+
+            <param if="$(eval cameras=='nvidia')" name="camera1" value="interfacea/link0" />
+            <param if="$(eval cameras=='nvidia')" name="camera2" value="interfacea/link1" />
+            <param if="$(eval cameras=='nvidia')" name="camera3" value="interfacea/link2" />
+            <param if="$(eval cameras=='nvidia')" name="camera4" value="interfacea/link3" />
+            <param if="$(eval cameras=='nvidia')" name="camera5" value="interfaceb/link0" />
+        </node>
+    </group>
+
+    <group if="$(eval (use_head_pose_detection and tracker=='ema') or (('fov' in predictor or 'gaaddon' in predictor) and tracker=='ema'))">
+        <!-- Mako cameras -->
+        <group if="$(eval cameras=='mako')">
+            <node type="camera_head_pose_detector_yolo.py" name="camera_head_pose_detector_cam1" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/camera_fl/image_raw"/>
+                <remap from="head_pose_detections" to="camera_fl/head_pose_detections"/>
+                <remap from="head_pose_visualizer" to="camera1/head_pose_visualizer"/>
+                <param name="head_pose_model_path" value="$(arg head_pose_model_path)" />
+                <param name="yolo_onnx_path" value="$(arg yolo_detector_path)" />
+                <param name="confidence_threshold" value="0.4" />
+            </node>
+
+            <node type="camera_head_pose_detector_yolo.py" name="camera_head_pose_detector_cam2" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/camera_fr/image_raw"/>
+                <remap from="head_pose_detections" to="camera_fr/head_pose_detections"/>
+                <remap from="head_pose_visualizer" to="camera2/head_pose_visualizer"/>
+                <param name="head_pose_model_path" value="$(arg head_pose_model_path)" />
+                <param name="yolo_onnx_path" value="$(arg yolo_detector_path)" />
+                <param name="confidence_threshold" value="0.4" />
+            </node>
+
+
+        </group>
+
+        <!-- Nvidia cameras -->
+        <group if="$(eval cameras=='nvidia')">
+            <node type="camera_head_pose_detector.py" name="camera_head_pose_detector_cam1" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link0/image_rect"/>
+                <remap from="head_pose_detections" to="interfacea/link0/head_pose_detections"/>
+                <remap from="head_pose_visualizer" to="camera1/head_pose_visualizer"/>
+                <param name="head_pose_model_path" value="$(arg head_pose_model_path)" />
+                <param name="head_detection_model_path" value="$(arg head_detection_model_path)" />
+            </node>
+
+            <node type="camera_head_pose_detector.py" name="camera_head_pose_detector_cam2" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link1/image_rect"/>
+                <remap from="head_pose_detections" to="interfacea/link1/head_pose_detections"/>
+                <remap from="head_pose_visualizer" to="camera2/head_pose_visualizer"/>
+                <param name="head_pose_model_path" value="$(arg head_pose_model_path)" />
+                <param name="head_detection_model_path" value="$(arg head_detection_model_path)" />
+            </node>
+
+            <node type="camera_head_pose_detector.py" name="camera_head_pose_detector_cam3" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link2/image_rect"/>
+                <remap from="head_pose_detections" to="interfacea/link2/head_pose_detections"/>
+                <remap from="head_pose_visualizer" to="camera3/head_pose_visualizer"/>
+                <param name="head_pose_model_path" value="$(arg head_pose_model_path)" />
+                <param name="head_detection_model_path" value="$(arg head_detection_model_path)" />
+            </node>
+
+            <node type="camera_head_pose_detector.py" name="camera_head_pose_detector_cam4" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfacea/link3/image_rect"/>
+                <remap from="head_pose_detections" to="interfacea/link3/head_pose_detections"/>
+                <remap from="head_pose_visualizer" to="camera4/head_pose_visualizer"/>
+                <param name="head_pose_model_path" value="$(arg head_pose_model_path)" />
+                <param name="head_detection_model_path" value="$(arg head_detection_model_path)" />
+            </node>
+
+            <node type="camera_head_pose_detector.py" name="camera_head_pose_detector_cam5" pkg="autoware_mini" output="screen" required="true" ns="camera">
+                <remap from="image_raw" to="/interfaceb/link0/image_rect"/>
+                <remap from="head_pose_detections" to="interfaceb/link0/head_pose_detections"/>
+                <remap from="head_pose_visualizer" to="camera5/head_pose_visualizer"/>
+                <param name="head_pose_model_path" value="$(arg head_pose_model_path)" />
+                <param name="head_detection_model_path" value="$(arg head_detection_model_path)" />
+            </node>
+        </group>
+
+        <node type="camera_head_pose_classifier.py" name="camera_head_pose_classifier" pkg="autoware_mini" output="screen" required="true">
+            <remap from="detected_objects" to="tracked_objects" />
+            <remap from="head_pose_objects" to="classified_objects" />
+
+            <param if="$(eval cameras=='mako')" name="camera1" value="camera_fl" />
+            <param if="$(eval cameras=='mako')" name="camera2" value="camera_fr" />
+            <param if="$(eval cameras=='mako')" name="camera3" value="" />
+            <param if="$(eval cameras=='mako')" name="camera4" value="" />
+            <param if="$(eval cameras=='mako')" name="camera5" value="" />
+
+            <param if="$(eval cameras=='nvidia')" name="camera1" value="interfacea/link0" />
+            <param if="$(eval cameras=='nvidia')" name="camera2" value="interfacea/link1" />
+            <param if="$(eval cameras=='nvidia')" name="camera3" value="interfacea/link2" />
+            <param if="$(eval cameras=='nvidia')" name="camera4" value="interfacea/link3" />
+            <param if="$(eval cameras=='nvidia')" name="camera5" value="interfaceb/link0" />
+        </node>
+    </group>
+
+    <node unless="$(eval (use_camera_classifier or use_head_pose_detection or 'fov' in predictor or 'gaaddon' in predictor) and tracker=='ema')" pkg="topic_tools" type="relay" args="tracked_objects classified_objects" name="classified_objects_relay" output="screen" required="true" />
+
     <node type="detected_objects_visualizer.py" name="tracked_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
-        <remap from="detected_objects" to="tracked_objects" />
+        <remap from="detected_objects" to="classified_objects" />
         <remap from="detected_objects_markers" to="tracked_objects_markers" />
+        <remap from="detected_objects_bboxes" to="tracked_objects_bboxes" />
     </node>
 
     <group unless="$(eval predictor=='none')">
         <group if="$(eval 'pedestrian' not in predictor)">
             <node if="$(eval 'map' in predictor)" type="map_based_predictor.py" name="map_based_predictor" pkg="autoware_mini" output="screen" required="true">
                 <remap from="predicted_objects" to="predicted_objects_map" />
-            </node>
+            <param name="lanelet2_map_path" value="$(arg lanelet2_map_path)" />
+        </node>
             <node if="$(eval predictor=='map')" pkg="topic_tools" type="relay" args="predicted_objects_map predicted_objects" name="predicted_objects_relay" output="screen" required="true" />
             <node if="$(eval predictor=='naive')" pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
             <node if="$(eval 'pedestrian' in predictor)" pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
@@ -126,7 +311,8 @@
             </node>
         </group>
         <group if="$(eval 'pedestrian' in predictor)" ns="pedestrian_predictor">
-            <remap from="tracked_objects" to="/detection/tracked_objects" />
+            <remap if="$(eval 'fov' in predictor or 'gaaddon' in predictor)" from="tracked_objects" to="/detection/classified_objects" />
+            <remap unless="$(eval 'fov' in predictor or 'gaaddon' in predictor)" from="tracked_objects" to="/detection/tracked_objects" />
             <remap from="predicted_objects" to="/detection/predicted_objects" />
 
             <param name="data_path_prediction" value="$(find autoware_mini)/nodes/detection/prediction/"/>
@@ -168,27 +354,16 @@
                 <param name="constant_velocity" value="true" />
                 <param name="fov_constraint" value="true" />
                 <param name="map_constraints" value="true" />
-                <param name="cars_constraints" value="true" />
                 <param name="rvo_only" value="true" />
                 <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
             </node>
 
-            <node if="$(eval predictor=='pedestrianrvobestonly')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
+            <node if="$(eval predictor=='pedestrianrvofovmapcars')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
                 <param name="constant_velocity" value="true" />
                 <param name="fov_constraint" value="true" />
                 <param name="map_constraints" value="true" />
                 <param name="cars_constraints" value="true" />
                 <param name="rvo_only" value="true" />
-                <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
-            </node>
-
-            <node if="$(eval predictor=='pedestrianrvoall')" type="rvo_predictor.py" name="rvo_predictor" pkg="autoware_mini" output="screen" required="true">
-                <param name="constant_velocity" value="true" />
-                <param name="fov_constraint" value="true" />
-                <param name="map_constraints" value="true" />
-                <param name="cars_constraints" value="true" />
-                <param name="rvo_only" value="false" />
-                <param name="multi_solution" value="true" />
                 <param name="is_cluster_detector" value="$(eval 'cluster' in detector)" />
             </node>
 
@@ -196,7 +371,7 @@
                 <param name="constant_velocity" value="true" />
                 <param name="fov_constraint" value="true" />
                 <param name="map_constraints" value="true" />
-                <param name="cars_constraints" value="true" />
+                <param name="cars_constraints" value="false" />
                 <param name="rvo_only" value="false" />
                 <param name="multi_solution" value="false" />
                 <param name="ga_addon" value="true" />
@@ -216,14 +391,10 @@
             <node if="$(eval predictor=='pedestrianhp')" type="hpnet_sub.py" name="hpnet_predictor" pkg="autoware_mini" output="screen" required="true" />
         </group>
 
-        <node type="detected_objects_visualizer.py" name="predicted_objects_visualizer" pkg="autoware_mini" output="screen" required="true">
-            <remap from="detected_objects" to="predicted_objects" />
-            <remap from="detected_objects_markers" to="predicted_objects_markers" />
-        </node>
+        <node type="predicted_trajectory_visualizer.py" name="predicted_trajectory_visualizer" pkg="autoware_mini" output="screen" required="true" />
     </group>
     <group if="$(eval predictor=='none')">
         <node pkg="topic_tools" type="relay" args="tracked_objects predicted_objects_map" name="predicted_objects_map_relay" output="screen" required="true" />
         <node pkg="topic_tools" type="relay" args="predicted_objects_map predicted_objects" name="predicted_objects_relay" output="screen" required="true" />
     </group>
-
 </launch>

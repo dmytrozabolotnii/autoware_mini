@@ -20,6 +20,10 @@ class ButtonPanelNode:
         self.marker_pub = rospy.Publisher("/log/markers", Marker, queue_size=10, tcp_nodelay=True)
 
         self.service_lets_go = rospy.ServiceProxy('/planning/service_lets_go', Empty)
+        self.service_cancel_route = rospy.ServiceProxy('/planning/cancel_route', Empty)
+        self.service_cancel_pose = rospy.ServiceProxy('/localization/cancel_pose', Empty)
+        self.service_start_record = rospy.ServiceProxy('/dashboard/start_record', Empty)
+        self.service_stop_record = rospy.ServiceProxy('/dashboard/stop_record', Empty)
 
         rospy.Subscriber("/localization/current_pose", PoseStamped, self.pose_callback, queue_size=1, tcp_nodelay=True)
         rospy.Subscriber("/pacmod/enabled", Bool, self.enabled_callback, queue_size=1, tcp_nodelay=True)
@@ -50,7 +54,32 @@ class ButtonPanelNode:
                     response = self.service_lets_go()
                 except rospy.ServiceException as e:
                     rospy.logerr("%s - service_lets_go call failed: %s", rospy.get_name(), e)
-        if msg.buttons[1] == 1 or msg.buttons[2] == 0 or msg.buttons[3] == 1 or msg.buttons[4] == 1 or msg.buttons[5] == 1:
+
+        elif msg.buttons[1] == 1:
+            try:
+                response = self.service_cancel_route()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_cancel_route call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[2] == 0:
+            try:
+                response = self.service_cancel_pose()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_cancel_pose call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[3] == 1:
+            try:
+                response = self.service_start_record()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_start_record call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[4] == 1:
+            try:
+                response = self.service_stop_record()
+            except rospy.ServiceException as e:
+                rospy.logerr("%s - service_stop_record call failed: %s", rospy.get_name(), e)
+
+        elif msg.buttons[5] == 1:
             if self.pose_msg is not None:
                 marker = Marker()
                 marker.header.frame_id = self.pose_msg.header.frame_id
@@ -61,26 +90,9 @@ class ButtonPanelNode:
                 marker.scale.x = 1
                 marker.scale.y = 1
                 marker.scale.z = 2
-                if msg.buttons[1] == 1:
-                    marker.color.r = 1
-                    marker.color.g = 1
-                    marker.color.b = 1
-                elif msg.buttons[2] == 0:
-                    marker.color.r = 1
-                    marker.color.g = 0
-                    marker.color.b = 0
-                elif msg.buttons[3] == 1:
-                    marker.color.r = 0
-                    marker.color.g = 1
-                    marker.color.b = 0
-                elif msg.buttons[4] == 1:
-                    marker.color.r = 0
-                    marker.color.g = 0
-                    marker.color.b = 1
-                elif msg.buttons[5] == 1:
-                    marker.color.r = 1
-                    marker.color.g = 1
-                    marker.color.b = 0
+                marker.color.r = 1
+                marker.color.g = 1
+                marker.color.b = 1
                 marker.color.a = 1
                 self.marker_id += 1
                 self.marker_pub.publish(marker)

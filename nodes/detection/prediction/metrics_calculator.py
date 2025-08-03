@@ -7,14 +7,14 @@ from os import path as osp
 import rospy
 import numpy as np
 from shapely import Polygon, LineString, prepare
-from helpers.geometry import get_distance_between_two_points_2d
+from autoware_mini.geometry import get_distance_between_two_points_2d
 from std_msgs.msg import Float32
 from autoware_mini.msg import Path
 
 import lanelet2
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findWithin2d
-from helpers.lanelet2 import load_lanelet2_map
+from autoware_mini.lanelet2 import load_lanelet2_map
 
 def calculate_ade(x, y):
     return np.mean(((x[:, 0] - y[:, 0]) ** 2 + (x[:, 1] - y[:, 1]) ** 2) ** 0.5)
@@ -78,8 +78,9 @@ class MetricsCalculator:
         self.mr_history = {}
         self.dac_history = {}
         self.presence_time_cache = {}
+        self.pedestrian_with_head_pose_count = 0
         # self.cache = cache
-        lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_name")
+        lanelet2_map_name = rospy.get_param("/planning/lanelet2_global_planner/lanelet2_map_path")
         self.lanelet2_map = load_lanelet2_map(lanelet2_map_name)
         self.planned_local_path_cache = {}
 
@@ -126,10 +127,13 @@ class MetricsCalculator:
                 self.mr_history[_id] = []
                 self.dac_history[_id] = []
                 self.presence_time_cache[_id] = 0
+                if message.label == 'pedestrian_with_head_pose':
+                    self.pedestrian_with_head_pose_count += 1
 
             header = message.return_last_header()
             # Update presence time of pedestrian
-            self.presence_time_cache[_id] = (header.stamp - message.headers[0].stamp).to_sec() + 0.05
+            if message.label == 'pedestrian_with_head_pose':
+                self.presence_time_cache[_id] = (header.stamp - message.headers[0].stamp).to_sec() + 0.05
             # Check what prediction we can check for metrics
             prediction_we_can_check = 0
             for i, prediction_header in enumerate(message.predictions_history_headers[1:]):
@@ -140,7 +144,8 @@ class MetricsCalculator:
                 # Obtain ground-truth trajectory
                 gt_trajectory = message.return_last_interpolated_trajectory(self.pad_future, self.metrics_timer_duration)
                 num_of_predictions = len(message.prediction_history[prediction_we_can_check])
-                n_ped += 1
+                if message.label == 'pedestrian_with_head_pose':
+                    n_ped += 1
                 # Obtain closest planned local path according to stamp
                 if len(list(local_planned_local_path_cache.keys())) > 0:
                     header_pred_trajectory = message.predictions_history_headers[
@@ -222,7 +227,7 @@ class MetricsCalculator:
         self.mr.publish(Float32(global_mr))
         self.dac.publish(Float32(global_dac))
         self.result_log.append(','.join([str(header_stamp),
-                                         str(global_ade), str(global_fde), str(global_aware_ade), str(global_mr), str(global_dac), str(n_ped), str(len(self.presence_time_cache)), str(np.mean(list(self.presence_time_cache.values())))]))
+                                         str(global_ade), str(global_fde), str(global_aware_ade), str(global_mr), str(global_dac), str(n_ped), str(self.pedestrian_with_head_pose_count), str(np.mean(list(self.presence_time_cache.values())))]))
 
     def local_path_callback(self, lane):
         # Calculate planned local path from the autoware message

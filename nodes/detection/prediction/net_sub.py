@@ -7,7 +7,7 @@ import time
 
 from autoware_mini.msg import Path, DetectedObjectArray, Waypoint
 
-from helpers.message_cache import MessageCache
+from autoware_mini.message_cache import MessageCache
 
 from metrics_calculator import MetricsCalculator
 
@@ -48,38 +48,41 @@ class NetSubscriber(metaclass=ABCMeta):
         active_keys = set()
         active_keys_cars = set()
         for i, detectedobject in enumerate(detectedobjectarray.objects):
-            if detectedobject.label == 'pedestrian' or detectedobject.label == 'unknown':
-                position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
+            if detectedobject.label == 'pedestrian' or detectedobject.label == 'pedestrian_with_head_pose' or detectedobject.label == 'unknown':
+                position = np.array([detectedobject.center.x, detectedobject.center.y])
                 velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
                 acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
+                heading = detectedobject.heading
                 convex_hull = detectedobject.convex_hull
+                label = detectedobject.label
                 header = detectedobjectarray.header
                 _id = detectedobject.id
                 active_keys.add(_id)
                 with self.lock:
                     if _id not in self.cache:
-                        self.cache[_id] = MessageCache(_id, position, velocity, acceleration, header,
-                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=convex_hull)
+                        self.cache[_id] = MessageCache(_id, position, velocity, acceleration, heading, header,
+                                                       pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=convex_hull, label=label)
 
                     else:
                         self.cache[_id].move_endpoints()
-                        self.cache[_id].update_last_trajectory(position, velocity, acceleration, header, convex_hull=convex_hull)
+                        self.cache[_id].update_last_trajectory(position, velocity, acceleration, heading, header, convex_hull=convex_hull, label=label)
             elif self.collect_car_info and (detectedobject.label == 'bicycle' or detectedobject.label == 'car'):
-                position = np.array([detectedobject.pose.position.x, detectedobject.pose.position.y])
+                position = np.array([detectedobject.center.x, detectedobject.center.y])
                 velocity = np.array([detectedobject.velocity.x, detectedobject.velocity.y])
                 acceleration = np.array([detectedobject.acceleration.x, detectedobject.acceleration.y])
+                heading = detectedobject.heading
                 convex_hull = detectedobject.convex_hull
                 header = detectedobjectarray.header
                 _id = detectedobject.id
                 active_keys_cars.add(_id)
                 with self.lock:
                     if _id not in self.cache_cars:
-                        self.cache_cars[_id] = MessageCache(_id, position, velocity, acceleration, header,
+                        self.cache_cars[_id] = MessageCache(_id, position, velocity, acceleration, heading, header,
                                                        pad_past=self.pad_past, hide_past=self.hide_past, delta_t=self.inference_timer_duration, convex_hull=convex_hull)
 
                     else:
                         self.cache_cars[_id].move_endpoints()
-                        self.cache_cars[_id].update_last_trajectory(position, velocity, acceleration, header, convex_hull=convex_hull)
+                        self.cache_cars[_id].update_last_trajectory(position, velocity, acceleration, heading, header, convex_hull=convex_hull)
 
         with self.lock:
             self.active_keys = self.active_keys.union(active_keys)
@@ -96,7 +99,7 @@ class NetSubscriber(metaclass=ABCMeta):
         output_msg_array = DetectedObjectArray(header=detectedobjectsarray.header)
 
         for detectedobject in detectedobjectsarray.objects:
-            if detectedobject.label == 'pedestrian' or detectedobject.label == 'bicycle' or detectedobject.label == 'unknown':
+            if detectedobject.label == 'pedestrian' or detectedobject.label == 'pedestrian_with_head_pose' or detectedobject.label == 'bicycle' or detectedobject.label == 'unknown':
                 with self.lock:
                     predictions = self.cache[detectedobject.id].return_last_prediction()
                     predictions_header = self.cache[detectedobject.id].return_last_prediction_header()
@@ -106,7 +109,8 @@ class NetSubscriber(metaclass=ABCMeta):
                     for j in prediction:
                         wp = Waypoint()
                         wp.position.x, wp.position.y = j
-                        wp.position.z = detectedobject.pose.position.z
+                        wp.position.z = detectedobject.center.z
+                        # print(wp)
                         lane.waypoints.append(wp)
                     detectedobject.candidate_trajectories.paths.append(lane)
 

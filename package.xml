@@ -29,6 +29,7 @@
   <exec_depend>topic_tools</exec_depend>
   <exec_depend>pcl_ros</exec_depend>
   <exec_depend>nodelet</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
 
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-sklearn</exec_depend>
@@ -38,6 +39,7 @@
   <exec_depend>python3-catkin-tools</exec_depend>
   <exec_depend>python3-paho-mqtt</exec_depend>
   <exec_depend>python3-shapely</exec_depend>
+  <exec_depend>python3-numba</exec_depend>
   <exec_depend>python3-pip</exec_depend>
   <exec_depend>python-is-python3</exec_depend>
 
@@ -49,6 +51,7 @@
   <exec_depend>automotive_navigation_msgs</exec_depend>
   <exec_depend>novatel_oem7_msgs</exec_depend>
   <exec_depend>radar_msgs</exec_depend>
+  <!-- <exec_depend>pacmod3_msgs</exec_depend> -->
 
   <exec_depend>carla_msgs</exec_depend>
   <exec_depend>carla_ros_bridge</exec_depend>
@@ -59,6 +62,5 @@
   <exec_depend>carla_ros_scenario_runner</exec_depend>
   <exec_depend>carla_waypoint_publisher</exec_depend>
   <exec_depend>carla_twist_to_control</exec_depend>
-  <exec_depend>vehicle_platform</exec_depend>
 
 </package>
