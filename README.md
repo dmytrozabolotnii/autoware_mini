@@ -7,7 +7,7 @@ Autoware Mini is a minimalistic Python-based autonomy software inspired by [Auto
 ## TODO:
 
 - [x] Upload implementation code with instructions
-- [ ] Share evaluation .bag dataset
+- [x] Share evaluation .bag dataset
 - [ ] Include result processing jupyter notebooks
 
 It is not production-level software, but aimed for teaching and research. At the same time we have validated the software with a real car in real traffic in the city of Tartu, Estonia.
@@ -95,7 +95,7 @@ You can use newer Pytorch version, compatibility with up to 2.7.1 was checked.
 
 ## Launching FOV-RVO against recorded bag from .bag dataset
 
-Bags are provided at [under construction](). Place downloaded bag(s) at `data/bags`
+Bags are provided at [S3 Object Store](https://docs.google.com/spreadsheets/d/1NyMl4oH4sRBBy59zweDUKbQBKxvu4mEOBFeWZL5IRvU/edit?usp=sharing). Place downloaded bag(s) at `data/bags`. Due to GDPR restrictions, the bags do not contain raw image data. Instead pre-processed head pose detections and gaze directions data are included in the bag files, and will be used by the FOV-RVO model automatically during bag playback when necessary.
 
 To run the autonomy stack with FOV-RVO against the recorded bag run the following command and change "BAG_FILE_NAME" to one of the .bag files downloaded:
 
@@ -105,11 +105,11 @@ roslaunch autoware_mini start_bag.launch bag_file:="BAG_FILE_NAME" predictor:=pe
 
 There are different predictor parameters to run specific FOVRVO configurations described in the paper:
 
-* `predictor:=pedestrianrvo`: Pure RVO implementation (no gaze direction detector)
-* `predictor:=pedestrianrvofov`: RVO implementation with gaze direction constraint and variable responsibility (gaze direction detector running)
-* `predictor:=pedestrianrvomap`: RVO implementation with map information integration (no gaze direction detector)
-* `predictor:=pedestrianrvofovmap`: Combination of the above and main FOVRVO model (gaze direction detector running)
-* `predictor:=pedestrianrvogaaddon`: Combined model of FOVRVO and [GATraj](https://github.com/mengmengliu1998/GATraj) model (gaze direction detector running)
+* `predictor:=pedestrianrvo`: Pure RVO implementation (no gaze direction data used)
+* `predictor:=pedestrianrvofov`: RVO implementation with gaze direction constraint and variable responsibility (using pre-recorded gaze directions from the bag)
+* `predictor:=pedestrianrvomap`: RVO implementation with map information integration (no gaze direction data used)
+* `predictor:=pedestrianrvofovmap`: Combination of the above and main FOVRVO model (using pre-recorded gaze directions from the bag)
+* `predictor:=pedestrianrvogaaddon`: Combined model of FOVRVO and [GATraj](https://github.com/mengmengliu1998/GATraj) model (using pre-recorded gaze directions from the bag)
 
 To run Deep Learning pedestrian motion predictors instead against which the model is evaluated use the following commands. For these models, some parameters you can change including the amount of candidate predictions they output $k$ can be found in `config/detection.yaml` file under the `prediction` category. ($k$ is denoted in the file as `predictions_amount`)
 * `predictor:=pedestrian`: [PECNet](https://github.com/HarshayuGirase/Human-Path-Prediction/tree/master/PECNet) model
