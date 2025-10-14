@@ -16,6 +16,7 @@ from head_pose_utils.head_pose_model import RepNet6D
 from autoware_mini.head_pose_filter import HeadPoseFilter
 import torch
 from torchvision import transforms
+import torchvision.transforms.v2 as transforms_v2
 import time
 
 FACE_FRACTION = 0.25  # Fraction of the person bounding box height to use for head detection
@@ -62,13 +63,10 @@ class CameraHeadDetectorYolo:
             rospy.logerr(f"Failed to load head pose model: {e}")
             raise
 
-        # Image transformation for the model
-        self.transformations = transforms.Compose([
-            transforms.ToPILImage(mode='RGB'),
-            transforms.Resize(224),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        # New transformation pipeline using transforms v2 and direct tensor conversion
+        self.transformations_v2 = transforms_v2.Compose([
+            transforms_v2.Resize(size=(224, 224), antialias=True),
+            transforms_v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
         # Publishers
@@ -111,7 +109,10 @@ class CameraHeadDetectorYolo:
 
         # Detect objects using YOLO
         try:
+            # yolo_start_time = time.time()
             bboxes_2d, classes, scores = self.yolo_model.predict(image)
+            # yolo_time = time.time() - yolo_start_time
+            # rospy.loginfo(f"YOLO detection time: {yolo_time:.3f}s")
 
             # Extract heads from person detections
             heads = self.extract_heads_from_persons(bboxes_2d, classes, scores)
@@ -121,10 +122,35 @@ class CameraHeadDetectorYolo:
 
         if len(heads) == 0:
             # No heads detected
-            head_poses = np.empty((0, 10), dtype=np.float32)  # [x, y, w, h, rotation_matrix[0...5]]
+            head_poses = np.empty((0, 13), dtype=np.float32)  # [x1, y1, x2, y2, rotation_matrix[0...8]]
         else:
-            head_poses = []
+            # Prepare batch of face ROIs
+            roi_preprocess_start = time.time()
+
+            # First loop: find the biggest bounding box dimensions
+            max_width = 0
+            max_height = 0
             for head in heads:
+                w = head['width']
+                h = head['height']
+                margin = int(min(w, h) * 0.2)
+                # Calculate final dimensions including margin
+                roi_width = min(image.shape[1], head['left'] + w + margin) - max(0, head['left'] - margin)
+                roi_height = min(image.shape[0], head['top'] + h + margin) - max(0, head['top'] - margin)
+
+                max_width = max(max_width, roi_width)
+                max_height = max(max_height, roi_height)
+
+            # Ensure dimensions are even (sometimes required for certain operations)
+            max_width = max_width + (max_width % 2)
+            max_height = max_height + (max_height % 2)
+
+            # Initialize arrays for face ROIs and valid heads
+            face_rois = np.zeros((len(heads), max_height, max_width, 3), dtype=np.uint8)
+            valid_heads = []
+
+            # Second loop: extract and pad all ROIs to the same size
+            for i, head in enumerate(heads):
                 x = head['left']
                 y = head['top']
                 w = head['width']
@@ -132,56 +158,118 @@ class CameraHeadDetectorYolo:
 
                 # Extract face ROI with margin
                 margin = int(min(w, h) * 0.2)
-                face_roi = image[max(0, y-margin):min(image.shape[0], y+h+margin),
-                                 max(0, x-margin):min(image.shape[1], x+w+margin)]
+                x_min = max(0, x - margin)
+                y_min = max(0, y - margin)
+                x_max = min(image.shape[1], x + w + margin)
+                y_max = min(image.shape[0], y + h + margin)
 
-                if face_roi.size == 0:
+                # Skip if ROI is empty
+                if x_max <= x_min or y_max <= y_min:
                     continue
 
-                # Prepare face for the model
+                # Extract the ROI
+                face_roi = image[y_min:y_max, x_min:x_max]
+
+                # Center pad to max dimensions
+                pad_height_before = (max_height - (y_max - y_min)) // 2
+                pad_height_after = max_height - (y_max - y_min) - pad_height_before
+                pad_width_before = (max_width - (x_max - x_min)) // 2
+                pad_width_after = max_width - (x_max - x_min) - pad_width_before
+
+                # Apply padding
                 try:
-                    # Transform the image for the model
-                    face_tensor = self.transformations(face_roi).unsqueeze(0).to(self.device)
+                    padded_roi = np.pad(face_roi,
+                                        ((pad_height_before, pad_height_after),
+                                         (pad_width_before, pad_width_after),
+                                         (0, 0)),
+                                        mode='constant')
 
-                    # Get head pose
+
+                    face_rois[i] = padded_roi
+
+                    # Store valid head with its coordinates for later use
+                    valid_heads.append({
+                        'x': x,
+                        'y': y,
+                        'w': w,
+                        'h': h,
+                        'confidence': head['confidence']
+                    })
+                except Exception as e:
+                    rospy.logerr(f"Error padding ROI: {e}")
+                    continue
+
+            # Convert the entire batch of numpy arrays to a tensor at once
+            transform_start_time = time.time()
+
+            # Convert the batch from numpy to tensor
+            # [N, H, W, C] -> [N, C, H, W] and normalize to 0-1 range
+            face_tensors = torch.from_numpy(face_rois).permute(0, 3, 1, 2).float() / 255.0
+
+            # Apply transformations to the entire batch at once
+            face_tensors = self.transformations_v2(face_tensors)
+
+            transform_time = time.time() - transform_start_time
+            # rospy.loginfo(f"Batch transformation time: {transform_time:.3f}s for {len(valid_heads)} faces, "
+            #               f"avg: {transform_time/max(len(valid_heads), 1):.3f}s per face")
+
+            roi_preprocess_time = time.time() - roi_preprocess_start
+            # if len(heads) > 0:
+            #     rospy.loginfo(f"Face ROI preprocessing time: {roi_preprocess_time:.3f}s for {len(valid_heads)}/{len(heads)} faces, "
+            #                   f"avg: {roi_preprocess_time/max(len(valid_heads), 1):.3f}s per face")
+
+            head_poses = []
+
+            if face_tensors is not None:
+                try:
+                    # Move tensors to device
+                    batch_tensor = face_tensors.to(self.device)
+
+                    # Process batch in one forward pass
                     with torch.no_grad():
-                        rotation_matrix = self.model(face_tensor)
+                        rotation_matrices = self.model(batch_tensor)
 
-                    # Convert rotation matrix to numpy array (full 3x3 matrix)
-                    rotation_matrix_np = rotation_matrix[0].cpu().numpy()
+                    # Process each result
+                    for i, rotation_matrix in enumerate(rotation_matrices):
+                        head = valid_heads[i]
+                        x, y, w, h = head['x'], head['y'], head['w'], head['h']
+                        confidence = head['confidence']
 
-                    # Flatten the 3x3 rotation matrix for transmission (9 values)
-                    rotation_matrix_flat = rotation_matrix_np.flatten()
+                        # Convert rotation matrix to numpy array
+                        rotation_matrix_np = rotation_matrix.cpu().numpy()
 
-                    # Store person box and full rotation matrix (x1, y, x2, y2, rotation_matrix[0...8]) for matching
-                    head_pose = np.array([x - 0.5 * w, y, x + 1.5 * w, y + h * (1 / FACE_FRACTION), *rotation_matrix_flat], dtype=np.float32)
-                    head_poses.append(head_pose)
+                        # Flatten the rotation matrix for transmission
+                        rotation_matrix_flat = rotation_matrix_np.flatten()
 
-                    # For visualization purposes, still compute Euler angles
-                    euler = compute_euler_angles_from_rotation_matrices(rotation_matrix, full_range=True) * 180/np.pi
-                    p_pred_deg = euler[:, 0].cpu().numpy()  # Pitch
-                    y_pred_deg = euler[:, 1].cpu().numpy()  # Yaw
-                    r_pred_deg = euler[:, 2].cpu().numpy()  # Roll
+                        # Store person box and full rotation matrix (x1, y1, x2, y2, rotation_matrix[0...8]) for matching
+                        head_pose = np.array([x - 0.5 * w, y, x + 1.5 * w, y + h * (1 / FACE_FRACTION), *rotation_matrix_flat], dtype=np.float32)
+                        head_poses.append(head_pose)
 
-                    # Draw pose axis on the original image (for visualization)
-                    original_image = draw_axis(original_image, y_pred_deg[0], p_pred_deg[0], r_pred_deg[0],
-                              x + w//2, y + h//2, size=w//2)
+                        # For visualization purposes, compute Euler angles
+                        euler = compute_euler_angles_from_rotation_matrices(rotation_matrix.unsqueeze(0), full_range=True) * 180/np.pi
+                        p_pred_deg = euler[:, 0].cpu().numpy()  # Pitch
+                        y_pred_deg = euler[:, 1].cpu().numpy()  # Yaw
+                        r_pred_deg = euler[:, 2].cpu().numpy()  # Roll
 
-                    # Draw head bounding box
-                    cv2.rectangle(original_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    # Add confidence score text
-                    confidence_text = f"{head['confidence']:.2f}"
-                    cv2.putText(original_image, confidence_text, (x, y - 5),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                        # Draw pose axis on the original image
+                        original_image = draw_axis(original_image, y_pred_deg[0], p_pred_deg[0], r_pred_deg[0],
+                                    x + w//2, y + h//2, size=w//2)
+
+                        # Draw head bounding box
+                        cv2.rectangle(original_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+                        # Draw confidence
+                        confidence_text = f"{confidence:.2f}"
+                        cv2.putText(original_image, confidence_text, (x, y - 5),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
                 except Exception as e:
-                    rospy.logerr(f"Error processing head {head}: {e}")
-                    continue
+                    rospy.logerr(f"Error in batch head pose processing: {e}")
 
             if head_poses:
                 head_poses = np.array(head_poses, dtype=np.float32)
             else:
-                head_poses = np.empty((0, 10), dtype=np.float32)
+                head_poses = np.empty((0, 13), dtype=np.float32)
 
         # Create an array for head pose detections
         head_pose_array = Float32MultiArrayStamped()

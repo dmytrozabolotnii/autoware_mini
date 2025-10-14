@@ -275,6 +275,8 @@
             <remap from="detected_objects" to="tracked_objects" />
             <remap from="head_pose_objects" to="classified_objects" />
 
+            <param name="cameras_name" value="$(arg cameras)" />
+
             <param if="$(eval cameras=='mako')" name="camera1" value="camera_fl" />
             <param if="$(eval cameras=='mako')" name="camera2" value="camera_fr" />
             <param if="$(eval cameras=='mako')" name="camera3" value="" />

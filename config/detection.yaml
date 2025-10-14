@@ -194,6 +194,8 @@ camera_object_classifier:
 camera_head_pose_classifier:
   box_matcher_iou_threshold: 0.1
   transform_timeout: 0.12
+  mako_camera_delay_compensation: 0.03
+  nvidia_camera_delay_compensation: 0.2
 
 mqtt_traffic_light_detector:
   mqtt_host: traffic.traffest.com

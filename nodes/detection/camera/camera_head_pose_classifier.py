@@ -24,6 +24,8 @@ class CameraHeadPoseClassifier:
         self.transform_timeout = rospy.get_param("~transform_timeout")
         box_matcher_iou_threshold = rospy.get_param("~box_matcher_iou_threshold")
         cameras = [rospy.get_param(f"~camera{i}") for i in range(1, 6) if rospy.has_param(f"~camera{i}")]
+        cameras_name = rospy.get_param("~cameras_name")
+        self.camera_delay_compensation = rospy.get_param("~" + cameras_name + "_camera_delay_compensation")
 
         # Head pose filter parameters
         filter_window_size = rospy.get_param("~filter_window_size", 5)
@@ -79,7 +81,7 @@ class CameraHeadPoseClassifier:
             num_head_pose_detections[obj.id] = 0  # Initialize count for each object ID
 
         bboxes_3d = np.array(bboxes_3d)
-        
+
 
         for cam_det_msg in camera_det_msgs:
             cam_frame_id = cam_det_msg.header.frame_id
@@ -87,8 +89,6 @@ class CameraHeadPoseClassifier:
             # Get camera intrinsics
             if cam_frame_id in self.camera_intrinsics:
                 camera_intrinsics = self.camera_intrinsics[cam_frame_id]
-                # rospy.loginfo("%s - Camera intrinsics for %s: \n%s",
-                #              rospy.get_name(), cam_frame_id, camera_intrinsics)
             else:
                 rospy.logwarn("%s - %s", rospy.get_name(), f"No intrinsics found for camera {cam_frame_id}")
                 continue
@@ -96,9 +96,8 @@ class CameraHeadPoseClassifier:
             # Extract transform from map to camera (for projecting 3D boxes to 2D)
             try:
                 map_to_cam_transform = self.tf_buffer.lookup_transform(cam_frame_id, det_objects_msg.header.frame_id,
-                                                        det_objects_msg.header.stamp, rospy.Duration(self.transform_timeout))
+                                                        det_objects_msg.header.stamp - rospy.Duration.from_sec(self.camera_delay_compensation), rospy.Duration(self.transform_timeout))
                 map_to_cam_transform_matrix = numpify(map_to_cam_transform.transform)
-
 
             except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
                 rospy.logwarn("%s - %s", rospy.get_name(), e)
@@ -107,17 +106,16 @@ class CameraHeadPoseClassifier:
             # Extract transform from camera to map (for transforming head pose to map frame)
             try:
                 cam_to_map_transform = self.tf_buffer.lookup_transform(det_objects_msg.header.frame_id, cam_frame_id,
-                                                        det_objects_msg.header.stamp, rospy.Duration(self.transform_timeout))
+                                                        det_objects_msg.header.stamp - rospy.Duration.from_sec(self.camera_delay_compensation), rospy.Duration(self.transform_timeout))
             except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
                 rospy.logwarn("%s - %s", rospy.get_name(), e)
                 continue
-            
+
             # Parse head pose detections
             head_pose_detections = float32_multiarray_to_numpy(cam_det_msg)
             
             if len(head_pose_detections) == 0:
                 continue
-
 
             # Extract person bounding boxes and rotation matrices
             bboxes_2d = head_pose_detections[:, :4].astype(int)  # [x1, y1, x2, y2]
@@ -145,11 +143,27 @@ class CameraHeadPoseClassifier:
                 # Apply temporal filtering using the object ID for consistent tracking
                 filtered_rotation_matrix_camera = self.head_pose_filter.update(obj.id, rotation_matrix_camera)
 
-                # Extract the head direction vector in camera frame (Z-axis is forward direction)
+                # Extract the head direction vector in camera optical frame (Z-axis is forward/gaze direction)
+                head_dir_optical = np.array([
+                    float(filtered_rotation_matrix_camera[0, 2]),
+                    float(filtered_rotation_matrix_camera[1, 2]),
+                    float(filtered_rotation_matrix_camera[2, 2])
+                ])
+
+                # Convert from optical frame to link frame
+                # Optical: X-right, Y-down, Z-forward
+                # Link:    X-forward, Y-left, Z-up
+                # Mapping: optical_Z -> link_X, optical_X -> -link_Y, optical_Y -> -link_Z
+                head_dir_link = np.array([
+                    head_dir_optical[2],  # optical Z -> link X
+                    -head_dir_optical[0],  # optical X -> -link Y
+                    -head_dir_optical[1]  # optical Y -> -link Z
+                ])
+
                 head_dir_camera_vector = Vector3()
-                head_dir_camera_vector.x = float(filtered_rotation_matrix_camera[0, 2])
-                head_dir_camera_vector.y = float(filtered_rotation_matrix_camera[1, 2])
-                head_dir_camera_vector.z = float(filtered_rotation_matrix_camera[2, 2])
+                head_dir_camera_vector.x = float(head_dir_link[0])
+                head_dir_camera_vector.y = float(head_dir_link[1])
+                head_dir_camera_vector.z = float(head_dir_link[2])
 
                 # Use transform helper function to transform from camera to map frame
                 head_dir_map_vector = transform_vector3(head_dir_camera_vector, cam_to_map_transform)
